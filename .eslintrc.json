@@ -1,12 +1,8 @@
 {
-  "env": {
-    "es6": true,
-    "node": true
-  },
   "root": true,
   "ignorePatterns": ["**/*"],
   "plugins": [
-    "@nrwl/nx",
+    "@nx",
     "import",
     "jsonc",
     "no-unsanitized",
@@ -16,5 +12,42 @@
     "sort-keys-fix",
     "unicorn",
     "spellcheck"
+  ],
+  "overrides": [
+    {
+      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      "rules": {
+        "@nx/enforce-module-boundaries": [
+          "error",
+          {
+            "enforceBuildableLibDependency": true,
+            "allow": [],
+            "depConstraints": [
+              {
+                "sourceTag": "*",
+                "onlyDependOnLibsWithTags": ["*"]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["*.ts", "*.tsx"],
+      "extends": ["plugin:@nx/typescript"],
+      "rules": {}
+    },
+    {
+      "files": ["*.js", "*.jsx"],
+      "extends": ["plugin:@nx/javascript"],
+      "rules": {}
+    },
+    {
+      "files": ["*.spec.ts", "*.spec.tsx", "*.spec.js", "*.spec.jsx"],
+      "env": {
+        "jest": true
+      },
+      "rules": {}
+    }
   ]
 }

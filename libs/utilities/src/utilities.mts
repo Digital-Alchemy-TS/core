@@ -1,4 +1,4 @@
-import { is } from "./is";
+import { is } from "./is.mjs";
 
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 export const EVEN = 2;
@@ -92,7 +92,7 @@ export function sleep(target: number | Date = SECOND): SleepReturn {
  *
  * Create an array of length, where the values are filled with a provided fill value, or (index + 1) as default value
  */
-export function PEAT<T extends unknown = number>(
+export function PEAT<T = number>(
   length: number,
   fill?: T,
 ): T[] {

@@ -22,13 +22,13 @@
     "strictFunctionTypes": false,
     "strictNullChecks": false,
     "strictPropertyInitialization": false,
-    "target": "ES2023",
+    "target": "ESNext",
     "paths": {
       "@zcc/automation-logic": ["libs/automation-logic/src/index.ts"],
       "@zcc/boilerplate": ["libs/boilerplate/src/index.ts"],
       "@zcc/gotify": ["libs/gotify/src/index.ts"],
       "@zcc/home-assistant": ["libs/home-assistant/src/index.ts"],
-      "@zcc/utilities": ["libs/utilities/src/index.ts"]
+      "@zcc/utilities": ["libs/utilities/src/index.mts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"],

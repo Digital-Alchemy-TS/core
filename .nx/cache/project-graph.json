@@ -42,6 +42,13 @@
             "configurations": {}
           },
           "lint": {
+            "cache": true,
+            "inputs": [
+              "default",
+              "{workspaceRoot}/.eslintrc.json",
+              "{workspaceRoot}/.eslintignore",
+              "{workspaceRoot}/eslint.config.js"
+            ],
             "executor": "@nx/eslint:lint",
             "outputs": [
               "{options.outputFile}"
@@ -121,6 +128,13 @@
             "configurations": {}
           },
           "lint": {
+            "cache": true,
+            "inputs": [
+              "default",
+              "{workspaceRoot}/.eslintrc.json",
+              "{workspaceRoot}/.eslintignore",
+              "{workspaceRoot}/eslint.config.js"
+            ],
             "executor": "@nx/eslint:lint",
             "outputs": [
               "{options.outputFile}"
@@ -200,6 +214,13 @@
             "configurations": {}
           },
           "lint": {
+            "cache": true,
+            "inputs": [
+              "default",
+              "{workspaceRoot}/.eslintrc.json",
+              "{workspaceRoot}/.eslintignore",
+              "{workspaceRoot}/eslint.config.js"
+            ],
             "executor": "@nx/eslint:lint",
             "outputs": [
               "{options.outputFile}"
@@ -279,6 +300,13 @@
             "configurations": {}
           },
           "lint": {
+            "cache": true,
+            "inputs": [
+              "default",
+              "{workspaceRoot}/.eslintrc.json",
+              "{workspaceRoot}/.eslintignore",
+              "{workspaceRoot}/eslint.config.js"
+            ],
             "executor": "@nx/eslint:lint",
             "outputs": [
               "{options.outputFile}"
@@ -358,6 +386,13 @@
             "configurations": {}
           },
           "lint": {
+            "cache": true,
+            "inputs": [
+              "default",
+              "{workspaceRoot}/.eslintrc.json",
+              "{workspaceRoot}/.eslintignore",
+              "{workspaceRoot}/eslint.config.js"
+            ],
             "executor": "@nx/eslint:lint",
             "outputs": [
               "{options.outputFile}"
@@ -13925,13 +13960,7 @@
     "automation-logic": [],
     "home-assistant": [],
     "boilerplate": [],
-    "utilities": [
-      {
-        "source": "utilities",
-        "target": "npm:deep-equal",
-        "type": "static"
-      }
-    ],
+    "utilities": [],
     "gotify": [],
     "zcc": [
       {
@@ -14072,6 +14101,11 @@
       {
         "source": "zcc",
         "target": "npm:@nx/devkit",
+        "type": "static"
+      },
+      {
+        "source": "zcc",
+        "target": "npm:@nx/eslint",
         "type": "static"
       },
       {

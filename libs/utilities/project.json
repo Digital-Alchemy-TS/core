@@ -11,7 +11,7 @@
         "outputPath": "dist/libs/utilities",
         "tsConfig": "libs/utilities/tsconfig.lib.json",
         "packageJson": "libs/utilities/package.json",
-        "main": "libs/utilities/src/index.ts",
+        "main": "libs/utilities/src/index.mts",
         "assets": ["libs/utilities/*.md"]
       }
     },

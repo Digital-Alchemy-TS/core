@@ -67,10 +67,10 @@ type SleepReturn = Promise<void> & {
  */
 export function sleep(target: number | Date = SECOND): SleepReturn {
   // done function from promise
-  let done: () => void;
+  let done: (undefined | (() => void));
 
   const timeout = setTimeout(
-    () => done(),
+    () => done && done(),
     is.date(target) ? target.getTime() - Date.now() : target,
   );
 
@@ -79,7 +79,7 @@ export function sleep(target: number | Date = SECOND): SleepReturn {
   const out = new Promise<void>(i => (done = i)) as SleepReturn;
   out.kill = (execute = "stop") => {
     if (execute === "continue") {
-      done();
+      done && done();
     }
     clearTimeout(timeout);
     done = undefined;
@@ -97,6 +97,6 @@ export function PEAT<T = number>(
   fill?: T,
 ): T[] {
   return Array.from({ length }).map(
-    (item, index) => fill ?? ((index + ARRAY_OFFSET) as T),
+    (_, index) => fill ?? ((index + ARRAY_OFFSET) as T),
   );
 }

@@ -116,3 +116,6 @@ apps/**/artifacts
 docker/homeassistant/config
 docker/homeassistant/config
 bin/
+
+
+.nx/cache

@@ -1,0 +1,35 @@
+{
+  "name": "automation-logic",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/automation-logic/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/automation-logic",
+        "tsConfig": "libs/automation-logic/tsconfig.lib.json",
+        "packageJson": "libs/automation-logic/package.json",
+        "main": "libs/automation-logic/src/index.ts",
+        "assets": ["libs/automation-logic/*.md"]
+      }
+    },
+    "publish": {
+      "command": "node tools/scripts/publish.mjs automation-logic {args.ver} {args.tag}",
+      "dependsOn": ["build"]
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"]
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/automation-logic/jest.config.ts"
+      }
+    }
+  },
+  "tags": []
+}

@@ -24,36 +24,13 @@
     "strictPropertyInitialization": false,
     "target": "ES2023",
     "paths": {
-      "@zcc/automation-logic": [
-        "libs/automation-logic/src/index.ts"
-      ],
+      "@zcc/automation-logic": ["libs/automation-logic/src/index.ts"],
       "@zcc/boilerplate": ["libs/boilerplate/src/index.ts"],
       "@zcc/gotify": ["libs/gotify/src/index.ts"],
       "@zcc/home-assistant": ["libs/home-assistant/src/index.ts"],
-      "@zcc/server": ["libs/server/src/index.ts"],
-      "@zcc/testing": ["libs/testing/src/index.ts"],
       "@zcc/utilities": ["libs/utilities/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist"],
-  "references": [
-    {
-      "path": "./libs/automation-logic/tsconfig.json"
-    },
-    {
-      "path": "./libs/boilerplate/tsconfig.json"
-    },
-    {
-      "path": "./libs/gotify/tsconfig.json"
-    },
-    {
-      "path": "./libs/home-assistant/tsconfig.json"
-    },
-    {
-      "path": "./libs/testing/tsconfig.json"
-    },
-    {
-      "path": "./libs/utilities/tsconfig.json"
-    }
-  ]
+  "references": []
 }

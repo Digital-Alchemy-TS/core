@@ -26,7 +26,68 @@
     "tslib": "^2.6.2",
     "typescript": "^5.3.3",
     "uuid": "^9.0.1",
-    "ws": "^8.16.0"
+    "ws": "^8.16.0",
+    "@nrwl/tao": "^17.2.8",
+    "@nx/devkit": "^17.2.8",
+    "@nx/eslint-plugin": "^17.2.8",
+    "@nx/express": "^17.2.8",
+    "@nx/jest": "^17.2.8",
+    "@nx/js": "^17.2.8",
+    "@nx/linter": "^17.2.8",
+    "@nx/nest": "^17.2.8",
+    "@nx/node": "^17.2.8",
+    "@nx/webpack": "^17.2.8",
+    "@nx/workspace": "^17.2.8",
+    "@sinonjs/fake-timers": "^11.2.2",
+    "@swc-node/register": "~1.6.7",
+    "@swc/core": "~1.3.85",
+    "@types/async": "^3.2.24",
+    "@types/deep-equal": "^1.0.4",
+    "@types/express": "^4.17.21",
+    "@types/ini": "^4.1.0",
+    "@types/jest": "^29.5.11",
+    "@types/js-yaml": "^4.0.9",
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^20.10.6",
+    "@types/object-path": "^0.11.4",
+    "@types/semver": "^7.5.6",
+    "@types/sinonjs__fake-timers": "^8.1.5",
+    "@types/uuid": "^9.0.7",
+    "@types/ws": "^8.5.10",
+    "@typescript-eslint/eslint-plugin": "^6.16.0",
+    "@typescript-eslint/parser": "^6.16.0",
+    "babel-jest": "^29.7.0",
+    "babel-loader": "^9.1.3",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "eslint-plugin-jsonc": "^2.11.2",
+    "eslint-plugin-no-unsanitized": "^4.0.2",
+    "eslint-plugin-prettier": "^5.1.2",
+    "eslint-plugin-security": "^2.1.0",
+    "eslint-plugin-simple-import-sort": "^10.0.0",
+    "eslint-plugin-sonarjs": "^0.23.0",
+    "eslint-plugin-sort-keys-fix": "^1.1.2",
+    "eslint-plugin-spellcheck": "^0.0.20",
+    "eslint-plugin-unicorn": "^50.0.1",
+    "figlet-cli": "^0.1.1",
+    "jest": "^29.7.0",
+    "jest-environment-node": "^29.4.1",
+    "nx": "17.2.8",
+    "nx-cloud": "^16.5.2",
+    "prettier": "^3.1.1",
+    "terminalizer": "^0.11.0",
+    "terser": "^5.26.0",
+    "ts-jest": "^29.1.1",
+    "ts-node": "^10.9.2",
+    "ts-toolbelt": "^9.6.0",
+    "type-fest": "^4.9.0",
+    "verdaccio": "^5.0.4",
+    "webpack": "^5.89.0",
+    "webpack-dev-server": "^4.15.1",
+    "webpack-merge": "^5.10.0",
+    "webpack-node-externals": "^3.0.0",
+    "yarn": "^1.22.21"
   },
   "pathMappings": {
     "@zcc/automation-logic": [
@@ -41,95 +102,628 @@
     "@zcc/home-assistant": [
       "libs/home-assistant/src/index.ts"
     ],
-    "@zcc/mqtt": [
-      "libs/mqtt/src/index.ts"
-    ],
-    "@zcc/pi-matrix-client": [
-      "libs/pi-matrix-client/src/index.ts"
-    ],
-    "@zcc/render-utils": [
-      "libs/render-utils/src/index.ts"
-    ],
-    "@zcc/rgb-matrix": [
-      "libs/rgb-matrix/src/index.ts"
-    ],
-    "@zcc/server": [
-      "libs/server/src/index.ts"
-    ],
-    "@zcc/testing": [
-      "libs/testing/src/index.ts"
-    ],
-    "@zcc/tty": [
-      "libs/tty/src/index.ts"
-    ],
     "@zcc/utilities": [
       "libs/utilities/src/index.ts"
     ]
   },
   "nxJsonPlugins": [],
   "fileMap": {
-    "projectFileMap": {},
-    "nonProjectFiles": [
-      {
-        "file": ".editorconfig",
-        "hash": "5443105041930014821"
-      },
-      {
-        "file": ".eslintignore",
-        "hash": "10883702102399627279"
-      },
-      {
-        "file": ".eslintrc.json",
-        "hash": "15096849211903042329"
-      },
-      {
-        "file": ".gitignore",
-        "hash": "15451648304302368772"
-      },
-      {
-        "file": ".pino-prettyrc",
-        "hash": "15517926543315350516"
-      },
-      {
-        "file": ".prettierignore",
-        "hash": "8865097869854018350"
-      },
-      {
-        "file": ".prettierrc",
-        "hash": "3373839988668599456"
-      },
-      {
-        "file": "LICENSE",
-        "hash": "9760630930396115328"
-      },
-      {
-        "file": "babel.config.json",
-        "hash": "16839328274353480903"
-      },
-      {
-        "file": "nx.json",
-        "hash": "14633882986001323383"
-      },
-      {
-        "file": "package.json",
-        "hash": "7352125204205022912"
-      },
-      {
-        "file": "terminalizer.yml",
-        "hash": "5942796808142774197"
-      },
-      {
-        "file": "tsconfig.base.json",
-        "hash": "10678827166029866948"
-      },
-      {
-        "file": "yarn.lock",
-        "hash": "12325884003136014196"
-      },
-      {
-        "file": "zcc.code-workspace",
-        "hash": "3446025831095705545"
-      }
-    ]
+    "nonProjectFiles": [],
+    "projectFileMap": {
+      "automation-logic": [
+        {
+          "file": "libs/automation-logic/.eslintrc.json",
+          "hash": "16896711999632553762"
+        },
+        {
+          "file": "libs/automation-logic/README.md",
+          "hash": "5645855834549608646"
+        },
+        {
+          "file": "libs/automation-logic/jest.config.ts",
+          "hash": "13912043838490130137"
+        },
+        {
+          "file": "libs/automation-logic/package.json",
+          "hash": "17829459673593985886"
+        },
+        {
+          "file": "libs/automation-logic/project.json",
+          "hash": "12001112854956641022"
+        },
+        {
+          "file": "libs/automation-logic/src/index.ts",
+          "hash": "15082249651576228940"
+        },
+        {
+          "file": "libs/automation-logic/src/lib/automation-logic.spec.ts",
+          "hash": "13363286002945049298"
+        },
+        {
+          "file": "libs/automation-logic/src/lib/automation-logic.ts",
+          "hash": "11225274289756874899"
+        },
+        {
+          "file": "libs/automation-logic/tsconfig.json",
+          "hash": "2840670722752396445"
+        },
+        {
+          "file": "libs/automation-logic/tsconfig.lib.json",
+          "hash": "8188472110264778699"
+        },
+        {
+          "file": "libs/automation-logic/tsconfig.spec.json",
+          "hash": "11550347367511341917"
+        }
+      ],
+      "home-assistant": [
+        {
+          "file": "libs/home-assistant/.eslintrc.json",
+          "hash": "16896711999632553762"
+        },
+        {
+          "file": "libs/home-assistant/README.md",
+          "hash": "4552292393911983710"
+        },
+        {
+          "file": "libs/home-assistant/jest.config.ts",
+          "hash": "8080155749221328419"
+        },
+        {
+          "file": "libs/home-assistant/package.json",
+          "hash": "14075303651838427630"
+        },
+        {
+          "file": "libs/home-assistant/project.json",
+          "hash": "7058668354457479756"
+        },
+        {
+          "file": "libs/home-assistant/src/index.ts",
+          "hash": "6053693069510275390"
+        },
+        {
+          "file": "libs/home-assistant/src/lib/home-assistant.spec.ts",
+          "hash": "3440299171479997494"
+        },
+        {
+          "file": "libs/home-assistant/src/lib/home-assistant.ts",
+          "hash": "16898228833465931085"
+        },
+        {
+          "file": "libs/home-assistant/tsconfig.json",
+          "hash": "2840670722752396445"
+        },
+        {
+          "file": "libs/home-assistant/tsconfig.lib.json",
+          "hash": "8188472110264778699"
+        },
+        {
+          "file": "libs/home-assistant/tsconfig.spec.json",
+          "hash": "11550347367511341917"
+        }
+      ],
+      "gotify": [
+        {
+          "file": "libs/gotify/.eslintrc.json",
+          "hash": "16896711999632553762"
+        },
+        {
+          "file": "libs/gotify/README.md",
+          "hash": "10134645979685645805"
+        },
+        {
+          "file": "libs/gotify/jest.config.ts",
+          "hash": "5868660895695041262"
+        },
+        {
+          "file": "libs/gotify/package.json",
+          "hash": "5094107032593193990"
+        },
+        {
+          "file": "libs/gotify/project.json",
+          "hash": "9482190423004740986"
+        },
+        {
+          "file": "libs/gotify/src/index.ts",
+          "hash": "10043173023920820230"
+        },
+        {
+          "file": "libs/gotify/src/lib/gotify.spec.ts",
+          "hash": "13391635208118843922"
+        },
+        {
+          "file": "libs/gotify/src/lib/gotify.ts",
+          "hash": "10105844458790247472"
+        },
+        {
+          "file": "libs/gotify/tsconfig.json",
+          "hash": "2840670722752396445"
+        },
+        {
+          "file": "libs/gotify/tsconfig.lib.json",
+          "hash": "8188472110264778699"
+        },
+        {
+          "file": "libs/gotify/tsconfig.spec.json",
+          "hash": "11550347367511341917"
+        }
+      ],
+      "utilities": [
+        {
+          "file": "libs/utilities/.eslintrc.json",
+          "hash": "10947412413483118477"
+        },
+        {
+          "file": "libs/utilities/README.md",
+          "hash": "12414869765189100737"
+        },
+        {
+          "file": "libs/utilities/jest.config.ts",
+          "hash": "6497815745306954928"
+        },
+        {
+          "file": "libs/utilities/package.json",
+          "hash": "869579070794857998"
+        },
+        {
+          "file": "libs/utilities/project.json",
+          "hash": "7342664639873147967"
+        },
+        {
+          "file": "libs/utilities/src/async.ts",
+          "hash": "13145798917434163540"
+        },
+        {
+          "file": "libs/utilities/src/cron.ts",
+          "hash": "17519973162823119774"
+        },
+        {
+          "file": "libs/utilities/src/extend.ts",
+          "hash": "15089195817310638324"
+        },
+        {
+          "file": "libs/utilities/src/index.ts",
+          "hash": "5574630073886497365"
+        },
+        {
+          "file": "libs/utilities/src/is.ts",
+          "hash": "3543255550496936650",
+          "deps": [
+            "npm:deep-equal"
+          ]
+        },
+        {
+          "file": "libs/utilities/src/utilities.spec.ts",
+          "hash": "976007581519660753"
+        },
+        {
+          "file": "libs/utilities/src/utilities.ts",
+          "hash": "7783466315930287479"
+        },
+        {
+          "file": "libs/utilities/tsconfig.json",
+          "hash": "2840670722752396445"
+        },
+        {
+          "file": "libs/utilities/tsconfig.lib.json",
+          "hash": "8188472110264778699"
+        },
+        {
+          "file": "libs/utilities/tsconfig.spec.json",
+          "hash": "11550347367511341917"
+        }
+      ],
+      "zcc": [
+        {
+          "file": ".editorconfig",
+          "hash": "5443105041930014821"
+        },
+        {
+          "file": ".eslintignore",
+          "hash": "10883702102399627279"
+        },
+        {
+          "file": ".eslintrc.json",
+          "hash": "10031891890943565925"
+        },
+        {
+          "file": ".gitignore",
+          "hash": "9244436109550830424"
+        },
+        {
+          "file": ".pino-prettyrc",
+          "hash": "15517926543315350516"
+        },
+        {
+          "file": ".prettierignore",
+          "hash": "8865097869854018350"
+        },
+        {
+          "file": ".prettierrc",
+          "hash": "3373839988668599456"
+        },
+        {
+          "file": ".verdaccio/config.yml",
+          "hash": "3445400987408887114"
+        },
+        {
+          "file": "LICENSE",
+          "hash": "9760630930396115328"
+        },
+        {
+          "file": "assets/README.md",
+          "hash": "9881769726535381367"
+        },
+        {
+          "file": "assets/fonts/10x20.bdf",
+          "hash": "6744845940882950175"
+        },
+        {
+          "file": "assets/fonts/4x6.bdf",
+          "hash": "3803280858081875858"
+        },
+        {
+          "file": "assets/fonts/5x7.bdf",
+          "hash": "3031974897998160342"
+        },
+        {
+          "file": "assets/fonts/5x8.bdf",
+          "hash": "4785036144652451524"
+        },
+        {
+          "file": "assets/fonts/6x10.bdf",
+          "hash": "3749721062054897768"
+        },
+        {
+          "file": "assets/fonts/6x12.bdf",
+          "hash": "7666119155670158117"
+        },
+        {
+          "file": "assets/fonts/6x13.bdf",
+          "hash": "7882453419285675105"
+        },
+        {
+          "file": "assets/fonts/6x13B.bdf",
+          "hash": "2320718508592463411"
+        },
+        {
+          "file": "assets/fonts/6x13O.bdf",
+          "hash": "16109146281615446423"
+        },
+        {
+          "file": "assets/fonts/6x9.bdf",
+          "hash": "2254776842133694665"
+        },
+        {
+          "file": "assets/fonts/7x13.bdf",
+          "hash": "826043220928581700"
+        },
+        {
+          "file": "assets/fonts/7x13B.bdf",
+          "hash": "15092999542296184006"
+        },
+        {
+          "file": "assets/fonts/7x13O.bdf",
+          "hash": "16418772930052029934"
+        },
+        {
+          "file": "assets/fonts/7x14.bdf",
+          "hash": "1116634337454218870"
+        },
+        {
+          "file": "assets/fonts/7x14B.bdf",
+          "hash": "6590623624752415327"
+        },
+        {
+          "file": "assets/fonts/8x13.bdf",
+          "hash": "18042014626677711969"
+        },
+        {
+          "file": "assets/fonts/8x13B.bdf",
+          "hash": "12623168840026011032"
+        },
+        {
+          "file": "assets/fonts/8x13O.bdf",
+          "hash": "16006115490280983799"
+        },
+        {
+          "file": "assets/fonts/9x15.bdf",
+          "hash": "13046466579826410683"
+        },
+        {
+          "file": "assets/fonts/9x15B.bdf",
+          "hash": "9596184147710538795"
+        },
+        {
+          "file": "assets/fonts/9x18.bdf",
+          "hash": "953725306171249901"
+        },
+        {
+          "file": "assets/fonts/9x18B.bdf",
+          "hash": "6770312125153761571"
+        },
+        {
+          "file": "assets/fonts/HaxorMedium-10.bdf",
+          "hash": "8415014858513415289"
+        },
+        {
+          "file": "assets/fonts/HaxorMedium-11.bdf",
+          "hash": "6556056320701294503"
+        },
+        {
+          "file": "assets/fonts/HaxorMedium-12.bdf",
+          "hash": "11762572356930401707"
+        },
+        {
+          "file": "assets/fonts/HaxorMedium-13.bdf",
+          "hash": "8758498491785704605"
+        },
+        {
+          "file": "assets/fonts/HaxorNarrow-15.bdf",
+          "hash": "6785705357830849117"
+        },
+        {
+          "file": "assets/fonts/HaxorNarrow-16.bdf",
+          "hash": "3604819697879484686"
+        },
+        {
+          "file": "assets/fonts/HaxorNarrow-17.bdf",
+          "hash": "4684032864695090983"
+        },
+        {
+          "file": "assets/fonts/PsevdoAzbukaMedium-12.bdf",
+          "hash": "2532016361678292205"
+        },
+        {
+          "file": "assets/fonts/clR6x12.bdf",
+          "hash": "7853783385483907569"
+        },
+        {
+          "file": "assets/fonts/creep.bdf",
+          "hash": "213932803138503827"
+        },
+        {
+          "file": "assets/fonts/helvR12.bdf",
+          "hash": "13660337532573547918"
+        },
+        {
+          "file": "assets/fonts/knxt.bdf",
+          "hash": "11771015134075084442"
+        },
+        {
+          "file": "assets/fonts/logisoso46.bdf",
+          "hash": "2120236259462017775"
+        },
+        {
+          "file": "assets/fonts/peep-10x20.bdf",
+          "hash": "14181923119498884822"
+        },
+        {
+          "file": "assets/fonts/scientifica-11.bdf",
+          "hash": "8544601402231656968"
+        },
+        {
+          "file": "assets/fonts/scientificaBold-11.bdf",
+          "hash": "2546381939028824624"
+        },
+        {
+          "file": "assets/fonts/scientificaItalic-11.bdf",
+          "hash": "7323687142861766147"
+        },
+        {
+          "file": "assets/fonts/spleen-12x24.bdf",
+          "hash": "10649511254406219784"
+        },
+        {
+          "file": "assets/fonts/spleen-16x32.bdf",
+          "hash": "11221944912690023392"
+        },
+        {
+          "file": "assets/fonts/spleen-32x64.bdf",
+          "hash": "442418993547908941"
+        },
+        {
+          "file": "assets/fonts/spleen-5x8.bdf",
+          "hash": "9422238054659268182"
+        },
+        {
+          "file": "assets/fonts/spleen-8x16.bdf",
+          "hash": "3809431988611231359"
+        },
+        {
+          "file": "assets/fonts/tom-thumb.bdf",
+          "hash": "10269803976800430467"
+        },
+        {
+          "file": "babel.config.json",
+          "hash": "16839328274353480903"
+        },
+        {
+          "file": "jest.config.ts",
+          "hash": "2392540309333994723",
+          "deps": [
+            "npm:@nx/jest"
+          ]
+        },
+        {
+          "file": "jest.preset.js",
+          "hash": "14932722313705501266",
+          "deps": [
+            "npm:@nx/jest"
+          ]
+        },
+        {
+          "file": "nx.json",
+          "hash": "7655571232019752056"
+        },
+        {
+          "file": "package.json",
+          "hash": "13900173676559849913",
+          "deps": [
+            "npm:async",
+            "npm:bottleneck",
+            "npm:chalk",
+            "npm:chalk-template",
+            "npm:comment-json",
+            "npm:cron",
+            "npm:dayjs",
+            "npm:deep-equal",
+            "npm:eventemitter3",
+            "npm:execa",
+            "npm:ini",
+            "npm:jimp",
+            "npm:js-yaml",
+            "npm:minimist",
+            "npm:mqtt",
+            "npm:object-path",
+            "npm:pino",
+            "npm:pino-pretty",
+            "npm:redis",
+            "npm:rpi-led-matrix",
+            "npm:solar-calc",
+            "npm:tslib",
+            "npm:typescript",
+            "npm:uuid",
+            "npm:ws",
+            "npm:@nrwl/tao",
+            "npm:@nx/devkit",
+            "npm:@nx/eslint-plugin",
+            "npm:@nx/express",
+            "npm:@nx/jest",
+            "npm:@nx/js",
+            "npm:@nx/linter",
+            "npm:@nx/nest",
+            "npm:@nx/node",
+            "npm:@nx/webpack",
+            "npm:@nx/workspace",
+            "npm:@sinonjs/fake-timers",
+            "npm:@swc-node/register",
+            "npm:@swc/core",
+            "npm:@types/async",
+            "npm:@types/deep-equal",
+            "npm:@types/express",
+            "npm:@types/ini",
+            "npm:@types/jest",
+            "npm:@types/js-yaml",
+            "npm:@types/minimist",
+            "npm:@types/node",
+            "npm:@types/object-path",
+            "npm:@types/semver",
+            "npm:@types/sinonjs__fake-timers",
+            "npm:@types/uuid",
+            "npm:@types/ws",
+            "npm:@typescript-eslint/eslint-plugin",
+            "npm:@typescript-eslint/parser",
+            "npm:babel-jest",
+            "npm:babel-loader",
+            "npm:eslint",
+            "npm:eslint-config-prettier",
+            "npm:eslint-plugin-import",
+            "npm:eslint-plugin-jsonc",
+            "npm:eslint-plugin-no-unsanitized",
+            "npm:eslint-plugin-prettier",
+            "npm:eslint-plugin-security",
+            "npm:eslint-plugin-simple-import-sort",
+            "npm:eslint-plugin-sonarjs",
+            "npm:eslint-plugin-sort-keys-fix",
+            "npm:eslint-plugin-spellcheck",
+            "npm:eslint-plugin-unicorn",
+            "npm:figlet-cli",
+            "npm:jest",
+            "npm:jest-environment-node",
+            "npm:nx",
+            "npm:nx-cloud",
+            "npm:prettier",
+            "npm:terminalizer",
+            "npm:terser",
+            "npm:ts-jest",
+            "npm:ts-node",
+            "npm:ts-toolbelt",
+            "npm:type-fest",
+            "npm:verdaccio",
+            "npm:webpack",
+            "npm:webpack-dev-server",
+            "npm:webpack-merge",
+            "npm:webpack-node-externals",
+            "npm:yarn"
+          ]
+        },
+        {
+          "file": "project.json",
+          "hash": "11846199428995283463"
+        },
+        {
+          "file": "terminalizer.yml",
+          "hash": "5942796808142774197"
+        },
+        {
+          "file": "tools/scripts/publish.mjs",
+          "hash": "11547512533533062502",
+          "deps": [
+            "npm:child_process",
+            "npm:fs",
+            "npm:@nx/devkit"
+          ]
+        },
+        {
+          "file": "tsconfig.base.json",
+          "hash": "3275862895361882614"
+        },
+        {
+          "file": "yarn.lock",
+          "hash": "8046360072605141767"
+        },
+        {
+          "file": "zcc.code-workspace",
+          "hash": "12721546033594981212"
+        }
+      ],
+      "boilerplate": [
+        {
+          "file": "libs/boilerplate/.eslintrc.json",
+          "hash": "16896711999632553762"
+        },
+        {
+          "file": "libs/boilerplate/README.md",
+          "hash": "8809190815709564828"
+        },
+        {
+          "file": "libs/boilerplate/jest.config.ts",
+          "hash": "11059517674127331765"
+        },
+        {
+          "file": "libs/boilerplate/package.json",
+          "hash": "3114764545725312997"
+        },
+        {
+          "file": "libs/boilerplate/project.json",
+          "hash": "11599875827425455366"
+        },
+        {
+          "file": "libs/boilerplate/src/index.ts",
+          "hash": "8226267995681417439"
+        },
+        {
+          "file": "libs/boilerplate/src/lib/boilerplate.spec.ts",
+          "hash": "16515910278165700031"
+        },
+        {
+          "file": "libs/boilerplate/src/lib/boilerplate.ts",
+          "hash": "18226132807876140225"
+        },
+        {
+          "file": "libs/boilerplate/tsconfig.json",
+          "hash": "2840670722752396445"
+        },
+        {
+          "file": "libs/boilerplate/tsconfig.lib.json",
+          "hash": "8188472110264778699"
+        },
+        {
+          "file": "libs/boilerplate/tsconfig.spec.json",
+          "hash": "11550347367511341917"
+        }
+      ]
+    }
   }
 }

@@ -1,6 +1,6 @@
 import deepEqual from "deep-equal";
 
-import { EMPTY, EVEN, START } from "./utilities.mjs";
+import { EMPTY, EVEN, NONE, START } from "./utilities.mjs";
 
 type MaybeEmptyTypes =
   | string
@@ -13,11 +13,10 @@ type MaybeFunction = (
   ...parameters: unknown[]
 ) => unknown | void | Promise<unknown | void>;
 
-// TODO: declaration merging to allow other libs to create definitions here
 /**
  * type testing and basic conversion tools
  */
-export class DigitalAlchemyIs {
+export class IS_Definition {
   public array(test: unknown): test is Array<unknown> {
     return Array.isArray(test);
   }
@@ -43,9 +42,6 @@ export class DigitalAlchemyIs {
     return true;
   }
 
-  /**
-   * Wrapper for `deep-equal`
-   */
   public equal(a: unknown, b: unknown): boolean {
     return deepEqual(a, b);
   }
@@ -61,8 +57,7 @@ export class DigitalAlchemyIs {
   public hash(text: string): string {
     let hash = START;
     for (let i = START; i < text.length; i++) {
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-      hash = (hash << 5) - hash + text.codePointAt(i);
+      hash = (hash << 5) - hash + (text.codePointAt(i) || NONE)
       hash = Math.trunc(hash);
     }
     return hash.toString();
@@ -97,4 +92,5 @@ export class DigitalAlchemyIs {
     return out.filter((item, index, array) => array.indexOf(item) === index);
   }
 }
-export const is = new DigitalAlchemyIs();
+
+export const is = new IS_Definition();

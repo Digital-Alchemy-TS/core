@@ -91,26 +91,155 @@
     "yarn": "^1.22.21"
   },
   "pathMappings": {
-    "@zcc/automation-logic": [
-      "libs/automation-logic/src/index.ts"
-    ],
     "@zcc/boilerplate": [
-      "libs/boilerplate/src/index.ts"
-    ],
-    "@zcc/gotify": [
-      "libs/gotify/src/index.ts"
-    ],
-    "@zcc/home-assistant": [
-      "libs/home-assistant/src/index.ts"
+      "libs/boilerplate/src/index.mts"
     ],
     "@zcc/utilities": [
-      "libs/utilities/src/index.ts"
+      "libs/utilities/src/index.mts"
     ]
   },
   "nxJsonPlugins": [],
   "fileMap": {
     "nonProjectFiles": [],
     "projectFileMap": {
+      "automation-logic": [
+        {
+          "file": "libs/automation-logic/.eslintrc.json",
+          "hash": "16896711999632553762"
+        },
+        {
+          "file": "libs/automation-logic/README.md",
+          "hash": "5645855834549608646"
+        },
+        {
+          "file": "libs/automation-logic/jest.config.ts",
+          "hash": "13912043838490130137"
+        },
+        {
+          "file": "libs/automation-logic/package.json",
+          "hash": "17829459673593985886"
+        },
+        {
+          "file": "libs/automation-logic/project.json",
+          "hash": "12001112854956641022"
+        },
+        {
+          "file": "libs/automation-logic/src/index.ts",
+          "hash": "15082249651576228940"
+        },
+        {
+          "file": "libs/automation-logic/src/lib/automation-logic.spec.ts",
+          "hash": "13363286002945049298"
+        },
+        {
+          "file": "libs/automation-logic/src/lib/automation-logic.ts",
+          "hash": "11225274289756874899"
+        },
+        {
+          "file": "libs/automation-logic/tsconfig.json",
+          "hash": "2840670722752396445"
+        },
+        {
+          "file": "libs/automation-logic/tsconfig.lib.json",
+          "hash": "8188472110264778699"
+        },
+        {
+          "file": "libs/automation-logic/tsconfig.spec.json",
+          "hash": "11550347367511341917"
+        }
+      ],
+      "gotify": [
+        {
+          "file": "libs/gotify/.eslintrc.json",
+          "hash": "16896711999632553762"
+        },
+        {
+          "file": "libs/gotify/README.md",
+          "hash": "10134645979685645805"
+        },
+        {
+          "file": "libs/gotify/jest.config.ts",
+          "hash": "5868660895695041262"
+        },
+        {
+          "file": "libs/gotify/package.json",
+          "hash": "5094107032593193990"
+        },
+        {
+          "file": "libs/gotify/project.json",
+          "hash": "9482190423004740986"
+        },
+        {
+          "file": "libs/gotify/src/index.ts",
+          "hash": "10043173023920820230"
+        },
+        {
+          "file": "libs/gotify/src/lib/gotify.spec.ts",
+          "hash": "13391635208118843922"
+        },
+        {
+          "file": "libs/gotify/src/lib/gotify.ts",
+          "hash": "10105844458790247472"
+        },
+        {
+          "file": "libs/gotify/tsconfig.json",
+          "hash": "2840670722752396445"
+        },
+        {
+          "file": "libs/gotify/tsconfig.lib.json",
+          "hash": "8188472110264778699"
+        },
+        {
+          "file": "libs/gotify/tsconfig.spec.json",
+          "hash": "11550347367511341917"
+        }
+      ],
+      "home-assistant": [
+        {
+          "file": "libs/home-assistant/.eslintrc.json",
+          "hash": "16896711999632553762"
+        },
+        {
+          "file": "libs/home-assistant/README.md",
+          "hash": "4552292393911983710"
+        },
+        {
+          "file": "libs/home-assistant/jest.config.ts",
+          "hash": "8080155749221328419"
+        },
+        {
+          "file": "libs/home-assistant/package.json",
+          "hash": "14075303651838427630"
+        },
+        {
+          "file": "libs/home-assistant/project.json",
+          "hash": "7058668354457479756"
+        },
+        {
+          "file": "libs/home-assistant/src/index.ts",
+          "hash": "6053693069510275390"
+        },
+        {
+          "file": "libs/home-assistant/src/lib/home-assistant.spec.ts",
+          "hash": "3440299171479997494"
+        },
+        {
+          "file": "libs/home-assistant/src/lib/home-assistant.ts",
+          "hash": "16898228833465931085"
+        },
+        {
+          "file": "libs/home-assistant/tsconfig.json",
+          "hash": "2840670722752396445"
+        },
+        {
+          "file": "libs/home-assistant/tsconfig.lib.json",
+          "hash": "8188472110264778699"
+        },
+        {
+          "file": "libs/home-assistant/tsconfig.spec.json",
+          "hash": "11550347367511341917"
+        }
+      ],
       "zcc": [
         {
           "file": ".editorconfig",
@@ -122,7 +251,7 @@
         },
         {
           "file": ".eslintrc.json",
-          "hash": "18315524891129148814"
+          "hash": "5144910639224578298"
         },
         {
           "file": ".gitignore",
@@ -466,7 +595,7 @@
         },
         {
           "file": "tsconfig.base.json",
-          "hash": "3275862895361882614"
+          "hash": "382638741084546314"
         },
         {
           "file": "yarn.lock",
@@ -474,99 +603,7 @@
         },
         {
           "file": "zcc.code-workspace",
-          "hash": "12721546033594981212"
-        }
-      ],
-      "gotify": [
-        {
-          "file": "libs/gotify/.eslintrc.json",
-          "hash": "16896711999632553762"
-        },
-        {
-          "file": "libs/gotify/README.md",
-          "hash": "10134645979685645805"
-        },
-        {
-          "file": "libs/gotify/jest.config.ts",
-          "hash": "5868660895695041262"
-        },
-        {
-          "file": "libs/gotify/package.json",
-          "hash": "5094107032593193990"
-        },
-        {
-          "file": "libs/gotify/project.json",
-          "hash": "9482190423004740986"
-        },
-        {
-          "file": "libs/gotify/src/index.ts",
-          "hash": "10043173023920820230"
-        },
-        {
-          "file": "libs/gotify/src/lib/gotify.spec.ts",
-          "hash": "13391635208118843922"
-        },
-        {
-          "file": "libs/gotify/src/lib/gotify.ts",
-          "hash": "10105844458790247472"
-        },
-        {
-          "file": "libs/gotify/tsconfig.json",
-          "hash": "2840670722752396445"
-        },
-        {
-          "file": "libs/gotify/tsconfig.lib.json",
-          "hash": "8188472110264778699"
-        },
-        {
-          "file": "libs/gotify/tsconfig.spec.json",
-          "hash": "11550347367511341917"
-        }
-      ],
-      "utilities": [
-        {
-          "file": "libs/utilities/.eslintrc.json",
-          "hash": "16896711999632553762"
-        },
-        {
-          "file": "libs/utilities/README.md",
-          "hash": "12180644420304719490"
-        },
-        {
-          "file": "libs/utilities/jest.config.ts",
-          "hash": "6497815745306954928"
-        },
-        {
-          "file": "libs/utilities/package.json",
-          "hash": "869579070794857998"
-        },
-        {
-          "file": "libs/utilities/project.json",
-          "hash": "7342664639873147967"
-        },
-        {
-          "file": "libs/utilities/src/index.ts",
-          "hash": "14963945545127841183"
-        },
-        {
-          "file": "libs/utilities/src/lib/utilities.spec.ts",
-          "hash": "976007581519660753"
-        },
-        {
-          "file": "libs/utilities/src/lib/utilities.ts",
-          "hash": "16573603417880273389"
-        },
-        {
-          "file": "libs/utilities/tsconfig.json",
-          "hash": "2840670722752396445"
-        },
-        {
-          "file": "libs/utilities/tsconfig.lib.json",
-          "hash": "8188472110264778699"
-        },
-        {
-          "file": "libs/utilities/tsconfig.spec.json",
-          "hash": "11550347367511341917"
+          "hash": "12763462116057761624"
         }
       ],
       "boilerplate": [
@@ -591,120 +628,103 @@
           "hash": "11599875827425455366"
         },
         {
-          "file": "libs/boilerplate/src/index.ts",
-          "hash": "8226267995681417439"
+          "file": "libs/boilerplate/src/configuration.mts",
+          "hash": "3244421341483603138"
         },
         {
-          "file": "libs/boilerplate/src/lib/boilerplate.spec.ts",
-          "hash": "16515910278165700031"
+          "file": "libs/boilerplate/src/index.mts",
+          "hash": "13371225839372706642"
         },
         {
-          "file": "libs/boilerplate/src/lib/boilerplate.ts",
-          "hash": "18226132807876140225"
+          "file": "libs/boilerplate/src/module.mts",
+          "hash": "10302099051385313471",
+          "deps": [
+            "utilities"
+          ]
+        },
+        {
+          "file": "libs/boilerplate/src/workflow.mts",
+          "hash": "13300989537462775723"
         },
         {
           "file": "libs/boilerplate/tsconfig.json",
-          "hash": "2840670722752396445"
+          "hash": "14180030952489663543"
         },
         {
           "file": "libs/boilerplate/tsconfig.lib.json",
-          "hash": "8188472110264778699"
+          "hash": "11719242378261471819"
         },
         {
           "file": "libs/boilerplate/tsconfig.spec.json",
-          "hash": "11550347367511341917"
+          "hash": "14045722281030869964"
         }
       ],
-      "automation-logic": [
+      "utilities": [
         {
-          "file": "libs/automation-logic/.eslintrc.json",
+          "file": "libs/utilities/.eslintrc.json",
           "hash": "16896711999632553762"
         },
         {
-          "file": "libs/automation-logic/README.md",
-          "hash": "5645855834549608646"
+          "file": "libs/utilities/README.md",
+          "hash": "12180644420304719490"
         },
         {
-          "file": "libs/automation-logic/jest.config.ts",
-          "hash": "13912043838490130137"
+          "file": "libs/utilities/jest.config.ts",
+          "hash": "6497815745306954928"
         },
         {
-          "file": "libs/automation-logic/package.json",
-          "hash": "17829459673593985886"
+          "file": "libs/utilities/package.json",
+          "hash": "18234166619663640058",
+          "deps": [
+            "npm:tslib"
+          ]
         },
         {
-          "file": "libs/automation-logic/project.json",
-          "hash": "12001112854956641022"
+          "file": "libs/utilities/project.json",
+          "hash": "5033379353452561098"
         },
         {
-          "file": "libs/automation-logic/src/index.ts",
-          "hash": "15082249651576228940"
+          "file": "libs/utilities/src/async.mts",
+          "hash": "5644182955091082698"
         },
         {
-          "file": "libs/automation-logic/src/lib/automation-logic.spec.ts",
-          "hash": "13363286002945049298"
+          "file": "libs/utilities/src/cron.mts",
+          "hash": "17519973162823119774"
         },
         {
-          "file": "libs/automation-logic/src/lib/automation-logic.ts",
-          "hash": "11225274289756874899"
+          "file": "libs/utilities/src/extend.mts",
+          "hash": "5459197610030393634"
         },
         {
-          "file": "libs/automation-logic/tsconfig.json",
-          "hash": "2840670722752396445"
+          "file": "libs/utilities/src/index.mts",
+          "hash": "15516869114999453757"
         },
         {
-          "file": "libs/automation-logic/tsconfig.lib.json",
-          "hash": "8188472110264778699"
+          "file": "libs/utilities/src/is.mts",
+          "hash": "11410698986880395857",
+          "deps": [
+            "npm:deep-equal"
+          ]
         },
         {
-          "file": "libs/automation-logic/tsconfig.spec.json",
-          "hash": "11550347367511341917"
-        }
-      ],
-      "home-assistant": [
-        {
-          "file": "libs/home-assistant/.eslintrc.json",
-          "hash": "16896711999632553762"
+          "file": "libs/utilities/src/utilities.mts",
+          "hash": "10928036867314853921"
         },
         {
-          "file": "libs/home-assistant/README.md",
-          "hash": "4552292393911983710"
+          "file": "libs/utilities/src/zcc.mts",
+          "hash": "6884684124976509345"
         },
         {
-          "file": "libs/home-assistant/jest.config.ts",
-          "hash": "8080155749221328419"
+          "file": "libs/utilities/tsconfig.json",
+          "hash": "12834038490315927699"
         },
         {
-          "file": "libs/home-assistant/package.json",
-          "hash": "14075303651838427630"
+          "file": "libs/utilities/tsconfig.lib.json",
+          "hash": "14863337448236954576"
         },
         {
-          "file": "libs/home-assistant/project.json",
-          "hash": "7058668354457479756"
-        },
-        {
-          "file": "libs/home-assistant/src/index.ts",
-          "hash": "6053693069510275390"
-        },
-        {
-          "file": "libs/home-assistant/src/lib/home-assistant.spec.ts",
-          "hash": "3440299171479997494"
-        },
-        {
-          "file": "libs/home-assistant/src/lib/home-assistant.ts",
-          "hash": "16898228833465931085"
-        },
-        {
-          "file": "libs/home-assistant/tsconfig.json",
-          "hash": "2840670722752396445"
-        },
-        {
-          "file": "libs/home-assistant/tsconfig.lib.json",
-          "hash": "8188472110264778699"
-        },
-        {
-          "file": "libs/home-assistant/tsconfig.spec.json",
-          "hash": "11550347367511341917"
+          "file": "libs/utilities/tsconfig.spec.json",
+          "hash": "14045722281030869964"
         }
       ]
     }

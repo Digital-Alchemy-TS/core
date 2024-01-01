@@ -1,11 +1,10 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "module": "commonjs",
     "outDir": "../../dist/out-tsc",
     "declaration": true,
     "types": ["node"]
   },
   "exclude": ["jest.config.ts", "src/**/*.spec.ts", "src/**/*.test.ts"],
-  "include": ["src/**/*.ts", "src/async.mts", "src/cron.mts", "src/is.mts", "src/index.mts", "src/extend.mts", "src/utilities.mts"]
+  "include": ["src/**/*.mts"]
 }

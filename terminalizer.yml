@@ -1,0 +1,108 @@
+# Specify a command to be executed
+# like `/bin/bash -l`, `ls`, or any other commands
+# the default is bash for Linux
+# or powershell.exe for Windows
+command: zsh
+
+# Specify the current working directory path
+# the default is the current working directory path
+cwd: null
+
+# Export additional ENV variables
+env:
+  recording: true
+
+# Explicitly set the number of columns
+# or use `auto` to take the current
+# number of columns of your shell
+cols: 150
+
+# Explicitly set the number of rows
+# or use `auto` to take the current
+# number of rows of your shell
+rows: 75
+
+# Amount of times to repeat GIF
+# If value is -1, play once
+# If value is 0, loop indefinitely
+# If value is a positive number, loop n times
+repeat: 0
+
+# Quality
+# 1 - 100
+quality: 100
+
+# Delay between frames in ms
+# If the value is `auto` use the actual recording delays
+frameDelay: auto
+
+# Maximum delay between frames in ms
+# Ignored if the `frameDelay` isn't set to `auto`
+# Set to `auto` to prevent limiting the max idle time
+maxIdleTime: 500
+
+# The surrounding frame box
+# The `type` can be null, window, floating, or solid`
+# To hide the title use the value null
+# Don't forget to add a backgroundColor style with a null as type
+frameBox:
+  type: null
+  title: null
+  style:
+    border: 0px black solid
+    backgroundColor: "#202223"
+    boxShadow: none
+    margin: 0px
+
+# Add a watermark image to the rendered gif
+# You need to specify an absolute path for
+# the image on your machine or a URL, and you can also
+# add your own CSS styles
+watermark:
+  imagePath: null
+  style:
+    position: absolute
+    right: 15px
+    bottom: 15px
+    width: 100px
+    opacity: 0.9
+
+# Cursor style can be one of
+# `block`, `underline`, or `bar`
+cursorStyle: block
+
+# Font family
+# You can use any font that is installed on your machine
+# in CSS-like syntax
+fontFamily: "Monaco, Lucida Console, Ubuntu Mono, Monospace"
+
+# The size of the font
+fontSize: 12
+
+# The height of lines
+lineHeight: 1
+
+# The spacing between letters
+letterSpacing: 0
+
+# Theme
+theme:
+  background: "#202223"
+  foreground: "#fcfcfc"
+  cursor: "#c7c7c7"
+  black: "#232627"
+  red: "#ed1515"
+  green: "#11d116"
+  yellow: "#f67400"
+  blue: "#1d99f3"
+  magenta: "#9b59b6"
+  cyan: "#1abc9c"
+  white: "#fcfcfc"
+  brightBlack: "#7f8c8d"
+  brightRed: "#c0392b"
+  brightGreen: "#1cdc9a"
+  brightYellow: "#fdbc4b"
+  brightBlue: "#3daee9"
+  brightMagenta: "#8e44ad"
+  brightCyan: "#16a085"
+  brightWhite: "#ffffff"

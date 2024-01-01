@@ -1,0 +1,15 @@
+{
+  "colorize": true,
+  "crlf": false,
+  "errorLikeObjectKeys": ["err", "error"],
+  "errorProps": "",
+  "levelFirst": false,
+  "messageKey": "msg",
+  "levelKey": "level",
+  "timestampKey": "time",
+  "translateTime": "SYS:ddd hh:MM:ss.l",
+  "ignore": "pid,hostname",
+  "hideObject": false,
+  "singleLine": false,
+  "customPrettifiers": {}
+}

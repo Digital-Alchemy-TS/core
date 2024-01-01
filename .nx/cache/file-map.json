@@ -1,0 +1,135 @@
+{
+  "version": "6.0",
+  "nxVersion": "17.2.8",
+  "deps": {
+    "async": "^3.2.5",
+    "bottleneck": "^2.19.5",
+    "chalk": "^5.3.0",
+    "chalk-template": "^1.1.0",
+    "comment-json": "^4.2.3",
+    "cron": "^3.1.6",
+    "dayjs": "^1.11.10",
+    "deep-equal": "^2.2.3",
+    "eventemitter3": "^5.0.1",
+    "execa": "^8.0.1",
+    "ini": "^4.1.1",
+    "jimp": "^0.22.10",
+    "js-yaml": "^4.1.0",
+    "minimist": "^1.2.8",
+    "mqtt": "^5.3.4",
+    "object-path": "^0.11.8",
+    "pino": "^8.17.2",
+    "pino-pretty": "^10.3.1",
+    "redis": "^4.6.12",
+    "rpi-led-matrix": "^1.14.0",
+    "solar-calc": "^1.1.0",
+    "tslib": "^2.6.2",
+    "typescript": "^5.3.3",
+    "uuid": "^9.0.1",
+    "ws": "^8.16.0"
+  },
+  "pathMappings": {
+    "@zcc/automation-logic": [
+      "libs/automation-logic/src/index.ts"
+    ],
+    "@zcc/boilerplate": [
+      "libs/boilerplate/src/index.ts"
+    ],
+    "@zcc/gotify": [
+      "libs/gotify/src/index.ts"
+    ],
+    "@zcc/home-assistant": [
+      "libs/home-assistant/src/index.ts"
+    ],
+    "@zcc/mqtt": [
+      "libs/mqtt/src/index.ts"
+    ],
+    "@zcc/pi-matrix-client": [
+      "libs/pi-matrix-client/src/index.ts"
+    ],
+    "@zcc/render-utils": [
+      "libs/render-utils/src/index.ts"
+    ],
+    "@zcc/rgb-matrix": [
+      "libs/rgb-matrix/src/index.ts"
+    ],
+    "@zcc/server": [
+      "libs/server/src/index.ts"
+    ],
+    "@zcc/testing": [
+      "libs/testing/src/index.ts"
+    ],
+    "@zcc/tty": [
+      "libs/tty/src/index.ts"
+    ],
+    "@zcc/utilities": [
+      "libs/utilities/src/index.ts"
+    ]
+  },
+  "nxJsonPlugins": [],
+  "fileMap": {
+    "projectFileMap": {},
+    "nonProjectFiles": [
+      {
+        "file": ".editorconfig",
+        "hash": "5443105041930014821"
+      },
+      {
+        "file": ".eslintignore",
+        "hash": "10883702102399627279"
+      },
+      {
+        "file": ".eslintrc.json",
+        "hash": "15096849211903042329"
+      },
+      {
+        "file": ".gitignore",
+        "hash": "15451648304302368772"
+      },
+      {
+        "file": ".pino-prettyrc",
+        "hash": "15517926543315350516"
+      },
+      {
+        "file": ".prettierignore",
+        "hash": "8865097869854018350"
+      },
+      {
+        "file": ".prettierrc",
+        "hash": "3373839988668599456"
+      },
+      {
+        "file": "LICENSE",
+        "hash": "9760630930396115328"
+      },
+      {
+        "file": "babel.config.json",
+        "hash": "16839328274353480903"
+      },
+      {
+        "file": "nx.json",
+        "hash": "14633882986001323383"
+      },
+      {
+        "file": "package.json",
+        "hash": "7352125204205022912"
+      },
+      {
+        "file": "terminalizer.yml",
+        "hash": "5942796808142774197"
+      },
+      {
+        "file": "tsconfig.base.json",
+        "hash": "10678827166029866948"
+      },
+      {
+        "file": "yarn.lock",
+        "hash": "12325884003136014196"
+      },
+      {
+        "file": "zcc.code-workspace",
+        "hash": "3446025831095705545"
+      }
+    ]
+  }
+}

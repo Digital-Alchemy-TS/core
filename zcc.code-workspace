@@ -1,0 +1,377 @@
+{
+  "folders": [{ "path": "." }],
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Attach Build Pipeline",
+        "port": 33340,
+        "request": "attach",
+        "skipFiles": ["<node_internals>/**"],
+        "type": "node"
+      },
+      {
+        "name": "Attach Config Builder",
+        "port": 33341,
+        "request": "attach",
+        "skipFiles": ["<node_internals>/**"],
+        "type": "node"
+      },
+      {
+        "name": "Attach Entity Creation",
+        "port": 33342,
+        "request": "attach",
+        "skipFiles": ["<node_internals>/**"],
+        "type": "node"
+      },
+      {
+        "name": "Attach Game of Life",
+        "port": 33343,
+        "request": "attach",
+        "skipFiles": ["<node_internals>/**"],
+        "type": "node"
+      },
+      {
+        "name": "Attach Hass CLI",
+        "port": 33344,
+        "request": "attach",
+        "skipFiles": ["<node_internals>/**"],
+        "type": "node"
+      },
+      {
+        "name": "Attach Hass Type Generate",
+        "port": 33345,
+        "request": "attach",
+        "skipFiles": ["<node_internals>/**"],
+        "type": "node"
+      },
+      {
+        "name": "Attach Log Formatter",
+        "port": 33346,
+        "request": "attach",
+        "skipFiles": ["<node_internals>/**"],
+        "type": "node"
+      },
+      {
+        "name": "Attach Notification Tester",
+        "port": 33347,
+        "request": "attach",
+        "skipFiles": ["<node_internals>/**"],
+        "type": "node"
+      },
+      {
+        "name": "Attach Pi Matrix",
+        "port": 33348,
+        "request": "attach",
+        "skipFiles": ["<node_internals>/**"],
+        "type": "node"
+      },
+      {
+        "name": "Attach Sampler App",
+        "port": 33349,
+        "request": "attach",
+        "skipFiles": ["<node_internals>/**"],
+        "type": "node"
+      },
+      {
+        "name": "Attach Scene Manager",
+        "port": 33350,
+        "request": "attach",
+        "skipFiles": ["<node_internals>/**"],
+        "type": "node"
+      },
+    ]
+  },
+  "extensions": {
+    "recommendations": [
+      // * editor cosmetic
+      // ~ text highlighting / formatting
+      "aaron-bond.better-comments",
+      // ~ material icon theme
+      "pkief.material-icon-theme",
+      // ~ nx console (optional)
+      "nrwl.angular-console",
+
+      // * linting
+      // ~ eslint
+      "dbaeumer.vscode-eslint",
+      // ~ dockerfile linting
+      "exiasr.hadolint",
+      // ~ shell file linting
+      "timonwong.shellcheck",
+
+      // * formatting
+      // ~ code formatting
+      "esbenp.prettier-vscode",
+      // ~ import sorting
+      "nsoult.typescript-imports-sort",
+
+    ],
+    "unwantedRecommendations": []
+  },
+  "settings": {
+    "material-icon-theme.files.associations": {
+      // * Deliberately included config files
+      ".auto-config-testrc": "drone",
+      ".entity-creationrc": "drone",
+      ".scene-managerrc": "drone",
+
+      // * TSConfig
+      "tsconfig.app.json": "nodejs_alt",
+      "tsconfig.base.json": "nodejs_alt",
+      "tsconfig.build.json": "nodejs_alt",
+      "tsconfig.doc.json": "nodejs_alt",
+      "tsconfig.json": "nodejs_alt",
+      "tsconfig.lib.json": "nodejs_alt",
+      "tsconfig.spec.json": "nodejs_alt",
+
+      // * Workspace root
+      ".nxignore": "nrwl",
+      ".pino-prettyrc": "prettier",
+      "*.code-workspace": "contributing",
+      "jest.preset.js": "jest",
+      "license": "prolog",
+
+      // * Project Visbility
+      "*.docker-compose.yaml": "docker",
+      "*.entity.ts": "bithound",
+      "*.environment.ts": "dune",
+      "*.interceptor.ts": "nest-pipe",
+      "*.main.ts": "exe",
+      "*.strategy.ts": "nest-resolver",
+      "config.ts": "makefile",
+      "environment.ts": "dune",
+      "index.ts": "stitches",
+      "main.ts": "exe",
+      "package.json": "npm",
+      "project.json": "nrwl",
+      "workspace.json": "nrwl",
+
+      // * Compiled apps
+      "bin/pi-matrix": "image",
+      "bin/config-builder": "dhall",
+      "bin/hass-cli": "exe",
+      "bin/log-formatter": "log",
+      "bin/build-pipeline": "pipeline",
+      "bin/hass-type-generate": "typescript-def",
+    },
+    "material-icon-theme.folders.associations": {
+      // * Projects
+      "automation-logic": "tasks",
+      "boilerplate": "core",
+      "build-pipeline": "pipe",
+      "config-builder": "template",
+      "entity-creation": "sublime",
+      "game-of-life": "animation",
+      "gotify": "messages",
+      "hass-cli": "debug",
+      "hass-type-generate": "batch",
+      "home-assistant": "middleware",
+      "log-formatter": "flow",
+      "mqtt": "connection",
+      "notification-tester": "command",
+      "pi-matrix-client": "bower",
+      "pi-matrix": "plastic",
+      "render-utils": "shader",
+      "rgb-matrix": "intellij",
+      "sampler-app": "content",
+      "scene-manager": "java",
+      "tty": "command",
+
+      // * Root
+      ".config": "config",
+      ".VSCodeCounter": "batch",
+
+      // * Project internal
+      "entrypoints": "kubernetes",
+      "editors": "svelte",
+      "filters": "other",
+      "interceptors": "hook",
+      "modules": "redux-reducer",
+      "recordings": "animation",
+
+      // * Misc
+      "push": "interface",
+      "explorers": "context"
+    },
+    "explorer.fileNesting.patterns": {
+      "project.json": "jest.config.js, .babelrc",
+      "package.json": ".npmrc, yarn.lock",
+      ".eslintrc.json": ".editorconfig, jest.preset.js, jest.config.ts, babel.config.json, .prettierrc, .prettierignore, .pino-prettyrc, .gitignore, .eslintignore, .dockerignore",
+      "zcc.code-workspace": "LICENSE, nx.json, .auto-config-testrc, .entity-creationrc, .scene-managerrc, terminalizer.yml"
+    },
+    "files.watcherExclude": {
+      "**/.git/objects/**": true,
+      "**/.git/subtree-cache/**": true,
+      "**/node_modules/*/**": true
+    },
+    "search.exclude": {
+      "**/node_modules": true,
+      "**/bower_components": true,
+      "**/dist": true,
+      "**/dist/config": true,
+      "**/*.code-search": true,
+      "**/tools": true
+    },
+    // ! Config files
+    "files.associations": {
+      ".auto-config-testrc": "ini",
+      ".entity-creationrc": "ini",
+      ".pino-prettyrc": "json",
+      ".scene-managerrc": "ini",
+      "build-pipeline": "ini",
+      "config-builder": "ini",
+      "entity-creation": "ini",
+      "game-of-life": "ini",
+      "hass-cli": "ini",
+      "hass-type-generate": "ini",
+      "log-formatter": "ini",
+      "notification-tester": "ini",
+      "pi-matrix": "ini",
+      "sampler-app": "ini",
+      "scene-manager": "ini"
+    },
+    "files.exclude": {
+      "**/.git": true,
+      "**/.svn": true,
+      "**/.hg": true,
+      "**/*vsix": true,
+      "**/CVS": true,
+      "**/.DS_Store": true
+    },
+    // ! <Decorative>
+    "better-comments.tags": [
+      // ! Important information
+      // * Block explanations
+      // ? Command explanation
+      // % Inline code type snippets
+      // - List A
+      // ~ List B
+      // TODO: Some example stuff
+      // # Block A
+      // ## Block B
+      // ### Block C
+      {
+        // Super important
+        "tag": "!",
+        "color": "#000",
+        "strikethrough": false,
+        "underline": true,
+        "backgroundColor": "#E01541",
+        "bold": true,
+        "italic": false
+      },
+      {
+        // Comment comment
+        "tag": ">",
+        "color": "#C25B78",
+        "strikethrough": false,
+        "underline": false,
+        "backgroundColor": "transparent",
+        "bold": false,
+        "italic": true
+      },
+      {
+        // Contextual explanation
+        "tag": "?",
+        "color": "#03C956",
+        "strikethrough": false,
+        "underline": false,
+        "backgroundColor": "transparent",
+        "bold": false,
+        "italic": true
+      },
+      {
+        // Block context
+        "tag": "*",
+        "color": "#057EF0",
+        "strikethrough": false,
+        "underline": true,
+        "backgroundColor": "transparent",
+        "bold": true,
+        "italic": false
+      },
+      {
+        // List A
+        "tag": "-",
+        "color": "#CC00C5",
+        "strikethrough": false,
+        "underline": false,
+        "backgroundColor": "transparent",
+        "bold": false,
+        "italic": false
+      },
+      {
+        // Terse reference snippets
+        "tag": "%",
+        "color": "#FF600A",
+        "strikethrough": false,
+        "underline": true,
+        "backgroundColor": "transparent",
+        "bold": false,
+        "italic": true
+      },
+      {
+        // List B (indent)
+        "tag": "~",
+        "color": "#E9BA20",
+        "strikethrough": false,
+        "underline": false,
+        "backgroundColor": "transparent",
+        "bold": false,
+        "italic": false
+      },
+      {
+        // Double commented (increase visibility)
+        "tag": "//",
+        "color": "#394648",
+        "strikethrough": true,
+        "underline": false,
+        "backgroundColor": "transparent",
+        "bold": false,
+        "italic": false
+      },
+      {
+        "tag": "todo",
+        "color": "#000",
+        "strikethrough": false,
+        "underline": false,
+        "backgroundColor": "#FF8C00",
+        "bold": false,
+        "italic": false
+      },
+      {
+        // High level block
+        "tag": "###",
+        "color": "#000",
+        "strikethrough": false,
+        "underline": false,
+        "backgroundColor": "#D36135",
+        "bold": true,
+        "italic": false
+      },
+      {
+        // High level block
+        "tag": "##",
+        "color": "#000",
+        "strikethrough": false,
+        "underline": false,
+        "backgroundColor": "#A24936",
+        "bold": true,
+        "italic": false
+      },
+      {
+        // High level block
+        "tag": "#",
+        "color": "#000",
+        "strikethrough": false,
+        "underline": false,
+        "backgroundColor": "#3E5641",
+        "bold": true,
+        "italic": false
+      }
+    ],
+    // ! </Decorative>
+    "typescript.tsdk": "node_modules/typescript/lib"
+  }
+}

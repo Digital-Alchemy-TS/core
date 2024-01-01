@@ -1,4 +1,9 @@
 {
   "name": "@zcc/boilerplate",
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "type": "module",
+  "dependencies": {
+    "tslib": "^2.6.2",
+    "@zcc/utilities": "*"
+  }
 }

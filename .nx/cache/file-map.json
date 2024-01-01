@@ -102,50 +102,72 @@
   "fileMap": {
     "nonProjectFiles": [],
     "projectFileMap": {
-      "automation-logic": [
+      "utilities": [
         {
-          "file": "libs/automation-logic/.eslintrc.json",
+          "file": "libs/utilities/.eslintrc.json",
           "hash": "16896711999632553762"
         },
         {
-          "file": "libs/automation-logic/README.md",
-          "hash": "5645855834549608646"
+          "file": "libs/utilities/README.md",
+          "hash": "12180644420304719490"
         },
         {
-          "file": "libs/automation-logic/jest.config.ts",
-          "hash": "13912043838490130137"
+          "file": "libs/utilities/jest.config.ts",
+          "hash": "6497815745306954928"
         },
         {
-          "file": "libs/automation-logic/package.json",
-          "hash": "17829459673593985886"
+          "file": "libs/utilities/package.json",
+          "hash": "18234166619663640058",
+          "deps": [
+            "npm:tslib"
+          ]
         },
         {
-          "file": "libs/automation-logic/project.json",
-          "hash": "12001112854956641022"
+          "file": "libs/utilities/project.json",
+          "hash": "5033379353452561098"
         },
         {
-          "file": "libs/automation-logic/src/index.ts",
-          "hash": "15082249651576228940"
+          "file": "libs/utilities/src/async.mts",
+          "hash": "5644182955091082698"
         },
         {
-          "file": "libs/automation-logic/src/lib/automation-logic.spec.ts",
-          "hash": "13363286002945049298"
+          "file": "libs/utilities/src/cron.mts",
+          "hash": "17519973162823119774"
         },
         {
-          "file": "libs/automation-logic/src/lib/automation-logic.ts",
-          "hash": "11225274289756874899"
+          "file": "libs/utilities/src/extend.mts",
+          "hash": "5459197610030393634"
         },
         {
-          "file": "libs/automation-logic/tsconfig.json",
-          "hash": "2840670722752396445"
+          "file": "libs/utilities/src/index.mts",
+          "hash": "15516869114999453757"
         },
         {
-          "file": "libs/automation-logic/tsconfig.lib.json",
-          "hash": "8188472110264778699"
+          "file": "libs/utilities/src/is.mts",
+          "hash": "11410698986880395857",
+          "deps": [
+            "npm:deep-equal"
+          ]
         },
         {
-          "file": "libs/automation-logic/tsconfig.spec.json",
-          "hash": "11550347367511341917"
+          "file": "libs/utilities/src/utilities.mts",
+          "hash": "10928036867314853921"
+        },
+        {
+          "file": "libs/utilities/src/zcc.mts",
+          "hash": "6884684124976509345"
+        },
+        {
+          "file": "libs/utilities/tsconfig.json",
+          "hash": "12834038490315927699"
+        },
+        {
+          "file": "libs/utilities/tsconfig.lib.json",
+          "hash": "2159314806135682562"
+        },
+        {
+          "file": "libs/utilities/tsconfig.spec.json",
+          "hash": "14045722281030869964"
         }
       ],
       "gotify": [
@@ -194,50 +216,57 @@
           "hash": "11550347367511341917"
         }
       ],
-      "home-assistant": [
+      "boilerplate": [
         {
-          "file": "libs/home-assistant/.eslintrc.json",
+          "file": "libs/boilerplate/.eslintrc.json",
           "hash": "16896711999632553762"
         },
         {
-          "file": "libs/home-assistant/README.md",
-          "hash": "4552292393911983710"
+          "file": "libs/boilerplate/README.md",
+          "hash": "8809190815709564828"
         },
         {
-          "file": "libs/home-assistant/jest.config.ts",
-          "hash": "8080155749221328419"
+          "file": "libs/boilerplate/jest.config.ts",
+          "hash": "11059517674127331765"
         },
         {
-          "file": "libs/home-assistant/package.json",
-          "hash": "14075303651838427630"
+          "file": "libs/boilerplate/package.json",
+          "hash": "3114764545725312997"
         },
         {
-          "file": "libs/home-assistant/project.json",
-          "hash": "7058668354457479756"
+          "file": "libs/boilerplate/project.json",
+          "hash": "11599875827425455366"
         },
         {
-          "file": "libs/home-assistant/src/index.ts",
-          "hash": "6053693069510275390"
+          "file": "libs/boilerplate/src/configuration.mts",
+          "hash": "3244421341483603138"
         },
         {
-          "file": "libs/home-assistant/src/lib/home-assistant.spec.ts",
-          "hash": "3440299171479997494"
+          "file": "libs/boilerplate/src/index.mts",
+          "hash": "13371225839372706642"
         },
         {
-          "file": "libs/home-assistant/src/lib/home-assistant.ts",
-          "hash": "16898228833465931085"
+          "file": "libs/boilerplate/src/module.mts",
+          "hash": "10302099051385313471",
+          "deps": [
+            "utilities"
+          ]
         },
         {
-          "file": "libs/home-assistant/tsconfig.json",
-          "hash": "2840670722752396445"
+          "file": "libs/boilerplate/src/workflow.mts",
+          "hash": "13300989537462775723"
         },
         {
-          "file": "libs/home-assistant/tsconfig.lib.json",
-          "hash": "8188472110264778699"
+          "file": "libs/boilerplate/tsconfig.json",
+          "hash": "14180030952489663543"
         },
         {
-          "file": "libs/home-assistant/tsconfig.spec.json",
-          "hash": "11550347367511341917"
+          "file": "libs/boilerplate/tsconfig.lib.json",
+          "hash": "13413927530368424471"
+        },
+        {
+          "file": "libs/boilerplate/tsconfig.spec.json",
+          "hash": "14045722281030869964"
         }
       ],
       "zcc": [
@@ -606,125 +635,96 @@
           "hash": "12763462116057761624"
         }
       ],
-      "boilerplate": [
+      "automation-logic": [
         {
-          "file": "libs/boilerplate/.eslintrc.json",
+          "file": "libs/automation-logic/.eslintrc.json",
           "hash": "16896711999632553762"
         },
         {
-          "file": "libs/boilerplate/README.md",
-          "hash": "8809190815709564828"
+          "file": "libs/automation-logic/README.md",
+          "hash": "5645855834549608646"
         },
         {
-          "file": "libs/boilerplate/jest.config.ts",
-          "hash": "11059517674127331765"
+          "file": "libs/automation-logic/jest.config.ts",
+          "hash": "13912043838490130137"
         },
         {
-          "file": "libs/boilerplate/package.json",
-          "hash": "3114764545725312997"
+          "file": "libs/automation-logic/package.json",
+          "hash": "17829459673593985886"
         },
         {
-          "file": "libs/boilerplate/project.json",
-          "hash": "11599875827425455366"
+          "file": "libs/automation-logic/project.json",
+          "hash": "12001112854956641022"
         },
         {
-          "file": "libs/boilerplate/src/configuration.mts",
-          "hash": "3244421341483603138"
+          "file": "libs/automation-logic/src/index.ts",
+          "hash": "15082249651576228940"
         },
         {
-          "file": "libs/boilerplate/src/index.mts",
-          "hash": "13371225839372706642"
+          "file": "libs/automation-logic/src/lib/automation-logic.spec.ts",
+          "hash": "13363286002945049298"
         },
         {
-          "file": "libs/boilerplate/src/module.mts",
-          "hash": "10302099051385313471",
-          "deps": [
-            "utilities"
-          ]
+          "file": "libs/automation-logic/src/lib/automation-logic.ts",
+          "hash": "11225274289756874899"
         },
         {
-          "file": "libs/boilerplate/src/workflow.mts",
-          "hash": "13300989537462775723"
+          "file": "libs/automation-logic/tsconfig.json",
+          "hash": "2840670722752396445"
         },
         {
-          "file": "libs/boilerplate/tsconfig.json",
-          "hash": "14180030952489663543"
+          "file": "libs/automation-logic/tsconfig.lib.json",
+          "hash": "8188472110264778699"
         },
         {
-          "file": "libs/boilerplate/tsconfig.lib.json",
-          "hash": "11719242378261471819"
-        },
-        {
-          "file": "libs/boilerplate/tsconfig.spec.json",
-          "hash": "14045722281030869964"
+          "file": "libs/automation-logic/tsconfig.spec.json",
+          "hash": "11550347367511341917"
         }
       ],
-      "utilities": [
+      "home-assistant": [
         {
-          "file": "libs/utilities/.eslintrc.json",
+          "file": "libs/home-assistant/.eslintrc.json",
           "hash": "16896711999632553762"
         },
         {
-          "file": "libs/utilities/README.md",
-          "hash": "12180644420304719490"
+          "file": "libs/home-assistant/README.md",
+          "hash": "4552292393911983710"
         },
         {
-          "file": "libs/utilities/jest.config.ts",
-          "hash": "6497815745306954928"
+          "file": "libs/home-assistant/jest.config.ts",
+          "hash": "8080155749221328419"
         },
         {
-          "file": "libs/utilities/package.json",
-          "hash": "18234166619663640058",
-          "deps": [
-            "npm:tslib"
-          ]
+          "file": "libs/home-assistant/package.json",
+          "hash": "14075303651838427630"
         },
         {
-          "file": "libs/utilities/project.json",
-          "hash": "5033379353452561098"
+          "file": "libs/home-assistant/project.json",
+          "hash": "7058668354457479756"
         },
         {
-          "file": "libs/utilities/src/async.mts",
-          "hash": "5644182955091082698"
+          "file": "libs/home-assistant/src/index.ts",
+          "hash": "6053693069510275390"
         },
         {
-          "file": "libs/utilities/src/cron.mts",
-          "hash": "17519973162823119774"
+          "file": "libs/home-assistant/src/lib/home-assistant.spec.ts",
+          "hash": "3440299171479997494"
         },
         {
-          "file": "libs/utilities/src/extend.mts",
-          "hash": "5459197610030393634"
+          "file": "libs/home-assistant/src/lib/home-assistant.ts",
+          "hash": "16898228833465931085"
         },
         {
-          "file": "libs/utilities/src/index.mts",
-          "hash": "15516869114999453757"
+          "file": "libs/home-assistant/tsconfig.json",
+          "hash": "2840670722752396445"
         },
         {
-          "file": "libs/utilities/src/is.mts",
-          "hash": "11410698986880395857",
-          "deps": [
-            "npm:deep-equal"
-          ]
+          "file": "libs/home-assistant/tsconfig.lib.json",
+          "hash": "8188472110264778699"
         },
         {
-          "file": "libs/utilities/src/utilities.mts",
-          "hash": "10928036867314853921"
-        },
-        {
-          "file": "libs/utilities/src/zcc.mts",
-          "hash": "6884684124976509345"
-        },
-        {
-          "file": "libs/utilities/tsconfig.json",
-          "hash": "12834038490315927699"
-        },
-        {
-          "file": "libs/utilities/tsconfig.lib.json",
-          "hash": "14863337448236954576"
-        },
-        {
-          "file": "libs/utilities/tsconfig.spec.json",
-          "hash": "14045722281030869964"
+          "file": "libs/home-assistant/tsconfig.spec.json",
+          "hash": "11550347367511341917"
         }
       ]
     }

@@ -1,6 +1,8 @@
 {
   "root": true,
-  "ignorePatterns": ["**/*"],
+  "ignorePatterns": [
+    "**/*"
+  ],
   "plugins": [
     "@nx",
     "import",
@@ -14,7 +16,9 @@
   ],
   "overrides": [
     {
-      "files": ["*.ts", "*.tsx", "*.js", "*.jsx"],
+      "files": [
+        "*.mts"
+      ],
       "rules": {
         "@nx/enforce-module-boundaries": [
           "error",
@@ -24,7 +28,9 @@
             "depConstraints": [
               {
                 "sourceTag": "*",
-                "onlyDependOnLibsWithTags": ["*"]
+                "onlyDependOnLibsWithTags": [
+                  "*"
+                ]
               }
             ]
           }
@@ -33,8 +39,6 @@
     },
     {
       "files": [
-        "*.ts",
-        "*.tsx",
         ".mts"
       ],
       "extends": [
@@ -332,7 +336,12 @@
         "unicorn/no-useless-undefined": "off",
         "@typescript-eslint/require-array-sort-compare": "error",
         "@typescript-eslint/unbound-method": "error",
-        "import/no-extraneous-dependencies": ["error", { "packageDir": "./" }],
+        "import/no-extraneous-dependencies": [
+          "error",
+          {
+            "packageDir": "./"
+          }
+        ],
         "@typescript-eslint/member-ordering": [
           1,
           {
@@ -418,26 +427,38 @@
         "unicorn/prefer-event-target": "off",
         "simple-import-sort/imports": "warn",
         "simple-import-sort/exports": "warn",
-        "no-console": ["error"],
+        "no-console": [
+          "error"
+        ],
         "@typescript-eslint/no-unnecessary-type-constraint": "off",
         "@typescript-eslint/no-unused-vars": [
           "warn",
-          { "varsIgnorePattern": "logger" }
+          {
+            "varsIgnorePattern": "logger"
+          }
         ],
         "@typescript-eslint/no-explicit-any": "error"
       }
     },
     {
-      "files": ["*.js", "*.jsx"],
-      "extends": ["plugin:@nx/javascript"],
-      "rules": {}
-    },
-    {
-      "files": ["*.spec.ts", "*.spec.mts", "*.spec.tsx", "*.spec.js", "*.spec.jsx"],
+      "files": [
+        "*.spec.ts",
+        "*.spec.mts",
+        "*.spec.tsx",
+        "*.spec.js",
+        "*.spec.jsx"
+      ],
       "env": {
         "jest": true
       },
       "rules": {}
+    },
+    {
+      "files": ["*.json"],
+      "parser": "jsonc-eslint-parser",
+      "rules": {
+        "@nx/dependency-checks": "error"
+      }
     }
   ]
 }

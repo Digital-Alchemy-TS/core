@@ -1,7 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "../../dist/out-tsc",
+    "outDir": "../../dist/boilerplate-out-tsc",
     "declaration": true,
     "types": [
       "node"
@@ -13,8 +13,11 @@
     "src/**/*.test.ts"
   ],
   "include": [
-    "src/**/*.ts"
+    "src/**/*.mts"
   ],
   "references": [
+    {
+      "path": "../utilities/tsconfig.lib.json"
+    }
   ]
 }

@@ -1,12 +1,20 @@
 import { ZCC } from "@zcc/utilities"
 
+function CreateLibraryModule() {
+return  {
+  //
+}
+}
+
 declare module "@zcc/utilities" {
   export interface ZCC_Definition {
-    module() : void;
+    library() : void;
   }
 }
 
 
-ZCC.module = () => {
-//
-}
+ZCC.library =function CreateLibraryModule() {
+  return  {
+    //
+  }
+  }

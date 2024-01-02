@@ -1,24 +1,17 @@
 import { ZCC } from "@zcc/utilities";
 
 import { AnyConfig } from "./configuration.mjs";
-import { ILogger } from "./logger.mjs";
 
 type LibraryConfigurationOptions = {
   name: string;
   configuration: Record<string, AnyConfig>;
 };
 
-export type ZCCModuleDefinition = LibraryConfigurationOptions & {
-  logger: ILogger;
-};
-
-function CreateLibraryModule(
-  options: LibraryConfigurationOptions,
-): ZCCModuleDefinition {
-  const logger = ZCC.logger.
+function CreateLibraryModule(options: LibraryConfigurationOptions) {
   return {
     ...options,
-
+    config: <T,>(property: string): T =>
+      ZCC.config.get([options.name, property]),
   };
 }
 

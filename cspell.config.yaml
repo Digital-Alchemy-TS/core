@@ -22,7 +22,10 @@ words:
   - buildable
   - sonarjs
   - pkief
+  - postdata
   - dbaeumer
+  - execa
+  - undici
   - exiasr
   - hadolint
   - esbenp

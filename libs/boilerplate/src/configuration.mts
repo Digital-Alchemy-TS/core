@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-magic-numbers */
 import {
   deepExtend,
   DOWN,
@@ -38,6 +37,9 @@ export type AnyConfig =
   | NumberConfig
   | RecordConfig
   | StringArrayConfig;
+
+const ENVIRONMENT_LOAD_PRIORITY = 1;
+const FILE_LOAD_PRIORITY = 2;
 
 let overrideConfigFiles: string[] = [];
 
@@ -383,8 +385,8 @@ function CreateConfiguration() {
   const configDefinitions: KnownConfigs = new Map();
 
   function defaultLoaders() {
-    configLoaders.add([ConfigLoaderEnvironment, 1]);
-    configLoaders.add([ConfigLoaderFile, 2]);
+    configLoaders.add([ConfigLoaderEnvironment, ENVIRONMENT_LOAD_PRIORITY]);
+    configLoaders.add([ConfigLoaderFile, FILE_LOAD_PRIORITY]);
   }
 
   function getConfiguration(path: string): BaseConfig {

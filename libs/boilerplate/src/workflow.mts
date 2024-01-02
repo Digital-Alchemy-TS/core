@@ -25,9 +25,10 @@ async function RunCallbacks(list: CallbackList) {
 }
 
 function CreateLifecycle() {
-  const preInitCallbacks: CallbackList = [];
   const bootstrapCallbacks: CallbackList = [];
-  const postInitCallbacks: CallbackList = [];
+  const configCallbacks: CallbackList = [];
+  const postConfigCallbacks: CallbackList = [];
+  const preInitCallbacks: CallbackList = [];
   const readyCallbacks: CallbackList = [];
 
   return {
@@ -40,19 +41,35 @@ function CreateLifecycle() {
           const logger = ZCC.systemLogger;
           try {
             logger.debug("Bootstrap started");
-            logger.trace("running preInit callbacks");
-            await ZCC.config.loadConfig(application);
-            logger.trace("running preInit callbacks");
+
+            // Run actions before any configuration or major initialization
+            logger.trace("Running preInit callbacks");
             await RunCallbacks(preInitCallbacks);
-            logger.trace("running bootstrap callbacks");
+
+            // Configuration loading phase
+            logger.trace("Loading configuration");
+            ZCC.config.merge(config);
+            await ZCC.config.loadConfig(application);
+
+            logger.trace("Running config callbacks");
+            await RunCallbacks(configCallbacks);
+
+            // Actions right after configuration but before the main application bootstrapping
+            logger.trace("Running postConfig callbacks");
+            await RunCallbacks(postConfigCallbacks);
+
+            // Main bootstrapping phase
+            logger.trace("Running bootstrap callbacks");
             await RunCallbacks(bootstrapCallbacks);
-            logger.trace("running postInit callbacks");
-            await RunCallbacks(postInitCallbacks);
-            logger.trace("running ready callbacks");
+
+            // Application is fully initialized and operational
+            logger.trace("Running ready callbacks");
             await RunCallbacks(readyCallbacks);
+
             logger.info("[%s] Started!", application);
           } catch (error) {
             logger.fatal({ application, error }, `Bootstrap failed`);
+            // Be noisy, this is a fatal error at bootstrap
             // eslint-disable-next-line no-console
             console.error(error);
           } finally {
@@ -63,8 +80,10 @@ function CreateLifecycle() {
     },
     onBootstrap: (callback: LifecycleCallback, priority = NONE) =>
       bootstrapCallbacks.push([callback, priority]),
-    onPostInit: (callback: LifecycleCallback, priority = NONE) =>
-      postInitCallbacks.push([callback, priority]),
+    onConfig: (callback: LifecycleCallback, priority = NONE) =>
+      configCallbacks.push([callback, priority]),
+    onPostConfig: (callback: LifecycleCallback, priority = NONE) =>
+      postConfigCallbacks.push([callback, priority]),
     onPreInit: (callback: LifecycleCallback, priority = NONE) =>
       preInitCallbacks.push([callback, priority]),
     onReady: (callback: LifecycleCallback, priority = NONE) =>

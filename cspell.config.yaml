@@ -28,6 +28,7 @@ words:
   - undici
   - exiasr
   - hadolint
+  - lifecycles
   - esbenp
   - nsoult
   - nxignore

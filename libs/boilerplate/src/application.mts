@@ -1,38 +1,63 @@
-import { ZCC } from "@zcc/utilities";
+import { is, ZCC } from "@zcc/utilities";
 
-import { AnyConfig } from "./configuration.mjs";
+import {
+  ModuleConfiguration,
+  OptionalModuleConfiguration,
+} from "./configuration.mjs";
+import { LibraryDefinition } from "./library.mjs";
+import { TChildLifecycle } from "./lifecycle.mjs";
+import { ILogger } from "./logger.mjs";
 
-const DEFAULT_APPLICATION = "zcc";
+export const LOADED_LIBRARIES = new Set<LibraryDefinition>();
 
 type ApplicationConfigurationOptions = {
   application?: string;
-  configuration?: Record<string, AnyConfig>;
+  configuration?: OptionalModuleConfiguration;
 };
 
-export type ZCCApplicationDefinition = ApplicationConfigurationOptions & {
-  configuration: object;
-  lifecycle: object;
-  logger: object;
-};
-
-function CreateApplication(
-  options: ApplicationConfigurationOptions,
-): ZCCApplicationDefinition {
-  ZCC.application = options.application || DEFAULT_APPLICATION;
+function CreateApplication({
+  application = "zcc",
+  configuration,
+}: ApplicationConfigurationOptions): ZCCApplicationDefinition {
+  const logger = ZCC.logger.context(`${application}:Bootstrap`);
+  const lifecycle = ZCC.lifecycle.child();
+  lifecycle.onAttach(() => {
+    logger.debug("Attaching library lifecycles");
+    LOADED_LIBRARIES.forEach(item => {
+      logger.trace({ name: item.name }, `Attach`);
+      item.lifecycle.attach();
+    });
+    if (!is.empty(configuration)) {
+      logger.debug("Merge application configuration definition");
+      ZCC.config.addApplicationDefinition(configuration as ModuleConfiguration);
+    }
+  });
   return {
-    ...options,
-    configuration: {},
-    lifecycle: {},
-    logger: {},
+    configuration,
+    lifecycle,
+    logger,
+    name: application as string,
   };
+}
+
+export type ZCCApplicationDefinition = {
+  name: string;
+  configuration: OptionalModuleConfiguration;
+  lifecycle: TChildLifecycle;
+  logger: ILogger;
+};
+
+function ImportLibrary(library: LibraryDefinition) {
+  ZCC.systemLogger.trace({ name: library.name }, "Import library");
+  LOADED_LIBRARIES.add(library);
 }
 
 declare module "@zcc/utilities" {
   export interface ZCCDefinition {
-    application: string;
     createApplication: typeof CreateApplication;
+    importLibrary: typeof ImportLibrary;
   }
 }
 
 ZCC.createApplication = CreateApplication;
-ZCC.application = DEFAULT_APPLICATION;
+ZCC.importLibrary = ImportLibrary;

@@ -21,6 +21,8 @@ import { homedir } from "os";
 import { join } from "path";
 import { argv, cwd, env, platform } from "process";
 
+import { BootstrapException } from "./errors.mjs";
+
 export type ZccConfigTypes =
   | "string"
   | "boolean"
@@ -65,7 +67,8 @@ export interface BaseConfig {
 
 type StringFlags = "password" | "url";
 
-type KnownConfigs = Map<string, Record<string, AnyConfig>>;
+const APPLICATION = Symbol("APPLICATION_CONFIGURATION");
+type KnownConfigs = Map<string | typeof APPLICATION, Record<string, AnyConfig>>;
 
 function loadConfigFromFile(out: Partial<AbstractConfig>, filePath: string) {
   if (!existsSync(filePath)) {
@@ -209,14 +212,11 @@ function withExtensions(path: string): string[] {
 type ConfigLoaderReturn = Promise<Partial<AbstractConfig>>;
 
 type ConfigLoader = [
-  loader: (
-    application: string,
-    definedConfigurations: KnownConfigs,
-  ) => ConfigLoaderReturn,
+  loader: (definedConfigurations: KnownConfigs) => ConfigLoaderReturn,
   priority: number,
 ];
 
-export function configFilePaths(name: string): string[] {
+export function configFilePaths(name = "zcc"): string[] {
   const out: string[] = [];
   if (!isWindows) {
     out.push(
@@ -271,15 +271,16 @@ function cast<T = unknown>(data: string | string[], type: string): T {
 }
 
 export async function ConfigLoaderEnvironment(
-  application: string,
   configs: KnownConfigs,
 ): ConfigLoaderReturn {
   const environmentKeys = Object.keys(env);
   const switchKeys = Object.keys(CLI_SWITCHES);
   const out: Partial<AbstractConfig> = {};
   configs.forEach((configuration, project) => {
-    const cleanedProject = project?.replaceAll("-", "_") || "unknown";
-    const isApplication = application === project;
+    const isApplication = !is.string(project);
+    const cleanedProject =
+      (isApplication ? ZCC.application?.name : project)?.replaceAll("-", "_") ||
+      "unknown";
     const environmentPrefix = isApplication
       ? "application"
       : `libs_${cleanedProject}`;
@@ -351,12 +352,11 @@ export async function ConfigLoaderEnvironment(
 }
 
 function initWiringConfig(
-  application: string,
   configs: KnownConfigs,
   configuration: Partial<AbstractConfig>,
 ): void {
   configs.forEach((configurations, project) => {
-    const isApplication = application === project;
+    const isApplication = !is.string(project);
     Object.entries(configurations).forEach(([key, config]) => {
       if (config.default !== undefined) {
         const configPath = isApplication
@@ -368,18 +368,19 @@ function initWiringConfig(
   });
 }
 
-export async function ConfigLoaderFile(
-  application: string,
-): ConfigLoaderReturn {
+export async function ConfigLoaderFile(): ConfigLoaderReturn {
   const files = is.empty(overrideConfigFiles)
-    ? configFilePaths(application)
+    ? configFilePaths(ZCC.application?.name)
     : overrideConfigFiles;
   const out: Partial<AbstractConfig> = {};
   files.forEach(file => loadConfigFromFile(out, file));
   return out;
 }
+export type ModuleConfiguration = Record<string, AnyConfig>;
+export type OptionalModuleConfiguration = ModuleConfiguration | undefined;
 
 function CreateConfiguration() {
+  let application: string;
   const configLoaders = new Set<ConfigLoader>();
   const configuration: AbstractConfig = { application: {}, libs: {} };
   const configDefinitions: KnownConfigs = new Map();
@@ -392,10 +393,10 @@ function CreateConfiguration() {
   function getConfiguration(path: string): BaseConfig {
     const parts = path.split(".");
     if (parts.length === SINGLE) {
-      parts.unshift(ZCC.application);
+      parts.unshift(application);
     }
     if (parts.length === PAIR) {
-      const configuration = configDefinitions.get(ZCC.application) || {};
+      const configuration = configDefinitions.get(application) || {};
       const config = configuration[parts[VALUE]] ?? { type: "string" };
       if (!is.empty(Object.keys(config ?? {}))) {
         return config;
@@ -415,14 +416,21 @@ function CreateConfiguration() {
   }
 
   return {
+    addApplicationDefinition: (definitions: Record<string, AnyConfig>) =>
+      configDefinitions.set(APPLICATION, definitions),
     addConfigLoader: (loader: ConfigLoader) => configLoaders.add(loader),
+    addLibraryDefinition: (
+      library: string,
+      definitions: Record<string, AnyConfig>,
+    ) => configDefinitions.set(library, definitions),
+    configuration,
     defaultLoaders,
     get<T extends unknown = string>(
       path: string | [library: string, config: string],
     ): T {
       if (is.array(path)) {
         path =
-          path[LABEL] === ZCC.application
+          path[LABEL] === ZCC.application?.name
             ? ["application", path[VALUE]].join(".")
             : ["libs", path[LABEL], path[VALUE]].join(".");
       }
@@ -433,25 +441,28 @@ function CreateConfiguration() {
 
       return cast(value, config?.type ?? "string") as T;
     },
-    knownDefinition: (
-      library: string,
-      definitions: Record<string, AnyConfig>,
-    ) => configDefinitions.set(library, definitions),
-    loadConfig: async (application: string) => {
-      initWiringConfig(application, configDefinitions, configuration);
+    loadConfig: async () => {
+      if (!ZCC.application) {
+        throw new BootstrapException(
+          "configuration",
+          "NO_APPLICATION",
+          "Cannot load configuration without having defined an application",
+        );
+      }
+      initWiringConfig(configDefinitions, configuration);
       if (is.empty(configLoaders)) {
+        ZCC.systemLogger.debug(`No config loaders defined, adding default`);
         defaultLoaders();
       }
       await eachSeries(
         [...configLoaders.values()].sort(([, a], [, b]) => (a > b ? UP : DOWN)),
         async ([loader]) => {
-          const merge = await loader(application, configDefinitions);
+          const merge = await loader(configDefinitions);
           deepExtend(configuration, merge);
         },
       );
     },
     merge: (merge: Partial<AbstractConfig>) => deepExtend(configuration, merge),
-    raw: configuration,
     set: (
       path: string | [project: string, property: string],
       value: unknown,

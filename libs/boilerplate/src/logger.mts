@@ -3,42 +3,39 @@ import { is, ZCC } from "@zcc/utilities";
 import chalk from "chalk";
 import { pino } from "pino";
 
-export type LoggerFunction =
+export type TLoggerFunction =
   | ((message: string, ...arguments_: unknown[]) => void)
   | ((object: object, message?: string, ...arguments_: unknown[]) => void);
 
-export interface iLogger extends iLoggerCore {
+export interface ILogger {
+  debug(...arguments_: Parameters<TLoggerFunction>): void;
   debug(message: string, ...arguments_: unknown[]): void;
-  debug(...arguments_: Parameters<LoggerFunction>): void;
-  error(message: string, ...arguments_: unknown[]): void;
-  error(...arguments_: Parameters<LoggerFunction>): void;
-  fatal(message: string, ...arguments_: unknown[]): void;
-  fatal(...arguments_: Parameters<LoggerFunction>): void;
-  info(message: string, ...arguments_: unknown[]): void;
-  info(...arguments_: Parameters<LoggerFunction>): void;
-  trace(message: string, ...arguments_: unknown[]): void;
-  trace(...arguments_: Parameters<LoggerFunction>): void;
-  warn(message: string, ...arguments_: unknown[]): void;
-  warn(...arguments_: Parameters<LoggerFunction>): void;
-}
-
-export interface iLoggerCore {
   debug(object: object, message?: string, ...arguments_: unknown[]): void;
+  error(...arguments_: Parameters<TLoggerFunction>): void;
+  error(message: string, ...arguments_: unknown[]): void;
   error(object: object, message?: string, ...arguments_: unknown[]): void;
+  fatal(...arguments_: Parameters<TLoggerFunction>): void;
+  fatal(message: string, ...arguments_: unknown[]): void;
   fatal(object: object, message?: string, ...arguments_: unknown[]): void;
+  info(...arguments_: Parameters<TLoggerFunction>): void;
+  info(message: string, ...arguments_: unknown[]): void;
   info(object: object, message?: string, ...arguments_: unknown[]): void;
+  trace(...arguments_: Parameters<TLoggerFunction>): void;
+  trace(message: string, ...arguments_: unknown[]): void;
   trace(object: object, message?: string, ...arguments_: unknown[]): void;
+  warn(...arguments_: Parameters<TLoggerFunction>): void;
+  warn(message: string, ...arguments_: unknown[]): void;
   warn(object: object, message?: string, ...arguments_: unknown[]): void;
 }
 
-const MAX_CUTOFF = 2000;
-const frontDash = " - ";
-const YELLOW_DASH = chalk.yellowBright(frontDash);
-const logger = pino() as iLogger;
+const FRONT_DASH = " - ";
+const YELLOW_DASH = chalk.yellowBright(FRONT_DASH);
+let logger = pino() as ILogger;
+let maxCutoff = 2000;
 let logLevel: pino.Level = "info";
 let usePrettyLogger = true;
 
-export type CONTEXT_COLORS =
+export type TContextColorType =
   | "bgBlue.dim"
   | "bgYellow.dim"
   | "bgGreen"
@@ -46,7 +43,7 @@ export type CONTEXT_COLORS =
   | "bgMagenta"
   | "bgGrey";
 
-export const METHOD_COLORS = new Map<pino.Level, CONTEXT_COLORS>([
+export const METHOD_COLORS = new Map<pino.Level, TContextColorType>([
   ["trace", "bgGrey"],
   ["debug", "bgBlue.dim"],
   ["warn", "bgYellow.dim"],
@@ -59,7 +56,7 @@ function prettyFormatMessage(message: string): string {
   if (!message) {
     return ``;
   }
-  if (message.length > MAX_CUTOFF) {
+  if (message.length > maxCutoff) {
     return message;
   }
   message = message
@@ -76,23 +73,23 @@ function prettyFormatMessage(message: string): string {
       chalk.bold.gray(i.slice(1, -1)),
     );
   // ? " - Text" (line prefix with dash) - highlight dash
-  if (message.slice(0, frontDash.length) === frontDash) {
-    message = `${YELLOW_DASH}${message.slice(frontDash.length)}`;
+  if (message.slice(0, FRONT_DASH.length) === FRONT_DASH) {
+    message = `${YELLOW_DASH}${message.slice(FRONT_DASH.length)}`;
   }
   return message;
 }
 
 function highlightContext(
   context: string,
-  level: CONTEXT_COLORS = "bgGrey",
+  level: TContextColorType = "bgGrey",
 ): string {
   return chalk`{bold.${level.slice(2).toLowerCase()} [${context}]}`;
 }
 
-function normalLogger(
+function standardLogger(
   method: pino.Level,
   context: string,
-  ...parameters: Parameters<LoggerFunction>
+  ...parameters: Parameters<TLoggerFunction>
 ) {
   if (method === "trace" && logLevel !== "trace") {
     // early shortcut for an over used call
@@ -117,7 +114,7 @@ function normalLogger(
 function prettyLogger(
   method: pino.Level,
   context: string,
-  ...parameters: Parameters<LoggerFunction>
+  ...parameters: Parameters<TLoggerFunction>
 ) {
   // ? Early shortcut for an over used call
   if (method === "trace" && logLevel !== "trace") {
@@ -146,46 +143,48 @@ function prettyLogger(
   logger[method](message, ...parameters);
 }
 
-function call(
+function log(
   method: pino.Level,
   context: string,
-  ...parameters: Parameters<LoggerFunction>
+  ...parameters: Parameters<TLoggerFunction>
 ): void {
   if (usePrettyLogger) {
     prettyLogger(method, context, ...parameters);
     return;
   }
-  normalLogger(method, context, ...parameters);
+  standardLogger(method, context, ...parameters);
 }
 
-function AugmentLogger() {
+function augmentLogger() {
   return {
     context: (context: string) =>
       ({
-        debug: (...params: Parameters<LoggerFunction>) =>
-          call("debug", context, ...params),
-        error: (...params: Parameters<LoggerFunction>) =>
-          call("error", context, ...params),
-        fatal: (...params: Parameters<LoggerFunction>) =>
-          call("fatal", context, ...params),
-        info: (...params: Parameters<LoggerFunction>) =>
-          call("info", context, ...params),
-        trace: (...params: Parameters<LoggerFunction>) =>
-          call("trace", context, ...params),
-        warn: (...params: Parameters<LoggerFunction>) =>
-          call("warn", context, ...params),
-      }) as iLogger,
+        debug: (...params: Parameters<TLoggerFunction>) =>
+          log("debug", context, ...params),
+        error: (...params: Parameters<TLoggerFunction>) =>
+          log("error", context, ...params),
+        fatal: (...params: Parameters<TLoggerFunction>) =>
+          log("fatal", context, ...params),
+        info: (...params: Parameters<TLoggerFunction>) =>
+          log("info", context, ...params),
+        trace: (...params: Parameters<TLoggerFunction>) =>
+          log("trace", context, ...params),
+        warn: (...params: Parameters<TLoggerFunction>) =>
+          log("warn", context, ...params),
+      }) as ILogger,
+    setBaseLogger: (base: ILogger) => (logger = base),
     setLogLevel: (level: pino.Level) => (logLevel = level),
+    setMaxCutoff: (cutoff: number) => (maxCutoff = cutoff),
     setPrettyLogger: (state: boolean) => (usePrettyLogger = state),
   };
 }
 
 declare module "@zcc/utilities" {
-  export interface ZCC_Definition {
-    logger: ReturnType<typeof AugmentLogger>;
-    systemLogger: iLogger;
+  export interface ZCCDefinition {
+    logger: ReturnType<typeof augmentLogger>;
+    systemLogger: ILogger;
   }
 }
 
-ZCC.logger = AugmentLogger();
+ZCC.logger = augmentLogger();
 ZCC.systemLogger = ZCC.logger.context("ZCC:system");

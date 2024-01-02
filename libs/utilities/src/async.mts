@@ -13,7 +13,7 @@ export async function each<T = unknown>(
   await Promise.all(item.map(async i => await callback(i)));
 }
 
-export async function eachSeries<T = unknown>(
+export async function eachSeries<T = void>(
   item: T[] | Set<T>,
   callback: (item: T) => Promise<void>,
 ): Promise<void> {

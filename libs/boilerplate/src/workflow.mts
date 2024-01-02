@@ -41,6 +41,8 @@ function CreateLifecycle() {
           try {
             logger.debug("Bootstrap started");
             logger.trace("running preInit callbacks");
+            await ZCC.config.loadConfig(application);
+            logger.trace("running preInit callbacks");
             await RunCallbacks(preInitCallbacks);
             logger.trace("running bootstrap callbacks");
             await RunCallbacks(bootstrapCallbacks);
@@ -71,7 +73,7 @@ function CreateLifecycle() {
 }
 
 declare module "@zcc/utilities" {
-  export interface ZCC_Definition {
+  export interface ZCCDefinition {
     lifecycle: ReturnType<typeof CreateLifecycle>;
   }
 }

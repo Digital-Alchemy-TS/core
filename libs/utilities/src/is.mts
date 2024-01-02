@@ -4,6 +4,7 @@ import { EMPTY, EVEN, NONE, START } from "./utilities.mjs";
 
 type MaybeEmptyTypes =
   | string
+  | undefined
   | Array<unknown>
   | Set<unknown>
   | Map<unknown, unknown>

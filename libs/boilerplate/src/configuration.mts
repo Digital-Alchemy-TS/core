@@ -1,13 +1,35 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
-import { deepExtend, DOWN, eachSeries, UP, ZCC } from "@zcc/utilities";
+import {
+  deepExtend,
+  DOWN,
+  eachSeries,
+  INVERT_VALUE,
+  is,
+  LABEL,
+  PAIR,
+  SINGLE,
+  START,
+  UP,
+  VALUE,
+  ZCC,
+} from "@zcc/utilities";
+import { existsSync, readFileSync } from "fs";
+import { decode } from "ini";
+import { load } from "js-yaml";
+import minimist from "minimist";
+import { get, set } from "object-path";
+import { homedir } from "os";
+import { join } from "path";
+import { argv, cwd, env, platform } from "process";
 
-export type DigitalAlchemyConfigTypes =
+export type ZccConfigTypes =
   | "string"
   | "boolean"
   | "internal"
   | "number"
   | "record"
   | "string[]";
+const extensions = ["json", "ini", "yaml", "yml"];
 
 export type AnyConfig =
   | StringConfig
@@ -16,6 +38,8 @@ export type AnyConfig =
   | NumberConfig
   | RecordConfig
   | StringArrayConfig;
+
+let overrideConfigFiles: string[] = [];
 
 export interface BaseConfig {
   /**
@@ -34,10 +58,60 @@ export interface BaseConfig {
    */
   required?: boolean;
 
-  type: DigitalAlchemyConfigTypes;
+  type: ZccConfigTypes;
 }
 
 type StringFlags = "password" | "url";
+
+type KnownConfigs = Map<string, Record<string, AnyConfig>>;
+
+function loadConfigFromFile(out: Partial<AbstractConfig>, filePath: string) {
+  if (!existsSync(filePath)) {
+    return out;
+  }
+  const fileContent = readFileSync(filePath, "utf8").trim();
+  const hasExtension = extensions.some(extension => {
+    if (
+      filePath.slice(extension.length * INVERT_VALUE).toLowerCase() ===
+      extension
+    ) {
+      switch (extension) {
+        case "ini":
+          deepExtend(out, decode(fileContent) as unknown as AbstractConfig);
+          return true;
+        case "yaml":
+        case "yml":
+          deepExtend(out, load(fileContent) as AbstractConfig);
+          return true;
+        case "json":
+          deepExtend(out, JSON.parse(fileContent) as unknown as AbstractConfig);
+          return true;
+      }
+    }
+    return false;
+  });
+  if (hasExtension) {
+    return undefined;
+  }
+  // Guessing JSON
+  if (fileContent[START] === "{") {
+    deepExtend(out, JSON.parse(fileContent) as unknown as AbstractConfig);
+    return true;
+  }
+  // Guessing yaml
+  try {
+    const content = load(fileContent);
+    if (is.object(content)) {
+      deepExtend(out, content as unknown as AbstractConfig);
+      return true;
+    }
+  } catch {
+    // Is not a yaml file
+  }
+  // Final fallback: INI
+  deepExtend(out, decode(fileContent) as unknown as AbstractConfig);
+  return true;
+}
 
 export interface StringConfig extends BaseConfig {
   default?: string;
@@ -123,73 +197,274 @@ export interface AbstractConfig {
   libs: Record<string, Record<string, unknown>>;
 }
 
-export const INJECTED_DYNAMIC_CONFIG = "INJECTED_DYNAMIC_CONFIG";
+const CLI_SWITCHES = minimist(argv);
+const isWindows = platform === "win32";
+
+function withExtensions(path: string): string[] {
+  return [path, ...extensions.map(i => `${path}.${i}`)];
+}
 
 type ConfigLoaderReturn = Promise<Partial<AbstractConfig>>;
 
 type ConfigLoader = [
-  loader: (application: string) => ConfigLoaderReturn,
+  loader: (
+    application: string,
+    definedConfigurations: KnownConfigs,
+  ) => ConfigLoaderReturn,
   priority: number,
 ];
 
-export async function ConfigLoaderEnvironment(): ConfigLoaderReturn {
-  return {
-    //
-  };
+export function configFilePaths(name: string): string[] {
+  const out: string[] = [];
+  if (!isWindows) {
+    out.push(
+      ...withExtensions(join(`/etc`, name, "config")),
+      ...withExtensions(join(`/etc`, `${name}rc`)),
+    );
+  }
+  let current = cwd();
+  let next: string;
+  while (!is.empty(current)) {
+    out.push(join(current, `.${name}rc`));
+    next = join(current, "..");
+    if (next === current) {
+      break;
+    }
+    current = next;
+  }
+  out.push(
+    ...withExtensions(join(homedir(), ".config", name)),
+    ...withExtensions(join(homedir(), ".config", name, "config")),
+  );
+  return out;
 }
 
-export async function ConfigLoaderSwitches(): ConfigLoaderReturn {
-  return {
-    //
-  };
+function cast<T = unknown>(data: string | string[], type: string): T {
+  switch (type) {
+    case "boolean": {
+      data ??= "";
+      return (
+        is.boolean(data)
+          ? data
+          : ["true", "y", "1"].includes((data as string).toLowerCase())
+      ) as T;
+    }
+    case "number":
+      return Number(data) as T;
+    case "string[]":
+      if (is.undefined(data)) {
+        return [] as T;
+      }
+      if (is.array(data)) {
+        return data.map(String) as T;
+      }
+      // This occurs with cli switches
+      // If only 1 is passed, it'll get the value
+      // ex: --foo=bar  ==== {foo:'bar'}
+      // If duplicates are passed, will receive array
+      // ex: --foo=bar --foo=baz === {foo:['bar','baz']}
+      return [String(data)] as T;
+  }
+  return data as T;
 }
 
-export async function ConfigLoaderYaml(): ConfigLoaderReturn {
-  return {
-    //
-  };
+export async function ConfigLoaderEnvironment(
+  application: string,
+  configs: KnownConfigs,
+): ConfigLoaderReturn {
+  const environmentKeys = Object.keys(env);
+  const switchKeys = Object.keys(CLI_SWITCHES);
+  const out: Partial<AbstractConfig> = {};
+  configs.forEach((configuration, project) => {
+    const cleanedProject = project?.replaceAll("-", "_") || "unknown";
+    const isApplication = application === project;
+    const environmentPrefix = isApplication
+      ? "application"
+      : `libs_${cleanedProject}`;
+    const configPrefix = isApplication ? "application" : `libs.${project}`;
+    Object.keys(configuration).forEach(key => {
+      const noAppPath = `${environmentPrefix}_${key}`;
+      const search = [noAppPath, key];
+      const configPath = `${configPrefix}.${key}`;
+      // Find an applicable switch
+      const flag =
+        // Find an exact match (if available) first
+        search.find(line => switchKeys.includes(line)) ||
+        // Do case insensitive searches
+        search.find(line => {
+          const match = new RegExp(
+            `^${line.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
+            "gi",
+          );
+          return switchKeys.some(item => item.match(match));
+        });
+      if (flag) {
+        const formattedFlag = switchKeys.find(key =>
+          search.some(line =>
+            key.match(
+              new RegExp(
+                `^${line.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
+                "gi",
+              ),
+            ),
+          ),
+        );
+        if (is.string(formattedFlag)) {
+          set(out, configPath, CLI_SWITCHES[formattedFlag]);
+        }
+        return;
+      }
+      // Find an environment variable
+      const environment =
+        // Find an exact match (if available) first
+        search.find(line => environmentKeys.includes(line)) ||
+        // Do case insensitive searches
+        search.find(line => {
+          const match = new RegExp(
+            `^${line.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
+            "gi",
+          );
+          return environmentKeys.some(item => item.match(match));
+        });
+      if (is.empty(environment)) {
+        return;
+      }
+      const environmentName = environmentKeys.find(key =>
+        search.some(line =>
+          key.match(
+            new RegExp(
+              `^${line.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
+              "gi",
+            ),
+          ),
+        ),
+      );
+      if (is.string(environmentName)) {
+        set(out, configPath, env[environmentName]);
+      }
+    });
+  });
+
+  return out;
 }
 
-export async function ConfigLoaderIni(): ConfigLoaderReturn {
-  return {
-    //
-  };
+function initWiringConfig(
+  application: string,
+  configs: KnownConfigs,
+  configuration: Partial<AbstractConfig>,
+): void {
+  configs.forEach((configurations, project) => {
+    const isApplication = application === project;
+    Object.entries(configurations).forEach(([key, config]) => {
+      if (config.default !== undefined) {
+        const configPath = isApplication
+          ? `application.${key}`
+          : `libs.${project}.${key}`;
+        set(configuration, configPath, config.default);
+      }
+    });
+  });
 }
 
-export async function ConfigLoaderJson(): ConfigLoaderReturn {
-  return {
-    //
-  };
+export async function ConfigLoaderFile(
+  application: string,
+): ConfigLoaderReturn {
+  const files = is.empty(overrideConfigFiles)
+    ? configFilePaths(application)
+    : overrideConfigFiles;
+  const out: Partial<AbstractConfig> = {};
+  files.forEach(file => loadConfigFromFile(out, file));
+  return out;
 }
 
 function CreateConfiguration() {
   const configLoaders = new Set<ConfigLoader>();
   const configuration: AbstractConfig = { application: {}, libs: {} };
+  const configDefinitions: KnownConfigs = new Map();
+
+  function defaultLoaders() {
+    configLoaders.add([ConfigLoaderEnvironment, 1]);
+    configLoaders.add([ConfigLoaderFile, 2]);
+  }
+
+  function getConfiguration(path: string): BaseConfig {
+    const parts = path.split(".");
+    if (parts.length === SINGLE) {
+      parts.unshift(ZCC.application);
+    }
+    if (parts.length === PAIR) {
+      const configuration = configDefinitions.get(ZCC.application) || {};
+      const config = configuration[parts[VALUE]] ?? { type: "string" };
+      if (!is.empty(Object.keys(config ?? {}))) {
+        return config;
+      }
+      return {
+        // Applications can yolo a bit harder than libraries
+        default: undefined,
+        type: "string",
+      };
+    }
+    const [, library, property] = parts;
+    const configuration = configDefinitions.get(library);
+    if (!configuration) {
+      return { type: "string" };
+    }
+    return configuration[property];
+  }
 
   return {
     addConfigLoader: (loader: ConfigLoader) => configLoaders.add(loader),
-    defaultLoaders: () => {
-      configLoaders.add([ConfigLoaderYaml, 0]);
-      configLoaders.add([ConfigLoaderIni, 0]);
-      configLoaders.add([ConfigLoaderJson, 0]);
-      configLoaders.add([ConfigLoaderEnvironment, 0]);
-      configLoaders.add([ConfigLoaderSwitches, 0]);
+    defaultLoaders,
+    get<T extends unknown = string>(
+      path: string | [library: string, config: string],
+    ): T {
+      if (is.array(path)) {
+        path =
+          path[LABEL] === ZCC.application
+            ? ["application", path[VALUE]].join(".")
+            : ["libs", path[LABEL], path[VALUE]].join(".");
+      }
+      const current = get(configuration, path);
+      const config = getConfiguration(path);
+      const defaultValue = config?.default;
+      const value = current ?? defaultValue;
+
+      return cast(value, config?.type ?? "string") as T;
     },
+    knownDefinition: (
+      library: string,
+      definitions: Record<string, AnyConfig>,
+    ) => configDefinitions.set(library, definitions),
     loadConfig: async (application: string) => {
+      initWiringConfig(application, configDefinitions, configuration);
+      if (is.empty(configLoaders)) {
+        defaultLoaders();
+      }
       await eachSeries(
         [...configLoaders.values()].sort(([, a], [, b]) => (a > b ? UP : DOWN)),
         async ([loader]) => {
-          const merge = await loader(application);
+          const merge = await loader(application, configDefinitions);
           deepExtend(configuration, merge);
         },
       );
     },
+    merge: (merge: Partial<AbstractConfig>) => deepExtend(configuration, merge),
     raw: configuration,
+    set: (
+      path: string | [project: string, property: string],
+      value: unknown,
+    ): void => {
+      if (is.array(path)) {
+        path = ["libs", path[LABEL], path[VALUE]].join(".");
+      }
+      set(configuration, path, value);
+    },
+    setOverrideConfigFiles: (files: string[]) => (overrideConfigFiles = files),
   };
 }
 
 declare module "@zcc/utilities" {
-  export interface ZCC_Definition {
+  export interface ZCCDefinition {
     config: ReturnType<typeof CreateConfiguration>;
   }
 }

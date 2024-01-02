@@ -1,17 +1,17 @@
-# Utilities Library README
+# 🛠️ Utilities Library README
 
-## Overview
+## Overview 💡
 
 This Utilities Library is a compact yet versatile toolkit designed for various utility functions and helpers in JavaScript programming. It's a foundational library, ensuring other parts of your project can depend on it without internal dependencies.
 
-## Library Features
+## ⭐ Library Features
 
-1. **Named Constants**: Provides a range of constants for common operations and values.
-2. **Helper Functions**: Includes a set of small, reusable functions to simplify common coding tasks.
-3. **`is` Object**: A collection of type testing and basic conversion tools, useful for validating and manipulating data types.
-4. **`ZCC` Object**: Implements an EventEmitter for event-driven programming, which is augmented in other parts of the repo to provide additional functionality.
+1. **📌 Named Constants**: Provides a range of constants...
+2. **🪄 Helper Functions**: Includes a set of small, reusable functions...
+3. **🔍 `is` Object**: A collection of type testing...
+4. **📡 `ZCC` Object**: Implements an EventEmitter...
 
-## Augmentation
+## 🧩 Augmentation
 
 ### Augmenting `ZCC`
 
@@ -66,7 +66,7 @@ is.isColor = function(value) {
 };
 ```
 
-## Exported Functions: sleep
+## 🌙 Exported Functions: sleep
 
 The `sleep` function in the Utilities Library is a powerful and flexible tool designed for asynchronous operations. It serves to delay code execution for a specified duration or until a certain time. What makes this function stand out is its capability for early termination through a 'kill' method, providing greater control over asynchronous delays.
 
@@ -105,7 +105,7 @@ setTimeout(() => timer.kill("continue"), 3 * SECOND);
 await timer;
 ```
 
-## Constants Table
+## 🧮 Constants Table
 
 | Constant          | Value      | Example Usage                                | Description                                 |
 |-------------------|------------|----------------------------------------------|---------------------------------------------|
@@ -134,7 +134,7 @@ await timer;
 | `NO_CHANGE`       | `0`        | `if (result === NO_CHANGE)`                  | Indicates no change in value or state.     |
 | `ARRAY_OFFSET`    | `1`        | `for (let i = START; i < arr.length - ARRAY_OFFSET; i++)` | Used as an offset for array lengths.  |
 
-### CronExpression
+### ⏰ CronExpression
 
 The CronExpression enum in the library provides a diverse set of predefined cron schedule patterns, simplifying the setup of routine tasks. These expressions cover a wide range of frequencies, from seconds to yearly schedules.
 
@@ -151,3 +151,5 @@ Summary of Cron Patterns:
 - **Special Ranges**: For example, every 30 minutes between 9 AM and 5 PM, and specific schedules for weekdays at every hour.
 
 This enumeration facilitates the easy setup of recurring tasks without the need to manually write complex cron expressions, making it a valuable asset for scheduling in various applications.
+
+🏁

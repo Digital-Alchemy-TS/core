@@ -21,7 +21,7 @@ import { homedir } from "os";
 import { join } from "path";
 import { argv, cwd, env, platform } from "process";
 
-import { BootstrapException } from "./errors.mjs";
+import { BootstrapException } from "../helpers/errors.helper.mjs";
 
 export type ZccConfigTypes =
   | "string"

@@ -1,5 +1,5 @@
-import { is } from "./is.mjs";
-import { ARRAY_OFFSET, START } from "./utilities.mjs";
+import { is } from "../extensions/is.extension.mjs";
+import { ARRAY_OFFSET, START } from "./utilities.helper.mjs";
 
 // ? Functions written to be similar to the offerings from the async library
 // That library gave me oddly inconsistent results,

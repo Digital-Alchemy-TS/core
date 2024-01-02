@@ -1,8 +1,8 @@
 import { DOWN, each, eachSeries, UP, ZCC } from "@zcc/utilities";
 
-import { ZCCApplicationDefinition } from "./application.mjs";
-import { AbstractConfig } from "./configuration.mjs";
-import { BootstrapException } from "./errors.mjs";
+import { BootstrapException } from "../helpers/errors.helper.mjs";
+import { ZCCApplicationDefinition } from "./application.extension.mjs";
+import { AbstractConfig } from "./configuration.extension.mjs";
 
 const NONE = -1;
 

@@ -25,12 +25,17 @@ words:
   - postdata
   - dbaeumer
   - execa
+  - purescript
+  - idris
   - undici
+  - proto
   - exiasr
   - hadolint
   - lifecycles
   - esbenp
+  - gridsome
   - nsoult
+  - kusto
   - nxignore
   - visbility
   - timonwong

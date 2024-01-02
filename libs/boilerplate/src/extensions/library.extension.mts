@@ -3,7 +3,7 @@ import { is, ZCC } from "@zcc/utilities";
 import {
   ModuleConfiguration,
   OptionalModuleConfiguration,
-} from "./configuration.mjs";
+} from "./configuration.extension.mjs";
 
 type LibraryConfigurationOptions = {
   library: string;

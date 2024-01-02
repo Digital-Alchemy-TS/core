@@ -3,10 +3,10 @@ import { is, ZCC } from "@zcc/utilities";
 import {
   ModuleConfiguration,
   OptionalModuleConfiguration,
-} from "./configuration.mjs";
-import { LibraryDefinition } from "./library.mjs";
-import { TChildLifecycle } from "./lifecycle.mjs";
-import { ILogger } from "./logger.mjs";
+} from "./configuration.extension.mjs";
+import { LibraryDefinition } from "./library.extension.mjs";
+import { TChildLifecycle } from "./lifecycle.extension.mjs";
+import { ILogger } from "./logger.extension.mjs";
 
 export const LOADED_LIBRARIES = new Set<LibraryDefinition>();
 

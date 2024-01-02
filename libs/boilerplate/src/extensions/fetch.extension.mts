@@ -1,20 +1,23 @@
 import { FIRST, is, ZCC } from "@zcc/utilities";
 import Bottleneck from "bottleneck";
 
-import { FetchRequestError, MaybeHttpError } from "./errors.mjs";
 import {
-  FETCH_REQUEST_BOTTLENECK_DELAY,
-  FETCH_REQUESTS_FAILED,
-  FETCH_REQUESTS_INITIATED,
-  FETCH_REQUESTS_SUCCESSFUL,
-} from "./metrics.mjs";
+  FetchRequestError,
+  MaybeHttpError,
+} from "../helpers/errors.helper.mjs";
 import {
   FetchArguments,
   FetchParameterTypes,
   FetchProcessTypes,
   FetchWith,
   ResultControl,
-} from "./types/fetch.mjs";
+} from "../helpers/fetch.helper.mjs";
+import {
+  FETCH_REQUEST_BOTTLENECK_DELAY,
+  FETCH_REQUESTS_FAILED,
+  FETCH_REQUESTS_INITIATED,
+  FETCH_REQUESTS_SUCCESSFUL,
+} from "../helpers/metrics.helper.mjs";
 
 /**
  * Properties that alter the way that fetcher works.

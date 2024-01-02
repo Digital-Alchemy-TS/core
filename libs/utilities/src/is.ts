@@ -40,7 +40,7 @@ export class IS_Definition {
       return Object.keys(type).length === EMPTY;
     }
     return true;
-}
+  }
 
   public equal(a: unknown, b: unknown): boolean {
     return deepEqual(a, b);
@@ -57,7 +57,7 @@ export class IS_Definition {
   public hash(text: string): string {
     let hash = START;
     for (let i = START; i < text.length; i++) {
-      hash = (hash << 5) - hash + (text.codePointAt(i) || NONE)
+      hash = (hash << 5) - hash + (text.codePointAt(i) || NONE);
       hash = Math.trunc(hash);
     }
     return hash.toString();

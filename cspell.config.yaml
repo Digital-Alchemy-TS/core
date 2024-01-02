@@ -1,0 +1,15 @@
+version: "0.2"
+ignorePaths: []
+dictionaryDefinitions: []
+dictionaries: []
+words:
+  - toolbelt
+  - nrwl
+  - devkit
+  - sinonjs
+  - pino
+  - terminalizer
+  - buildable
+  - sonarjs
+ignoreWords: []
+import: []

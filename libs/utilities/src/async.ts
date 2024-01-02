@@ -11,7 +11,7 @@ export async function each<T = unknown>(
   callback: (item: T) => Promise<void | unknown>,
 ): Promise<void> {
   await Promise.all(item.map(async i => await callback(i)));
-               }
+}
 
 export async function eachSeries<T = unknown>(
   item: T[] | Set<T>,
@@ -21,7 +21,7 @@ export async function eachSeries<T = unknown>(
     item = [...item.values()];
   }
   if (!is.array(item)) {
-    throw new TypeError(`Not provided an array`)
+    throw new TypeError(`Not provided an array`);
   }
   for (let i = START; i <= item.length - ARRAY_OFFSET; i++) {
     await callback(item[i]);

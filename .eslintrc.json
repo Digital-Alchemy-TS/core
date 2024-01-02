@@ -16,13 +16,12 @@
     "simple-import-sort",
     "sort-keys-fix",
     "unicorn",
-    "spellcheck",
     "prettier"
   ],
   "overrides": [
     {
       "files": [
-        ".ts"
+        "**/src/**/*.ts"
       ],
       "extends": [
         "plugin:@nx/typescript",
@@ -30,8 +29,15 @@
         "plugin:jsonc/recommended-with-jsonc",
         "plugin:sonarjs/recommended",
         "plugin:unicorn/recommended",
-        "plugin:prettier/recommended"
+        "plugin:prettier/recommended",
+        "plugin:@cspell/recommended"
       ],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": [
+          "tsconfig.base.json"
+        ]
+      },
       "rules": {
         "prettier/prettier": "error",
         "@nx/enforce-module-boundaries": [
@@ -49,36 +55,16 @@
             ]
           }
         ],
-        "spellcheck/spell-checker": [
-          "warn",
-          {
-            "lang": "en_US",
-            "comments": true,
-            "strings": true,
-            "minLength": 3,
-            "identifiers": true,
-            "skipIfMatch": [
-              // Anything with a number is fine
-              "[0-9]"
-            ],
-            "skipWords": []
-          }
-        ],
         "unicorn/switch-case-braces": "off",
-        "@typescript-eslint/require-await": "warn",
         "unicorn/prefer-module": "off",
         "@typescript-eslint/no-magic-numbers": "warn",
-        "@typescript-eslint/prefer-includes": "warn",
-        "@typescript-eslint/no-throw-literal": "error",
         "unicorn/no-object-as-default-parameter": "off",
-        "require-await": "off",
         "unicorn/no-null": "off",
         "unicorn/no-empty-file": "off",
         "sonarjs/prefer-single-boolean-return": "off",
         "unicorn/no-array-callback-reference": "off",
         "unicorn/no-await-expression-member": "off",
         "unicorn/no-useless-undefined": "off",
-        "@typescript-eslint/require-array-sort-compare": "error",
         "@typescript-eslint/unbound-method": "error",
         "import/no-extraneous-dependencies": [
           "error",

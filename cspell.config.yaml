@@ -33,6 +33,7 @@ words:
   - hadolint
   - lifecycles
   - esbenp
+  - typeof
   - gridsome
   - nsoult
   - kusto

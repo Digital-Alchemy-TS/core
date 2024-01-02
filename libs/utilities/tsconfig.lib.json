@@ -1,11 +1,7 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "../../dist/utilities-out-tsc",
-    "declaration": true,
-    "types": [
-      "node"
-    ]
+    "outDir": "../../dist/utilities-out-tsc"
   },
   "exclude": [
     "jest.config.ts",

@@ -1,0 +1,39 @@
+version: "0.2"
+ignorePaths: []
+dictionaryDefinitions: []
+dictionaries: []
+words:
+  - toolbelt
+  - nrwl
+  - devkit
+  - sinonjs
+  - pino
+  - hass
+  - prettyrc
+  - testrc
+  - creationrc
+  - managerrc
+  - testrc
+  - creationrc
+  - prettyrc
+  - managerrc
+  - vsix
+  - terminalizer
+  - buildable
+  - sonarjs
+  - pkief
+  - dbaeumer
+  - exiasr
+  - hadolint
+  - esbenp
+  - nsoult
+  - nxignore
+  - visbility
+  - timonwong
+  - shellcheck
+  - bithound
+  - dhall
+  - gotify
+  - intellij
+ignoreWords: []
+import: []

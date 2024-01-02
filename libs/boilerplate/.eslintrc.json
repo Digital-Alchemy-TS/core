@@ -3,9 +3,10 @@
   "ignorePatterns": ["!**/*"],
   "overrides": [
     {
-      "files": ["*.mts"],
+      "files": ["**/*.mts"],
       "rules": {},
       "parserOptions": {
+        "parser": "@typescript-eslint/parser",
         "project": [
           "libs/boilerplate/tsconfig.lib.json",
           "libs/boilerplate/tsconfig.spec.json"

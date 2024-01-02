@@ -1,20 +1,15 @@
 {
   "compileOnSave": false,
-  "include": [
-    "**/*.ts",
-    "**/*.mts"
-  ],
+  "include": ["**/src/**/*.mts"],
   "compilerOptions": {
     "allowJs": false,
     "alwaysStrict": true,
     "baseUrl": ".",
-    "composite": true,
     "esModuleInterop": true,
-    "importHelpers": true,
+    "composite": true,
     "isolatedModules": true,
-    "lib": [
-      "ESNext"
-    ],
+    "importHelpers": true,
+    "lib": ["ESNext"],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noImplicitAny": true,
@@ -27,7 +22,9 @@
     "sourceMap": true,
     "strict": true,
     "strictBindCallApply": true,
+    "strictFunctionTypes": true,
     "strictNullChecks": true,
+    "strictPropertyInitialization": true,
     "target": "ESNext",
     "paths": {
       "@zcc/boilerplate": [
@@ -38,11 +35,7 @@
       ]
     }
   },
-  "exclude": [
-    "node_modules",
-    "tmp",
-    "dist"
-  ],
+  "exclude": ["node_modules", "tmp", "dist"],
   "references": [
     {
       "path": "./libs/boilerplate/tsconfig.json"

@@ -1,20 +1,31 @@
-import { ZCC } from "@zcc/utilities"
+import { ZCC } from "@zcc/utilities";
 
-function CreateLibraryModule() {
-return  {
-  //
-}
+import { AnyConfig } from "./configuration.mjs";
+import { ILogger } from "./logger.mjs";
+
+type LibraryConfigurationOptions = {
+  name: string;
+  configuration: Record<string, AnyConfig>;
+};
+
+export type ZCCModuleDefinition = LibraryConfigurationOptions & {
+  logger: ILogger;
+};
+
+function CreateLibraryModule(
+  options: LibraryConfigurationOptions,
+): ZCCModuleDefinition {
+  const logger = ZCC.logger.
+  return {
+    ...options,
+
+  };
 }
 
 declare module "@zcc/utilities" {
-  export interface ZCC_Definition {
-    library() : void;
+  export interface ZCCDefinition {
+    library: typeof CreateLibraryModule;
   }
 }
 
-
-ZCC.library =function CreateLibraryModule() {
-  return  {
-    //
-  }
-  }
+ZCC.library = CreateLibraryModule;

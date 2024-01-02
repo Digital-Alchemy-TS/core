@@ -3,83 +3,6 @@
   "launch": {
     "version": "0.2.0",
     "configurations": [
-      {
-        "name": "Attach Build Pipeline",
-        "port": 33340,
-        "request": "attach",
-        "skipFiles": ["<node_internals>/**"],
-        "type": "node"
-      },
-      {
-        "name": "Attach Config Builder",
-        "port": 33341,
-        "request": "attach",
-        "skipFiles": ["<node_internals>/**"],
-        "type": "node"
-      },
-      {
-        "name": "Attach Entity Creation",
-        "port": 33342,
-        "request": "attach",
-        "skipFiles": ["<node_internals>/**"],
-        "type": "node"
-      },
-      {
-        "name": "Attach Game of Life",
-        "port": 33343,
-        "request": "attach",
-        "skipFiles": ["<node_internals>/**"],
-        "type": "node"
-      },
-      {
-        "name": "Attach Hass CLI",
-        "port": 33344,
-        "request": "attach",
-        "skipFiles": ["<node_internals>/**"],
-        "type": "node"
-      },
-      {
-        "name": "Attach Hass Type Generate",
-        "port": 33345,
-        "request": "attach",
-        "skipFiles": ["<node_internals>/**"],
-        "type": "node"
-      },
-      {
-        "name": "Attach Log Formatter",
-        "port": 33346,
-        "request": "attach",
-        "skipFiles": ["<node_internals>/**"],
-        "type": "node"
-      },
-      {
-        "name": "Attach Notification Tester",
-        "port": 33347,
-        "request": "attach",
-        "skipFiles": ["<node_internals>/**"],
-        "type": "node"
-      },
-      {
-        "name": "Attach Pi Matrix",
-        "port": 33348,
-        "request": "attach",
-        "skipFiles": ["<node_internals>/**"],
-        "type": "node"
-      },
-      {
-        "name": "Attach Sampler App",
-        "port": 33349,
-        "request": "attach",
-        "skipFiles": ["<node_internals>/**"],
-        "type": "node"
-      },
-      {
-        "name": "Attach Scene Manager",
-        "port": 33350,
-        "request": "attach",
-        "skipFiles": ["<node_internals>/**"],
-        "type": "node"
-      },
     ]
   },
   "extensions": {
@@ -141,7 +64,6 @@
       "*.strategy.ts": "nest-resolver",
       "config.ts": "makefile",
       "environment.ts": "dune",
-      "index.ts": "stitches",
       "index.ts": "stitches",
       "main.ts": "exe",
       "package.json": "npm",

@@ -57,6 +57,7 @@ export class IS_Definition {
   public hash(text: string): string {
     let hash = START;
     for (let i = START; i < text.length; i++) {
+      // eslint-disable-next-line @typescript-eslint/no-magic-numbers
       hash = (hash << 5) - hash + (text.codePointAt(i) || NONE);
       hash = Math.trunc(hash);
     }

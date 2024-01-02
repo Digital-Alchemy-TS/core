@@ -67,7 +67,7 @@ type SleepReturn = Promise<void> & {
  */
 export function sleep(target: number | Date = SECOND): SleepReturn {
   // done function from promise
-  let done: (undefined | (() => void));
+  let done: undefined | (() => void);
 
   const timeout = setTimeout(
     () => done && done(),
@@ -92,10 +92,7 @@ export function sleep(target: number | Date = SECOND): SleepReturn {
  *
  * Create an array of length, where the values are filled with a provided fill value, or (index + 1) as default value
  */
-export function PEAT<T = number>(
-  length: number,
-  fill?: T,
-): T[] {
+export function PEAT<T = number>(length: number, fill?: T): T[] {
   return Array.from({ length }).map(
     (_, index) => fill ?? ((index + ARRAY_OFFSET) as T),
   );

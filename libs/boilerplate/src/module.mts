@@ -1,22 +1,33 @@
 import { ZCC } from "@zcc/utilities";
 
-function CreateLibraryModule() {
+import { AnyConfig } from "./types/configuration.mjs";
+
+type LibraryConfigurationOptions = {
+  name: string;
+  configuration: Record<string, AnyConfig>;
+};
+
+export type ZCCModuleDefinition = LibraryConfigurationOptions & {
+  configuration: {};
+  lifecycle: {};
+  logger: {};
+};
+
+function CreateLibraryModule(
+  options: LibraryConfigurationOptions,
+): ZCCModuleDefinition {
   return {
-    //
+    ...options,
+    configuration: {},
+    lifecycle: {},
+    logger: {},
   };
 }
 
 declare module "@zcc/utilities" {
   export interface ZCC_Definition {
-    library(): void;
+    library: typeof CreateLibraryModule;
   }
 }
 
-ZCC.library = function CreateLibraryModule() {
-  return {
-    //
-  };
-};
-//
-// console.log("hit");
-// [1, 2, 3].sort();
+ZCC.library = CreateLibraryModule;

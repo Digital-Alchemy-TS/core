@@ -142,7 +142,7 @@
       "config.ts": "makefile",
       "environment.ts": "dune",
       "index.ts": "stitches",
-      "index.mts": "stitches",
+      "index.ts": "stitches",
       "main.ts": "exe",
       "package.json": "npm",
       "project.json": "nrwl",

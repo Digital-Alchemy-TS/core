@@ -19,3 +19,5 @@ ZCC.library =function CreateLibraryModule() {
   }
   }
 //
+console.log("hit");
+[1,2,3].sort();

@@ -1,6 +1,6 @@
 import deepEqual from "deep-equal";
 
-import { EMPTY, EVEN, NONE, START } from "./utilities.mjs";
+import { EMPTY, EVEN, NONE, START } from "./utilities.js";
 
 type MaybeEmptyTypes =
   | string
@@ -40,7 +40,7 @@ export class IS_Definition {
       return Object.keys(type).length === EMPTY;
     }
     return true;
-  }
+}
 
   public equal(a: unknown, b: unknown): boolean {
     return deepEqual(a, b);

@@ -1,4 +1,8 @@
 {
+  "env": {
+    "es6": true,
+    "node": true
+  },
   "root": true,
   "ignorePatterns": [
     "**/*"
@@ -18,7 +22,7 @@
   "overrides": [
     {
       "files": [
-        ".mts"
+        ".ts"
       ],
       "extends": [
         "plugin:@nx/typescript",
@@ -122,7 +126,7 @@
     {
       "files": [
         "*.spec.ts",
-        "*.spec.mts",
+        "*.spec.ts",
         "*.spec.tsx",
         "*.spec.js",
         "*.spec.jsx"

@@ -6,17 +6,14 @@ This Utilities Library is a compact yet versatile toolkit designed for various u
 
 ## ⭐ Library Features
 
-1. **📌 Named Constants**: Provides a range of constants...
-2. **🪄 Helper Functions**: Includes a set of small, reusable functions...
-3. **🔍 `is` Object**: A collection of type testing...
-4. **📡 `ZCC` Object**: Implements an EventEmitter...
+1. **📌 Named Constants**: Common variables for internal library consistency and optional external use.
+2. **🪄 Helper Functions**: Basic utilities, including sleep and cron, for optional utility enhancement.
+3. **🔍 `is` Object**: Versatile type-checking toolkit, augment-friendly for custom validations.
+4. **📡 `ZCC` Object**: Central hub for library augmentation and cross-module integration.
 
 ## 🧩 Augmentation
 
 ### Augmenting `ZCC`
-
-Augmentation Examples
-Augmenting ZCC
 
 To augment the ZCC object, you can add new properties or methods that extend its functionality. Below is an example of augmenting ZCC with a new method for handling custom events.
 
@@ -49,7 +46,7 @@ declare module "@zcc/utilities" {
 ZCC.featureTracker = createFeatureTracker();
 ```
 
-## Augmenting `is`
+### Augmenting `is`
 
 Similarly, augmenting the is object allows adding new type-checking functions or other utilities. Here's an example:
 
@@ -105,7 +102,11 @@ setTimeout(() => timer.kill("continue"), 3 * SECOND);
 await timer;
 ```
 
-## 🧮 Constants Table
+### 🧮 Constants
+
+### General Table
+
+> Commonly used constants within the library. Many files define their own at the top, you can use these or not in your own code.
 
 | Constant          | Value      | Example Usage                                | Description                                 |
 |-------------------|------------|----------------------------------------------|---------------------------------------------|
@@ -150,6 +151,5 @@ Summary of Cron Patterns:
 - **Yearly**: Annual schedule.
 - **Special Ranges**: For example, every 30 minutes between 9 AM and 5 PM, and specific schedules for weekdays at every hour.
 
-This enumeration facilitates the easy setup of recurring tasks without the need to manually write complex cron expressions, making it a valuable asset for scheduling in various applications.
 
 🏁

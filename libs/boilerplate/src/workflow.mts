@@ -1,5 +1,3 @@
 export function ApplicationLifecycle() {
-  return {
-
-  }
+  return {};
 }

@@ -1,6 +1,6 @@
 import deepEqual from "deep-equal";
 
-import { EMPTY, EVEN, NONE, START } from "./utilities.js";
+import { EMPTY, EVEN, NONE, START } from "./utilities.mjs";
 
 type MaybeEmptyTypes =
   | string

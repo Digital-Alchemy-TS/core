@@ -1,23 +1,22 @@
-import { ZCC } from "@zcc/utilities"
+import { ZCC } from "@zcc/utilities";
 
 function CreateLibraryModule() {
-return  {
-  //
-}
+  return {
+    //
+  };
 }
 
 declare module "@zcc/utilities" {
   export interface ZCC_Definition {
-    library() : void;
+    library(): void;
   }
 }
 
-
-ZCC.library =function CreateLibraryModule() {
-  return  {
+ZCC.library = function CreateLibraryModule() {
+  return {
     //
-  }
-  }
+  };
+};
 //
-console.log("hit");
-[1,2,3].sort();
+// console.log("hit");
+// [1, 2, 3].sort();

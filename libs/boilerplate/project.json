@@ -11,7 +11,7 @@
         "outputPath": "dist/libs/boilerplate",
         "tsConfig": "libs/boilerplate/tsconfig.lib.json",
         "packageJson": "libs/boilerplate/package.json",
-        "main": "libs/boilerplate/src/index.ts",
+        "main": "libs/boilerplate/src/index.mts",
         "assets": ["libs/boilerplate/*.md"]
       }
     },

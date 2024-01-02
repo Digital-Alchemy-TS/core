@@ -21,7 +21,7 @@
   "overrides": [
     {
       "files": [
-        "**/src/**/*.ts"
+        "**/src/**/*.mts"
       ],
       "extends": [
         "plugin:@nx/typescript",

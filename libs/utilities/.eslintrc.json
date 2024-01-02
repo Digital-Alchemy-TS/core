@@ -3,7 +3,7 @@
   "ignorePatterns": ["!**/*"],
   "overrides": [
     {
-      "files": ["src/**/*.ts"],
+      "files": ["src/**/*.mts"],
       "rules": {},
       "parser": "@typescript-eslint/parser",
       "parserOptions": {

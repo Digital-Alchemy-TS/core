@@ -1,16 +1,18 @@
 {
   "compileOnSave": false,
-  "include": ["**/*.ts"],
+  "include": ["**/src/**/*.mts"],
   "compilerOptions": {
     "allowJs": false,
-    "alwaysStrict": false,
+    "alwaysStrict": true,
     "baseUrl": ".",
     "esModuleInterop": true,
+    "composite": true,
+    "isolatedModules": true,
     "importHelpers": true,
     "lib": ["ESNext"],
-    "module": "commonjs",
-    "moduleResolution": "node",
-    "noImplicitAny": false,
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noImplicitAny": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
@@ -20,16 +22,16 @@
     "sourceMap": true,
     "strict": true,
     "strictBindCallApply": true,
-    "strictFunctionTypes": false,
+    "strictFunctionTypes": true,
     "strictNullChecks": true,
-    "strictPropertyInitialization": false,
-    "target": "ES2022",
+    "strictPropertyInitialization": true,
+    "target": "ESNext",
     "paths": {
       "@zcc/boilerplate": [
-        "libs/boilerplate/src/index.ts"
+        "libs/boilerplate/src/index.mts"
       ],
       "@zcc/utilities": [
-        "libs/utilities/src/index.ts"
+        "libs/utilities/src/index.mts"
       ]
     }
   },

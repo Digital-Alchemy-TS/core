@@ -2,18 +2,14 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/boilerplate-out-tsc",
-    "declaration": true,
-    "types": [
-      "node"
-    ]
   },
   "exclude": [
     "jest.config.ts",
-    "src/**/*.spec.ts",
-    "src/**/*.test.ts"
+    "src/**/*.spec.mts",
+    "src/**/*.test.mts"
   ],
   "include": [
-    "src/**/*.ts"
+    "src/**/*.mts"
   ],
   "references": [
     {

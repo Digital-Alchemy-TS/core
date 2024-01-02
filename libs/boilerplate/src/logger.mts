@@ -158,29 +158,23 @@ function call(
   normalLogger(method, context, ...parameters);
 }
 
-export function ContextLogger(context: string): iLogger {
-  return {
-    debug: (...params: Parameters<LoggerFunction>) =>
-      call("debug", context, ...params),
-    error: (...params: Parameters<LoggerFunction>) =>
-      call("error", context, ...params),
-    fatal: (...params: Parameters<LoggerFunction>) =>
-      call("fatal", context, ...params),
-    info: (...params: Parameters<LoggerFunction>) =>
-      call("info", context, ...params),
-    trace: (...params: Parameters<LoggerFunction>) =>
-      call("trace", context, ...params),
-    warn: (...params: Parameters<LoggerFunction>) =>
-      call("warn", context, ...params),
-  };
-}
-
-export function LibraryLogger() {
-  //
-}
-
 function AugmentLogger() {
   return {
+    context: (context: string) =>
+      ({
+        debug: (...params: Parameters<LoggerFunction>) =>
+          call("debug", context, ...params),
+        error: (...params: Parameters<LoggerFunction>) =>
+          call("error", context, ...params),
+        fatal: (...params: Parameters<LoggerFunction>) =>
+          call("fatal", context, ...params),
+        info: (...params: Parameters<LoggerFunction>) =>
+          call("info", context, ...params),
+        trace: (...params: Parameters<LoggerFunction>) =>
+          call("trace", context, ...params),
+        warn: (...params: Parameters<LoggerFunction>) =>
+          call("warn", context, ...params),
+      }) as iLogger,
     setLogLevel: (level: pino.Level) => (logLevel = level),
     setPrettyLogger: (state: boolean) => (usePrettyLogger = state),
   };
@@ -189,6 +183,9 @@ function AugmentLogger() {
 declare module "@zcc/utilities" {
   export interface ZCC_Definition {
     logger: ReturnType<typeof AugmentLogger>;
+    systemLogger: iLogger;
   }
 }
+
 ZCC.logger = AugmentLogger();
+ZCC.systemLogger = ZCC.logger.context("ZCC:system");

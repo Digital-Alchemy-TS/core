@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-magic-numbers */
+import { deepExtend, DOWN, eachSeries, UP, ZCC } from "@zcc/utilities";
+
 export type DigitalAlchemyConfigTypes =
   | "string"
   | "boolean"
@@ -121,3 +124,74 @@ export interface AbstractConfig {
 }
 
 export const INJECTED_DYNAMIC_CONFIG = "INJECTED_DYNAMIC_CONFIG";
+
+type ConfigLoaderReturn = Promise<Partial<AbstractConfig>>;
+
+type ConfigLoader = [
+  loader: (application: string) => ConfigLoaderReturn,
+  priority: number,
+];
+
+export async function ConfigLoaderEnvironment(): ConfigLoaderReturn {
+  return {
+    //
+  };
+}
+
+export async function ConfigLoaderSwitches(): ConfigLoaderReturn {
+  return {
+    //
+  };
+}
+
+export async function ConfigLoaderYaml(): ConfigLoaderReturn {
+  return {
+    //
+  };
+}
+
+export async function ConfigLoaderIni(): ConfigLoaderReturn {
+  return {
+    //
+  };
+}
+
+export async function ConfigLoaderJson(): ConfigLoaderReturn {
+  return {
+    //
+  };
+}
+
+function CreateConfiguration() {
+  const configLoaders = new Set<ConfigLoader>();
+  const configuration: AbstractConfig = { application: {}, libs: {} };
+
+  return {
+    addConfigLoader: (loader: ConfigLoader) => configLoaders.add(loader),
+    defaultLoaders: () => {
+      configLoaders.add([ConfigLoaderYaml, 0]);
+      configLoaders.add([ConfigLoaderIni, 0]);
+      configLoaders.add([ConfigLoaderJson, 0]);
+      configLoaders.add([ConfigLoaderEnvironment, 0]);
+      configLoaders.add([ConfigLoaderSwitches, 0]);
+    },
+    loadConfig: async (application: string) => {
+      await eachSeries(
+        [...configLoaders.values()].sort(([, a], [, b]) => (a > b ? UP : DOWN)),
+        async ([loader]) => {
+          const merge = await loader(application);
+          deepExtend(configuration, merge);
+        },
+      );
+    },
+    raw: configuration,
+  };
+}
+
+declare module "@zcc/utilities" {
+  export interface ZCC_Definition {
+    config: ReturnType<typeof CreateConfiguration>;
+  }
+}
+
+ZCC.config = CreateConfiguration();

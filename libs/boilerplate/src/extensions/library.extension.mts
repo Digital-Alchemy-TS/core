@@ -15,7 +15,7 @@ function CreateLibraryModule({
   configuration,
 }: LibraryConfigurationOptions) {
   const lifecycle = ZCC.lifecycle.child();
-  const logger = ZCC.logger.context(`lib:${library}:Bootstrap`);
+  const logger = ZCC.logger.context(`${library}:Bootstrap`);
 
   if (!is.empty(configuration)) {
     lifecycle.onAttach(() => {
@@ -27,6 +27,8 @@ function CreateLibraryModule({
     });
   }
   return {
+    childLogger: (context: string) =>
+      ZCC.logger.context(`${library}:${context}`),
     configuration,
     getConfig: <T,>(property: string): T => ZCC.config.get([library, property]),
     lifecycle,

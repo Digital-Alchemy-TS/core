@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
-import { is, ZCC } from "@zcc/utilities";
+import { is, SECOND, ZCC } from "@zcc/utilities";
 import chalk from "chalk";
 import { pino } from "pino";
+
+import { LOGGER_CONTEXT_ENTRIES_COUNT } from "../helpers/metrics.helper.mjs";
 
 export type TLoggerFunction =
   | ((message: string, ...arguments_: unknown[]) => void)
@@ -79,11 +81,20 @@ function prettyFormatMessage(message: string): string {
   return message;
 }
 
+const HIGHLIGHTED_CONTEXT_CACHE: Record<string, string> = {};
+setInterval(() => {
+  const contextEntriesCount = Object.keys(HIGHLIGHTED_CONTEXT_CACHE).length;
+  LOGGER_CONTEXT_ENTRIES_COUNT.set(contextEntriesCount);
+}, 10 * SECOND);
+
 function highlightContext(
   context: string,
   level: TContextColorType = "bgGrey",
 ): string {
-  return chalk`{bold.${level.slice(2).toLowerCase()} [${context}]}`;
+  const PAIR = context + level;
+  return (HIGHLIGHTED_CONTEXT_CACHE[PAIR] =
+    HIGHLIGHTED_CONTEXT_CACHE[PAIR] ??
+    chalk`{bold.${level.slice(2).toLowerCase()} [${context}]}`);
 }
 
 function standardLogger(
@@ -172,6 +183,7 @@ function augmentLogger() {
         warn: (...params: Parameters<TLoggerFunction>) =>
           log("warn", context, ...params),
       }) as ILogger,
+    getBaseLogger: () => logger,
     setBaseLogger: (base: ILogger) => (logger = base),
     setLogLevel: (level: pino.Level) => (logLevel = level),
     setMaxCutoff: (cutoff: number) => (maxCutoff = cutoff),

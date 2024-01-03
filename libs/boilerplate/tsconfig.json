@@ -1,5 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../dist/boilerplate-out-tsc",
+  },
   "files": [],
   "include": [],
   "references": [
@@ -8,6 +11,9 @@
     },
     {
       "path": "./tsconfig.spec.json"
+    },
+    {
+      "path": "../utilities/tsconfig.lib.json"
     }
   ]
 }

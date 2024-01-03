@@ -1,12 +1,8 @@
 {
   "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "outDir": "../../dist/boilerplate-out-tsc",
-  },
   "exclude": [
     "jest.config.ts",
-    "src/**/*.spec.mts",
-    "src/**/*.test.mts"
+    "src/tests/**/*.mts"
   ],
   "include": [
     "src/**/*.mts"

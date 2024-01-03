@@ -9,5 +9,5 @@
   ],
   "include": [
     "src/**/*.mts"
-, "src/tests/peat.spec.ts"  ]
+  ]
 }

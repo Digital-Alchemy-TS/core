@@ -1,4 +1,5 @@
-import { Counter, Gauge } from "prom-client";
+/* eslint-disable @typescript-eslint/no-magic-numbers */
+import { Counter, Gauge, Histogram } from "prom-client";
 
 /**
  * Cache delete operations counter
@@ -75,4 +76,38 @@ export const FETCH_REQUESTS_FAILED = new Counter({
 export const FETCH_REQUEST_BOTTLENECK_DELAY = new Gauge({
   help: "Delay in milliseconds experienced by requests due to bottleneck rate limiting",
   name: "fetch_request_bottleneck_delay_milliseconds",
+});
+/**
+ * Gauge to count the number of errors encountered in Redis operations.
+ */
+export const REDIS_ERROR_COUNT = new Gauge({
+  help: "Counts the number of errors encountered in Redis operations",
+  name: "redis_error_count",
+});
+
+/**
+ * Histogram to track the latency of Redis operations in milliseconds.
+ * Buckets range from 0.1 ms to 1000 ms (1 second) for granular latency measurement.
+ */
+export const REDIS_OPERATION_LATENCY_MS = new Histogram({
+  buckets: [0.1, 0.5, 1, 5, 10, 20, 50, 100, 200, 500, 1000],
+  help: "Histogram for tracking the latency of Redis operations in milliseconds",
+  name: "redis_operation_latency_ms",
+});
+
+/**
+ * Counter to track the number of errors encountered in memory cache operations.
+ */
+export const MEMORY_CACHE_ERROR_COUNT = new Counter({
+  help: "Counts the number of errors encountered in memory cache operations",
+  name: "memory_cache_error_count",
+});
+
+/**
+ * A Prometheus gauge metric that tracks the number of unique context entries in the logger's context cache.
+ * This helps in monitoring and managing the memory usage associated with the caching of logger contexts.
+ */
+export const LOGGER_CONTEXT_ENTRIES_COUNT = new Gauge({
+  help: "Number of unique context entries in the logger context cache",
+  name: "logger_context_entries_count",
 });

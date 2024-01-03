@@ -1,7 +1,8 @@
 import { ZCC } from "@zcc/utilities";
-import NodeCache from "node-cache";
-import Redis from "redis";
+import { config } from "process";
 
+import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
+import { CACHE_TTL } from "../helpers/config.constants.mjs";
 import {
   CACHE_DEFAULT_TTL_SECONDS,
   CACHE_DELETE_OPERATIONS_TOTAL,
@@ -10,125 +11,76 @@ import {
   CACHE_SET_OPERATIONS_TOTAL,
 } from "../helpers/metrics.helper.mjs";
 
-interface ICacheConfig {
-  CACHE_PREFIX: string;
-  CACHE_TTL: number;
-}
-
-interface ICacheDriver {
-  get<T>(key: string): Promise<T>;
+export interface ICacheDriver {
+  get<T>(key: string, defaultValue?: T): Promise<T | undefined>;
   set<T>(key: string, value: T, ttl: number): Promise<void>;
   del(key: string): Promise<void>;
   keys(pattern?: string): Promise<string[]>;
 }
 
-// Prometheus metrics
-function createCache() {
-  let config: ICacheConfig;
-  let client: ICacheDriver;
-
-  function configure(cfg: ICacheConfig): void {
-    config = cfg;
-    CACHE_DEFAULT_TTL_SECONDS.set({ prefix: cfg.CACHE_PREFIX }, cfg.CACHE_TTL);
+function createCache(prefix: string = "", client?: ICacheDriver) {
+  function configure(): void {
+    CACHE_DEFAULT_TTL_SECONDS.set(
+      { prefix },
+      LIB_BOILERPLATE.getConfig(CACHE_TTL),
+    );
   }
 
-  function init(driverConstructor?: (cfg: ICacheConfig) => ICacheDriver): void {
-    client = driverConstructor
-      ? driverConstructor(config)
-      : createMemoryDriver(config);
-  }
+  const logger = ZCC.logger.context(`cache:${prefix}`);
 
-  async function get<T>(key: string): Promise<T> {
-    const fullKey = fullKeyName(key);
-    const result = await client.get(fullKey);
-    CACHE_GET_OPERATIONS_TOTAL.inc({
-      hit_miss: result ? "hit" : "miss",
-      key: fullKey,
-      prefix: config.CACHE_PREFIX,
-    });
-    return result as T;
-  }
-
-  async function set<T>(
-    key: string,
-    value: T,
-    ttl: number = config.CACHE_TTL,
-  ): Promise<void> {
-    const fullKey = fullKeyName(key);
-    await client.set(fullKey, value, ttl);
-    CACHE_SET_OPERATIONS_TOTAL.inc({
-      key: fullKey,
-      prefix: config.CACHE_PREFIX,
-    });
-  }
-
-  async function del(key: string): Promise<void> {
-    const fullKey = fullKeyName(key);
-    await client.del(fullKey);
-    CACHE_DELETE_OPERATIONS_TOTAL.inc({
-      key: fullKey,
-      prefix: config.CACHE_PREFIX,
-    });
-  }
-
-  async function keys(pattern?: string): Promise<string[]> {
-    CACHE_KEYLIST_OPERATIONS_TOTAL.inc({ prefix: config.CACHE_PREFIX });
-    return client.keys(fullKeyName(pattern || "*"));
+  function init(driverConstructor?: ICacheDriver): void {
+    // client = driverConstructor
+    //   ? driverConstructor(config)
+    //   : createMemoryDriver(config);
   }
 
   function fullKeyName(key: string): string {
-    return `${config.CACHE_PREFIX}${key}`;
+    return `${prefix}${key}`;
   }
 
-  function child(prefix: string): ReturnType<typeof createCache> {
-    const childCache = createCache();
-    childCache.configure({
-      ...config,
-      CACHE_PREFIX: `${config.CACHE_PREFIX}${prefix}`,
-    });
-    childCache.init(client);
-    return childCache;
-  }
-
-  return { child, configure, del, get, init, keys, set };
-}
-
-export function createMemoryDriver(config: ICacheConfig): ICacheDriver {
-  const client = new NodeCache({ stdTTL: config.CACHE_TTL });
-
   return {
-    async del(key: string) {
-      client.del(key);
+    child: (prefix: string): ReturnType<typeof createCache> => {
+      const childCache = createCache();
+      childCache.configure();
+      // childCache.init(client);
+      return childCache;
     },
-    async get(key: string) {
-      return client.get(key);
+    configure,
+    del: async (key: string): Promise<void> => {
+      const fullKey = fullKeyName(key);
+      await client.del(fullKey);
+      CACHE_DELETE_OPERATIONS_TOTAL.inc({
+        key: fullKey,
+        prefix,
+      });
     },
-    async keys(pattern?: string) {
-      const allKeys = client.keys();
-      return pattern ? allKeys.filter(key => key.includes(pattern)) : allKeys;
+    get: async <T,>(key: string): Promise<T> => {
+      const fullKey = fullKeyName(key);
+      const result = await client.get(fullKey);
+      CACHE_GET_OPERATIONS_TOTAL.inc({
+        hit_miss: result ? "hit" : "miss",
+        key: fullKey,
+        prefix,
+      });
+      return result as T;
     },
-    async set(key: string, value: any, ttl: number) {
-      client.set(key, value, ttl);
+    init: async <T,>(
+      key: string,
+      value: T,
+      ttl: number = config.CACHE_TTL,
+    ): Promise<void> => {
+      const fullKey = fullKeyName(key);
+      await client.set(fullKey, value, ttl);
+      CACHE_SET_OPERATIONS_TOTAL.inc({
+        key: fullKey,
+        prefix,
+      });
     },
-  };
-}
-
-export function createRedisDriver(config: ICacheConfig): ICacheDriver {
-  const client = new Redis();
-
-  return {
-    async del(key: string) {
-      await client.del(key);
+    keys: async (pattern?: string): Promise<string[]> => {
+      CACHE_KEYLIST_OPERATIONS_TOTAL.inc({ prefix });
+      return client.keys(fullKeyName(pattern || "*"));
     },
-    async get(key: string) {
-      return client.get(key);
-    },
-    async keys(pattern?: string) {
-      return client.keys(pattern || "*");
-    },
-    async set<T>(key: string, value: T, ttl: number) {
-      await client.set(key, value, "EX", ttl);
-    },
+    set,
   };
 }
 

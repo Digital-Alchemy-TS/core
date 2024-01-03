@@ -1,8 +1,13 @@
 import { DOWN, each, eachSeries, UP, ZCC } from "@zcc/utilities";
 
-import { BootstrapException } from "../helpers/errors.helper.mjs";
+import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
+import {
+  BootstrapException,
+  InternalError,
+} from "../helpers/errors.helper.mjs";
 import { ZCCApplicationDefinition } from "./application.extension.mjs";
 import { AbstractConfig } from "./configuration.extension.mjs";
+import { ILogger } from "./logger.extension.mjs";
 
 const NONE = -1;
 
@@ -36,7 +41,11 @@ export type TChildLifecycle = {
   onReady: (callback: LifecycleCallback, priority?: number) => number;
 };
 
+let logger: ILogger;
+
 function CreateLifecycle() {
+  logger ??= LIB_BOILERPLATE.getConfig("lifecycle");
+
   const bootstrapCallbacks: CallbackList = [];
   const configCallbacks: CallbackList = [];
   const postConfigCallbacks: CallbackList = [];
@@ -75,6 +84,8 @@ function CreateLifecycle() {
     };
   }
 
+  let configuredApplication: ZCCApplicationDefinition;
+
   return {
     child: childLifecycle,
     exec(
@@ -90,6 +101,7 @@ function CreateLifecycle() {
         );
       }
       ZCC.application = application;
+      configuredApplication = application;
       return new Promise(() => {
         setImmediate(async done => {
           const logger = ZCC.systemLogger;
@@ -142,6 +154,23 @@ function CreateLifecycle() {
       preInitCallbacks.push([callback, priority]),
     onReady: (callback: LifecycleCallback, priority = NONE) =>
       readyCallbacks.push([callback, priority]),
+    teardown: () => {
+      if (!configuredApplication) {
+        throw new InternalError(
+          "lifecycle.extension",
+          "TEARDOWN_NOT_CONFIGURED",
+          "Cannot teardown before running exec",
+        );
+      }
+      if (ZCC.application !== configuredApplication) {
+        throw new InternalError(
+          "lifecycle.extension",
+          "TEARDOWN_FOREIGN_APPLICATION",
+          "ZCC.application points to an application different from the one created by this object",
+        );
+      }
+      ZCC.application = undefined;
+    },
   };
 }
 

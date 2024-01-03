@@ -384,6 +384,7 @@ function CreateConfiguration() {
   const configLoaders = new Set<ConfigLoader>();
   const configuration: AbstractConfig = { application: {}, libs: {} };
   const configDefinitions: KnownConfigs = new Map();
+  const logger = ZCC.logger.context("configuration.extension");
 
   function defaultLoaders() {
     configLoaders.add([ConfigLoaderEnvironment, ENVIRONMENT_LOAD_PRIORITY]);

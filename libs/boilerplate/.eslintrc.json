@@ -1,14 +1,31 @@
 {
-  "extends": ["../../.eslintrc.json"],
-  "ignorePatterns": ["!**/*"],
+  "extends": [
+    "../../.eslintrc.json"
+  ],
+  "ignorePatterns": [
+    "!**/*"
+  ],
   "overrides": [
     {
-      "files": ["**/*.mts"],
+      "files": [
+        "src/**/*.mts"
+      ],
       "rules": {},
+      "parser": "@typescript-eslint/parser",
       "parserOptions": {
-        "parser": "@typescript-eslint/parser",
         "project": [
-          "libs/boilerplate/tsconfig.lib.json",
+          "libs/boilerplate/tsconfig.lib.json"
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/tests/**/*.ts"
+      ],
+      "rules": {},
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": [
           "libs/boilerplate/tsconfig.spec.json"
         ]
       }

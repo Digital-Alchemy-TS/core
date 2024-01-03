@@ -11,7 +11,7 @@ export class FetchRequestError extends Error {
 
   constructor({ error, message, statusCode }: MaybeHttpError) {
     super(`Fetch Request Error - ${statusCode} ${error}: ${message}`);
-    this.name = this.constructor.name;
+    this.name = "FetchRequestError";
     this.error = error;
     this.message = message;
     this.statusCode = statusCode;
@@ -26,8 +26,22 @@ export class BootstrapException extends Error {
   constructor(context: string, cause: string, message: string) {
     super(`Bootstrap Error in ${context}: ${message}`);
     this.name = "BootstrapException";
-    this.context = context; // The part of the system where the error occurred
-    this.cause = cause; // A short description of the cause of the error
-    this.timestamp = new Date(); // Timestamp when the error occurred
+    this.context = context;
+    this.cause = cause;
+    this.timestamp = new Date();
+  }
+}
+
+export class InternalError extends Error {
+  context: string;
+  cause: string;
+  timestamp: Date;
+
+  constructor(context: string, cause: string, message: string) {
+    super(`Internal System Error in ${context}: ${message}`);
+    this.name = "InternalError";
+    this.context = context;
+    this.cause = cause;
+    this.timestamp = new Date();
   }
 }

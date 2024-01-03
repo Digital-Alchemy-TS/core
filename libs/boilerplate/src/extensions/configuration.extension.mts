@@ -390,16 +390,22 @@ function CreateConfiguration() {
     configLoaders.add([ConfigLoaderFile, FILE_LOAD_PRIORITY]);
   }
 
-  function getConfiguration(path: string): BaseConfig {
+  function getConfiguration(
+    path: string,
+    dynamic: AnyConfig | undefined,
+  ): BaseConfig {
     const parts = path.split(".");
     if (parts.length === SINGLE) {
       parts.unshift(application);
     }
     if (parts.length === PAIR) {
       const configuration = configDefinitions.get(application) || {};
-      const config = configuration[parts[VALUE]] ?? { type: "string" };
-      if (!is.empty(Object.keys(config ?? {}))) {
+      const config = configuration[parts[VALUE]];
+      if (!is.empty(config)) {
         return config;
+      }
+      if (dynamic) {
+        return dynamic;
       }
       return {
         // Applications can yolo a bit harder than libraries
@@ -427,6 +433,10 @@ function CreateConfiguration() {
     defaultLoaders,
     get<T extends unknown = string>(
       path: string | [library: string, config: string],
+      /**
+       * Do not provide if it was provided with the module
+       */
+      dynamic?: AnyConfig,
     ): T {
       if (is.array(path)) {
         path =
@@ -435,7 +445,7 @@ function CreateConfiguration() {
             : ["libs", path[LABEL], path[VALUE]].join(".");
       }
       const current = get(configuration, path);
-      const config = getConfiguration(path);
+      const config = getConfiguration(path, dynamic);
       const defaultValue = config?.default;
       const value = current ?? defaultValue;
 

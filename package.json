@@ -17,6 +17,7 @@
     "js-yaml": "^4.1.0",
     "minimist": "^1.2.8",
     "mqtt": "^5.3.4",
+    "node-cache": "^5.1.2",
     "object-path": "^0.11.8",
     "pino": "^8.17.2",
     "pino-pretty": "^10.3.1",

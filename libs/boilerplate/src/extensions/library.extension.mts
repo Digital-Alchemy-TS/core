@@ -38,8 +38,8 @@ export type LibraryDefinition = ReturnType<typeof CreateLibraryModule>;
 
 declare module "@zcc/utilities" {
   export interface ZCCDefinition {
-    library: typeof CreateLibraryModule;
+    createLibrary: typeof CreateLibraryModule;
   }
 }
 
-ZCC.library = CreateLibraryModule;
+ZCC.createLibrary = CreateLibraryModule;

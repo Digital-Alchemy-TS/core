@@ -1,14 +1,32 @@
 {
-  "extends": ["../../.eslintrc.json"],
-  "ignorePatterns": ["!**/*"],
+  "extends": [
+    "../../.eslintrc.json"
+  ],
+  "ignorePatterns": [
+    "!**/*"
+  ],
   "overrides": [
     {
-      "files": ["src/**/*.mts"],
+      "files": [
+        "src/**/*.mts"
+      ],
       "rules": {},
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
         "project": [
           "libs/utilities/tsconfig.lib.json"
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/tests/**/*.ts"
+      ],
+      "rules": {},
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": [
+          "libs/utilities/tsconfig.spec.json"
         ]
       }
     }

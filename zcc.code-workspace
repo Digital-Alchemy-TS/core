@@ -44,6 +44,7 @@
       "yarn.lock": "lock",
       "*.module.mts": "rust",
       "*.controller.mts": "elm",
+      "*.constants.mts": "grain",
       "*.service.mts": "scala",
       "*.helper.mts": "gridsome",
       "*.extension.mts": "purescript",

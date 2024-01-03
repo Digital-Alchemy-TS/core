@@ -29,6 +29,7 @@ words:
   - idris
   - undici
   - proto
+  - keylist
   - exiasr
   - hadolint
   - lifecycles

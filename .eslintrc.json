@@ -21,7 +21,8 @@
   "overrides": [
     {
       "files": [
-        "**/src/**/*.mts"
+        "**/src/**/*.mts",
+        "src/**/*.ts"
       ],
       "extends": [
         "plugin:@nx/typescript",
@@ -110,20 +111,20 @@
       }
     },
     {
-      "files": [
-        "*.spec.ts",
-        "*.spec.ts",
-        "*.spec.tsx",
-        "*.spec.js",
-        "*.spec.jsx"
-      ],
+      "files": ["*.spec.ts"],
       "env": {
         "jest": true
       },
-      "rules": {}
+      "rules": {
+        "@typescript-eslint/unbound-method": "off",
+        "@typescript-eslint/no-magic-numbers": "off",
+        "sonarjs/no-duplicate-string": "off"
+      }
     },
     {
-      "files": ["*.json"],
+      "files": [
+        "*.json"
+      ],
       "parser": "jsonc-eslint-parser",
       "rules": {
         "@nx/dependency-checks": "error"

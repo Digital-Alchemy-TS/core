@@ -1,7 +1,6 @@
 import { ZCC } from "@zcc/utilities";
 
 import {
-  CACHE_PORT,
   CACHE_PREFIX,
   CACHE_PROVIDER,
   CACHE_TTL,
@@ -10,7 +9,9 @@ import {
   REDIS_URL,
   SCAN_CONFIG,
 } from "./helpers/config.constants.mjs";
+import { MergeDefinitions } from "./helpers/merge.helper.mjs";
 
+MergeDefinitions();
 export const LIB_BOILERPLATE = ZCC.createLibrary({
   configuration: {
     [CACHE_PREFIX]: {

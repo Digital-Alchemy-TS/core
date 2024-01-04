@@ -379,7 +379,7 @@ export async function ConfigLoaderFile(): ConfigLoaderReturn {
 export type ModuleConfiguration = Record<string, AnyConfig>;
 export type OptionalModuleConfiguration = ModuleConfiguration | undefined;
 
-function CreateConfiguration() {
+export function CreateConfiguration() {
   let application: string;
   const configLoaders = new Set<ConfigLoader>();
   const configuration: AbstractConfig = { application: {}, libs: {} };
@@ -486,11 +486,3 @@ function CreateConfiguration() {
     setOverrideConfigFiles: (files: string[]) => (overrideConfigFiles = files),
   };
 }
-
-declare module "@zcc/utilities" {
-  export interface ZCCDefinition {
-    config: ReturnType<typeof CreateConfiguration>;
-  }
-}
-
-ZCC.config = CreateConfiguration();

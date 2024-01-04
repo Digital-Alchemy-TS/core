@@ -76,7 +76,7 @@ function buildFilterString(
 }
 
 // eslint-disable-next-line sonarjs/cognitive-complexity
-function CreateFetcher({
+export function CreateFetcher({
   logContext,
   baseUrl = "",
   headers: baseHeaders = {},
@@ -211,15 +211,3 @@ function CreateFetcher({
     },
   };
 }
-
-declare module "@zcc/utilities" {
-  export interface ZCCDefinition {
-    createFetcher: typeof CreateFetcher;
-    fetch: ReturnType<typeof CreateFetcher>;
-  }
-}
-
-ZCC.createFetcher = CreateFetcher;
-ZCC.fetch = CreateFetcher({
-  logContext: "ZCC:fetch",
-});

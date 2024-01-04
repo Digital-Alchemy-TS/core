@@ -14,5 +14,10 @@
     "jest.config.ts",
     "src/**/*.mts",
     "src/tests/*.spec.ts"
+  ],
+  "references": [
+    {
+      "path": "../utilities/tsconfig.lib.json"
+    }
   ]
 }

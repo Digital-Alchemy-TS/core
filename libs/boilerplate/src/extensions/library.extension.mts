@@ -10,7 +10,7 @@ type LibraryConfigurationOptions = {
   configuration?: OptionalModuleConfiguration;
 };
 
-function CreateLibraryModule({
+export function CreateLibraryModule({
   library,
   configuration,
 }: LibraryConfigurationOptions) {
@@ -37,11 +37,3 @@ function CreateLibraryModule({
 }
 
 export type LibraryDefinition = ReturnType<typeof CreateLibraryModule>;
-
-declare module "@zcc/utilities" {
-  export interface ZCCDefinition {
-    createLibrary: typeof CreateLibraryModule;
-  }
-}
-
-ZCC.createLibrary = CreateLibraryModule;

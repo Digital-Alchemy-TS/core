@@ -1,13 +1,11 @@
 import { DOWN, each, eachSeries, UP, ZCC } from "@zcc/utilities";
 
-import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
 import {
   BootstrapException,
   InternalError,
 } from "../helpers/errors.helper.mjs";
 import { ZCCApplicationDefinition } from "./application.extension.mjs";
 import { AbstractConfig } from "./configuration.extension.mjs";
-import { ILogger } from "./logger.extension.mjs";
 
 const NONE = -1;
 
@@ -41,11 +39,7 @@ export type TChildLifecycle = {
   onReady: (callback: LifecycleCallback, priority?: number) => number;
 };
 
-let logger: ILogger;
-
-function CreateLifecycle() {
-  logger ??= LIB_BOILERPLATE.getConfig("lifecycle");
-
+export function CreateLifecycle() {
   const bootstrapCallbacks: CallbackList = [];
   const configCallbacks: CallbackList = [];
   const postConfigCallbacks: CallbackList = [];
@@ -173,12 +167,3 @@ function CreateLifecycle() {
     },
   };
 }
-
-declare module "@zcc/utilities" {
-  export interface ZCCDefinition {
-    application: ZCCApplicationDefinition | undefined;
-    lifecycle: ReturnType<typeof CreateLifecycle>;
-  }
-}
-
-ZCC.lifecycle = CreateLifecycle();

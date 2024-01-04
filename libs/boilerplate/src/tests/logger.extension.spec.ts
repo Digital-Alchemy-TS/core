@@ -3,17 +3,18 @@ import { ZCC } from "@zcc/utilities";
 import chalk from "chalk";
 import pino from "pino";
 
+import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
 import {
   highlightContext,
   ILogger,
-  initLogger,
   METHOD_COLORS,
   prettyFormatMessage,
 } from "../extensions/logger.extension.mjs";
 
 describe("Logger Extension", () => {
   beforeAll(() => {
-    initLogger();
+    // initLogger();
+    LIB_BOILERPLATE.lifecycle.attach();
     // start from a known state
     ZCC.logger.setPrettyLogger(false);
   });

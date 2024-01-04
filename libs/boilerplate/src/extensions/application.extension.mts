@@ -15,7 +15,7 @@ type ApplicationConfigurationOptions = {
   configuration?: OptionalModuleConfiguration;
 };
 
-function CreateApplication({
+export function CreateApplication({
   application = "zcc",
   configuration,
 }: ApplicationConfigurationOptions): ZCCApplicationDefinition {
@@ -47,17 +47,7 @@ export type ZCCApplicationDefinition = {
   logger: ILogger;
 };
 
-function ImportLibrary(library: LibraryDefinition) {
+export function ImportLibrary(library: LibraryDefinition) {
   ZCC.systemLogger.trace({ name: library.name }, "Import library");
   LOADED_LIBRARIES.add(library);
 }
-
-declare module "@zcc/utilities" {
-  export interface ZCCDefinition {
-    createApplication: typeof CreateApplication;
-    importLibrary: typeof ImportLibrary;
-  }
-}
-
-ZCC.createApplication = CreateApplication;
-ZCC.importLibrary = ImportLibrary;

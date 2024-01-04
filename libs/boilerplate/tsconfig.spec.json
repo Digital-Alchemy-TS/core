@@ -6,6 +6,8 @@
       "jest",
       "node"
     ],
+    "allowJs": true,
+    "noUnusedLocals": false,
     "noImplicitAny": false
   },
   "include": [

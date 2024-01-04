@@ -1,6 +1,7 @@
 {
   "name": "zcc",
   "dependencies": {
+    "@faker-js/faker": "^8.3.1",
     "async": "^3.2.5",
     "bottleneck": "^2.19.5",
     "chalk": "^5.3.0",

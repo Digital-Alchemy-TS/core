@@ -1,8 +1,22 @@
+import { faker } from "@faker-js/faker";
 import { ZCC } from "@zcc/utilities";
+import chalk from "chalk";
+import pino from "pino";
 
-import { ILogger } from "../extensions/logger.extension.mjs";
+import {
+  highlightContext,
+  ILogger,
+  initLogger,
+  METHOD_COLORS,
+  prettyFormatMessage,
+} from "../extensions/logger.extension.mjs";
 
 describe("Logger Extension", () => {
+  beforeAll(() => {
+    initLogger();
+    // start from a known state
+    ZCC.logger.setPrettyLogger(false);
+  });
   const LOG_LEVELS = ["debug", "error", "fatal", "info", "trace", "warn"];
   let mockLogger: ILogger;
   let base: ILogger;
@@ -18,7 +32,9 @@ describe("Logger Extension", () => {
   beforeEach(() => {
     mockLogger = createMockLogger();
     base = ZCC.logger.getBaseLogger();
+    ZCC.logger.setBaseLogger(mockLogger);
   });
+
   afterEach(() => {
     ZCC.logger.setBaseLogger(base);
   });
@@ -31,7 +47,8 @@ describe("Logger Extension", () => {
   // 3. Test main logger calls
   describe("Main Logger Calls", () => {
     beforeEach(() => {
-      ZCC.logger.setBaseLogger(mockLogger);
+      // Set the log level to 'trace' before each test to ensure trace logs are not filtered out
+      ZCC.logger.setLogLevel("trace");
     });
 
     LOG_LEVELS.forEach(level => {
@@ -42,27 +59,187 @@ describe("Logger Extension", () => {
     });
   });
 
-  // 4. Test each method receives context under standard logger
-  describe("Context Reception in Standard Logger", () => {
-    let mockLogger: ILogger;
-    beforeEach(() => {
-      mockLogger = createMockLogger();
-      ZCC.logger.setBaseLogger(mockLogger);
+  describe("prettyFormatMessage", () => {
+    const generateSafeString = () =>
+      faker.lorem.words(2).replaceAll(/[#[\]{}]/g, ""); // Avoid characters that might be interpreted as control characters
+
+    it("should handle empty string", () => {
+      expect(prettyFormatMessage("")).toBe("");
     });
 
+    it("should handle null", () => {
+      // @ts-expect-error Testing function behavior with null argument
+      expect(prettyFormatMessage(null)).toBe("");
+    });
+
+    it("should handle undefined", () => {
+      // @ts-expect-error Testing function behavior with undefined argument
+      expect(prettyFormatMessage(undefined)).toBe("");
+    });
+
+    it("should format item references correctly", () => {
+      const text = generateSafeString();
+      const input = `[${text}]`;
+      const output = prettyFormatMessage(input);
+
+      expect(output).toContain(chalk.bold.magenta(text));
+    });
+
+    it("should format extra info correctly", () => {
+      const text = generateSafeString();
+      const input = `{${text}}`;
+      const output = prettyFormatMessage(input);
+      expect(output).toContain(chalk.bold.gray(text));
+    });
+
+    it("should format lists correctly", () => {
+      const text = generateSafeString();
+      const input = ` - ${text}`;
+      const output = prettyFormatMessage(input);
+      expect(output).toContain(chalk.yellowBright(" - "));
+    });
+
+    it("should correctly highlight object references within a string", () => {
+      const prefixText = generateSafeString();
+      const suffixText = generateSafeString();
+      const path = faker.lorem.word().replaceAll(/[#[\]{}]/g, "");
+      const property = faker.lorem.word().replaceAll(/[#[\]{}]/g, "");
+      const input = `${prefixText} ${path}#${property} ${suffixText}`;
+      const output = prettyFormatMessage(input);
+
+      const expectedHighlighted = chalk.yellow(`${path}#${property}`);
+      const expectedOutput = `${prefixText} ${expectedHighlighted} ${suffixText}`;
+      expect(output).toContain(expectedHighlighted);
+      expect(output).toBe(expectedOutput);
+    });
+
+    it("should handle multiple formats in one message", () => {
+      const text1 = generateSafeString();
+      const text2 = generateSafeString();
+      const text3 = generateSafeString();
+      const input = ` - [${text1}] {${text2}} ${text3}`;
+      const output = prettyFormatMessage(input);
+      expect(output).toContain(chalk.bold.magenta(text1));
+      expect(output).toContain(chalk.bold.gray(text2));
+      expect(output).toContain(chalk.yellowBright(" - "));
+    });
+  });
+
+  describe("Standard Logger", () => {
+    beforeAll(() => {
+      ZCC.logger.setPrettyLogger(false);
+    });
     it("should receive context in each log method", () => {
-      const testContext = "testContext";
+      const testContext = faker.lorem.word();
+      const message = faker.lorem.sentence();
       LOG_LEVELS.forEach(level => {
-        ZCC.logger.context(testContext)[level]("Test message");
+        ZCC.logger.context(testContext)[level](message);
         expect(mockLogger[level]).toHaveBeenCalledWith(
           expect.objectContaining({ context: testContext }),
+          message,
         );
       });
     });
   });
 
-  // Additional test opportunities (mention only):
-  // - Test if the pretty logger correctly formats messages
-  // - Test the behavior when maxCutoff is reached in prettyFormatMessage
-  // - Test highlightContext function with different inputs
+  describe("highlightContext", () => {
+    const testContext = "TestContext:Text";
+    // beforeEach(() => {
+    //   // Clear the cache before each test
+    //   ZCC.logger.LOGGER_CACHE = {};
+    // });
+
+    Object.entries(METHOD_COLORS).forEach(([level, colorType]) => {
+      it(`should correctly highlight context '${testContext}' as '${level}'`, () => {
+        const expectedOutput = chalk`{bold.${colorType
+          .slice(2)
+          .toLowerCase()} [${testContext}]}`;
+        const output = highlightContext(testContext, colorType);
+        expect(output).toBe(expectedOutput);
+      });
+    });
+
+    it("should cache highlighted context", () => {
+      const level = "info";
+      const colorType = METHOD_COLORS.get(level);
+      highlightContext(testContext, colorType);
+      const cache = ZCC.logger.LOGGER_CACHE();
+
+      expect(cache).toHaveProperty(testContext + colorType);
+
+      const cachedOutput = cache[testContext + colorType];
+      expect(cachedOutput).toBeDefined();
+      expect(cachedOutput).toBe(highlightContext(testContext, colorType)); // Cached value should match new call
+    });
+  });
+
+  describe("Logger Level Priority", () => {
+    const testLogLevelPriority = (
+      setLevel: pino.Level,
+      expectedToLog: pino.Level[],
+      expectedNotToLog: pino.Level[],
+    ) => {
+      describe(`when log level is set to ${setLevel}`, () => {
+        beforeEach(() => {
+          ZCC.logger.setLogLevel(setLevel);
+        });
+
+        expectedToLog.forEach(level => {
+          it(`should log ${level} level messages`, () => {
+            ZCC.systemLogger[level]("Test message");
+            expect(mockLogger[level]).toHaveBeenCalled();
+          });
+        });
+
+        expectedNotToLog.forEach(level => {
+          it(`should not log ${level} level messages`, () => {
+            ZCC.systemLogger[level]("Test message");
+            expect(mockLogger[level]).not.toHaveBeenCalled();
+          });
+        });
+      });
+    };
+
+    // When the set log level is 'trace'
+    testLogLevelPriority(
+      "trace",
+      ["trace", "debug", "info", "warn", "error", "fatal"],
+      [],
+    );
+
+    // When the set log level is 'debug'
+    testLogLevelPriority(
+      "debug",
+      ["debug", "info", "warn", "error", "fatal"],
+      ["trace"],
+    );
+
+    // When the set log level is 'info'
+    testLogLevelPriority(
+      "info",
+      ["info", "warn", "error", "fatal"],
+      ["trace", "debug"],
+    );
+
+    // When the set log level is 'warn'
+    testLogLevelPriority(
+      "warn",
+      ["warn", "error", "fatal"],
+      ["trace", "debug", "info"],
+    );
+
+    // When the set log level is 'error'
+    testLogLevelPriority(
+      "error",
+      ["error", "fatal"],
+      ["trace", "debug", "info", "warn"],
+    );
+
+    // When the set log level is 'fatal'
+    testLogLevelPriority(
+      "fatal",
+      ["fatal"],
+      ["trace", "debug", "info", "warn", "error"],
+    );
+  });
 });

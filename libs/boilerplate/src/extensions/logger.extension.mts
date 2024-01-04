@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 import { is, SECOND, ZCC } from "@zcc/utilities";
 import chalk from "chalk";
+import chalkTemplate from "chalk-template";
 import { pino } from "pino";
 
 import { LOGGER_CONTEXT_ENTRIES_COUNT } from "../helpers/metrics.helper.mjs";
@@ -34,8 +35,16 @@ const FRONT_DASH = " - ";
 const YELLOW_DASH = chalk.yellowBright(FRONT_DASH);
 let logger = pino() as ILogger;
 let maxCutoff = 2000;
-let logLevel: pino.Level = "info";
 let usePrettyLogger = true;
+
+const LOG_LEVEL_PRIORITY = {
+  debug: 20,
+  error: 50,
+  fatal: 60,
+  info: 30,
+  trace: 10,
+  warn: 40,
+};
 
 export type TContextColorType =
   | "bgBlue.dim"
@@ -54,7 +63,7 @@ export const METHOD_COLORS = new Map<pino.Level, TContextColorType>([
   ["fatal", "bgMagenta"],
 ]);
 
-function prettyFormatMessage(message: string): string {
+export function prettyFormatMessage(message: string): string {
   if (!message) {
     return ``;
   }
@@ -87,14 +96,15 @@ setInterval(() => {
   LOGGER_CONTEXT_ENTRIES_COUNT.set(contextEntriesCount);
 }, 10 * SECOND);
 
-function highlightContext(
+export function highlightContext(
   context: string,
   level: TContextColorType = "bgGrey",
 ): string {
   const PAIR = context + level;
-  return (HIGHLIGHTED_CONTEXT_CACHE[PAIR] =
-    HIGHLIGHTED_CONTEXT_CACHE[PAIR] ??
-    chalk`{bold.${level.slice(2).toLowerCase()} [${context}]}`);
+  HIGHLIGHTED_CONTEXT_CACHE[PAIR] ??= chalkTemplate`{bold.${level
+    .slice(2)
+    .toLowerCase()} [${context}]}`;
+  return HIGHLIGHTED_CONTEXT_CACHE[PAIR];
 }
 
 function standardLogger(
@@ -102,10 +112,6 @@ function standardLogger(
   context: string,
   ...parameters: Parameters<TLoggerFunction>
 ) {
-  if (method === "trace" && logLevel !== "trace") {
-    // early shortcut for an over used call
-    return;
-  }
   const data = is.object(parameters[0])
     ? (parameters.shift() as Record<string, unknown>)
     : {};
@@ -127,10 +133,6 @@ function prettyLogger(
   context: string,
   ...parameters: Parameters<TLoggerFunction>
 ) {
-  // ? Early shortcut for an over used call
-  if (method === "trace" && logLevel !== "trace") {
-    return;
-  }
   // * If providing an object as the 1st arg
   if (is.object(parameters[0])) {
     const data = parameters.shift() as { context?: string };
@@ -167,23 +169,29 @@ function log(
 }
 
 function augmentLogger() {
+  let logLevel: pino.Level = "info";
+  const shouldLog = (level: pino.Level) =>
+    LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[logLevel];
+
   return {
+    LOGGER_CACHE: () => HIGHLIGHTED_CONTEXT_CACHE,
     context: (context: string) =>
       ({
         debug: (...params: Parameters<TLoggerFunction>) =>
-          log("debug", context, ...params),
+          shouldLog("debug") && log("debug", context, ...params),
         error: (...params: Parameters<TLoggerFunction>) =>
-          log("error", context, ...params),
+          shouldLog("error") && log("error", context, ...params),
         fatal: (...params: Parameters<TLoggerFunction>) =>
-          log("fatal", context, ...params),
+          shouldLog("fatal") && log("fatal", context, ...params),
         info: (...params: Parameters<TLoggerFunction>) =>
-          log("info", context, ...params),
+          shouldLog("info") && log("info", context, ...params),
         trace: (...params: Parameters<TLoggerFunction>) =>
-          log("trace", context, ...params),
+          shouldLog("trace") && log("trace", context, ...params),
         warn: (...params: Parameters<TLoggerFunction>) =>
-          log("warn", context, ...params),
+          shouldLog("warn") && log("warn", context, ...params),
       }) as ILogger,
     getBaseLogger: () => logger,
+    getLogLevel: () => logLevel,
     setBaseLogger: (base: ILogger) => (logger = base),
     setLogLevel: (level: pino.Level) => (logLevel = level),
     setMaxCutoff: (cutoff: number) => (maxCutoff = cutoff),
@@ -198,5 +206,7 @@ declare module "@zcc/utilities" {
   }
 }
 
-ZCC.logger = augmentLogger();
-ZCC.systemLogger = ZCC.logger.context("ZCC:system");
+export function initLogger() {
+  ZCC.logger = augmentLogger();
+  ZCC.systemLogger = ZCC.logger.context("ZCC:system");
+}

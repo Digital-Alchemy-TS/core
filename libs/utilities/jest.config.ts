@@ -4,7 +4,8 @@ export default {
   preset: "../../jest.preset.js",
   testEnvironment: "node",
   transform: {
-    "^.+\\.mts$": ["ts-jest", { tsconfig: "<rootDir>/tsconfig.spec.json" }],
+    "^.+\\.[tj]s$": ["ts-jest", { tsconfig: "<rootDir>/tsconfig.spec.json" }],
+    "^.+\\.mts$": ["ts-jest", { tsconfig: "<rootDir>/tsconfig.spec.json" }]
   },
   moduleFileExtensions: ["ts", "js", "mts", "html"],
   coverageDirectory: "../../coverage/libs/utilities",

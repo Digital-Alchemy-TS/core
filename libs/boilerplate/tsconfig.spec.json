@@ -7,13 +7,15 @@
       "node"
     ],
     "allowJs": true,
+    "strictNullChecks": false,
+    "strictPropertyInitialization": false,
     "noUnusedLocals": false,
     "noImplicitAny": false
   },
   "include": [
     "jest.config.ts",
     "src/**/*.mts",
-    "src/tests/*.spec.ts"
+    "src/**/*.spec.ts"
   ],
   "references": [
     {

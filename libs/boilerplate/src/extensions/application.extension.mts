@@ -1,4 +1,4 @@
-import { is, ZCC } from "@zcc/utilities";
+import { ZCC } from "@zcc/utilities";
 
 import {
   ModuleConfiguration,
@@ -21,16 +21,14 @@ export function CreateApplication({
 }: ApplicationConfigurationOptions): ZCCApplicationDefinition {
   const logger = ZCC.logger.context(`${application}:Bootstrap`);
   const lifecycle = ZCC.lifecycle.child();
+
+  ZCC.config.setApplicationDefinition(configuration as ModuleConfiguration);
   lifecycle.onAttach(() => {
     logger.debug("Attaching library lifecycles");
     LOADED_LIBRARIES.forEach(item => {
       logger.trace({ name: item.name }, `Attach`);
       item.lifecycle.attach();
     });
-    if (!is.empty(configuration)) {
-      logger.debug("Merge application configuration definition");
-      ZCC.config.addApplicationDefinition(configuration as ModuleConfiguration);
-    }
   });
   return {
     configuration,

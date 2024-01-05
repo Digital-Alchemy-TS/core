@@ -9,7 +9,7 @@ import {
   ILogger,
   METHOD_COLORS,
   prettyFormatMessage,
-} from "../extensions/logger.extension.mjs";
+} from "./logger.extension.mjs";
 
 describe("Logger Extension", () => {
   beforeAll(() => {
@@ -69,12 +69,10 @@ describe("Logger Extension", () => {
     });
 
     it("should handle null", () => {
-      // @ts-expect-error Testing function behavior with null argument
       expect(prettyFormatMessage(null)).toBe("");
     });
 
     it("should handle undefined", () => {
-      // @ts-expect-error Testing function behavior with undefined argument
       expect(prettyFormatMessage(undefined)).toBe("");
     });
 

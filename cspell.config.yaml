@@ -32,6 +32,7 @@ words:
   - keylist
   - exiasr
   - hadolint
+  - homeassistant
   - lifecycles
   - esbenp
   - typeof

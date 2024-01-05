@@ -3,7 +3,9 @@ import { is, SECOND } from "@zcc/utilities";
 import chalk from "chalk";
 import chalkTemplate from "chalk-template";
 import { pino } from "pino";
+import { inspect } from "util";
 
+import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
 import { LOGGER_CONTEXT_ENTRIES_COUNT } from "../helpers/metrics.helper.mjs";
 
 export type TLoggerFunction =
@@ -91,10 +93,6 @@ export function prettyFormatMessage(message: string): string {
 }
 
 const HIGHLIGHTED_CONTEXT_CACHE: Record<string, string> = {};
-setInterval(() => {
-  const contextEntriesCount = Object.keys(HIGHLIGHTED_CONTEXT_CACHE).length;
-  LOGGER_CONTEXT_ENTRIES_COUNT.set(contextEntriesCount);
-}, 10 * SECOND);
 
 export function highlightContext(
   context: string,
@@ -168,7 +166,26 @@ function log(
   standardLogger(method, context, ...parameters);
 }
 
+const metricsStarted = false;
+
 export function augmentLogger() {
+  // tuned to be most useful in debugging this
+  inspect.defaultOptions.colors = true;
+  inspect.defaultOptions.depth = 10;
+  inspect.defaultOptions.numericSeparator = true;
+  inspect.defaultOptions.compact = false;
+  inspect.defaultOptions.colors = true;
+
+  if (!metricsStarted) {
+    setImmediate(() => {
+      LIB_BOILERPLATE.lifecycle.onReady(() => {
+        setInterval(() => {
+          const count = Object.keys(HIGHLIGHTED_CONTEXT_CACHE).length;
+          LOGGER_CONTEXT_ENTRIES_COUNT.set(count);
+        }, 10 * SECOND);
+      });
+    });
+  }
   let logLevel: pino.Level = "info";
   const shouldLog = (level: pino.Level) =>
     LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[logLevel];

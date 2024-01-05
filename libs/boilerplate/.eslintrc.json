@@ -20,7 +20,7 @@
     },
     {
       "files": [
-        "src/tests/**/*.ts"
+        "src/**/*.spec.ts"
       ],
       "rules": {},
       "parser": "@typescript-eslint/parser",

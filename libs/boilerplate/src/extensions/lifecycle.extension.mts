@@ -1,11 +1,11 @@
 import { DOWN, each, eachSeries, UP, ZCC } from "@zcc/utilities";
 
+import { AbstractConfig } from "../helpers/config.helper.mjs";
 import {
   BootstrapException,
   InternalError,
 } from "../helpers/errors.helper.mjs";
 import { ZCCApplicationDefinition } from "./application.extension.mjs";
-import { AbstractConfig } from "./configuration.extension.mjs";
 
 const NONE = -1;
 
@@ -82,20 +82,14 @@ export function CreateLifecycle() {
 
   return {
     child: childLifecycle,
-    exec(
-      application: ZCCApplicationDefinition,
-      config: Partial<AbstractConfig> = {},
-    ): Promise<void> {
-      if (ZCC.application) {
-        // probably needs a reset method somewhere
+    exec(): Promise<void> {
+      if (!ZCC.application) {
         throw new BootstrapException(
           "Create",
-          "MULTIPLE_APPLICATIONS",
-          "@zcc is not intended to run multiple applications from within the same process",
+          "NO_APPLICATION",
+          "Call init first",
         );
       }
-      ZCC.application = application;
-      configuredApplication = application;
       return new Promise(() => {
         setImmediate(async done => {
           const logger = ZCC.systemLogger;
@@ -108,8 +102,6 @@ export function CreateLifecycle() {
 
             // Configuration loading phase
             logger.trace("Loading configuration");
-            ZCC.config.merge(config);
-            await ZCC.config.loadConfig();
 
             logger.trace("Running config callbacks");
             await RunCallbacks(configCallbacks);
@@ -126,9 +118,12 @@ export function CreateLifecycle() {
             logger.trace("Running ready callbacks");
             await RunCallbacks(readyCallbacks);
 
-            logger.info("[%s] Started!", application);
+            logger.info("[%s] Started!", ZCC.application.name);
           } catch (error) {
-            logger.fatal({ application, error }, `Bootstrap failed`);
+            logger.fatal(
+              { application: ZCC.application, error },
+              `Bootstrap failed`,
+            );
             // Be noisy, this is a fatal error at bootstrap
             // eslint-disable-next-line no-console
             console.error(error);
@@ -137,6 +132,22 @@ export function CreateLifecycle() {
           }
         });
       });
+    },
+    init: async (
+      application: ZCCApplicationDefinition,
+      config: Partial<AbstractConfig> = {},
+    ) => {
+      if (ZCC.application) {
+        throw new BootstrapException(
+          "Create",
+          "MULTIPLE_APPLICATIONS",
+          "Teardown old application first",
+        );
+      }
+      ZCC.application = application;
+      configuredApplication = application;
+      ZCC.config.merge(config);
+      await ZCC.config.loadConfig();
     },
     onBootstrap: (callback: LifecycleCallback, priority = NONE) =>
       bootstrapCallbacks.push([callback, priority]),
@@ -150,11 +161,8 @@ export function CreateLifecycle() {
       readyCallbacks.push([callback, priority]),
     teardown: () => {
       if (!configuredApplication) {
-        throw new InternalError(
-          "lifecycle.extension",
-          "TEARDOWN_NOT_CONFIGURED",
-          "Cannot teardown before running exec",
-        );
+        // task failed successfully
+        return;
       }
       if (ZCC.application !== configuredApplication) {
         throw new InternalError(
@@ -164,6 +172,7 @@ export function CreateLifecycle() {
         );
       }
       ZCC.application = undefined;
+      configuredApplication = undefined;
     },
   };
 }

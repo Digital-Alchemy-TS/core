@@ -84,9 +84,7 @@
       "package.json": ".npmrc, yarn.lock",
       ".eslintrc.json": ".editorconfig, jest.preset.js, jest.config.ts, babel.config.json, .prettierrc, .prettierignore, .pino-prettyrc, .gitignore, .eslintignore, .dockerignore",
       "zcc.code-workspace": "LICENSE, nx.json, .auto-config-testrc, .entity-creationrc, .scene-managerrc, terminalizer.yml",
-      "*.module.mts": "flask",
-      "*.controller.mts": "bug",
-      "*.service.mts": "bell"
+      "*.mts": "${basename}.*"
     },
     "files.watcherExclude": {
       "**/.git/objects/**": true,

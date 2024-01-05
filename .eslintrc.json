@@ -80,6 +80,7 @@
             "replacements": {
               "docs": false,
               "e": false,
+              "dir": false,
               "i": false,
               "params": false,
               "props": false,
@@ -119,6 +120,7 @@
         "@typescript-eslint/unbound-method": "off",
         "@typescript-eslint/no-magic-numbers": "off",
         "sonarjs/no-duplicate-string": "off",
+        "sonarjs/no-unused-collection": "warn",
         "unicorn/consistent-function-scoping": "off"
       }
     },

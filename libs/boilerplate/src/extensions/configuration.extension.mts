@@ -74,7 +74,9 @@ function initWiringConfig(
         const configPath = isApplication
           ? `application.${key}`
           : `libs.${project}.${key}`;
-        set(configuration, configPath, config.default);
+        if (is.undefined(get(configuration, configPath))) {
+          set(configuration, configPath, config.default);
+        }
       }
     });
   });
@@ -162,6 +164,7 @@ export function CreateConfiguration() {
       const defaultValue = config?.default;
       const value = current ?? defaultValue;
 
+      // console.log({ config, configuration, current, path, value });
       return cast(value, config?.type ?? "string") as T;
     },
     getConfigDefinitions: () => configDefinitions,

@@ -15,9 +15,7 @@ The Configuration System in the Boilerplate Library is adept at managing and pri
 4. **Environment Variables**: These are checked subsequently, often utilized for environment-specific settings, especially in production.
 
 5. **File-Based Configurations**: The system searches for configurations in a series of file locations, reading from INI, JSON, or YAML files. The search paths include:
-   - `/etc/{name}/config` and variations with `.json`, `.ini`, `.yaml`
-   - `/etc/{name}rc` and variations
-   - Current working directory and parent directories up to the system root for `.{name}rc` files
+   - Current working directory and parent directories up to the system root for `.{name}rc` files and variations with `.json`, `.ini`, `.yaml`/`.yml`
    - User's home directory under `~/.config/{name}` and variations including `config` subfolder
 
    If a file lacks an extension, the system attempts to interpret the format, defaulting to INI.

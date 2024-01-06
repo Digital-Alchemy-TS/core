@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { is, SINGLE, ZCC } from "@zcc/utilities";
+import { deepExtend, is, SINGLE, ZCC } from "@zcc/utilities";
 import JSON from "comment-json";
 import { existsSync, unlinkSync, writeFileSync } from "fs";
 import { encode as iniEncode } from "ini";
@@ -9,6 +9,7 @@ import { extname, join } from "path";
 import { cwd } from "process";
 
 import { ModuleConfiguration } from "../extensions/configuration.extension.mjs";
+import { LOG_LEVEL, LOG_METRICS } from "./config.constants.mjs";
 import { AbstractConfig } from "./config.helper.mjs";
 
 export const TESTING_APP_NAME = "zcc-unit-tests";
@@ -131,6 +132,17 @@ export async function bootTestingModule(
     application: TESTING_APP_NAME,
     configuration: configDefs,
   });
+  environmentDefaults = deepExtend(
+    {
+      libs: {
+        boilerplate: {
+          [LOG_LEVEL]: "warn",
+          [LOG_METRICS]: false,
+        },
+      },
+    },
+    { ...environmentDefaults },
+  );
   await ZCC.lifecycle.init(application, environmentDefaults);
   return application;
 }

@@ -6,6 +6,7 @@ import { pino } from "pino";
 import { inspect } from "util";
 
 import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
+import { LOG_METRICS } from "../helpers/config.constants.mjs";
 import { LOGGER_CONTEXT_ENTRIES_COUNT } from "../helpers/metrics.helper.mjs";
 
 export type TLoggerFunction =
@@ -179,10 +180,12 @@ export function augmentLogger() {
   if (!metricsStarted) {
     setImmediate(() => {
       LIB_BOILERPLATE.lifecycle.onReady(() => {
-        setInterval(() => {
-          const count = Object.keys(HIGHLIGHTED_CONTEXT_CACHE).length;
-          LOGGER_CONTEXT_ENTRIES_COUNT.set(count);
-        }, 10 * SECOND);
+        if (LIB_BOILERPLATE.getConfig<boolean>(LOG_METRICS)) {
+          setInterval(() => {
+            const count = Object.keys(HIGHLIGHTED_CONTEXT_CACHE).length;
+            LOGGER_CONTEXT_ENTRIES_COUNT.set(count);
+          }, 10 * SECOND);
+        }
       });
     });
   }

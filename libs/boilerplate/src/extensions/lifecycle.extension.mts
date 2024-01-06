@@ -9,79 +9,133 @@ import { ZCCApplicationDefinition } from "./application.extension.mjs";
 
 const NONE = -1;
 
-type LifecycleCallback = () => void | Promise<void>;
+export type LifecycleCallback = () => void | Promise<void>;
 export type CallbackList = [LifecycleCallback, number][];
-
-/**
- * Run the callbacks with defined priorities first.
- * These should be done in order
- *
- * Next, run all the callbacks without defined priorities.
- * These are run in parallel
- */
-async function RunCallbacks(list: CallbackList) {
-  const sorted = list.filter(([, sort]) => sort !== NONE);
-  const quick = list.filter(([, sort]) => sort === NONE);
-  await eachSeries(
-    sorted.sort(([, a], [, b]) => (a > b ? UP : DOWN)),
-    async ([callback]) => await callback(),
-  );
-  await each(quick, async ([callback]) => await callback());
-}
 
 export type TChildLifecycle = {
   attach: () => Promise<void>;
-  onAttach: (callback: LifecycleCallback) => number;
-  onBootstrap: (callback: LifecycleCallback, priority?: number) => number;
-  onConfig: (callback: LifecycleCallback, priority?: number) => number;
-  onPostConfig: (callback: LifecycleCallback, priority?: number) => number;
-  onPreInit: (callback: LifecycleCallback, priority?: number) => number;
-  onReady: (callback: LifecycleCallback, priority?: number) => number;
+  isAttached: () => boolean;
+  onAttach: (callback: LifecycleCallback) => void;
+  onBootstrap: (callback: LifecycleCallback, priority?: number) => void;
+  onConfig: (callback: LifecycleCallback, priority?: number) => void;
+  onPostConfig: (callback: LifecycleCallback, priority?: number) => void;
+  onPreInit: (callback: LifecycleCallback, priority?: number) => void;
+  onReady: (callback: LifecycleCallback, priority?: number) => void;
 };
 
 export function CreateLifecycle() {
-  const bootstrapCallbacks: CallbackList = [];
-  const configCallbacks: CallbackList = [];
-  const postConfigCallbacks: CallbackList = [];
-  const preInitCallbacks: CallbackList = [];
-  const readyCallbacks: CallbackList = [];
+  let bootstrapCallbacks: CallbackList = [];
+  let configCallbacks: CallbackList = [];
+  let postConfigCallbacks: CallbackList = [];
+  let preInitCallbacks: CallbackList = [];
+  let readyCallbacks: CallbackList = [];
+  let completedCallbacks = new Set<string>();
 
-  function childLifecycle(): TChildLifecycle {
-    const childBootstrapCallbacks: CallbackList = [];
-    const childConfigCallbacks: CallbackList = [];
-    const childPostConfigCallbacks: CallbackList = [];
-    const childPreInitCallbacks: CallbackList = [];
-    const childReadyCallbacks: CallbackList = [];
-    const onAttachCallbacks: LifecycleCallback[] = [];
-
-    return {
-      attach: async () => {
-        bootstrapCallbacks.push(...childBootstrapCallbacks);
-        configCallbacks.push(...childConfigCallbacks);
-        postConfigCallbacks.push(...childPostConfigCallbacks);
-        preInitCallbacks.push(...childPreInitCallbacks);
-        readyCallbacks.push(...childReadyCallbacks);
-        await each(onAttachCallbacks, async callback => await callback());
-      },
-      onAttach: (callback: LifecycleCallback) =>
-        onAttachCallbacks.push(callback),
-      onBootstrap: (callback: LifecycleCallback, priority = NONE) =>
-        childBootstrapCallbacks.push([callback, priority]),
-      onConfig: (callback: LifecycleCallback, priority = NONE) =>
-        childConfigCallbacks.push([callback, priority]),
-      onPostConfig: (callback: LifecycleCallback, priority = NONE) =>
-        childPostConfigCallbacks.push([callback, priority]),
-      onPreInit: (callback: LifecycleCallback, priority = NONE) =>
-        childPreInitCallbacks.push([callback, priority]),
-      onReady: (callback: LifecycleCallback, priority = NONE) =>
-        childReadyCallbacks.push([callback, priority]),
-    };
+  /**
+   * Run the callbacks with defined priorities first.
+   * These should be done in order
+   *
+   * Next, run all the callbacks without defined priorities.
+   * These are run in parallel
+   */
+  async function RunCallbacks(list: CallbackList, name: string) {
+    completedCallbacks.add(name);
+    const sorted = list.filter(([, sort]) => sort !== NONE);
+    const quick = list.filter(([, sort]) => sort === NONE);
+    await eachSeries(
+      sorted.sort(([, a], [, b]) => (a > b ? UP : DOWN)),
+      async ([callback]) => await callback(),
+    );
+    await each(quick, async ([callback]) => await callback());
   }
 
   let configuredApplication: ZCCApplicationDefinition;
+  let started = false;
 
   return {
-    child: childLifecycle,
+    // eslint-disable-next-line sonarjs/cognitive-complexity
+    child: (): TChildLifecycle => {
+      let childBootstrapCallbacks: CallbackList = [];
+      let childConfigCallbacks: CallbackList = [];
+      let childPostConfigCallbacks: CallbackList = [];
+      let childPreInitCallbacks: CallbackList = [];
+      let childReadyCallbacks: CallbackList = [];
+      const onAttachCallbacks: LifecycleCallback[] = [];
+      let isAttached = false;
+
+      return {
+        attach: async () => {
+          isAttached = true;
+          bootstrapCallbacks.push(...childBootstrapCallbacks);
+          childBootstrapCallbacks = bootstrapCallbacks;
+          configCallbacks.push(...childConfigCallbacks);
+          childConfigCallbacks = configCallbacks;
+          postConfigCallbacks.push(...childPostConfigCallbacks);
+          childPostConfigCallbacks = postConfigCallbacks;
+          preInitCallbacks.push(...childPreInitCallbacks);
+          childPreInitCallbacks = preInitCallbacks;
+          readyCallbacks.push(...childReadyCallbacks);
+          childReadyCallbacks = readyCallbacks;
+
+          await each(onAttachCallbacks, async callback => await callback());
+        },
+        isAttached: () => isAttached,
+        onAttach: (callback: LifecycleCallback) => {
+          if (isAttached) {
+            ZCC.systemLogger.warn("[onAttach] late attach");
+            if (started) {
+              setImmediate(async () => await callback());
+            }
+          }
+          onAttachCallbacks.push(callback);
+        },
+        onBootstrap: (callback: LifecycleCallback, priority = NONE) => {
+          if (isAttached) {
+            ZCC.systemLogger.warn("[onBootstrap] late attach");
+            if (started) {
+              setImmediate(async () => await callback());
+            }
+          }
+          childBootstrapCallbacks.push([callback, priority]);
+        },
+        onConfig: (callback: LifecycleCallback, priority = NONE) => {
+          if (isAttached) {
+            ZCC.systemLogger.warn("[onConfig] late attach");
+            if (started) {
+              setImmediate(async () => await callback());
+            }
+          }
+          childConfigCallbacks.push([callback, priority]);
+        },
+        onPostConfig: (callback: LifecycleCallback, priority = NONE) => {
+          if (isAttached) {
+            ZCC.systemLogger.warn("[onPostConfig] late attach");
+            if (started) {
+              setImmediate(async () => await callback());
+            }
+          }
+          childPostConfigCallbacks.push([callback, priority]);
+        },
+        onPreInit: (callback: LifecycleCallback, priority = NONE) => {
+          if (isAttached) {
+            ZCC.systemLogger.warn("[onPreInit] late attach");
+            if (started) {
+              setImmediate(async () => await callback());
+            }
+          }
+          childPreInitCallbacks.push([callback, priority]);
+        },
+        onReady: (callback: LifecycleCallback, priority = NONE) => {
+          if (isAttached) {
+            ZCC.systemLogger.warn("[onReady] late attach");
+            if (started) {
+              setImmediate(async () => await callback());
+            }
+          }
+          childReadyCallbacks.push([callback, priority]);
+        },
+      };
+    },
     exec(): Promise<void> {
       if (!ZCC.application) {
         throw new BootstrapException(
@@ -90,33 +144,33 @@ export function CreateLifecycle() {
           "Call init first",
         );
       }
-      return new Promise(() => {
-        setImmediate(async done => {
+      return new Promise(done => {
+        setImmediate(async () => {
           const logger = ZCC.systemLogger;
           try {
             logger.debug("Bootstrap started");
 
             // Run actions before any configuration or major initialization
             logger.trace("Running preInit callbacks");
-            await RunCallbacks(preInitCallbacks);
+            await RunCallbacks(preInitCallbacks, "onBootstrap");
 
             // Configuration loading phase
             logger.trace("Loading configuration");
 
             logger.trace("Running config callbacks");
-            await RunCallbacks(configCallbacks);
+            await RunCallbacks(configCallbacks, "onConfig");
 
             // Actions right after configuration but before the main application bootstrapping
             logger.trace("Running postConfig callbacks");
-            await RunCallbacks(postConfigCallbacks);
+            await RunCallbacks(postConfigCallbacks, "onPostConfig");
 
             // Main bootstrapping phase
             logger.trace("Running bootstrap callbacks");
-            await RunCallbacks(bootstrapCallbacks);
+            await RunCallbacks(bootstrapCallbacks, "onPreInit");
 
             // Application is fully initialized and operational
             logger.trace("Running ready callbacks");
-            await RunCallbacks(readyCallbacks);
+            await RunCallbacks(readyCallbacks, "onReady");
 
             logger.info("[%s] Started!", ZCC.application.name);
           } catch (error) {
@@ -128,6 +182,7 @@ export function CreateLifecycle() {
             // eslint-disable-next-line no-console
             console.error(error);
           } finally {
+            started = true;
             done();
           }
         });
@@ -146,19 +201,46 @@ export function CreateLifecycle() {
       }
       ZCC.application = application;
       configuredApplication = application;
+      // console.log(chalk.magenta("merge config"), config);
       ZCC.config.merge(config);
+      // console.log(chalk.magenta.bold("updated"), ZCC.config.configuration());
       await ZCC.config.loadConfig();
     },
-    onBootstrap: (callback: LifecycleCallback, priority = NONE) =>
-      bootstrapCallbacks.push([callback, priority]),
-    onConfig: (callback: LifecycleCallback, priority = NONE) =>
-      configCallbacks.push([callback, priority]),
-    onPostConfig: (callback: LifecycleCallback, priority = NONE) =>
-      postConfigCallbacks.push([callback, priority]),
-    onPreInit: (callback: LifecycleCallback, priority = NONE) =>
-      preInitCallbacks.push([callback, priority]),
-    onReady: (callback: LifecycleCallback, priority = NONE) =>
-      readyCallbacks.push([callback, priority]),
+    onBootstrap: (callback: LifecycleCallback, priority = NONE) => {
+      if (completedCallbacks.has("onBootstrap")) {
+        ZCC.systemLogger.warn("[onBootstrap] late attach");
+        setImmediate(async () => await callback());
+      }
+      bootstrapCallbacks.push([callback, priority]);
+    },
+    onConfig: (callback: LifecycleCallback, priority = NONE) => {
+      if (completedCallbacks.has("onConfig")) {
+        ZCC.systemLogger.warn("[onConfig] late attach");
+        setImmediate(async () => await callback());
+      }
+      configCallbacks.push([callback, priority]);
+    },
+    onPostConfig: (callback: LifecycleCallback, priority = NONE) => {
+      if (completedCallbacks.has("onPostConfig")) {
+        ZCC.systemLogger.warn("[onPostConfig] late attach");
+        setImmediate(async () => await callback());
+      }
+      postConfigCallbacks.push([callback, priority]);
+    },
+    onPreInit: (callback: LifecycleCallback, priority = NONE) => {
+      if (completedCallbacks.has("onPreInit")) {
+        ZCC.systemLogger.warn("[onPreInit] late attach");
+        setImmediate(async () => await callback());
+      }
+      preInitCallbacks.push([callback, priority]);
+    },
+    onReady: (callback: LifecycleCallback, priority = NONE) => {
+      if (completedCallbacks.has("onReady")) {
+        ZCC.systemLogger.warn("[onReady] late attach");
+        setImmediate(async () => await callback());
+      }
+      readyCallbacks.push([callback, priority]);
+    },
     teardown: () => {
       if (!configuredApplication) {
         // task failed successfully
@@ -173,6 +255,15 @@ export function CreateLifecycle() {
       }
       ZCC.application = undefined;
       configuredApplication = undefined;
+      completedCallbacks = new Set<string>();
+      bootstrapCallbacks = [];
+      configCallbacks = [];
+      postConfigCallbacks = [];
+      preInitCallbacks = [];
+      readyCallbacks = [];
+      started = false;
     },
   };
 }
+
+export type TLifeCycle = ReturnType<typeof CreateLifecycle>;

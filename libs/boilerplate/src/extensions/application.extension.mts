@@ -17,7 +17,7 @@ type ApplicationConfigurationOptions = {
 
 export function CreateApplication({
   application = "zcc",
-  configuration,
+  configuration = {},
 }: ApplicationConfigurationOptions): ZCCApplicationDefinition {
   const logger = ZCC.logger.context(`${application}:Bootstrap`);
   const lifecycle = ZCC.lifecycle.child();

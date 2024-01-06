@@ -1,4 +1,5 @@
 export const LOG_LEVEL = "LOG_LEVEL";
+export const LOG_METRICS = "LOG_METRICS";
 export const SCAN_CONFIG = "SCAN_CONFIG";
 export const CONFIG = "CONFIG";
 export const CACHE_PROVIDER = "CACHE_PROVIDER";

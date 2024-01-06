@@ -6,6 +6,7 @@ import {
   CACHE_TTL,
   CONFIG,
   LOG_LEVEL,
+  LOG_METRICS,
   REDIS_URL,
   SCAN_CONFIG,
 } from "./helpers/config.constants.mjs";
@@ -45,6 +46,10 @@ export const LIB_BOILERPLATE = ZCC.createLibrary({
       description: "Minimum log level to process",
       enum: ["silent", "info", "warn", "debug", "error"],
       type: "string",
+    },
+    [LOG_METRICS]: {
+      default: true,
+      type: "boolean",
     },
     [REDIS_URL]: {
       default: "redis://localhost:6379",

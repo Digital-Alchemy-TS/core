@@ -6,7 +6,7 @@ import { pino } from "pino";
 import { inspect } from "util";
 
 import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
-import { LOG_METRICS } from "../helpers/config.constants.mjs";
+import { LOG_LEVEL, LOG_METRICS } from "../helpers/config.constants.mjs";
 import { LOGGER_CONTEXT_ENTRIES_COUNT } from "../helpers/metrics.helper.mjs";
 
 export type TLoggerFunction =
@@ -36,7 +36,30 @@ export interface ILogger {
 
 const FRONT_DASH = " - ";
 const YELLOW_DASH = chalk.yellowBright(FRONT_DASH);
-let logger = pino() as ILogger;
+let logger = pino(
+  {
+    level: "info",
+    transport: {
+      options: {
+        colorize: true,
+        crlf: false,
+        customPrettifiers: {},
+        errorLikeObjectKeys: ["err", "error"],
+        errorProps: "",
+        hideObject: false,
+        ignore: "pid,hostname,level",
+        levelFirst: false,
+        levelKey: "level",
+        messageKey: "msg",
+        singleLine: false,
+        timestampKey: "time",
+        translateTime: "SYS:ddd hh:MM:ss.l",
+      },
+      target: "pino-pretty",
+    },
+  },
+  pino.destination({ sync: true }),
+) as ILogger;
 let maxCutoff = 2000;
 let usePrettyLogger = true;
 
@@ -193,6 +216,39 @@ export function augmentLogger() {
   const shouldLog = (level: pino.Level) =>
     LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[logLevel];
 
+  function createBaseLogger() {
+    if (prettyLogger) {
+      logger = pino(
+        {
+          level: LIB_BOILERPLATE.getConfig(LOG_LEVEL),
+          transport: {
+            options: {
+              colorize: true,
+              crlf: false,
+              customPrettifiers: {},
+              errorLikeObjectKeys: ["err", "error"],
+              errorProps: "",
+              hideObject: false,
+              ignore: "pid,hostname",
+              levelKey: ``,
+              messageKey: "msg",
+              timestampKey: "time",
+              translateTime: "SYS:ddd hh:MM:ss.l",
+            },
+            target: "pino-pretty",
+          },
+        },
+        pino.destination({ sync: true }),
+      ) as ILogger;
+      return;
+    }
+    logger = pino({
+      level: LIB_BOILERPLATE.getConfig(LOG_LEVEL),
+    });
+  }
+  setImmediate(() => {
+    LIB_BOILERPLATE.lifecycle.onConfig(() => createBaseLogger());
+  });
   return {
     LOGGER_CACHE: () => HIGHLIGHTED_CONTEXT_CACHE,
     context: (context: string) =>
@@ -215,6 +271,9 @@ export function augmentLogger() {
     setBaseLogger: (base: ILogger) => (logger = base),
     setLogLevel: (level: pino.Level) => (logLevel = level),
     setMaxCutoff: (cutoff: number) => (maxCutoff = cutoff),
-    setPrettyLogger: (state: boolean) => (usePrettyLogger = state),
+    setPrettyLogger: (state: boolean) => {
+      usePrettyLogger = state;
+      createBaseLogger();
+    },
   };
 }

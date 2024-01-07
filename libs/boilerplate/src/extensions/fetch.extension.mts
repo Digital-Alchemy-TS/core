@@ -151,13 +151,13 @@ export function CreateFetcher({
     return out;
   }
 
-  async function execFetch<T>({
+  async function execFetch<T, BODY extends BodyInit = undefined>({
     body,
     headers = {},
     method = "get",
     process,
     ...fetchWith
-  }: Partial<FetchArguments>) {
+  }: Partial<FetchArguments<BODY>>) {
     const url = fetchCreateUrl(fetchWith);
     try {
       const result = await fetch(url, {

@@ -1,5 +1,4 @@
 import { ZCC } from "@zcc/utilities";
-import { config } from "process";
 
 import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
 import { CACHE_TTL } from "../helpers/config.constants.mjs";
@@ -8,7 +7,6 @@ import {
   CACHE_DELETE_OPERATIONS_TOTAL,
   CACHE_GET_OPERATIONS_TOTAL,
   CACHE_KEYLIST_OPERATIONS_TOTAL,
-  CACHE_SET_OPERATIONS_TOTAL,
 } from "../helpers/metrics.helper.mjs";
 
 export interface ICacheDriver {
@@ -28,23 +26,23 @@ function createCache(prefix: string = "", client?: ICacheDriver) {
 
   const logger = ZCC.logger.context(`cache:${prefix}`);
 
-  function init(driverConstructor?: ICacheDriver): void {
-    // client = driverConstructor
-    //   ? driverConstructor(config)
-    //   : createMemoryDriver(config);
-  }
+  // function init(driverConstructor?: ICacheDriver): void {
+  //   // client = driverConstructor
+  //   //   ? driverConstructor(config)
+  //   //   : createMemoryDriver(config);
+  // }
 
   function fullKeyName(key: string): string {
     return `${prefix}${key}`;
   }
 
   return {
-    child: (prefix: string): ReturnType<typeof createCache> => {
-      const childCache = createCache();
-      childCache.configure();
-      // childCache.init(client);
-      return childCache;
-    },
+    // child: (prefix: string): ReturnType<typeof createCache> => {
+    //   const childCache = createCache();
+    //   childCache.configure();
+    //   // childCache.init(client);
+    //   return childCache;
+    // },
     configure,
     del: async (key: string): Promise<void> => {
       const fullKey = fullKeyName(key);
@@ -64,23 +62,23 @@ function createCache(prefix: string = "", client?: ICacheDriver) {
       });
       return result as T;
     },
-    init: async <T,>(
-      key: string,
-      value: T,
-      ttl: number = config.CACHE_TTL,
-    ): Promise<void> => {
-      const fullKey = fullKeyName(key);
-      await client.set(fullKey, value, ttl);
-      CACHE_SET_OPERATIONS_TOTAL.inc({
-        key: fullKey,
-        prefix,
-      });
-    },
+    // init: async <T,>(
+    //   // key: string,
+    //   value: T,
+    //   // ttl: number = config.CACHE_TTL,
+    // ): Promise<void> => {
+    //   // const fullKey = fullKeyName(key);
+    //   // await client.set(fullKey, value, ttl);
+    //   // CACHE_SET_OPERATIONS_TOTAL.inc({
+    //   //   key: fullKey,
+    //   //   prefix,
+    //   // });
+    // },
     keys: async (pattern?: string): Promise<string[]> => {
       CACHE_KEYLIST_OPERATIONS_TOTAL.inc({ prefix });
       return client.keys(fullKeyName(pattern || "*"));
     },
-    set,
+    // set,
   };
 }
 

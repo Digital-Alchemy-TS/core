@@ -129,7 +129,6 @@ export function GotifyFetch() {
         });
       },
 
-      fetch,
       async list(): Promise<Message> {
         return await fetch({
           url: "/message",

@@ -61,7 +61,7 @@ export function CreateLifecycle(): TParentLifecycle {
     child: (): TChildLifecycle => {
       let isAttached = false;
       const childCallbacks = Object.fromEntries(
-        [...LIFECYCLE_STAGES].map(i => [i, []]),
+        [...LIFECYCLE_STAGES, "Register"].map(i => [i, []]),
       );
       return {
         ...Object.fromEntries(
@@ -75,7 +75,11 @@ export function CreateLifecycle(): TParentLifecycle {
                   setImmediate(async () => await callback());
                 }
               }
-              childCallbacks[stage].push([callback, priority]);
+              if (childCallbacks[stage]) {
+                childCallbacks[stage].push([callback, priority]);
+              } else {
+                console.error(stage, "WTF?!");
+              }
             },
           ]),
         ),

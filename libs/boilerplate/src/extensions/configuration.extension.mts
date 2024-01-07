@@ -99,7 +99,11 @@ export function CreateConfiguration() {
     path: string | [string, string],
     dynamic: AnyConfig | undefined,
   ): BaseConfig {
-    path = is.array(path) ? path.join(".") : path;
+    path = is.string(path) ? path : path.join(".");
+    if (!is.string(path)) {
+      // console.trace();
+      return { type: "string" };
+    }
     const parts = path.split(".");
     if (parts.length === SINGLE) {
       const configuration = configDefinitions.get(APPLICATION) || {};

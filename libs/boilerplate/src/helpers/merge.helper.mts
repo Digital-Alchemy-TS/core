@@ -33,11 +33,11 @@ export function MergeDefinitions() {
   ZCC.logger = augmentLogger();
   ZCC.config = CreateConfiguration();
   ZCC.systemLogger = ZCC.logger.context("ZCC:system");
+  ZCC.lifecycle = CreateLifecycle();
   ZCC.createApplication = CreateApplication;
   ZCC.createFetcher = CreateFetcher;
   ZCC.createLibrary = CreateLibraryModule;
   ZCC.importLibrary = ImportLibrary;
-  ZCC.lifecycle = CreateLifecycle();
 
   ZCC.fetch = CreateFetcher({
     logContext: "ZCC:fetch",

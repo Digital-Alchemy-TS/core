@@ -1,9 +1,9 @@
 import { ZCC } from "@zcc/utilities";
 
 import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
+import { TChildLifecycle } from "../helpers/lifecycle.helper.mjs";
 import { bootTestingModule } from "../helpers/testing.helper.mjs";
 import { ZCCApplicationDefinition } from "./application.extension.mjs";
-import { TChildLifecycle } from "./lifecycle.extension.mjs";
 
 describe("Lifecycle Extension Tests", () => {
   let loadedModule: ZCCApplicationDefinition;
@@ -20,7 +20,7 @@ describe("Lifecycle Extension Tests", () => {
   }
 
   beforeAll(async () => {
-    LIB_BOILERPLATE.lifecycle.attach();
+    LIB_BOILERPLATE.lifecycle.register();
   });
 
   afterEach(async () => {
@@ -119,7 +119,7 @@ describe("Lifecycle Extension Tests", () => {
 
     beforeEach(async () => {
       childLifecycle = ZCC.lifecycle.child();
-      await childLifecycle.attach();
+      await childLifecycle.register();
       mockParentCallback = jest.fn();
       mockChildCallback = jest.fn();
     });

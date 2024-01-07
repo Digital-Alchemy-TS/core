@@ -1,11 +1,11 @@
 import { ZCC } from "@zcc/utilities";
 
+import { TChildLifecycle } from "../helpers/lifecycle.helper.mjs";
 import {
   ModuleConfiguration,
   OptionalModuleConfiguration,
 } from "./configuration.extension.mjs";
 import { LibraryDefinition } from "./library.extension.mjs";
-import { TChildLifecycle } from "./lifecycle.extension.mjs";
 import { ILogger } from "./logger.extension.mjs";
 
 export const LOADED_LIBRARIES = new Set<LibraryDefinition>();
@@ -23,11 +23,11 @@ export function CreateApplication({
   const lifecycle = ZCC.lifecycle.child();
 
   ZCC.config.setApplicationDefinition(configuration as ModuleConfiguration);
-  lifecycle.onAttach(() => {
+  lifecycle.onRegister(() => {
     logger.debug("Attaching library lifecycles");
     LOADED_LIBRARIES.forEach(item => {
       logger.trace({ name: item.name }, `Attach`);
-      item.lifecycle.attach();
+      item.lifecycle.register();
     });
   });
   return {

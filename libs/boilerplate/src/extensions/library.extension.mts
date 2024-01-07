@@ -18,7 +18,7 @@ export function CreateLibraryModule({
   const logger = ZCC.logger.context(`${library}:Bootstrap`);
 
   if (!is.empty(configuration)) {
-    lifecycle.onAttach(() => {
+    lifecycle.onRegister(() => {
       logger.debug("Merge library configurations");
       ZCC.config.addLibraryDefinition(
         library,

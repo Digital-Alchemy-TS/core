@@ -28,7 +28,7 @@ describe("Configuration Extension Tests", () => {
       string: { default: "", type: "string" },
       stringArray: { default: [], type: "string[]" },
     });
-    LIB_BOILERPLATE.lifecycle.attach();
+    LIB_BOILERPLATE.lifecycle.register();
   }
 
   beforeAll(() => {
@@ -357,7 +357,7 @@ describe("Configuration Extension Tests", () => {
       loadedModule = await bootTestingModule({
         ARGV_TEST: { default: "module default", type: "string" },
       });
-      LIB_BOILERPLATE.lifecycle.attach();
+      LIB_BOILERPLATE.lifecycle.register();
       await ZCC.config.loadConfig();
 
       expect(ZCC.config.get("ARGV_TEST")).toBe(argvTestValue);
@@ -370,7 +370,7 @@ describe("Configuration Extension Tests", () => {
       loadedModule = await bootTestingModule({
         ENVIRONMENT_TEST: { default: "module default", type: "string" },
       });
-      LIB_BOILERPLATE.lifecycle.attach();
+      LIB_BOILERPLATE.lifecycle.register();
       await ZCC.config.loadConfig();
 
       expect(ZCC.config.get("ENVIRONMENT_TEST")).toBe(environmentTestValue);

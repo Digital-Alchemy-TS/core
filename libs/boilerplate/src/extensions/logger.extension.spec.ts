@@ -14,7 +14,7 @@ import {
 describe("Logger Extension", () => {
   beforeAll(() => {
     // initLogger();
-    LIB_BOILERPLATE.lifecycle.attach();
+    LIB_BOILERPLATE.lifecycle.register();
     // start from a known state
     ZCC.logger.setPrettyLogger(false);
   });

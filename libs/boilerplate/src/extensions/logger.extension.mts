@@ -200,51 +200,74 @@ export function augmentLogger() {
   inspect.defaultOptions.compact = false;
   inspect.defaultOptions.colors = true;
 
-  if (!metricsStarted) {
-    setImmediate(() => {
-      LIB_BOILERPLATE.lifecycle.onReady(() => {
-        if (LIB_BOILERPLATE.getConfig<boolean>(LOG_METRICS)) {
-          setInterval(() => {
-            const count = Object.keys(HIGHLIGHTED_CONTEXT_CACHE).length;
-            LOGGER_CONTEXT_ENTRIES_COUNT.set(count);
-          }, 10 * SECOND);
-        }
-      });
-    });
-  }
+  // if (!metricsStarted) {
+  //   setImmediate(() => {
+  //     LIB_BOILERPLATE.lifecycle.onReady(() => {
+  //       if (LIB_BOILERPLATE.getConfig<boolean>(LOG_METRICS)) {
+  //         setInterval(() => {
+  //           const count = Object.keys(HIGHLIGHTED_CONTEXT_CACHE).length;
+  //           LOGGER_CONTEXT_ENTRIES_COUNT.set(count);
+  //         }, 10 * SECOND);
+  //       }
+  //     });
+  //   });
+  // }
+
   let logLevel: pino.Level = "info";
   const shouldLog = (level: pino.Level) =>
     LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[logLevel];
 
   function createBaseLogger() {
-    if (prettyLogger) {
-      logger = pino(
-        {
-          level: LIB_BOILERPLATE.getConfig(LOG_LEVEL),
-          transport: {
-            options: {
-              colorize: true,
-              crlf: false,
-              customPrettifiers: {},
-              errorLikeObjectKeys: ["err", "error"],
-              errorProps: "",
-              hideObject: false,
-              ignore: "pid,hostname",
-              levelKey: ``,
-              messageKey: "msg",
-              timestampKey: "time",
-              translateTime: "SYS:ddd hh:MM:ss.l",
-            },
-            target: "pino-pretty",
+    // if (prettyLogger) {
+    console.log(LIB_BOILERPLATE.getConfig(LOG_LEVEL));
+    logger = pino(
+      {
+        level: LIB_BOILERPLATE.getConfig(LOG_LEVEL),
+        transport: {
+          options: {
+            colorize: true,
+            crlf: false,
+            customPrettifiers: {},
+            errorLikeObjectKeys: ["err", "error"],
+            errorProps: "",
+            hideObject: false,
+            ignore: "pid,hostname,level",
+            levelFirst: false,
+            levelKey: "level",
+            messageKey: "msg",
+            singleLine: false,
+            timestampKey: "time",
+            translateTime: "SYS:ddd hh:MM:ss.l",
           },
+          target: "pino-pretty",
         },
-        pino.destination({ sync: true }),
-      ) as ILogger;
-      return;
-    }
-    logger = pino({
-      level: LIB_BOILERPLATE.getConfig(LOG_LEVEL),
-    });
+      },
+      pino.destination({ sync: true }),
+    ) as ILogger;
+    //   return;
+    // }
+    // logger = pino(
+    //   {
+    //     level: LIB_BOILERPLATE.getConfig(LOG_LEVEL),
+    //     transport: {
+    //       options: {
+    //         colorize: true,
+    //         crlf: false,
+    //         customPrettifiers: {},
+    //         errorLikeObjectKeys: ["err", "error"],
+    //         errorProps: "",
+    //         hideObject: false,
+    //         ignore: "pid,hostname",
+    //         levelKey: ``,
+    //         messageKey: "msg",
+    //         timestampKey: "time",
+    //         translateTime: "SYS:ddd hh:MM:ss.l",
+    //       },
+    //       target: "pino-pretty",
+    //     },
+    //   },
+    //   pino.destination({ sync: true }),
+    // );
   }
   setImmediate(() => {
     LIB_BOILERPLATE.lifecycle.onConfig(() => createBaseLogger());

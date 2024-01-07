@@ -9,7 +9,7 @@ import { extname, join } from "path";
 import { cwd } from "process";
 
 import { ModuleConfiguration } from "../extensions/configuration.extension.mjs";
-import { LOG_LEVEL, LOG_METRICS } from "./config.constants.mjs";
+import { LOG_METRICS } from "./config.constants.mjs";
 import { AbstractConfig } from "./config.helper.mjs";
 
 export const TESTING_APP_NAME = "zcc-unit-tests";
@@ -136,7 +136,7 @@ export async function bootTestingModule(
     {
       libs: {
         boilerplate: {
-          [LOG_LEVEL]: "warn",
+          // [LOG_LEVEL]: "warn",
           [LOG_METRICS]: false,
         },
       },

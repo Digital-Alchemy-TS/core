@@ -61,7 +61,7 @@ export function CreateLifecycle(): TParentLifecycle {
     child: (): TChildLifecycle => {
       let isAttached = false;
       const childCallbacks = Object.fromEntries(
-        [...LIFECYCLE_STAGES, "Register"].map(i => [i, []]),
+        [...LIFECYCLE_STAGES].map(i => [i, []]),
       );
       return {
         ...Object.fromEntries(
@@ -71,6 +71,7 @@ export function CreateLifecycle(): TParentLifecycle {
               if (isAttached) {
                 ZCC.systemLogger.warn(`[on${stage}] late attach`);
                 if (started) {
+                  console.trace();
                   setImmediate(async () => await callback());
                 }
               }
@@ -127,6 +128,7 @@ export function CreateLifecycle(): TParentLifecycle {
       }
       ZCC.application = application;
       configuredApplication = application;
+      application.lifecycle.register();
       ZCC.config.merge(config);
       await ZCC.config.loadConfig();
     },

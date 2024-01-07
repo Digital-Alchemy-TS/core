@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "commonjs"
+    "outDir": "../../dist/boilerplate-out-tsc",
   },
   "files": [],
   "include": [],
@@ -11,6 +11,12 @@
     },
     {
       "path": "./tsconfig.spec.json"
+    },
+    {
+      "path": "../boilerplate/tsconfig.lib.json"
+    },
+    {
+      "path": "../utilities/tsconfig.lib.json"
     }
   ]
 }

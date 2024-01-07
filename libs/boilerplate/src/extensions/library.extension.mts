@@ -19,6 +19,7 @@ export function CreateLibraryModule({
 
   if (!is.empty(configuration)) {
     lifecycle.onRegister(() => {
+      console.log("HIT");
       logger.debug("Merge library configurations");
       ZCC.config.addLibraryDefinition(
         library,

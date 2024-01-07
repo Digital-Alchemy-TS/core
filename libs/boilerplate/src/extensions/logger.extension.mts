@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
-import { is, SECOND } from "@zcc/utilities";
+import { is, SECOND, ZCC } from "@zcc/utilities";
 import chalk from "chalk";
 import chalkTemplate from "chalk-template";
 import { pino } from "pino";
@@ -218,11 +218,13 @@ export function augmentLogger() {
     LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[logLevel];
 
   function createBaseLogger() {
+    logLevel = LIB_BOILERPLATE.getConfig(LOG_LEVEL);
+    console.log(logLevel);
+    console.trace();
     // if (prettyLogger) {
-    console.log(LIB_BOILERPLATE.getConfig(LOG_LEVEL));
     logger = pino(
       {
-        level: LIB_BOILERPLATE.getConfig(LOG_LEVEL),
+        level: "info",
         transport: {
           options: {
             colorize: true,
@@ -244,7 +246,6 @@ export function augmentLogger() {
       },
       pino.destination({ sync: true }),
     ) as ILogger;
-    //   return;
     // }
     // logger = pino(
     //   {
@@ -292,7 +293,10 @@ export function augmentLogger() {
     getBaseLogger: () => logger,
     getLogLevel: () => logLevel,
     setBaseLogger: (base: ILogger) => (logger = base),
-    setLogLevel: (level: pino.Level) => (logLevel = level),
+    setLogLevel: (level: pino.Level) => {
+      logLevel = level;
+      ZCC.config.set([LIB_BOILERPLATE.name, LOG_LEVEL], level);
+    },
     setMaxCutoff: (cutoff: number) => (maxCutoff = cutoff),
     setPrettyLogger: (state: boolean) => {
       usePrettyLogger = state;

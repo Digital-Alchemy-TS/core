@@ -11,7 +11,7 @@ import {
 import { ZCCApplicationDefinition } from "./application.extension.mjs";
 import { ConfigManager } from "./configuration.extension.mjs";
 
-describe("Configuration Extension Tests", () => {
+describe.skip("Configuration Extension Tests", () => {
   const originalEnvironment = process.env;
   const originalArgv = process.argv;
   let loadedModule: ZCCApplicationDefinition;

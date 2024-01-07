@@ -164,7 +164,14 @@ export function CreateConfiguration() {
       const defaultValue = config?.default;
       const value = current ?? defaultValue;
 
-      // console.log({ config, configuration, current, path, value });
+      console.log({
+        config,
+        configDefinitions,
+        configuration,
+        current,
+        path,
+        value,
+      });
       return cast(value, config?.type ?? "string") as T;
     },
     getConfigDefinitions: () => configDefinitions,

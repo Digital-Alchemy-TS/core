@@ -6,6 +6,7 @@ import {
   MaybeHttpError,
 } from "../helpers/errors.helper.mjs";
 import {
+  BodyInit,
   FetchArguments,
   FetchParameterTypes,
   FetchProcessTypes,
@@ -196,8 +197,8 @@ export function CreateFetcher({
     //     fileStream.on("finish", () => resolve());
     //   });
     // },
-    fetch: async <T,>(
-      fetchWith: Partial<FetchArguments>,
+    fetch: async <T, BODY extends BodyInit = undefined>(
+      fetchWith: Partial<FetchArguments<BODY>>,
     ): Promise<T | undefined> => {
       FETCH_REQUESTS_INITIATED.inc();
       if (limiter) {

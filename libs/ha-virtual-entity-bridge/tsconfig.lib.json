@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "jest.config.ts",
+    "src/tests/**/*.mts"
+  ],
+  "include": [
+    "src/**/*.mts"
+  ],
+  "references": [
+    {
+      "path": "../home-assistant/tsconfig.lib.json"
+    },
+    {
+      "path": "../utilities/tsconfig.lib.json"
+    },
+    {
+      "path": "../boilerplate/tsconfig.lib.json"
+    }
+  ]
+}

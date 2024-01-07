@@ -1,4 +1,5 @@
 {
   "name": "@zcc/home-assistant",
+  "type": "module",
   "version": "0.0.1"
 }

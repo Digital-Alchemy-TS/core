@@ -1,0 +1,34 @@
+{
+  "extends": [
+    "../../.eslintrc.json"
+  ],
+  "ignorePatterns": [
+    "!**/*"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "src/**/*.mts"
+      ],
+      "rules": {},
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": [
+          "libs/ha-virtual-entity-bridge/tsconfig.lib.json"
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/**/*.spec.ts"
+      ],
+      "rules": {},
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": [
+          "libs/ha-virtual-entity-bridge/tsconfig.spec.json"
+        ]
+      }
+    }
+  ]
+}

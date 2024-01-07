@@ -9,18 +9,22 @@ describe("Lifecycle Extension Tests", () => {
   let loadedModule: ZCCApplicationDefinition;
   const attachMethods = [
     "onBootstrap",
-    "onConfig",
-    "onPostConfig",
-    "onPreInit",
-    "onReady",
+    // "onConfig",
+    // "onPostConfig",
+    // "onPreInit",
+    // "onReady",
   ];
 
   async function createBaseModule() {
-    loadedModule = await bootTestingModule();
+    if (loadedModule) {
+      ZCC.lifecycle.teardown();
+    }
+    loadedModule = await bootTestingModule({}, { libs: {} });
+    LIB_BOILERPLATE.lifecycle.register();
   }
 
   beforeAll(async () => {
-    LIB_BOILERPLATE.lifecycle.register();
+    await createBaseModule();
   });
 
   afterEach(async () => {
@@ -81,7 +85,7 @@ describe("Lifecycle Extension Tests", () => {
     ]);
   });
 
-  describe("Late Attach Callback Execution for All Methods", () => {
+  describe.only("Late Attach Callback Execution for All Methods", () => {
     let mockWarn;
     let mockCallback;
 

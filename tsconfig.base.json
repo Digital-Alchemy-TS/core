@@ -27,6 +27,15 @@
     "strictPropertyInitialization": true,
     "target": "ESNext",
     "paths": {
+      "@zcc/gotify": [
+        "libs/gotify/src/index.mts"
+      ],
+      "@zcc/home-assistant": [
+        "libs/home-assistant/src/index.mts"
+      ],
+      "@zcc/ha-virtual-entity-bridge": [
+        "libs/ha-virtual-entity-bridge/src/index.mts"
+      ],
       "@zcc/boilerplate": [
         "libs/boilerplate/src/index.mts"
       ],
@@ -37,6 +46,15 @@
   },
   "exclude": ["node_modules", "tmp", "dist"],
   "references": [
+    {
+      "path": "./libs/gotify/tsconfig.json"
+    },
+    {
+      "path": "./libs/home-assistant/tsconfig.json"
+    },
+    {
+      "path": "./libs/ha-virtual-entity-bridge/tsconfig.json"
+    },
     {
       "path": "./libs/boilerplate/tsconfig.json"
     },

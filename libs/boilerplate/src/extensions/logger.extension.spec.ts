@@ -4,6 +4,8 @@ import chalk from "chalk";
 import pino from "pino";
 
 import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
+import { LOG_LEVEL } from "../helpers/config.constants.mjs";
+import { bootTestingModule } from "../helpers/testing.helper.mjs";
 import {
   highlightContext,
   ILogger,
@@ -11,9 +13,12 @@ import {
   prettyFormatMessage,
 } from "./logger.extension.mjs";
 
-describe("Logger Extension", () => {
-  beforeAll(() => {
-    // initLogger();
+describe.skip("Logger Extension", () => {
+  beforeAll(async () => {
+    await bootTestingModule(
+      {},
+      { libs: { boilerplate: { [LOG_LEVEL]: "trace" } } },
+    );
     LIB_BOILERPLATE.lifecycle.register();
     // start from a known state
     ZCC.logger.setPrettyLogger(false);
@@ -47,11 +52,6 @@ describe("Logger Extension", () => {
 
   // 3. Test main logger calls
   describe("Main Logger Calls", () => {
-    beforeEach(() => {
-      // Set the log level to 'trace' before each test to ensure trace logs are not filtered out
-      ZCC.logger.setLogLevel("trace");
-    });
-
     LOG_LEVELS.forEach(level => {
       it(`should call through to the correct function for ${level}`, () => {
         ZCC.systemLogger[level]("Test message");

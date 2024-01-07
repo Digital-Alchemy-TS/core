@@ -24,6 +24,7 @@ export function CreateApplication({
 
   ZCC.config.setApplicationDefinition(configuration as ModuleConfiguration);
   lifecycle.onRegister(() => {
+    console.log("HIT");
     logger.debug("Attaching library lifecycles");
     LOADED_LIBRARIES.forEach(item => {
       logger.trace({ name: item.name }, `Attach`);

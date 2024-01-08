@@ -64,6 +64,8 @@
       "babel.config.json": "kusto"
     },
     "material-icon-theme.folders.associations": {
+      "design-docs": "changesets",
+      "ha-virtual-entity-bridge": "mappings",
       "boilerplate": "robot",
       "automation-logic": "scripts",
       "home-assistant": "home",

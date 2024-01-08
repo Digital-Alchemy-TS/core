@@ -1,6 +1,3 @@
-import { ZCCApplicationDefinition } from "../extensions/application.extension.mjs";
-import { AbstractConfig } from "./config.helper.mjs";
-
 export type LifecycleCallback = () => void | Promise<void>;
 export type CallbackList = [LifecycleCallback, number][];
 
@@ -9,11 +6,6 @@ export type TLifecycleBase = {
    * Registers a callback for the bootstrap phase, executed during the initial startup process.
    */
   onBootstrap: (callback: LifecycleCallback, priority?: number) => void;
-
-  /**
-   * Registers a callback for the configuration phase, executed when the system is configuring its components.
-   */
-  onConfig: (callback: LifecycleCallback, priority?: number) => void;
 
   /**
    * Registers a callback for immediately after the configuration phase, allowing post-configuration adjustments.
@@ -46,28 +38,7 @@ export type TLifecycleBase = {
   teardown: () => Promise<void>;
 };
 
-export type TChildLifecycle = TLifecycleBase & {
-  /**
-   * Registers a callback to be executed when the child lifecycle is registered.
-   */
-  onRegister: (callback: LifecycleCallback) => void;
-
-  /**
-   * Registers the child lifecycle with the parent, ensuring callbacks added to the child are executed in sync with the parent lifecycle stages.
-   */
-  register: () => Promise<void>;
-
-  /**
-   * Checks if the child lifecycle is already registered with the parent.
-   */
-  isRegistered: () => boolean;
-};
-
 export type TParentLifecycle = TLifecycleBase & {
   exec: () => Promise<void>;
-  init: (
-    application: ZCCApplicationDefinition,
-    config: Partial<AbstractConfig>,
-  ) => Promise<void>;
-  child: () => TChildLifecycle;
+  child: () => TLifecycleBase;
 };

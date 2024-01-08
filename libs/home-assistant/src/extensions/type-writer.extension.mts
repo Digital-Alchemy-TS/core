@@ -1,10 +1,48 @@
-export function typeWriter(): Promise<string> {
-  const domains = await this.fetchApi.listServices();
+import { ILogger } from "@zcc/boilerplate";
+import { is, ZCC } from "@zcc/utilities";
+import { dump } from "js-yaml";
+import {
+  addSyntheticLeadingComment,
+  createPrinter,
+  createSourceFile,
+  EmitHint,
+  factory,
+  NewLineKind,
+  ScriptKind,
+  ScriptTarget,
+  SyntaxKind,
+  TypeNode,
+} from "typescript";
+
+import {
+  ServiceListFieldDescription,
+  ServiceListServiceTarget,
+} from "../helpers/types/fetch/service-list.mjs";
+import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
+import { HAFetchAPI } from "./fetch-api.extension.mjs";
+
+const printer = createPrinter({ newLine: NewLineKind.LineFeed });
+const resultFile = createSourceFile(
+  "",
+  "",
+  ScriptTarget.Latest,
+  false,
+  ScriptKind.TS,
+);
+let lastBuild: string;
+let lastServices: string;
+let logger: ILogger;
+
+export async function typeWriter(): Promise<string> {
+  const fetchApi = HAFetchAPI();
+  logger = LIB_HOME_ASSISTANT.childLogger("type-writer");
+
+  const domains = await fetchApi.listServices();
   const stringified = JSON.stringify(domains);
   if (stringified === lastServices) {
     return lastBuild;
   }
-  // this.logger.info(`Services updated`);
+  // logger.info(`Services updated`);
   lastServices = stringified;
   lastBuild = printer.printNode(
     EmitHint.Unspecified,
@@ -43,14 +81,14 @@ export function typeWriter(): Promise<string> {
                           [
                             ...Object.entries(value.fields).map(
                               ([service, details]) =>
-                                this.fieldPropertySignature(
+                                fieldPropertySignature(
                                   service,
                                   details,
                                   domain,
                                   key,
                                 ),
                             ),
-                            this.createTarget(value.target),
+                            createTarget(value.target),
                           ].filter(i => !is.undefined(i)),
                         ),
                       ),
@@ -63,7 +101,7 @@ export function typeWriter(): Promise<string> {
                   SyntaxKind.MultiLineCommentTrivia,
                   `*\n` +
                     [
-                      `## ${value.name || TitleCase(key)}`,
+                      `## ${value.name || ZCC.TitleCase(key)}`,
                       "",
                       value.description,
                     ]
@@ -82,7 +120,7 @@ export function typeWriter(): Promise<string> {
   return lastBuild;
 }
 
-private createTarget(target: ServiceListServiceTarget) {
+function createTarget(target: ServiceListServiceTarget) {
   if (is.empty(target)) {
     return undefined;
   }
@@ -138,7 +176,7 @@ private createTarget(target: ServiceListServiceTarget) {
   if (target.device) {
     return undefined;
   }
-  this.logger.error(
+  logger.error(
     { target },
     `this#createTarget doesn't know what to do with target. Report as bug with this log line`,
   );
@@ -146,7 +184,7 @@ private createTarget(target: ServiceListServiceTarget) {
 }
 
 // eslint-disable-next-line sonarjs/cognitive-complexity
-private fieldPropertySignature(
+function fieldPropertySignature(
   parameterName: string,
   { selector, ...details }: ServiceListFieldDescription,
   serviceDomain: string,
@@ -211,28 +249,22 @@ private fieldPropertySignature(
   else {
     node = factory.createUnionTypeNode([
       serviceDomain === "scene" && serviceName === "apply"
-        ? factory.createTypeReferenceNode(
-            factory.createIdentifier("Partial"),
-            [
-              factory.createTypeReferenceNode(
-                factory.createIdentifier("Record"),
-                [
-                  factory.createTypeReferenceNode(
-                    factory.createIdentifier("PICK_ENTITY"),
-                    undefined,
-                  ),
-                  factory.createKeywordTypeNode(SyntaxKind.UnknownKeyword),
-                ],
-              ),
-            ],
-          )
-        : factory.createTypeReferenceNode(
-            factory.createIdentifier("Record"),
-            [
-              factory.createKeywordTypeNode(SyntaxKind.StringKeyword),
-              factory.createKeywordTypeNode(SyntaxKind.UnknownKeyword),
-            ],
-          ),
+        ? factory.createTypeReferenceNode(factory.createIdentifier("Partial"), [
+            factory.createTypeReferenceNode(
+              factory.createIdentifier("Record"),
+              [
+                factory.createTypeReferenceNode(
+                  factory.createIdentifier("PICK_ENTITY"),
+                  undefined,
+                ),
+                factory.createKeywordTypeNode(SyntaxKind.UnknownKeyword),
+              ],
+            ),
+          ])
+        : factory.createTypeReferenceNode(factory.createIdentifier("Record"), [
+            factory.createKeywordTypeNode(SyntaxKind.StringKeyword),
+            factory.createKeywordTypeNode(SyntaxKind.UnknownKeyword),
+          ]),
       factory.createParenthesizedType(
         factory.createArrayTypeNode(
           factory.createKeywordTypeNode(SyntaxKind.UnknownKeyword),
@@ -256,7 +288,9 @@ private fieldPropertySignature(
     `*\n` +
       [
         "## " +
-          (is.empty(details.name) ? TitleCase(parameterName) : details.name),
+          (is.empty(details.name)
+            ? ZCC.TitleCase(parameterName)
+            : details.name),
         ...(is.empty(details.description) ? [] : ["", details.description]),
         ...(is.empty(example) ? [] : ["", `@example ${example}`]),
         ...(is.undefined(details.default)

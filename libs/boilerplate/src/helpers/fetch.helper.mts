@@ -1,6 +1,8 @@
 import { is } from "@zcc/utilities";
 import { MergeExclusive } from "type-fest";
 
+import { TFetchBody } from "../extensions/fetch.extension.mjs";
+
 /**
  * Defines the types of parameters that can be used in fetch requests.
  */
@@ -10,21 +12,6 @@ export type FetchParameterTypes =
   | Date
   | number
   | Array<string | Date | number>;
-
-/**
- * via undici, with undefined added
- */
-export type BodyInit =
-  | ArrayBuffer
-  | AsyncIterable<Uint8Array>
-  | Blob
-  | FormData
-  | Iterable<Uint8Array>
-  | NodeJS.ArrayBufferView
-  | URLSearchParams
-  | null
-  | undefined
-  | string;
 
 /**
  * Enumerates HTTP methods used in fetch requests.
@@ -45,7 +32,7 @@ type BodyMethods = "put" | "patch" | "post";
  */
 export type FetchWith<
   EXTRA extends Record<never, string> = Record<never, string>,
-  BODY extends BodyInit = undefined,
+  BODY extends TFetchBody = undefined,
 > = Partial<FetchArguments<BODY>> & EXTRA;
 
 export type FetchProcessTypes = boolean | "text" | "json" | "raw" | undefined;
@@ -93,7 +80,7 @@ type BaseFetchUrl = {
   }
 >;
 
-type BaseFetchBody<BODY extends BodyInit = undefined> = MergeExclusive<
+type BaseFetchBody<BODY extends TFetchBody = undefined> = MergeExclusive<
   {
     /**
      * POSTDATA
@@ -115,14 +102,14 @@ type BaseFetchBody<BODY extends BodyInit = undefined> = MergeExclusive<
 /**
  * Defines the structure and types for arguments passed to fetch requests.
  */
-export type FetchArguments<BODY extends BodyInit = undefined> = BaseFetchUrl &
+export type FetchArguments<BODY extends TFetchBody = undefined> = BaseFetchUrl &
   BaseFetchArguments &
   BaseFetchBody<BODY>;
 
 /**
  * Represents a subset of FetchArguments for specific use cases.
  */
-export type FilteredFetchArguments<BODY extends BodyInit = undefined> =
+export type FilteredFetchArguments<BODY extends TFetchBody = undefined> =
   BaseFetchBody<BODY> &
     Pick<BaseFetchUrl, "url"> &
     Pick<BaseFetchArguments, "process" | "params">;

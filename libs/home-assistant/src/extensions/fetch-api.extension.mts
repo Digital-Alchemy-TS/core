@@ -1,5 +1,5 @@
-import { BodyInit, FilteredFetchArguments } from "@zcc/boilerplate";
-import { DOWN, NO_CHANGE, SECOND, UP, ZCC } from "@zcc/utilities";
+import { FilteredFetchArguments, TFetchBody } from "@zcc/boilerplate";
+import { DOWN, is, NO_CHANGE, SECOND, UP, ZCC } from "@zcc/utilities";
 import dayjs from "dayjs";
 
 import {
@@ -7,16 +7,41 @@ import {
   HASS_CALL_SERVICE,
   HASS_SEND_WEBHOOK,
 } from "../helpers/dynamic.helper.mjs";
+import { GenericEntityDTO } from "../helpers/types/entity-state.helper.mjs";
+import {
+  CalendarEvent,
+  CalendarFetchOptions,
+  RawCalendarEvent,
+} from "../helpers/types/fetch/calendar.mjs";
+import {
+  CheckConfigResult,
+  HassConfig,
+} from "../helpers/types/fetch/configuration.mjs";
 import { HomeAssistantServerLogItem } from "../helpers/types/fetch/index.mjs";
+import { HassServiceDTO } from "../helpers/types/fetch/service-list.mjs";
+import {
+  ENTITY_STATE,
+  PICK_ENTITY,
+  PICK_SERVICE,
+  PICK_SERVICE_PARAMETERS,
+} from "../helpers/types/utility.helper.mjs";
 import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 import { BASE_URL, TOKEN } from "../index.mjs";
+
+type SendBody<
+  STATE extends string | number = string,
+  ATTRIBUTES extends object = object,
+> = {
+  attributes?: ATTRIBUTES;
+  state?: STATE;
+};
 
 export function HAFetchAPI() {
   const baseUrl = LIB_HOME_ASSISTANT.getConfig<string>(BASE_URL);
   const token = LIB_HOME_ASSISTANT.getConfig<string>(TOKEN);
   const logger = LIB_HOME_ASSISTANT.childLogger("FetchAPI");
 
-  async function fetch<T, BODY extends BodyInit = undefined>(
+  async function fetch<T, BODY extends TFetchBody = object>(
     fetchWith: FilteredFetchArguments<BODY>,
   ): Promise<T> {
     return await ZCC.fetch.fetch({
@@ -74,11 +99,12 @@ export function HAFetchAPI() {
     const [domain, service] = serviceName.split(".");
     ZCC.event.emit(HASS_CALL_SERVICE, { domain, service, type: "fetch" });
     return await fetch({
-      body: data,
+      body: data as TFetchBody,
       method: "post",
       url: `/api/services/${domain}/${service}`,
     });
   }
+
   async function checkConfig(): Promise<CheckConfigResult> {
     logger.trace(`Check config`);
     return await fetch({
@@ -87,17 +113,17 @@ export function HAFetchAPI() {
     });
   }
 
-  async function download(
-    destination: string,
-    fetchWith: FilteredFetchArguments,
-  ): Promise<void> {
-    await ZCC.fetch.download({
-      ...fetchWith,
-      baseUrl,
-      destination,
-      headers: { Authorization: `Bearer ${token}` },
-    });
-  }
+  // async function download(
+  //   destination: string,
+  //   fetchWith: FilteredFetchArguments,
+  // ): Promise<void> {
+  //   await ZCC.fetch.download({
+  //     ...fetchWith,
+  //     baseUrl,
+  //     destination,
+  //     headers: { Authorization: `Bearer ${token}` },
+  //   });
+  // }
 
   async function fetchEntityCustomizations<
     T extends Record<never, unknown> = Record<
@@ -133,10 +159,11 @@ export function HAFetchAPI() {
       logger.error({ result }, `Unexpected return result`);
       return [];
     }
-    return result[0];
+    const [out] = result;
+    return out;
   }
 
-  async function fireEvent<DATA extends object = object>(
+  async function fireEvent<DATA extends TFetchBody = object>(
     event: string,
     data?: DATA,
   ): Promise<void> {
@@ -194,7 +221,7 @@ export function HAFetchAPI() {
     if (state !== undefined) {
       body.state = state;
     }
-    if (!isEmpty(attributes)) {
+    if (!is.empty(attributes)) {
       body.attributes = attributes;
     }
     logger.trace({ ...body, name: entity_id }, `Set entity state`);
@@ -216,7 +243,7 @@ export function HAFetchAPI() {
     calendarSearch,
     callService,
     checkConfig,
-    download,
+    // download,
     fetch,
     fetchEntityCustomizations,
     fetchEntityHistory,

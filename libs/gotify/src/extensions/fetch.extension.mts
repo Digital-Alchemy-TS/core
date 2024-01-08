@@ -1,4 +1,4 @@
-import { BodyInit, FilteredFetchArguments } from "@zcc/boilerplate";
+import { FilteredFetchArguments } from "@zcc/boilerplate";
 import { ZCC } from "@zcc/utilities";
 
 import { LIB_GOTIFY } from "../gotify.module.mjs";
@@ -14,7 +14,7 @@ export function GotifyFetch() {
   const baseUrl = LIB_GOTIFY.getConfig<string>(BASE_URL);
   const token = LIB_GOTIFY.getConfig<string>(TOKEN);
 
-  async function fetch<T, BODY extends BodyInit = undefined>(
+  async function fetch<T, BODY extends TFetchBody = undefined>(
     fetchWith: FilteredFetchArguments<BODY>,
   ): Promise<T> {
     return await ZCC.fetch.fetch({

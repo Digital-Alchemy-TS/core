@@ -29,6 +29,7 @@ words:
   - idris
   - undici
   - proto
+  - entites
   - keylist
   - exiasr
   - hadolint
@@ -39,6 +40,7 @@ words:
   - esbenp
   - typeof
   - gridsome
+  - hassio
   - nsoult
   - kusto
   - nxignore

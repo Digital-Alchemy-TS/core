@@ -6,7 +6,6 @@ import {
   MaybeHttpError,
 } from "../helpers/errors.helper.mjs";
 import {
-  BodyInit,
   FetchArguments,
   FetchParameterTypes,
   FetchProcessTypes,
@@ -59,6 +58,8 @@ function cast(item: FetchParameterTypes): string {
   }
   return item;
 }
+
+export type TFetchBody = object | undefined;
 
 function buildFilterString(
   fetchWith: FetchWith<{
@@ -151,7 +152,7 @@ export function CreateFetcher({
     return out;
   }
 
-  async function execFetch<T, BODY extends BodyInit = undefined>({
+  async function execFetch<T, BODY extends TFetchBody = undefined>({
     body,
     headers = {},
     method = "get",
@@ -161,7 +162,7 @@ export function CreateFetcher({
     const url = fetchCreateUrl(fetchWith);
     try {
       const result = await fetch(url, {
-        body,
+        body: is.object(body) ? JSON.stringify(body) : body,
         headers: {
           ...baseHeaders,
           ...headers,
@@ -197,7 +198,7 @@ export function CreateFetcher({
     //     fileStream.on("finish", () => resolve());
     //   });
     // },
-    fetch: async <T, BODY extends BodyInit = undefined>(
+    fetch: async <T, BODY extends TFetchBody = undefined>(
       fetchWith: Partial<FetchArguments<BODY>>,
     ): Promise<T | undefined> => {
       FETCH_REQUESTS_INITIATED.inc();

@@ -1,4 +1,5 @@
-export type LifecycleCallback = () => void | Promise<void>;
+type tReturn = void | unknown;
+export type LifecycleCallback = () => tReturn | Promise<tReturn>;
 export type CallbackList = [LifecycleCallback, number][];
 
 export type TLifecycleBase = {
@@ -31,6 +32,11 @@ export type TLifecycleBase = {
    * Completes the shutdown process, executed after all shutdown procedures are complete.
    */
   onShutdownComplete: (callback: LifecycleCallback, priority?: number) => void;
+};
+
+export type TParentLifecycle = TLifecycleBase & {
+  exec: () => Promise<void>;
+  child: () => TLifecycleBase;
 
   /**
    * Cleans up resources and detaches the child lifecycle from the parent, executed as part of the shutdown sequence.
@@ -38,7 +44,6 @@ export type TLifecycleBase = {
   teardown: () => Promise<void>;
 };
 
-export type TParentLifecycle = TLifecycleBase & {
-  exec: () => Promise<void>;
-  child: () => TLifecycleBase;
+export type TChildLifecycle = TLifecycleBase & {
+  attach: () => void;
 };

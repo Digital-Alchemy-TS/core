@@ -14,10 +14,12 @@ type MaybeFunction = (
   ...parameters: unknown[]
 ) => unknown | void | Promise<unknown | void>;
 
+const HASH_PRIME_MULTIPLIER = 31;
+
 /**
  * type testing and basic conversion tools
  */
-export class IS_Definition {
+export class IsIt {
   public array(test: unknown): test is Array<unknown> {
     return Array.isArray(test);
   }
@@ -55,11 +57,17 @@ export class IS_Definition {
     return typeof test === "function";
   }
 
+  /**
+   * Generates a hash code for a string, based on the Java String hash function.
+   * It iterates through the characters of the string, combining the ASCII values
+   * with a prime multiplier to create a unique hash value.
+   * This method can be useful for creating a simple, consistent hash code.
+   */
   public hash(text: string): string {
     let hash = START;
     for (let i = START; i < text.length; i++) {
-      // eslint-disable-next-line @typescript-eslint/no-magic-numbers
-      hash = (hash << 5) - hash + (text.codePointAt(i) || NONE);
+      hash =
+        (hash << HASH_PRIME_MULTIPLIER) - hash + (text.codePointAt(i) || NONE);
       hash = Math.trunc(hash);
     }
     return hash.toString();
@@ -90,9 +98,8 @@ export class IS_Definition {
   }
 
   public unique<T>(out: T[]): T[] {
-    // Technically this isn't an "is"... but close enough
-    return out.filter((item, index, array) => array.indexOf(item) === index);
+    return [...new Set(out)];
   }
 }
 
-export const is = new IS_Definition();
+export const is = new IsIt();

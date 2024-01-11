@@ -70,6 +70,73 @@ function MyServiceFunction({ loader, lifecycle }: ServiceParams) {
 - **Services**: Services are the functionalities or features provided by the library or application. They are central to the functionality of the ZCC library.
 - **Service Methods**: The methods within a service, referred to as `ServiceActions` or `ServiceOperations`, are the operational functions that execute the service's specific tasks.
 
+### Flags Handling in ZCC
+
+#### Defining and Setting Flags
+
+Flags provide a flexible way to configure libraries and applications. They can be defined with defaults and overridden as needed.
+
+- **Defining Flags in Libraries**:
+
+  ```typescript
+  type LibraryFlags = {
+      featureXEnabled: boolean;
+      logLevel: string;
+  };
+
+  const MY_LIB = ZCC.createLibrary<LibraryFlags>("my-lib", {
+      flagDefaults: {
+          featureXEnabled: true,
+          logLevel: 'info'
+      }
+  });
+  ```
+
+- **Setting or Overriding Flags**:
+  - **Directly on Libraries**:
+
+    ```typescript
+    MY_LIB.setFlags({ featureXEnabled: false });
+    ```
+
+  - **During Application Creation**:
+
+    ```typescript
+    const myApp = ZCC.createApp("my-app", {
+        libs: [MY_LIB],
+        flags: {
+            "my-lib": { featureXEnabled: false }
+        }
+    });
+    ```
+
+#### Retrieving Flag Values
+
+To access flag values, use the `getFlag` method. This method is always scoped to the library the service is in and is passed as a part of service parameters.
+
+- **Within a Service**:
+
+  ```typescript
+  function MyServiceFunction({ getFlag }: ServiceParams) {
+      const featureXEnabled = getFlag('featureXEnabled');
+      // Use featureXEnabled in service logic...
+  }
+  ```
+
+- **Retrieving Flags from Library or Application Instances**:
+
+  ```typescript
+  const featureXEnabledInLib = MY_LIB.getFlag('featureXEnabled');
+  const featureXEnabledInApp = myApp.getFlag('featureXEnabled');
+  ```
+
+- **Global Retrieval**:
+
+  ```typescript
+  const featureXEnabledGlobally = ZCC.getFlag("my-lib", 'featureXEnabled');
+  const appSpecificFlag = ZCC.getFlag("application", 'someAppFlag');
+  ```
+
 ### Enhanced Loader Functionality
 
 - **Injected Loader**: The injected loader within ZCC provides a streamlined way to fetch services or modules. It's designed to work intelligently, searching for the best match based on either function or string inputs.
@@ -118,10 +185,10 @@ ZCC offers two types of loaders: the global loader (`ZCC.load`) and scoped loade
 
 - **Scoped Loaders**: Specific to a library or application instance, ideal for fetching services defined within the same scope.
 
-  ```typescript
-  // Using a scoped loader to fetch a service within myLib
-  const scopedService = myLib.load<MyServiceType>('ScopedService');
-  ```
+```typescript
+// Using a scoped loader to fetch a service within myLib
+const scopedService = myLib.load<MyServiceType>('ScopedService');
+```
 
 ### Transient Provider Pattern
 
@@ -149,6 +216,42 @@ provider.methodA();
 
 _This example illustrates creating a transient provider using the library's built-in patterns._
 
+### Bootstrap Options
+
+#### Overview
+
+The `BootstrapOptions` type in ZCC offers essential configuration settings to initialize and tailor the behavior of the library according to the specific needs of an application.
+
+#### Options Explained
+
+- **`handleGlobalErrors: boolean`**:
+  - Toggles the library's global error handling mechanism. When enabled (`true`), it captures uncaught exceptions and unhandled promise rejections at the global level, providing an added layer of error management.
+
+- **`configuration: AbstractConfig`**:
+  - Centralizes the configuration settings for the entire application and its constituent libraries. It's structured to accommodate settings for the application itself and for each included library, facilitating detailed and granular configuration.
+
+- **`customLogger: pino.Logger`**:
+  - Allows the integration of a custom Pino logger instance. This option is useful for applications that require specialized logging setups, offering flexibility in logging strategies right from the start.
+
+#### Example Usage
+
+```typescript
+const appBootstrapOptions: BootstrapOptions = {
+    handleGlobalErrors: true,
+    configuration: {
+        application: { /* application-specific config */ },
+        libs: {
+            boilerplate: { /* config for boilerplate library */ },
+            server: { /* config for server library */ },
+            // ... other libraries
+        }
+    },
+    customLogger: customPinoInstance
+};
+
+const myApp = ZCC.createApp("my-app", appBootstrapOptions);
+```
+
 ### Marketing and Positioning
 
 - **Positioning Statement**: ZCC is positioned as a hybrid framework combining the robust architecture of NestJS with the functional, component-based approach of React. This makes it an ideal choice for developers looking for a modern, scalable solution for building home automation systems and other applications.
@@ -166,7 +269,7 @@ _This example illustrates creating a transient provider using the library's buil
 
 ### Error Handling and Debugging
 
-- Clear and helpful error messages are crucial. The system should inform the developer of misuses, especially in critical areas like service initialization and lifecycle management.
+- Clear and helpful error messages are crucial. The system should inform the developer of misuses, especially in critical areas like service initialization and lifecycle management. The library offers a comprehensive error handling approach with various levels of specificity, including global error handling, library-specific error handling, and application-specific error handling.
 
 ### Documentation and Examples
 

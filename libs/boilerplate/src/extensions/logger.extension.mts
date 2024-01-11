@@ -8,6 +8,7 @@ import { inspect } from "util";
 import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
 import { LOG_LEVEL, LOG_METRICS } from "../helpers/config.constants.mjs";
 import { LOGGER_CONTEXT_ENTRIES_COUNT } from "../helpers/metrics.helper.mjs";
+import { TServiceParams } from "./loader.extension.mjs";
 
 export type TLoggerFunction =
   | ((message: string, ...arguments_: unknown[]) => void)
@@ -190,9 +191,7 @@ function log(
   standardLogger(method, context, ...parameters);
 }
 
-const metricsStarted = false;
-
-export function augmentLogger() {
+export function ZCCLogger({ lifecycle, getConfig }: TServiceParams) {
   // tuned to be most useful in debugging this
   inspect.defaultOptions.colors = true;
   inspect.defaultOptions.depth = 10;
@@ -200,28 +199,29 @@ export function augmentLogger() {
   inspect.defaultOptions.compact = false;
   inspect.defaultOptions.colors = true;
 
-  // if (!metricsStarted) {
-  //   setImmediate(() => {
-  //     LIB_BOILERPLATE.lifecycle.onReady(() => {
-  //       if (LIB_BOILERPLATE.getConfig<boolean>(LOG_METRICS)) {
-  //         setInterval(() => {
-  //           const count = Object.keys(HIGHLIGHTED_CONTEXT_CACHE).length;
-  //           LOGGER_CONTEXT_ENTRIES_COUNT.set(count);
-  //         }, 10 * SECOND);
-  //       }
-  //     });
-  //   });
-  // }
+  let metricsInterval: ReturnType<typeof setInterval>;
+  lifecycle.onBootstrap(() => {
+    if (!getConfig<boolean>(LOG_METRICS)) {
+      return;
+    }
+    metricsInterval = setInterval(() => {
+      const count = Object.keys(HIGHLIGHTED_CONTEXT_CACHE).length;
+      LOGGER_CONTEXT_ENTRIES_COUNT.set(count);
+    }, 10 * SECOND);
+  });
+
+  lifecycle.onShutdownStart(() => {
+    if (metricsInterval) {
+      clearInterval(metricsInterval);
+    }
+  });
 
   let logLevel: pino.Level = "info";
   const shouldLog = (level: pino.Level) =>
     LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[logLevel];
 
   function createBaseLogger() {
-    logLevel = LIB_BOILERPLATE.getConfig(LOG_LEVEL);
-    console.log(logLevel);
-    console.trace();
-    // if (prettyLogger) {
+    logLevel = getConfig(LOG_LEVEL);
     logger = pino(
       {
         level: "info",
@@ -270,10 +270,8 @@ export function augmentLogger() {
     //   pino.destination({ sync: true }),
     // );
   }
-  setImmediate(() => {
-    LIB_BOILERPLATE.lifecycle.onConfig(() => createBaseLogger());
-  });
-  return {
+  lifecycle.onPostConfig(() => createBaseLogger());
+  const out = {
     LOGGER_CACHE: () => HIGHLIGHTED_CONTEXT_CACHE,
     context: (context: string) =>
       ({
@@ -303,4 +301,8 @@ export function augmentLogger() {
       createBaseLogger();
     },
   };
+  ZCC.logger = out;
+  ZCC.systemLogger = ZCC.logger.context("ZCC:system");
+
+  return out;
 }

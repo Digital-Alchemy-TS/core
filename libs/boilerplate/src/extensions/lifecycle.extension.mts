@@ -12,25 +12,53 @@ import {
   TParentLifecycle,
 } from "../helpers/lifecycle.helper.mjs";
 import { ZCCApplicationDefinition } from "./application.extension.mjs";
+import { ILogger } from "./logger.extension.mjs";
 
 const NONE = -1;
 // ! This is a sorted array! Don't change the order
 const LIFECYCLE_STAGES = [
   "PreInit",
-  "Config",
   "PostConfig",
   "Bootstrap",
   "Ready",
+  "ShutdownStart",
+  "ShutdownComplete",
 ];
 
-export function CreateLifecycle(): TParentLifecycle {
+export function ZCCLifecycle(): TParentLifecycle {
   let completedCallbacks = new Set<string>();
   let configuredApplication: ZCCApplicationDefinition;
+  // heisenberg's logger. it's probably here, but maybe not
+  let logger: ILogger;
   let started = false;
 
   const parentCallbacks = Object.fromEntries(
     LIFECYCLE_STAGES.map(i => [i, []]),
   );
+
+  const [
+    onPreInit,
+    onPostConfig,
+    onBootstrap,
+    onReady,
+    onShutdownStart,
+    onShutdownComplete,
+  ] = LIFECYCLE_STAGES.map(
+    stage =>
+      (callback: LifecycleCallback, priority = NONE) => {
+        // is maybe here
+        if (completedCallbacks.has(`on${stage}`)) {
+          // is here!
+          logger.warn(`[on${stage}] late attach`);
+          if (started) {
+            setImmediate(async () => await callback());
+          }
+        }
+        parentCallbacks[stage].push([callback, priority]);
+      },
+  );
+
+  onPreInit(() => (logger = ZCC.logger.context(`boilerplate:Lifecycle`)));
 
   async function RunCallbacks(list: CallbackList, name: string) {
     completedCallbacks.add(name);
@@ -43,117 +71,128 @@ export function CreateLifecycle(): TParentLifecycle {
     await each(quick, async ([callback]) => await callback());
   }
 
-  return {
-    ...Object.fromEntries(
-      LIFECYCLE_STAGES.map(stage => [
-        `on${stage}`,
+  async function teardown() {
+    if (!configuredApplication) {
+      return;
+    }
+    if (ZCC.application !== configuredApplication) {
+      throw new InternalError(
+        "lifecycle.extension",
+        "TEARDOWN_FOREIGN_APPLICATION",
+        "ZCC.application points to an application different from the one created by this object",
+      );
+    }
+    ZCC.application = undefined;
+    configuredApplication = undefined;
+    completedCallbacks = new Set<string>();
+    LIFECYCLE_STAGES.forEach(stage => (parentCallbacks[stage] = []));
+    started = false;
+  }
+
+  async function init(
+    application: ZCCApplicationDefinition,
+    config: Partial<AbstractConfig> = {},
+  ) {
+    if (ZCC.application) {
+      throw new BootstrapException(
+        "Create",
+        "MULTIPLE_APPLICATIONS",
+        "Teardown old application first",
+      );
+    }
+    ZCC.application = application;
+    configuredApplication = application;
+    application.lifecycle.attach();
+    ZCC.config.merge(config);
+    await ZCC.config.loadConfig();
+  }
+
+  async function exec() {
+    if (!ZCC.application) {
+      throw new BootstrapException(
+        "Create",
+        "NO_APPLICATION",
+        "Call init first",
+      );
+    }
+    try {
+      logger.debug("Bootstrap started");
+      await eachSeries(LIFECYCLE_STAGES, async stage => {
+        logger.trace(`Running %s callbacks`, stage.toLowerCase());
+        await RunCallbacks(parentCallbacks[stage], `on${stage}`);
+      });
+      logger.info("[%s] Started!", ZCC.application.name);
+      started = true;
+    } catch (error) {
+      logger.fatal({ application: ZCC.application, error }, "Bootstrap failed");
+      // eslint-disable-next-line no-console
+      console.error(error);
+    }
+  }
+
+  function child(): TChildLifecycle {
+    const stages = [...LIFECYCLE_STAGES];
+    let isAttached = false;
+    const childCallbacks = Object.fromEntries(stages.map(i => [i, []]));
+
+    const [
+      onPreInit,
+      onPostConfig,
+      onBootstrap,
+      onReady,
+      onShutdownStart,
+      onShutdownComplete,
+    ] = LIFECYCLE_STAGES.map(
+      stage =>
         (callback: LifecycleCallback, priority = NONE) => {
-          if (completedCallbacks.has(`on${stage}`)) {
-            ZCC.systemLogger.warn(`[on${stage}] late attach`);
+          if (isAttached) {
+            logger.warn(`[on${stage}] late attach`);
             if (started) {
               setImmediate(async () => await callback());
             }
           }
-          parentCallbacks[stage].push([callback, priority]);
+          if (childCallbacks[stage]) {
+            childCallbacks[stage].push([callback, priority]);
+          }
         },
-      ]),
-    ),
-    child: (): TChildLifecycle => {
-      let isAttached = false;
-      const childCallbacks = Object.fromEntries(
-        [...LIFECYCLE_STAGES, "Register"].map(i => [i, []]),
-      );
-      return {
-        ...Object.fromEntries(
-          [...LIFECYCLE_STAGES, "Register"].map(stage => [
-            `on${stage}`,
-            (callback: LifecycleCallback, priority = NONE) => {
-              if (isAttached) {
-                ZCC.systemLogger.warn(`[on${stage}] late attach`);
-                if (started) {
-                  console.trace();
-                  setImmediate(async () => await callback());
-                }
-              }
-              if (childCallbacks[stage]) {
-                childCallbacks[stage].push([callback, priority]);
-              } else {
-                console.error(stage, "WTF?!");
-              }
-            },
-          ]),
-        ),
-        isRegistered: () => isAttached,
-        register: async () => {
-          isAttached = true;
-          LIFECYCLE_STAGES.forEach(stage => {
-            parentCallbacks[stage].push(...childCallbacks[stage]);
-            childCallbacks[stage] = parentCallbacks[stage];
-          });
-        },
-      } as TChildLifecycle;
-    },
-    exec: async () => {
-      if (!ZCC.application) {
-        throw new BootstrapException(
-          "Create",
-          "NO_APPLICATION",
-          "Call init first",
-        );
-      }
-      try {
-        ZCC.systemLogger.debug("Bootstrap started");
-        await eachSeries(LIFECYCLE_STAGES, async stage => {
-          ZCC.systemLogger.trace(`Running %s callbacks`, stage.toLowerCase());
-          await RunCallbacks(parentCallbacks[stage], `on${stage}`);
-        });
-        ZCC.systemLogger.info("[%s] Started!", ZCC.application.name);
-      } catch (error) {
-        ZCC.systemLogger.fatal(
-          { application: ZCC.application, error },
-          "Bootstrap failed",
-        );
-        // eslint-disable-next-line no-console
-        console.error(error);
-      } finally {
-        started = true;
-      }
-    },
-    init: async (
-      application: ZCCApplicationDefinition,
-      config: Partial<AbstractConfig> = {},
-    ) => {
-      if (ZCC.application) {
-        throw new BootstrapException(
-          "Create",
-          "MULTIPLE_APPLICATIONS",
-          "Teardown old application first",
-        );
-      }
-      ZCC.application = application;
-      configuredApplication = application;
-      application.lifecycle.register();
-      ZCC.config.merge(config);
-      await ZCC.config.loadConfig();
-    },
-    teardown: async () => {
-      if (!configuredApplication) {
-        return;
-      }
-      if (ZCC.application !== configuredApplication) {
-        throw new InternalError(
-          "lifecycle.extension",
-          "TEARDOWN_FOREIGN_APPLICATION",
-          "ZCC.application points to an application different from the one created by this object",
-        );
-      }
-      ZCC.application = undefined;
-      configuredApplication = undefined;
-      completedCallbacks = new Set<string>();
-      LIFECYCLE_STAGES.forEach(stage => (parentCallbacks[stage] = []));
-      started = false;
-    },
-  } as TParentLifecycle;
-}
+    );
 
-export type TLifeCycle = ReturnType<typeof CreateLifecycle>;
+    return {
+      attach: () => {
+        if (isAttached) {
+          throw new BootstrapException(
+            "Create",
+            "REPEAT_ATTACH",
+            "The attach method for this child lifecycle was called more than once",
+          );
+        }
+        isAttached = true;
+        Object.entries(childCallbacks).forEach(([key, value]) => {
+          parentCallbacks[key].push(...value);
+          childCallbacks[key] = parentCallbacks[key];
+        });
+      },
+      onBootstrap,
+      onPostConfig,
+      onPreInit,
+      onReady,
+      onShutdownComplete,
+      onShutdownStart,
+    };
+  }
+
+  const out = {
+    child,
+    exec,
+    init,
+    onBootstrap,
+    onPostConfig,
+    onPreInit,
+    onReady,
+    onShutdownComplete,
+    onShutdownStart,
+    teardown,
+  } as TParentLifecycle;
+  ZCC.lifecycle = out;
+  return out;
+}

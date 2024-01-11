@@ -1,27 +1,27 @@
 import { ZCC } from "@zcc/utilities";
 
 import {
-  CreateApplication,
-  ImportLibrary,
   ZCCApplicationDefinition,
+  ZCCCreateApplication,
 } from "../extensions/application.extension.mjs";
 import { CreateConfiguration } from "../extensions/configuration.extension.mjs";
 import { CreateFetcher } from "../extensions/fetch.extension.mjs";
-import { CreateLibraryModule } from "../extensions/library.extension.mjs";
-import { CreateLifecycle } from "../extensions/lifecycle.extension.mjs";
-import { augmentLogger, ILogger } from "../extensions/logger.extension.mjs";
+import { ZCCCreateLibrary } from "../extensions/library.extension.mjs";
+import { Loader } from "../extensions/loader.extension.mjs";
+import { ILogger, ZCCLogger } from "../extensions/logger.extension.mjs";
+import { TParentLifecycle } from "./lifecycle.helper.mjs";
 
 declare module "@zcc/utilities" {
   export interface ZCCDefinition {
     application: ZCCApplicationDefinition | undefined;
     config: ReturnType<typeof CreateConfiguration>;
-    createApplication: typeof CreateApplication;
+    createApplication: ReturnType<typeof ZCCCreateApplication>;
     createFetcher: typeof CreateFetcher;
-    createLibrary: typeof CreateLibraryModule;
+    createLibrary: ReturnType<typeof ZCCCreateLibrary>;
     fetch: ReturnType<typeof CreateFetcher>;
-    importLibrary: typeof ImportLibrary;
-    lifecycle: ReturnType<typeof CreateLifecycle>;
-    logger: ReturnType<typeof augmentLogger>;
+    lifecycle: TParentLifecycle;
+    logger: ReturnType<typeof ZCCLogger>;
+    loader: Loader;
     systemLogger: ILogger;
   }
 }
@@ -30,14 +30,8 @@ declare module "@zcc/utilities" {
  * Order matters!
  */
 export function MergeDefinitions() {
-  ZCC.logger = augmentLogger();
   ZCC.config = CreateConfiguration();
-  ZCC.systemLogger = ZCC.logger.context("ZCC:system");
-  ZCC.lifecycle = CreateLifecycle();
-  ZCC.createApplication = CreateApplication;
   ZCC.createFetcher = CreateFetcher;
-  ZCC.createLibrary = CreateLibraryModule;
-  ZCC.importLibrary = ImportLibrary;
 
   ZCC.fetch = CreateFetcher({
     logContext: "ZCC:fetch",

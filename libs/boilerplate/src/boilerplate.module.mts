@@ -1,6 +1,13 @@
 import { ZCC } from "@zcc/utilities";
 
 import {
+  ZCCCreateApplication,
+  ZCCCreateLibrary,
+  ZCCLifecycle,
+  ZCCLoader,
+  ZCCLogger,
+} from "./extensions/index.mjs";
+import {
   CACHE_PREFIX,
   CACHE_PROVIDER,
   CACHE_TTL,
@@ -64,4 +71,11 @@ export const LIB_BOILERPLATE = ZCC.createLibrary({
     },
   },
   library: "boilerplate",
+  services: [
+    ["lifecycle", ZCCLifecycle],
+    ["logger", ZCCLogger],
+    ["loader", ZCCLoader],
+    ["create-application", ZCCCreateApplication],
+    ["create-library", ZCCCreateLibrary],
+  ],
 });

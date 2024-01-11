@@ -15,7 +15,7 @@ export async function each<T = unknown>(
 
 export async function eachSeries<T = void>(
   item: T[] | Set<T>,
-  callback: (item: T) => Promise<void>,
+  callback: (item: T) => Promise<void | unknown>,
 ): Promise<void> {
   if (item instanceof Set) {
     item = [...item.values()];

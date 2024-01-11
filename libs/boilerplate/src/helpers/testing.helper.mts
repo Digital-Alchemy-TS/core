@@ -8,6 +8,7 @@ import { homedir } from "os";
 import { extname, join } from "path";
 import { cwd } from "process";
 
+import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
 import { ModuleConfiguration } from "../extensions/configuration.extension.mjs";
 import { LOG_METRICS } from "./config.constants.mjs";
 import { AbstractConfig } from "./config.helper.mjs";
@@ -131,18 +132,18 @@ export async function bootTestingModule(
   const application = ZCC.createApplication({
     application: TESTING_APP_NAME,
     configuration: configDefs,
+    libraries: [LIB_BOILERPLATE],
   });
-  environmentDefaults = deepExtend(
-    {
-      libs: {
-        boilerplate: {
-          // [LOG_LEVEL]: "warn",
-          [LOG_METRICS]: false,
-        },
-      },
-    },
-    { ...environmentDefaults },
-  );
-  await ZCC.lifecycle.init(application, environmentDefaults);
+  // environmentDefaults = deepExtend(
+  //   {
+  //     libs: {
+  //       boilerplate: {
+  //         // [LOG_LEVEL]: "warn",
+  //         [LOG_METRICS]: false,
+  //       },
+  //     },
+  //   },
+  //   { ...environmentDefaults },
+  // );
   return application;
 }

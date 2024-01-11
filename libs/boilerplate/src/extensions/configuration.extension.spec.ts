@@ -7,6 +7,7 @@ import {
   bootTestingModule,
   ConfigurationFiles,
   RandomFileTestingDataFormat,
+  TESTING_APP_NAME,
 } from "../helpers/testing.helper.mjs";
 import { ZCCApplicationDefinition } from "./application.extension.mjs";
 import { ConfigManager } from "./configuration.extension.mjs";
@@ -20,15 +21,18 @@ describe.skip("Configuration Extension Tests", () => {
   const APPLICATION = Symbol.for("APPLICATION_CONFIGURATION");
 
   async function CreateStandardTestModule() {
-    loadedModule = await bootTestingModule({
-      boolean: { default: false, type: "boolean" },
-      internal: { type: "internal" },
-      number: { default: 0, type: "number" },
-      record: { type: "record" },
-      string: { default: "", type: "string" },
-      stringArray: { default: [], type: "string[]" },
+    loadedModule = ZCC.createApplication({
+      application: TESTING_APP_NAME,
+      configuration: {
+        boolean: { default: false, type: "boolean" },
+        internal: { type: "internal" },
+        number: { default: 0, type: "number" },
+        record: { type: "record" },
+        string: { default: "", type: "string" },
+        stringArray: { default: [], type: "string[]" },
+      },
+      libraries: [LIB_BOILERPLATE],
     });
-    LIB_BOILERPLATE.lifecycle.register();
   }
 
   beforeAll(() => {
@@ -357,7 +361,6 @@ describe.skip("Configuration Extension Tests", () => {
       loadedModule = await bootTestingModule({
         ARGV_TEST: { default: "module default", type: "string" },
       });
-      LIB_BOILERPLATE.lifecycle.register();
       await ZCC.config.loadConfig();
 
       expect(ZCC.config.get("ARGV_TEST")).toBe(argvTestValue);
@@ -370,7 +373,8 @@ describe.skip("Configuration Extension Tests", () => {
       loadedModule = await bootTestingModule({
         ENVIRONMENT_TEST: { default: "module default", type: "string" },
       });
-      LIB_BOILERPLATE.lifecycle.register();
+      // loadedModule
+      ZCC.loader
       await ZCC.config.loadConfig();
 
       expect(ZCC.config.get("ENVIRONMENT_TEST")).toBe(environmentTestValue);

@@ -4,37 +4,41 @@ import {
   ModuleConfiguration,
   OptionalModuleConfiguration,
 } from "./configuration.extension.mjs";
+import { TServiceDefinition, TServiceParams } from "./loader.extension.mjs";
 
 type LibraryConfigurationOptions = {
   library: string;
+  services?: Array<[name: string, loader: TServiceDefinition]>;
   configuration?: OptionalModuleConfiguration;
 };
 
-export function CreateLibraryModule({
-  library,
-  configuration,
-}: LibraryConfigurationOptions) {
-  const lifecycle = ZCC.lifecycle.child();
-  const logger = ZCC.logger.context(`${library}:Bootstrap`);
-
-  if (!is.empty(configuration)) {
-    lifecycle.onRegister(() => {
-      // console.log("HIT");
+export function ZCCCreateLibrary({ logger, lifecycle }: TServiceParams) {
+  const createLibrary = function ({
+    library,
+    configuration,
+    services = [],
+  }: LibraryConfigurationOptions) {
+    if (!is.empty(configuration)) {
       logger.debug("Merge library configurations");
       ZCC.config.addLibraryDefinition(
         library,
         configuration as ModuleConfiguration,
       );
-    });
-  }
-  return {
-    childLogger: (context: string) =>
-      ZCC.logger.context(`${library}:${context}`),
-    configuration,
-    getConfig: <T,>(property: string): T => ZCC.config.get([library, property]),
-    lifecycle,
-    name: library,
+    }
+
+    return {
+      configuration,
+      getConfig: <T,>(property: string): T =>
+        ZCC.config.get([library, property]),
+      // no mutating my array
+      getServiceList: () => [...services],
+      lifecycle,
+      name: library,
+      services,
+    };
   };
+  ZCC.createLibrary = createLibrary;
+  return createLibrary;
 }
 
-export type LibraryDefinition = ReturnType<typeof CreateLibraryModule>;
+export type LibraryDefinition = ReturnType<ReturnType<typeof ZCCCreateLibrary>>;

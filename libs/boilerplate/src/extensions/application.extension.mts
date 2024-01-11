@@ -1,52 +1,50 @@
 import { ZCC } from "@zcc/utilities";
 
-import { TChildLifecycle } from "../helpers/lifecycle.helper.mjs";
 import {
   ModuleConfiguration,
   OptionalModuleConfiguration,
 } from "./configuration.extension.mjs";
 import { LibraryDefinition } from "./library.extension.mjs";
-import { ILogger } from "./logger.extension.mjs";
+import { TServiceDefinition, TServiceParams } from "./loader.extension.mjs";
 
 export const LOADED_LIBRARIES = new Set<LibraryDefinition>();
+type ServiceListing = Array<[name: string, loader: TServiceDefinition]>;
 
 type ApplicationConfigurationOptions = {
   application?: string;
+  services?: ServiceListing;
+  libraries?: LibraryDefinition[];
   configuration?: OptionalModuleConfiguration;
 };
 
-export function CreateApplication({
-  application = "zcc",
-  configuration = {},
-}: ApplicationConfigurationOptions): ZCCApplicationDefinition {
-  const logger = ZCC.logger.context(`${application}:Bootstrap`);
-  const lifecycle = ZCC.lifecycle.child();
+// outer loader loader
+export function ZCCCreateApplication({ logger, lifecycle }: TServiceParams) {
+  // actual attachment function
+  const createApplication = ({
+    // you should really define your own tho. using this is just lazy
+    application = "zcc",
+    services = [],
+    libraries = [],
+    configuration = {},
+  }: ApplicationConfigurationOptions) => {
+    ZCC.config.setApplicationDefinition(configuration as ModuleConfiguration);
 
-  ZCC.config.setApplicationDefinition(configuration as ModuleConfiguration);
-  lifecycle.onRegister(() => {
-    console.log("HIT");
-    logger.debug("Attaching library lifecycles");
-    LOADED_LIBRARIES.forEach(item => {
-      logger.trace({ name: item.name }, `Attach`);
-      item.lifecycle.register();
-    });
-  });
-  return {
-    configuration,
-    lifecycle,
-    logger,
-    name: application as string,
+    return {
+      configuration,
+      getConfig: <T,>(property: string): T =>
+        ZCC.config.get(["application", property]),
+      // no mutating my arrays!
+      getLibraries: () => [...libraries],
+      getServiceList: () => [...services],
+      lifecycle,
+      logger,
+      name: application as string,
+    };
   };
+  ZCC.createApplication = createApplication;
+  return createApplication;
 }
 
-export type ZCCApplicationDefinition = {
-  name: string;
-  configuration: OptionalModuleConfiguration;
-  lifecycle: TChildLifecycle;
-  logger: ILogger;
-};
-
-export function ImportLibrary(library: LibraryDefinition) {
-  ZCC.systemLogger.trace({ name: library.name }, "Import library");
-  LOADED_LIBRARIES.add(library);
-}
+export type ZCCApplicationDefinition = ReturnType<
+  ReturnType<typeof ZCCCreateApplication>
+>;

@@ -52,7 +52,7 @@ Similarly, augmenting the is object allows adding new type-checking functions or
 
 ```typescript
 declare module "@zcc/utilities" {
-  export interface IS_Definition {
+  export interface IsIt {
     isColor: (value: unknown) => boolean;
   }
 }

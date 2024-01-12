@@ -70,6 +70,63 @@ function MyServiceFunction({ loader, lifecycle }: ServiceParams) {
 - **Services**: Services are the functionalities or features provided by the library or application. They are central to the functionality of the ZCC library.
 - **Service Methods**: The methods within a service, referred to as `ServiceActions` or `ServiceOperations`, are the operational functions that execute the service's specific tasks.
 
+### Time-Based Functionalities in ZCC
+
+#### Interval Management with ZCC.setInterval
+
+ZCC enhances interval handling by deferring execution until after the application's successful startup and ensuring automatic termination in response to shutdown events.
+
+##### Example
+
+```typescript
+export function SampleService() {
+  let taskRemover = ZCC.setInterval(() => {
+    console.log("Running periodic task...");
+  }, 1000);
+
+  setTimeout(() => {
+    taskRemover();
+    console.log("Periodic task stopped.");
+  }, 60000); // Stops after 10 minutes
+}
+```
+
+#### Cron Scheduling with ZCC.cron
+
+ZCC's `cron` function allows scheduling tasks with cron expressions. The `CronExpression` enum provides a range of predefined patterns.
+
+##### Example with Predefined Enum
+
+```typescript
+export function DailyTaskService() {
+  let remove = ZCC.cron(CronExpression.EVERY_DAY_AT_5PM, () => {
+    console.log("Executing daily task at 5 PM.");
+  });
+}
+```
+
+##### Example with Custom Expression
+
+```typescript
+export function FrequentTaskService() {
+  let remove = ZCC.cron("*/15 * * * *", () => {
+    console.log("Executing task every 15 minutes.");
+  });
+}
+```
+
+The `CronExpression` enum includes various schedules, such as:
+
+1. `EVERY_MINUTE`: Every minute.
+2. `EVERY_DAY_AT_1AM`: Every day at 1 AM.
+3. `EVERY_WEEK`: Every week.
+4. `EVERY_MONTH`: Every month on the first day.
+5. Custom expressions like `"*/15 * * * *"` for every 15 minutes.
+
+### Best Practices for Scheduling in Services
+
+**Note**: It's highly recommended to place scheduling functions (`setInterval` and `cron`) within service functions. This ensures they are managed correctly according to the application's lifecycle, preventing errors and unintended behavior.
+
 ### Flags Handling in ZCC
 
 #### Defining and Setting Flags

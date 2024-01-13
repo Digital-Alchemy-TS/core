@@ -1,12 +1,7 @@
 import { ZCC } from "@zcc/utilities";
 
-import {
-  ZCCCreateApplication,
-  ZCCCreateLibrary,
-  ZCCLifecycle,
-  ZCCLoader,
-  ZCCLogger,
-} from "./extensions/index.mjs";
+import { ZCCLogger } from "./extensions/index.mjs";
+import { InitializeWiring } from "./extensions/wiring.extension.mjs";
 import {
   CACHE_PREFIX,
   CACHE_PROVIDER,
@@ -17,9 +12,8 @@ import {
   REDIS_URL,
   SCAN_CONFIG,
 } from "./helpers/config.constants.mjs";
-import { MergeDefinitions } from "./helpers/merge.helper.mjs";
 
-MergeDefinitions();
+InitializeWiring();
 export const LIB_BOILERPLATE = ZCC.createLibrary({
   configuration: {
     [CACHE_PREFIX]: {
@@ -70,12 +64,8 @@ export const LIB_BOILERPLATE = ZCC.createLibrary({
       type: "boolean",
     },
   },
-  library: "boilerplate",
+  name: "boilerplate",
   services: [
-    ["lifecycle", ZCCLifecycle],
-    ["logger", ZCCLogger],
-    ["loader", ZCCLoader],
-    ["create-application", ZCCCreateApplication],
-    ["create-library", ZCCCreateLibrary],
+    // ["logger", ZCCLogger]
   ],
 });

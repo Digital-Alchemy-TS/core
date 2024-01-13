@@ -22,7 +22,7 @@ describe.skip("Configuration Extension Tests", () => {
 
   async function CreateStandardTestModule() {
     loadedModule = ZCC.createApplication({
-      application: TESTING_APP_NAME,
+      name: TESTING_APP_NAME,
       configuration: {
         boolean: { default: false, type: "boolean" },
         internal: { type: "internal" },
@@ -374,7 +374,6 @@ describe.skip("Configuration Extension Tests", () => {
         ENVIRONMENT_TEST: { default: "module default", type: "string" },
       });
       // loadedModule
-      ZCC.loader
       await ZCC.config.loadConfig();
 
       expect(ZCC.config.get("ENVIRONMENT_TEST")).toBe(environmentTestValue);

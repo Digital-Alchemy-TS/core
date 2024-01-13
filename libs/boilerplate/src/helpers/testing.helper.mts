@@ -130,9 +130,9 @@ export async function bootTestingModule(
   environmentDefaults?: Partial<AbstractConfig>,
 ) {
   const application = ZCC.createApplication({
-    application: TESTING_APP_NAME,
     configuration: configDefs,
     libraries: [LIB_BOILERPLATE],
+    name: TESTING_APP_NAME,
   });
   // environmentDefaults = deepExtend(
   //   {

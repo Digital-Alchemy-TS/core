@@ -35,15 +35,5 @@ export type TLifecycleBase = {
 };
 
 export type TParentLifecycle = TLifecycleBase & {
-  exec: () => Promise<void>;
   child: () => TLifecycleBase;
-
-  /**
-   * Cleans up resources and detaches the child lifecycle from the parent, executed as part of the shutdown sequence.
-   */
-  teardown: () => Promise<void>;
-};
-
-export type TChildLifecycle = TLifecycleBase & {
-  attach: () => void;
 };

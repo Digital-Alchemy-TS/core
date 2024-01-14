@@ -72,10 +72,7 @@ export type BootstrapOptions = {
   flags?: Record<string, boolean | number | string>;
 };
 
-export type ZCCLibraryDefinition = LibraryConfigurationOptions & {
-  getConfig: <T>(property: string) => T;
-  lifecycle: TLifecycleBase;
-  onError: (callback: onErrorCallback) => void;
+type Wire = {
   /**
    * Internal method used in bootstrapping, do not call elsewhere
    *
@@ -85,10 +82,18 @@ export type ZCCLibraryDefinition = LibraryConfigurationOptions & {
   wire: () => void;
 };
 
-export type ZZCApplicationDefinition = ApplicationConfigurationOptions & {
-  bootstrap: (options: BootstrapOptions) => Promise<void>;
-  getConfig: <T>(property: string) => T;
-  lifecycle: TLifecycleBase;
-  onError: (callback: onErrorCallback) => void;
-  teardown: () => Promise<void>;
-};
+export type ZCCLibraryDefinition = LibraryConfigurationOptions &
+  Wire & {
+    getConfig: <T>(property: string) => T;
+    lifecycle: TLifecycleBase;
+    onError: (callback: onErrorCallback) => void;
+  };
+
+export type ZZCApplicationDefinition = ApplicationConfigurationOptions &
+  Wire & {
+    bootstrap: (options: BootstrapOptions) => Promise<void>;
+    getConfig: <T>(property: string) => T;
+    lifecycle: TLifecycleBase;
+    onError: (callback: onErrorCallback) => void;
+    teardown: () => Promise<void>;
+  };

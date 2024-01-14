@@ -33,11 +33,21 @@ describe("Wiring Extension", () => {
         const projectName = "testProject";
 
         // First wiring should succeed
-        await wiring.testing.WireService(projectName, serviceName, testService);
+        await wiring.testing.WireService(
+          projectName,
+          serviceName,
+          testService,
+          undefined,
+        );
 
         // Second wiring with the same service name should throw an exception
         await expect(
-          wiring.testing.WireService(projectName, serviceName, testService),
+          wiring.testing.WireService(
+            projectName,
+            serviceName,
+            testService,
+            undefined,
+          ),
         ).rejects.toThrow("DUPLICATE_SERVICE_NAME");
       });
 
@@ -58,6 +68,7 @@ describe("Wiring Extension", () => {
           projectName,
           serviceName,
           faultyService,
+          undefined,
         );
 
         // Check if console.log was called with the expected error message
@@ -216,6 +227,7 @@ describe("Wiring Extension", () => {
           "testApp",
           testServiceName,
           testService,
+          undefined,
         );
 
         // Retrieve the wired service from the application's services array

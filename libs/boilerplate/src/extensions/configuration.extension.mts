@@ -212,6 +212,7 @@ export function ZCCLoadConfig() {
       configDefinitions = new Map();
     },
   };
+  ZCC.config = out;
   return out;
 }
 

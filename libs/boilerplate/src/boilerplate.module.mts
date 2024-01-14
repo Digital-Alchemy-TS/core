@@ -66,7 +66,7 @@ export const LIB_BOILERPLATE = ZCC.createLibrary({
   },
   name: "boilerplate",
   services: [
-    ["configuration", ZCCLoadConfig],
     ["logger", ZCCLogger],
+    ["configuration", ZCCLoadConfig],
   ],
 });

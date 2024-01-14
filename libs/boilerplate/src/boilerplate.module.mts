@@ -1,6 +1,6 @@
 import { ZCC } from "@zcc/utilities";
 
-import { ZCCLogger } from "./extensions/index.mjs";
+import { ZCCLoadConfig, ZCCLogger } from "./extensions/index.mjs";
 import { InitializeWiring } from "./extensions/wiring.extension.mjs";
 import {
   CACHE_PREFIX,
@@ -66,6 +66,7 @@ export const LIB_BOILERPLATE = ZCC.createLibrary({
   },
   name: "boilerplate",
   services: [
-    // ["logger", ZCCLogger]
+    ["configuration", ZCCLoadConfig],
+    ["logger", ZCCLogger],
   ],
 });

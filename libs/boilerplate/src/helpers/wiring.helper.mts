@@ -86,6 +86,9 @@ export type ZCCLibraryDefinition = LibraryConfigurationOptions & {
 };
 
 export type ZZCApplicationDefinition = ApplicationConfigurationOptions & {
+  bootstrap: (options: BootstrapOptions) => Promise<void>;
   getConfig: <T>(property: string) => T;
-  //
+  lifecycle: TLifecycleBase;
+  onError: (callback: onErrorCallback) => void;
+  teardown: () => Promise<void>;
 };

@@ -3,7 +3,6 @@ import { ZCC } from "@zcc/utilities";
 import chalk from "chalk";
 import pino from "pino";
 
-import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
 import { LOG_LEVEL } from "../helpers/config.constants.mjs";
 import { bootTestingModule } from "../helpers/testing.helper.mjs";
 import {
@@ -19,7 +18,7 @@ describe.skip("Logger Extension", () => {
       {},
       { libs: { boilerplate: { [LOG_LEVEL]: "trace" } } },
     );
-    LIB_BOILERPLATE.lifecycle.register();
+    // LIB_BOILERPLATE.lifecycle.register();
     // start from a known state
     ZCC.logger.setPrettyLogger(false);
   });

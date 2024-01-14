@@ -9,20 +9,19 @@ import {
   RandomFileTestingDataFormat,
   TESTING_APP_NAME,
 } from "../helpers/testing.helper.mjs";
-import { ZCCApplicationDefinition } from "./application.extension.mjs";
+import { ZZCApplicationDefinition } from "../helpers/wiring.helper.mjs";
 import { ConfigManager } from "./configuration.extension.mjs";
 
 describe.skip("Configuration Extension Tests", () => {
   const originalEnvironment = process.env;
   const originalArgv = process.argv;
-  let loadedModule: ZCCApplicationDefinition;
+  let loadedModule: ZZCApplicationDefinition;
   let config: ConfigManager;
   const testFiles = ConfigurationFiles();
   const APPLICATION = Symbol.for("APPLICATION_CONFIGURATION");
 
   async function CreateStandardTestModule() {
     loadedModule = ZCC.createApplication({
-      name: TESTING_APP_NAME,
       configuration: {
         boolean: { default: false, type: "boolean" },
         internal: { type: "internal" },
@@ -32,6 +31,7 @@ describe.skip("Configuration Extension Tests", () => {
         stringArray: { default: [], type: "string[]" },
       },
       libraries: [LIB_BOILERPLATE],
+      name: TESTING_APP_NAME,
     });
   }
 
@@ -42,9 +42,10 @@ describe.skip("Configuration Extension Tests", () => {
   beforeEach(() => {
     ZCC.config.testReset();
   });
-  afterEach(() => {
+
+  afterEach(async () => {
     if (loadedModule) {
-      ZCC.lifecycle.teardown();
+      await loadedModule.teardown();
       loadedModule = undefined;
     }
   });

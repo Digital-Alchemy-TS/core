@@ -7,14 +7,16 @@ import {
   BootstrapException,
   InternalError,
 } from "../helpers/errors.helper.mjs";
-import { ZCC_LIBRARY_ERROR } from "../helpers/events.helper.mjs";
+import {
+  ZCC_APPLICATION_ERROR,
+  ZCC_LIBRARY_ERROR,
+} from "../helpers/events.helper.mjs";
 import {
   LifecycleCallback,
   TParentLifecycle,
 } from "../helpers/lifecycle.helper.mjs";
 import {
   ApplicationConfigurationOptions,
-  ApplicationDefinition,
   BootstrapOptions,
   LibraryConfigurationOptions,
   Loader,
@@ -38,6 +40,15 @@ const LIFECYCLE_STAGES = [
   "ShutdownComplete",
 ];
 const FILE_CONTEXT = "boilerplate:Loader";
+type ActiveApplicationDefinition = {
+  application: ZCCApplicationDefinition;
+  LOADED_MODULES: Map<string, TResolvedModuleMappings>;
+  MODULE_MAPPINGS: Map<string, TModuleMappings>;
+  REVERSE_MODULE_MAPPING: Map<
+    TServiceDefinition,
+    [project: string, service: string]
+  >;
+};
 
 /**
  * This function MUST be run first. It defines methods used to register providers and other extensions found within this library
@@ -87,9 +98,7 @@ export function InitializeWiring() {
   /**
    * Details relating to the application that is actively running
    */
-  let ACTIVE_APPLICATION: {
-    application: ZCCApplicationDefinition;
-  } = undefined;
+  let ACTIVE_APPLICATION: ActiveApplicationDefinition = undefined;
 
   let completedLifecycleCallbacks = new Set<string>();
   // heisenberg's logger. it's probably here, but maybe not
@@ -126,6 +135,27 @@ export function InitializeWiring() {
     configuration,
     services = [],
   }: LibraryConfigurationOptions): ZCCLibraryDefinition {
+    if (is.empty(project)) {
+      throw new BootstrapException(
+        "CreateLibrary",
+        "MISSING_LIBRARY_NAME",
+        "Library name is required",
+      );
+    }
+
+    // Find the first invalid service
+    const invalidService = services.find(
+      ([_, definition]) => typeof definition !== "function",
+    );
+    if (invalidService) {
+      const [invalidServiceName] = invalidService;
+      throw new BootstrapException(
+        "CreateLibrary",
+        "INVALID_SERVICE_DEFINITION",
+        `Invalid service definition for '${invalidServiceName}' in library '${project}'`,
+      );
+    }
+
     const library: ZCCLibraryDefinition = {
       configuration,
       getConfig: <T,>(property: string): T =>
@@ -150,12 +180,16 @@ export function InitializeWiring() {
     configuration = {},
   }: ApplicationConfigurationOptions) {
     const out: ZCCApplicationDefinition = {
+      bootstrap: async options => await Bootstrap(out, options),
       configuration,
       getConfig: <T,>(property: string): T =>
         ZCC.config.get(["application", property]),
       libraries,
+      lifecycle: CreateChildLifecycle(),
       name,
+      onError: callback => ZCC.event.on(ZCC_APPLICATION_ERROR, callback),
       services,
+      teardown: async () => await Teardown(),
     };
     return out;
   }
@@ -168,7 +202,7 @@ export function InitializeWiring() {
     service: string,
     definition: TServiceDefinition,
   ) {
-    logger.trace(`Inserting %s#%s`, project, service);
+    // logger.trace(`Inserting %s#%s`, project, service);
     const mappings = MODULE_MAPPINGS.get(project) ?? {};
     if (!is.undefined(mappings[service])) {
       throw new BootstrapException(
@@ -182,7 +216,7 @@ export function InitializeWiring() {
 
     const context = `${project}:${service}`;
     try {
-      logger.trace(`Initializing %s#%s`, project, service);
+      // logger.trace(`Initializing %s#%s`, project, service);
       const resolved = await definition({
         event: ZCC.event,
         getConfig: <T,>(
@@ -191,7 +225,8 @@ export function InitializeWiring() {
           ZCC.config.get(is.string(property) ? [project, property] : property),
         lifecycle: undefined,
         loader: ContextLoader(project),
-        logger: ZCC.logger.context(`${project}:${service}`),
+        // logger: ZCC.logger.context(`${project}:${service}`),
+        logger: undefined,
       });
       REVERSE_MODULE_MAPPING.set(definition, [project, service]);
       const loaded = LOADED_MODULES.get(project) ?? {};
@@ -200,15 +235,15 @@ export function InitializeWiring() {
     } catch (error) {
       // Init errors at this level are considered blocking.
       // Doubling up on errors to be extra noisy for now, might back off to single later
-      logger.fatal({ error, name: context }, `Initialization error`);
+      // logger.fatal({ error, name: context }, `Initialization error`);
       // eslint-disable-next-line no-console
       console.log(error);
-      setImmediate(() => wiring.FailFast());
+      // setImmediate(() => wiring.FailFast());
     }
   }
 
   async function RunStageCallbacks(stage: string) {
-    logger.trace(`Running %s callbacks`, stage.toLowerCase());
+    // logger.trace(`Running %s callbacks`, stage.toLowerCase());
     completedLifecycleCallbacks.add(`on${stage}`);
     const sorted = parentCallbacks[stage].filter(([, sort]) => sort !== NONE);
     const quick = parentCallbacks[stage].filter(([, sort]) => sort === NONE);
@@ -236,15 +271,18 @@ export function InitializeWiring() {
     try {
       ZCC.event = new EventEmitter();
 
-      ACTIVE_APPLICATION = {
+      ZCC.application = ACTIVE_APPLICATION = {
+        LOADED_MODULES,
+        MODULE_MAPPINGS,
+        REVERSE_MODULE_MAPPING,
         application,
       };
 
       LIB_BOILERPLATE.wire();
-      if (!is.empty(options.configuration)) {
-        ZCC.config.merge(options.configuration);
+      if (!is.empty(options?.configuration)) {
+        ZCC.config.merge(options?.configuration);
       }
-      logger = ZCC.logger.context(`boilerplate:wiring`);
+      // logger = ZCC.logger.context(`boilerplate:wiring`);
       processEvents.forEach((callback, event) => process.on(event, callback));
 
       application.libraries ??= [];
@@ -256,7 +294,7 @@ export function InitializeWiring() {
       await RunStageCallbacks("Bootstrap");
       await RunStageCallbacks("Ready");
     } catch (error) {
-      logger.fatal({ application, error }, "Bootstrap failed");
+      // logger.fatal({ application, error }, "Bootstrap failed");
       // eslint-disable-next-line no-console
       console.error(error);
     }
@@ -346,9 +384,11 @@ export function InitializeWiring() {
   //
   // Final Attachments!
   //
+  ZCC.bootstrap = Bootstrap;
   ZCC.createApplication = CreateApplication;
   ZCC.createLibrary = CreateLibrary;
   ZCC.loader = GlobalLoader;
+  ZCC.teardown = Teardown;
   ZCC.lifecycle = {
     child: CreateChildLifecycle,
     onBootstrap,
@@ -365,11 +405,20 @@ export function InitializeWiring() {
   const wiring = {
     Bootstrap,
     ContextLoader,
-    CreateApplication: CreateApplication,
+    CreateApplication,
     FailFast: () => exit(),
     GlobalLoader,
-    Lifecycle: { ...ZCC.lifecycle },
+    Lifecycle: ZCC.lifecycle,
     Teardown,
+    /**
+     * exported helpers for unit testing, these should not
+     */
+    testing: {
+      LOADED_MODULES,
+      MODULE_MAPPINGS,
+      REVERSE_MODULE_MAPPING,
+      WireService,
+    },
   };
 
   //
@@ -381,7 +430,11 @@ export function InitializeWiring() {
 // Type definitions for global ZCC attachments
 declare module "@zcc/utilities" {
   export interface ZCCDefinition {
-    application: ApplicationDefinition | undefined;
+    application: ActiveApplicationDefinition | undefined;
+    bootstrap: (
+      application: ZCCApplicationDefinition,
+      options: BootstrapOptions,
+    ) => Promise<void>;
     createApplication: (
       options: ApplicationConfigurationOptions,
     ) => ZCCApplicationDefinition;
@@ -390,5 +443,6 @@ declare module "@zcc/utilities" {
     ) => ZCCLibraryDefinition;
     lifecycle: TParentLifecycle;
     loader: Loader;
+    teardown: () => Promise<void>;
   }
 }

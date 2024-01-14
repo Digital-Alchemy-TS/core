@@ -19,8 +19,10 @@ export async function ConfigLoaderEnvironment(
   configs.forEach((configuration, project) => {
     const isApplication = !is.string(project);
     const cleanedProject =
-      (isApplication ? ZCC.application?.name : project)?.replaceAll("-", "_") ||
-      "unknown";
+      (isApplication ? ZCC.application?.application.name : project)?.replaceAll(
+        "-",
+        "_",
+      ) || "unknown";
     const environmentPrefix = isApplication
       ? "application"
       : `libs_${cleanedProject}`;

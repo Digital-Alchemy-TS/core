@@ -105,7 +105,7 @@
         "@typescript-eslint/no-unused-vars": [
           "warn",
           {
-            "varsIgnorePattern": "logger"
+            "varsIgnorePattern": "^(_|logger)$"
           }
         ],
         "@typescript-eslint/no-explicit-any": "error"

@@ -134,16 +134,17 @@ export async function bootTestingModule(
     libraries: [LIB_BOILERPLATE],
     name: TESTING_APP_NAME,
   });
-  // environmentDefaults = deepExtend(
-  //   {
-  //     libs: {
-  //       boilerplate: {
-  //         // [LOG_LEVEL]: "warn",
-  //         [LOG_METRICS]: false,
-  //       },
-  //     },
-  //   },
-  //   { ...environmentDefaults },
-  // );
+  environmentDefaults = deepExtend(
+    {
+      libs: {
+        boilerplate: {
+          // [LOG_LEVEL]: "warn",
+          [LOG_METRICS]: false,
+        },
+      },
+    },
+    { ...environmentDefaults },
+  );
+  // a
   return application;
 }

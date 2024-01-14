@@ -41,7 +41,7 @@ export function configFilePaths(name = "zcc"): string[] {
 }
 
 export async function ConfigLoaderFile(): ConfigLoaderReturn {
-  const files = configFilePaths(ZCC.application?.name);
+  const files = configFilePaths(ZCC.application?.application.name);
   const out: Partial<AbstractConfig> = {};
   files.forEach(file => loadConfigFromFile(out, file));
   return out;

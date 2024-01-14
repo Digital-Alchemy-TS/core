@@ -8,7 +8,7 @@ import { inspect } from "util";
 import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
 import { LOG_LEVEL, LOG_METRICS } from "../helpers/config.constants.mjs";
 import { LOGGER_CONTEXT_ENTRIES_COUNT } from "../helpers/metrics.helper.mjs";
-import { TServiceParams } from "./loader.extension.mjs";
+import { TServiceParams } from "../helpers/wiring.helper.mjs";
 
 export type TLoggerFunction =
   | ((message: string, ...arguments_: unknown[]) => void)

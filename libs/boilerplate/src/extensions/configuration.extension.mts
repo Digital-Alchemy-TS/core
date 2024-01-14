@@ -84,7 +84,7 @@ function initWiringConfig(
 export type ModuleConfiguration = Record<string, AnyConfig>;
 export type OptionalModuleConfiguration = ModuleConfiguration | undefined;
 
-export function CreateConfiguration() {
+export function ZCCLoadConfig() {
   const configLoaders = new Set<ConfigLoader>();
   let configuration: AbstractConfig = { application: {}, libs: {} };
   let configDefinitions: KnownConfigs = new Map();
@@ -143,7 +143,7 @@ export function CreateConfiguration() {
     return configuration[property];
   }
 
-  return {
+  const out: ConfigManager = {
     addConfigLoader: (loader: ConfigLoader) => configLoaders.add(loader),
     addLibraryDefinition: (
       library: string,
@@ -161,7 +161,9 @@ export function CreateConfiguration() {
       const config = getConfiguration(path, dynamic);
       path =
         is.string(path) ||
-        [ZCC.application?.name, "application", "app"].includes(path[LABEL])
+        [ZCC.application?.application, "application", "app"].includes(
+          path[LABEL],
+        )
           ? ["application", is.string(path) ? path : path[VALUE]].join(".")
           : ["libs", path[LABEL], path[VALUE]].join(".");
       const current = get(configuration, path);
@@ -210,6 +212,35 @@ export function CreateConfiguration() {
       configDefinitions = new Map();
     },
   };
+  return out;
 }
 
-export type ConfigManager = ReturnType<typeof CreateConfiguration>;
+export type ConfigManager = {
+  addConfigLoader: (loader: ConfigLoader) => Set<ConfigLoader>;
+  addLibraryDefinition: (
+    library: string,
+    definitions: CodeConfigDefinition,
+  ) => KnownConfigs;
+  configuration: () => AbstractConfig;
+  defaultLoaders: () => void;
+  get<T extends unknown = string>(
+    path: string | [library: string, config: string],
+    dynamic?: AnyConfig,
+  ): T;
+  getConfigDefinitions: () => KnownConfigs;
+  loadConfig: () => Promise<void>;
+  merge: (
+    merge: Partial<AbstractConfig>,
+  ) => AbstractConfig & Partial<AbstractConfig>;
+  set: (
+    path: string | [project: string, property: string],
+    value: unknown,
+  ) => void;
+  setApplicationDefinition: (definitions: CodeConfigDefinition) => void;
+  testReset: () => void;
+};
+declare module "@zcc/utilities" {
+  export interface ZCCDefinition {
+    config: ConfigManager;
+  }
+}

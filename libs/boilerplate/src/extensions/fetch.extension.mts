@@ -109,7 +109,12 @@ export function CreateFetcher({
       logger.error({ error: maybeError }, maybeError.message);
 
       // Throw a FetchRequestError
-      throw new FetchRequestError(maybeError);
+      // throw new FetchRequestError(maybeError);
+      throw new FetchRequestError(
+        maybeError.statusCode,
+        maybeError.error,
+        maybeError.message,
+      );
     }
 
     return maybeError as T;

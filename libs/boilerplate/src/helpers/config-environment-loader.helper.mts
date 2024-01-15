@@ -1,4 +1,4 @@
-import { is, ZCC } from "@zcc/utilities";
+import { is } from "@zcc/utilities";
 import minimist from "minimist";
 import { set } from "object-path";
 
@@ -7,8 +7,10 @@ import {
   ConfigLoaderReturn,
   KnownConfigs,
 } from "./config.helper.mjs";
+import { ZCCApplicationDefinition } from "./wiring.helper.mjs";
 
 export async function ConfigLoaderEnvironment(
+  application: ZCCApplicationDefinition,
   configs: KnownConfigs,
 ): ConfigLoaderReturn {
   const environmentKeys = Object.keys(process.env);
@@ -19,10 +21,8 @@ export async function ConfigLoaderEnvironment(
   configs.forEach((configuration, project) => {
     const isApplication = !is.string(project);
     const cleanedProject =
-      (isApplication ? ZCC.application?.application.name : project)?.replaceAll(
-        "-",
-        "_",
-      ) || "unknown";
+      (isApplication ? application.name : project)?.replaceAll("-", "_") ||
+      "unknown";
     const environmentPrefix = isApplication
       ? "application"
       : `libs_${cleanedProject}`;

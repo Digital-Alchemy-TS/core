@@ -12,9 +12,12 @@ import {
   ZCC_LIBRARY_ERROR,
 } from "../helpers/events.helper.mjs";
 import {
+  CallbackList,
+  LIFECYCLE_STAGES,
   LifecycleCallback,
+  LifecycleStages,
   TLifecycleBase,
-  TParentLifecycle,
+  TLoadableChildLifecycle,
 } from "../helpers/lifecycle.helper.mjs";
 import {
   ApplicationConfigurationOptions,
@@ -25,26 +28,19 @@ import {
   TResolvedModuleMappings,
   TServiceDefinition,
   TServiceReturn,
+  ZCCApplicationDefinition,
   ZCCLibraryDefinition,
-  ZZCApplicationDefinition as ZCCApplicationDefinition,
 } from "../helpers/wiring.helper.mjs";
 import { ILogger } from "./logger.extension.mjs";
 
 const NONE = -1;
-// ! This is a sorted array! Don't change the order
-const LIFECYCLE_STAGES = [
-  "PreInit",
-  "PostConfig",
-  "Bootstrap",
-  "Ready",
-  "ShutdownStart",
-  "ShutdownComplete",
-];
+
 const FILE_CONTEXT = "boilerplate:Loader";
 type ActiveApplicationDefinition = {
   application: ZCCApplicationDefinition;
   LOADED_MODULES: Map<string, TResolvedModuleMappings>;
   MODULE_MAPPINGS: Map<string, TModuleMappings>;
+  LOADED_LIFECYCLES: Map<string, TLoadableChildLifecycle>;
   REVERSE_MODULE_MAPPING: Map<
     TServiceDefinition,
     [project: string, service: string]
@@ -65,7 +61,7 @@ function ValidateLibrary(
 
   // Find the first invalid service
   const invalidService = services.find(
-    ([_, definition]) => typeof definition !== "function",
+    ([, definition]) => typeof definition !== "function",
   );
   if (invalidService) {
     const [invalidServiceName] = invalidService;
@@ -76,6 +72,16 @@ function ValidateLibrary(
     );
   }
 }
+//
+// "Semi local variables"
+// These are resettable variables, which are scoped to outside the function on purpose
+// If these were moved inside the service function, then re-running the method would result in application / library references being stranded
+// Items like lib_boilerplate would still exist, but their lifecycles would be not accessible by the current application
+//
+// By moving to outside the function, the internal methods will be able to re-initialize as expected, without needing to fully rebuild every reference everywhere
+// ... in theory
+//
+
 let completedLifecycleCallbacks = new Set<string>();
 /**
  * association of projects to { service : Declaration Function }
@@ -93,6 +99,8 @@ let REVERSE_MODULE_MAPPING = new Map<
   [project: string, service: string]
 >();
 
+let LOADED_LIFECYCLES = new Map<string, TLoadableChildLifecycle>();
+
 /**
  * This function MUST be run first. It defines methods used to register providers and other extensions found within this library
  *
@@ -105,30 +113,9 @@ export function InitializeWiring() {
    */
   MODULE_MAPPINGS = new Map();
   LOADED_MODULES = new Map();
+  LOADED_LIFECYCLES = new Map();
   REVERSE_MODULE_MAPPING = new Map();
   completedLifecycleCallbacks = new Set<string>();
-
-  /**
-   * HIGH PRIORITY LIFECYCLE EVENTS
-   */
-  const [
-    onPreInit,
-    onPostConfig,
-    onBootstrap,
-    onReady,
-    onShutdownStart,
-    onShutdownComplete,
-  ] = LIFECYCLE_STAGES.map(
-    stage =>
-      (callback: LifecycleCallback, priority = NONE) => {
-        if (completedLifecycleCallbacks.has(`on${stage}`)) {
-          logger.fatal(`[on${stage}] late attach, cannot run callback`);
-          wiring.FailFast();
-          return;
-        }
-        parentCallbacks[stage].push([callback, priority]);
-      },
-  );
 
   /**
    * Details relating to the application that is actively running
@@ -137,10 +124,6 @@ export function InitializeWiring() {
 
   // heisenberg's logger. it's probably here, but maybe not
   let logger: ILogger;
-
-  const parentCallbacks = Object.fromEntries(
-    LIFECYCLE_STAGES.map(i => [i, []]),
-  );
 
   const processEvents = new Map([
     [
@@ -166,29 +149,31 @@ export function InitializeWiring() {
   //
 
   function CreateLibrary({
-    name: project,
+    name: libraryName,
     configuration,
     services = [],
   }: LibraryConfigurationOptions): ZCCLibraryDefinition {
-    ValidateLibrary(project, services);
+    ValidateLibrary(libraryName, services);
 
     const lifecycle = CreateChildLifecycle();
 
     const library: ZCCLibraryDefinition = {
       configuration,
       getConfig: <T,>(property: string): T =>
-        ZCC.config.get([project, property]),
+        ZCC.config.get([libraryName, property]),
       lifecycle,
-      name: project,
-      onError: callback => ZCC.event.on(ZCC_LIBRARY_ERROR(project), callback),
+      name: libraryName,
+      onError: callback =>
+        ZCC.event.on(ZCC_LIBRARY_ERROR(libraryName), callback),
       services,
       wire: async () => {
+        LOADED_LIFECYCLES.set(libraryName, lifecycle);
         await eachSeries(services, async ([service, definition]) => {
-          await WireService(project, service, definition, lifecycle);
+          await WireService(libraryName, service, definition, lifecycle);
         });
         // mental note: people should probably do all their lifecycle attachments at the base level function
         // otherwise, it'll happen after this wire() call, and go into a black hole (worst case) or fatal error ("best" case)
-        lifecycle.wire();
+        return lifecycle;
       },
     };
     return library;
@@ -214,10 +199,11 @@ export function InitializeWiring() {
       services,
       teardown: async () => await Teardown(),
       wire: async () => {
+        LOADED_LIFECYCLES.set("application", lifecycle);
         await eachSeries(services, async ([service, definition]) => {
           await WireService("application", service, definition, lifecycle);
         });
-        lifecycle.wire();
+        return lifecycle;
       },
     };
     return out;
@@ -244,7 +230,7 @@ export function InitializeWiring() {
     mappings[service] = definition;
     MODULE_MAPPINGS.set(project, mappings);
 
-    const context = `${project}:${service}`;
+    // const context = `${project}:${service}`;
     try {
       // logger.trace(`Initializing %s#%s`, project, service);
       const resolved = await definition({
@@ -272,23 +258,36 @@ export function InitializeWiring() {
     }
   }
 
-  async function RunStageCallbacks(stage: string) {
+  async function RunStageCallbacks(stage: LifecycleStages) {
     // logger.trace(`Running %s callbacks`, stage.toLowerCase());
     completedLifecycleCallbacks.add(`on${stage}`);
 
-    const callbacksList = [
-      //
-      LIB_BOILERPLATE.lifecycle[stage],
-      // ...
-      parentCallbacks[stage],
-    ];
-    const sorted = parentCallbacks[stage].filter(([, sort]) => sort !== NONE);
-    const quick = parentCallbacks[stage].filter(([, sort]) => sort === NONE);
+    // const out = (LIB_BOILERPLATE.lifecycle as TLoadableChildLifecycle).runner();
     await eachSeries(
-      sorted.sort(([, a], [, b]) => (a > b ? UP : DOWN)),
-      async ([callback]) => await callback(),
+      [
+        // boilerplate priority
+        LOADED_LIFECYCLES.get("boilerplate").getCallbacks(stage),
+        // children next
+        // ...
+        ...[...LOADED_LIFECYCLES.entries()]
+          .filter(([name]) => !["boilerplate", "application"].includes(name))
+          .map(([, thing]) => thing.getCallbacks(stage)),
+        // finally app
+        LOADED_LIFECYCLES.get("application")?.getCallbacks(stage),
+      ],
+      async callbacks => {
+        if (is.empty(callbacks)) {
+          return;
+        }
+        const sorted = callbacks.filter(([, sort]) => sort !== NONE);
+        const quick = callbacks.filter(([, sort]) => sort === NONE);
+        await eachSeries(
+          sorted.sort(([, a], [, b]) => (a > b ? UP : DOWN)),
+          async ([callback]) => await callback(),
+        );
+        await each(quick, async ([callback]) => await callback());
+      },
     );
-    await each(quick, async ([callback]) => await callback());
   }
 
   //
@@ -309,6 +308,7 @@ export function InitializeWiring() {
       ZCC.event = new EventEmitter();
 
       ZCC.application = ACTIVE_APPLICATION = {
+        LOADED_LIFECYCLES,
         LOADED_MODULES,
         MODULE_MAPPINGS,
         REVERSE_MODULE_MAPPING,
@@ -324,9 +324,10 @@ export function InitializeWiring() {
 
       application.libraries ??= [];
       application.libraries.forEach(i => i.wire());
+      application.wire();
 
       await RunStageCallbacks("PreInit");
-      await ZCC.config.loadConfig();
+      await ZCC.config.loadConfig(application);
       await RunStageCallbacks("PostConfig");
       await RunStageCallbacks("Bootstrap");
       await RunStageCallbacks("Ready");
@@ -334,25 +335,22 @@ export function InitializeWiring() {
       // logger.fatal({ application, error }, "Bootstrap failed");
       // eslint-disable-next-line no-console
       console.error(error);
+      await Teardown();
+      wiring.FailFast();
     }
   }
 
   async function Teardown() {
     if (!ACTIVE_APPLICATION) {
-      throw new InternalError(
-        "bootstrap:wiring",
-        "TEARDOWN_MISSING_APP",
-        "Cannot teardown, there is no current application",
-      );
+      return;
     }
     ACTIVE_APPLICATION = undefined;
     completedLifecycleCallbacks = new Set<string>();
-    LIFECYCLE_STAGES.forEach(stage => (parentCallbacks[stage] = []));
     processEvents.forEach((callback, event) =>
       process.removeListener(event, callback),
     );
-    logger.info(`teardown complete`);
-    logger = undefined;
+    // logger.info(`teardown complete`);
+    // logger = undefined;
   }
 
   //
@@ -385,9 +383,11 @@ export function InitializeWiring() {
   //
   // Lifecycle
   //
-  function CreateChildLifecycle() {
+  function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
     const stages = [...LIFECYCLE_STAGES];
-    const childCallbacks = Object.fromEntries(stages.map(i => [i, []]));
+    const childCallbacks = Object.fromEntries(
+      stages.map(i => [i, []]),
+    ) as Record<LifecycleStages, CallbackList>;
 
     const [
       onPreInit,
@@ -408,22 +408,19 @@ export function InitializeWiring() {
         },
     );
 
-    return {
+    const lifecycle = {
+      getCallbacks: stage => childCallbacks[stage] as CallbackList,
       onBootstrap,
       onPostConfig,
       onPreInit,
       onReady,
       onShutdownComplete,
       onShutdownStart,
-      wire: () => {
-        Object.entries(childCallbacks).forEach(([stage, list]) => {
-          if (is.empty(list)) {
-            return;
-          }
-          parentCallbacks[stage].push(...list);
-        });
-      },
     };
+    if (!is.empty(name)) {
+      LOADED_LIFECYCLES.set(name, lifecycle);
+    }
+    return lifecycle;
   }
 
   //
@@ -434,15 +431,7 @@ export function InitializeWiring() {
   ZCC.createLibrary = CreateLibrary;
   ZCC.loader = GlobalLoader;
   ZCC.teardown = Teardown;
-  ZCC.lifecycle = {
-    child: CreateChildLifecycle,
-    onBootstrap,
-    onPostConfig,
-    onPreInit,
-    onReady,
-    onShutdownComplete,
-    onShutdownStart,
-  };
+  ZCC.lifecycle = CreateChildLifecycle;
 
   //
   // Do not return this object directly, adds complexity for unit testing & `FailFast`
@@ -451,7 +440,8 @@ export function InitializeWiring() {
     Bootstrap,
     ContextLoader,
     CreateApplication,
-    FailFast: () => exit(),
+    // void for unit testing, never for reality
+    FailFast: (): void => exit(),
     GlobalLoader,
     Lifecycle: ZCC.lifecycle,
     Teardown,
@@ -486,7 +476,10 @@ declare module "@zcc/utilities" {
     createLibrary: (
       options: LibraryConfigurationOptions,
     ) => ZCCLibraryDefinition;
-    lifecycle: TParentLifecycle;
+    // the mismatched required state (with the implementation) of name is on purpose
+    // external consumers of this should be passing names, and operate as if they will definitely want to wire their logic in
+    // they lack access to the variables for the conditional loading workflows
+    lifecycle: (name: string) => TLifecycleBase;
     loader: Loader;
     teardown: () => Promise<void>;
   }

@@ -9,13 +9,13 @@ import {
   RandomFileTestingDataFormat,
   TESTING_APP_NAME,
 } from "../helpers/testing.helper.mjs";
-import { ZZCApplicationDefinition } from "../helpers/wiring.helper.mjs";
-import { ConfigManager } from "./configuration.extension.mjs";
+import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
+import { ConfigManager, ZCCLoadConfig } from "./configuration.extension.mjs";
 
-describe.skip("Configuration Extension Tests", () => {
+describe("Configuration Extension Tests", () => {
   const originalEnvironment = process.env;
   const originalArgv = process.argv;
-  let loadedModule: ZZCApplicationDefinition;
+  let loadedModule: ZCCApplicationDefinition;
   let config: ConfigManager;
   const testFiles = ConfigurationFiles();
   const APPLICATION = Symbol.for("APPLICATION_CONFIGURATION");
@@ -30,17 +30,16 @@ describe.skip("Configuration Extension Tests", () => {
         string: { default: "", type: "string" },
         stringArray: { default: [], type: "string[]" },
       },
-      libraries: [LIB_BOILERPLATE],
       name: TESTING_APP_NAME,
     });
   }
 
   beforeAll(() => {
-    config = ZCC.config;
+    config = ZCCLoadConfig();
   });
 
   beforeEach(() => {
-    ZCC.config.testReset();
+    config.testReset();
   });
 
   afterEach(async () => {
@@ -283,6 +282,7 @@ describe.skip("Configuration Extension Tests", () => {
 
     beforeEach(async () => {
       await CreateStandardTestModule();
+      config.loadConfig(loadedModule);
     });
 
     it("should correctly coerce boolean type", () => {
@@ -336,12 +336,12 @@ describe.skip("Configuration Extension Tests", () => {
         const expectedData = testFiles.dataMap.get(filePath).application.string;
 
         // Load configuration
-        await ZCC.config.loadConfig();
-        expect(ZCC.config.get("string")).toBe(expectedData);
+        await config.loadConfig(loadedModule);
+        expect(config.get("string")).toBe(expectedData);
 
         // Unlink the highest priority file and reset for the next iteration
         testFiles.unlink(filePath);
-        ZCC.config.testReset();
+        config.testReset();
 
         // Update sortedFiles for the next iteration
         sortedFiles = testFiles.sort([...testFiles.dataMap.keys()]);
@@ -359,12 +359,16 @@ describe.skip("Configuration Extension Tests", () => {
       const argvTestValue = faker.lorem.word();
       process.argv.push(`--ARGV_TEST=${argvTestValue}`);
 
-      loadedModule = await bootTestingModule({
-        ARGV_TEST: { default: "module default", type: "string" },
+      loadedModule = ZCC.createApplication({
+        configuration: {
+          ARGV_TEST: { default: "module default", type: "string" },
+        },
+        name: TESTING_APP_NAME,
       });
-      await ZCC.config.loadConfig();
+      config.setApplicationDefinition(loadedModule.configuration);
+      await config.loadConfig(loadedModule);
 
-      expect(ZCC.config.get("ARGV_TEST")).toBe(argvTestValue);
+      expect(config.get("ARGV_TEST")).toBe(argvTestValue);
     });
 
     it("should prioritize environment variables over file configs", async () => {
@@ -374,10 +378,10 @@ describe.skip("Configuration Extension Tests", () => {
       loadedModule = await bootTestingModule({
         ENVIRONMENT_TEST: { default: "module default", type: "string" },
       });
-      // loadedModule
-      await ZCC.config.loadConfig();
+      config.setApplicationDefinition(loadedModule.configuration);
+      await config.loadConfig(loadedModule);
 
-      expect(ZCC.config.get("ENVIRONMENT_TEST")).toBe(environmentTestValue);
+      expect(config.get("ENVIRONMENT_TEST")).toBe(environmentTestValue);
     });
   });
 });

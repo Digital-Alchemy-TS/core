@@ -2,6 +2,7 @@ import { ZCC } from "@zcc/utilities";
 
 import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
 import { BootstrapException } from "../helpers/errors.helper.mjs";
+import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
 import { InitializeWiring } from "./wiring.extension.mjs";
 
 describe("Wiring Extension", () => {
@@ -10,6 +11,13 @@ describe("Wiring Extension", () => {
   beforeEach(() => {
     LIB_BOILERPLATE.wire;
     wiring = InitializeWiring();
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    // This needs to be done more than normal due to some tests unevenly testing things
+    // Teardown should be sufficient in other files
+    process.removeAllListeners();
   });
 
   it("Should attach to ZCC", () => {
@@ -257,7 +265,7 @@ describe("Wiring Extension", () => {
   });
 
   describe("Application Lifecycle", () => {
-    let application;
+    let application: ZCCApplicationDefinition;
 
     beforeEach(() => {
       // Create application instance
@@ -266,10 +274,15 @@ describe("Wiring Extension", () => {
 
     it("should call the lifecycle events in order during application bootstrap", async () => {
       // Spy on lifecycle event functions
-      const spyPreInit = jest.spyOn(application.lifecycle, "onPreInit");
-      const spyPostConfig = jest.spyOn(application.lifecycle, "onPostConfig");
-      const spyBootstrap = jest.spyOn(application.lifecycle, "onBootstrap");
-      const spyReady = jest.spyOn(application.lifecycle, "onReady");
+      const spyPreInit = jest.fn();
+      const spyPostConfig = jest.fn();
+      const spyBootstrap = jest.fn();
+      const spyReady = jest.fn();
+
+      application.lifecycle.onPreInit(spyPreInit);
+      application.lifecycle.onPostConfig(spyPostConfig);
+      application.lifecycle.onBootstrap(spyBootstrap);
+      application.lifecycle.onReady(spyReady);
 
       // Bootstrap the application
       await application.bootstrap();
@@ -291,6 +304,105 @@ describe("Wiring Extension", () => {
 
       // Restore the original implementations
       jest.restoreAllMocks();
+    });
+
+    it("executes lifecycle callbacks in the correct order", async () => {
+      // Mock callbacks for each lifecycle stage
+      const mockPreInit = jest.fn();
+      const mockPostConfig = jest.fn();
+      const mockBootstrap = jest.fn();
+      const mockReady = jest.fn();
+
+      // Register mock callbacks
+      application.lifecycle.onPreInit(mockPreInit);
+      application.lifecycle.onPostConfig(mockPostConfig);
+      application.lifecycle.onBootstrap(mockBootstrap);
+      application.lifecycle.onReady(mockReady);
+
+      // Bootstrap the application
+      await application.bootstrap();
+
+      // Retrieve the order in which the mocks were called
+      const preInitOrder = mockPreInit.mock.invocationCallOrder[0];
+      const postConfigOrder = mockPostConfig.mock.invocationCallOrder[0];
+      const bootstrapOrder = mockBootstrap.mock.invocationCallOrder[0];
+      const readyOrder = mockReady.mock.invocationCallOrder[0];
+
+      // Verify the order of callback execution
+      expect(preInitOrder).toBeLessThan(postConfigOrder);
+      expect(postConfigOrder).toBeLessThan(bootstrapOrder);
+      expect(bootstrapOrder).toBeLessThan(readyOrder);
+    });
+
+    it("registers and invokes lifecycle callbacks correctly", async () => {
+      const mockCallback = jest.fn();
+
+      // Register the mock callback for the 'Bootstrap' stage
+      application.lifecycle.onBootstrap(mockCallback);
+
+      // Bootstrap the application
+      await application.bootstrap();
+
+      // Check if the mock callback was invoked
+      expect(mockCallback).toHaveBeenCalled();
+    });
+
+    it("triggers fail-fast on catastrophic bootstrap errors", async () => {
+      const errorMock = jest.fn().mockImplementation(() => {
+        throw new Error("Catastrophic Error");
+      });
+
+      application.lifecycle.onBootstrap(errorMock);
+      jest.spyOn(console, "error").mockImplementation(() => {});
+      const failFastSpy = jest
+        .spyOn(wiring, "FailFast")
+        .mockImplementation(() => {});
+
+      // Execute the Bootstrap function
+      await application.bootstrap();
+
+      // Check if FailFast was called
+      expect(failFastSpy).toHaveBeenCalled();
+    });
+
+    it("wires services correctly in applications and libraries", async () => {
+      const testService = jest.fn();
+      await wiring.testing.WireService(
+        "testLibrary",
+        "TestService",
+        testService,
+        application.lifecycle,
+      );
+
+      // Assuming WireService modifies the MODULE_MAPPINGS in wiring.testing
+      expect(
+        wiring.testing.MODULE_MAPPINGS.get("testLibrary")["TestService"],
+      ).toBe(testService);
+    });
+
+    it("executes prioritized lifecycle callbacks in the correct order", async () => {
+      // Array to track the execution order
+      const executionOrder = [];
+
+      // Registering callbacks with priorities
+      application.lifecycle.onBootstrap(
+        () => executionOrder.push("HighPriorityBootstrap"),
+        1,
+      );
+      application.lifecycle.onBootstrap(
+        () => executionOrder.push("LowPriorityBootstrap"),
+        10,
+      );
+
+      // Trigger the lifecycle process
+      // Replace 'runLifecycle' with the actual method to initiate the lifecycle events
+      await application.bootstrap();
+
+      // Define the expected order based on priorities
+      const expectedOrder = ["HighPriorityBootstrap", "LowPriorityBootstrap"];
+
+      // Compare the actual execution order with the expected order
+      expect(executionOrder).toEqual(expectedOrder);
     });
   });
 });

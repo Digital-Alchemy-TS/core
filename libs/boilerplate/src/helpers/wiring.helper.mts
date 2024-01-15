@@ -7,7 +7,7 @@ import {
 } from "../extensions/configuration.extension.mjs";
 import { ILogger } from "../extensions/logger.extension.mjs";
 import { AbstractConfig } from "./config.helper.mjs";
-import { TLifecycleBase } from "./lifecycle.helper.mjs";
+import { TChildLifecycle, TLifecycleBase } from "./lifecycle.helper.mjs";
 
 export type TServiceReturn<OBJECT extends object = object> = void | OBJECT;
 
@@ -79,21 +79,21 @@ type Wire = {
    * - initializes lifecycle
    * - attaches event emitters
    */
-  wire: () => void;
+  wire: () => Promise<TChildLifecycle>;
 };
 
 export type ZCCLibraryDefinition = LibraryConfigurationOptions &
   Wire & {
     getConfig: <T>(property: string) => T;
-    lifecycle: TLifecycleBase;
+    lifecycle: TChildLifecycle;
     onError: (callback: onErrorCallback) => void;
   };
 
-export type ZZCApplicationDefinition = ApplicationConfigurationOptions &
+export type ZCCApplicationDefinition = ApplicationConfigurationOptions &
   Wire & {
-    bootstrap: (options: BootstrapOptions) => Promise<void>;
+    bootstrap: (options?: BootstrapOptions) => Promise<void>;
     getConfig: <T>(property: string) => T;
-    lifecycle: TLifecycleBase;
+    lifecycle: TChildLifecycle;
     onError: (callback: onErrorCallback) => void;
     teardown: () => Promise<void>;
   };

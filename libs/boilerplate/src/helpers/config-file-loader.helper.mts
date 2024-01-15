@@ -1,4 +1,4 @@
-import { deepExtend, INVERT_VALUE, is, START, ZCC } from "@zcc/utilities";
+import { deepExtend, INVERT_VALUE, is, START } from "@zcc/utilities";
 import { existsSync, readFileSync, statSync } from "fs";
 import { decode } from "ini";
 import { load } from "js-yaml";
@@ -7,6 +7,7 @@ import { join } from "path";
 import { cwd, platform } from "process";
 
 import { AbstractConfig, ConfigLoaderReturn } from "./config.helper.mjs";
+import { ZCCApplicationDefinition } from "./wiring.helper.mjs";
 
 const isWindows = platform === "win32";
 
@@ -40,8 +41,10 @@ export function configFilePaths(name = "zcc"): string[] {
   return out;
 }
 
-export async function ConfigLoaderFile(): ConfigLoaderReturn {
-  const files = configFilePaths(ZCC.application?.application.name);
+export async function ConfigLoaderFile(
+  application: ZCCApplicationDefinition,
+): ConfigLoaderReturn {
+  const files = configFilePaths(application.name);
   const out: Partial<AbstractConfig> = {};
   files.forEach(file => loadConfigFromFile(out, file));
   return out;

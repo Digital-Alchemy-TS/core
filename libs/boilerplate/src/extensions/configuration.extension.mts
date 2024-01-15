@@ -23,6 +23,7 @@ import {
 import { ConfigLoaderEnvironment } from "../helpers/config-environment-loader.helper.mjs";
 import { ConfigLoaderFile } from "../helpers/config-file-loader.helper.mjs";
 import { BootstrapException } from "../helpers/errors.helper.mjs";
+import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
 
 const ENVIRONMENT_LOAD_PRIORITY = 1;
 const FILE_LOAD_PRIORITY = 2;
@@ -30,7 +31,10 @@ const FILE_LOAD_PRIORITY = 2;
 const APPLICATION = Symbol.for("APPLICATION_CONFIGURATION");
 
 type ConfigLoader = [
-  loader: (definedConfigurations: KnownConfigs) => ConfigLoaderReturn,
+  loader: (
+    application: ZCCApplicationDefinition,
+    definedConfigurations: KnownConfigs,
+  ) => ConfigLoaderReturn,
   priority: number,
 ];
 
@@ -88,7 +92,7 @@ export function ZCCLoadConfig() {
   const configLoaders = new Set<ConfigLoader>();
   let configuration: AbstractConfig = { application: {}, libs: {} };
   let configDefinitions: KnownConfigs = new Map();
-  const logger = ZCC.logger.context("configuration.extension");
+  // const logger = ZCC.logger.context("configuration.extension");
 
   function defaultLoaders() {
     configLoaders.add([ConfigLoaderEnvironment, ENVIRONMENT_LOAD_PRIORITY]);
@@ -173,8 +177,8 @@ export function ZCCLoadConfig() {
       return cast(value, config?.type ?? "string") as T;
     },
     getConfigDefinitions: () => configDefinitions,
-    loadConfig: async () => {
-      if (!ZCC.application) {
+    loadConfig: async (application: ZCCApplicationDefinition) => {
+      if (!application) {
         throw new BootstrapException(
           "configuration",
           "NO_APPLICATION",
@@ -183,13 +187,13 @@ export function ZCCLoadConfig() {
       }
       initWiringConfig(configDefinitions, configuration);
       if (is.empty(configLoaders)) {
-        ZCC.systemLogger.debug(`No config loaders defined, adding default`);
+        // ZCC.systemLogger.debug(`No config loaders defined, adding default`);
         defaultLoaders();
       }
       await eachSeries(
         [...configLoaders.values()].sort(([, a], [, b]) => (a > b ? UP : DOWN)),
         async ([loader]) => {
-          const merge = await loader(configDefinitions);
+          const merge = await loader(application, configDefinitions);
           deepExtend(configuration, merge);
         },
       );
@@ -229,7 +233,7 @@ export type ConfigManager = {
     dynamic?: AnyConfig,
   ): T;
   getConfigDefinitions: () => KnownConfigs;
-  loadConfig: () => Promise<void>;
+  loadConfig: (application: ZCCApplicationDefinition) => Promise<void>;
   merge: (
     merge: Partial<AbstractConfig>,
   ) => AbstractConfig & Partial<AbstractConfig>;

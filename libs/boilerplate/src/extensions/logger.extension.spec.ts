@@ -12,7 +12,7 @@ import {
   prettyFormatMessage,
 } from "./logger.extension.mjs";
 
-describe.skip("Logger Extension", () => {
+describe("Logger Extension", () => {
   beforeAll(async () => {
     await bootTestingModule(
       {},

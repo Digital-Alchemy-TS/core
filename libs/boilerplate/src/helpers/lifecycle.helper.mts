@@ -1,39 +1,65 @@
 type tReturn = void | unknown;
 export type LifecycleCallback = () => tReturn | Promise<tReturn>;
-export type CallbackList = [LifecycleCallback, number][];
+export type LifecyclePrioritizedCallback = [
+  callback: LifecycleCallback,
+  priority: number,
+];
+export type CallbackList = LifecyclePrioritizedCallback[];
+
+export type TLifeCycleRegister = (
+  callback: LifecycleCallback,
+  priority?: number,
+) => void;
 
 export type TLifecycleBase = {
   /**
    * Registers a callback for the bootstrap phase, executed during the initial startup process.
    */
-  onBootstrap: (callback: LifecycleCallback, priority?: number) => void;
+  onBootstrap: TLifeCycleRegister;
 
   /**
    * Registers a callback for immediately after the configuration phase, allowing post-configuration adjustments.
    */
-  onPostConfig: (callback: LifecycleCallback, priority?: number) => void;
+  onPostConfig: TLifeCycleRegister;
 
   /**
    * Registers a callback for the pre-initialization phase, executed before the main initialization starts.
    */
-  onPreInit: (callback: LifecycleCallback, priority?: number) => void;
+  onPreInit: TLifeCycleRegister;
 
   /**
    * Registers a callback for when the system is fully initialized and ready.
    */
-  onReady: (callback: LifecycleCallback, priority?: number) => void;
+  onReady: TLifeCycleRegister;
 
   /**
    * Begins the shutdown process, typically invoked when the system is about to shut down.
    */
-  onShutdownStart: (callback: LifecycleCallback, priority?: number) => void;
+  onShutdownStart: TLifeCycleRegister;
 
   /**
    * Completes the shutdown process, executed after all shutdown procedures are complete.
    */
-  onShutdownComplete: (callback: LifecycleCallback, priority?: number) => void;
+  onShutdownComplete: TLifeCycleRegister;
 };
 
 export type TParentLifecycle = TLifecycleBase & {
   child: () => TLifecycleBase;
 };
+
+export type TChildLifecycle = TLifecycleBase;
+
+export type TLoadableChildLifecycle = TChildLifecycle & {
+  getCallbacks: (stage: LifecycleStages) => CallbackList;
+};
+// ! This is a sorted array! Don't change the order
+export const LIFECYCLE_STAGES = [
+  "PreInit",
+  "PostConfig",
+  "Bootstrap",
+  "Ready",
+  "ShutdownStart",
+  "ShutdownComplete",
+] as const;
+
+export type LifecycleStages = (typeof LIFECYCLE_STAGES)[number];

@@ -1,3 +1,4 @@
+import { CacheProviders } from "../extensions/cache.extension.mjs";
 import { ModuleConfiguration } from "../extensions/configuration.extension.mjs";
 
 export const LOG_LEVEL = "LOG_LEVEL";
@@ -22,7 +23,7 @@ export const LIB_BOILERPLATE_CONFIGURATION: ModuleConfiguration = {
   [CACHE_PROVIDER]: {
     default: "memory",
     description: "Redis is preferred if available",
-    enum: ["redis", "memory"],
+    enum: Object.values(CacheProviders),
     type: "string",
   },
   [CACHE_TTL]: {

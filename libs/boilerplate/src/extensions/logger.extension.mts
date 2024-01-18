@@ -194,7 +194,7 @@ function log(
   standardLogger(method, context, ...parameters);
 }
 
-export function ZCCLogger({ lifecycle, getConfig }: TServiceParams) {
+export function ZCC_Logger({ lifecycle, getConfig }: TServiceParams) {
   // tuned to be most useful in debugging this
   inspect.defaultOptions.colors = true;
   inspect.defaultOptions.depth = 10;
@@ -312,7 +312,7 @@ export function ZCCLogger({ lifecycle, getConfig }: TServiceParams) {
 
 declare module "@zcc/utilities" {
   export interface ZCCDefinition {
-    logger: ReturnType<typeof ZCCLogger>;
+    logger: ReturnType<typeof ZCC_Logger>;
     systemLogger: ILogger;
   }
 }

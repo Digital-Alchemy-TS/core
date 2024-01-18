@@ -88,7 +88,7 @@ function initWiringConfig(
 export type ModuleConfiguration = Record<string, AnyConfig>;
 export type OptionalModuleConfiguration = ModuleConfiguration | undefined;
 
-export function ZCCLoadConfig() {
+export function ZCC_Configuration() {
   const configLoaders = new Set<ConfigLoader>();
   let configuration: AbstractConfig = { application: {}, libs: {} };
   let configDefinitions: KnownConfigs = new Map();

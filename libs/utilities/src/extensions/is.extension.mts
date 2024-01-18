@@ -32,17 +32,26 @@ export class IsIt {
     return test instanceof Date;
   }
 
-  public empty(type: MaybeEmptyTypes): boolean {
-    if (is.string(type) || is.array(type)) {
-      return type.length === EMPTY;
+  public empty(test: MaybeEmptyTypes): boolean {
+    if (test === undefined) {
+      return true;
     }
-    if (type instanceof Map || type instanceof Set) {
-      return type.size === EMPTY;
+    if (typeof test === "string" || Array.isArray(test)) {
+      return test.length === EMPTY;
     }
-    if (is.object(type)) {
-      return Object.keys(type).length === EMPTY;
+    if (test instanceof Map || test instanceof Set) {
+      return test.size === EMPTY;
     }
-    return true;
+    if (typeof test === "object") {
+      for (const key in test) {
+        if (Object.prototype.hasOwnProperty.call(test, key)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    // Optional: Throw an error or return a default value for unsupported types
+    throw new Error("Unsupported type");
   }
 
   public equal(a: unknown, b: unknown): boolean {
@@ -81,8 +90,8 @@ export class IsIt {
     return typeof test === "object" && test !== null && !Array.isArray(test);
   }
 
-  public random<T>(items: T[]): T {
-    return items[Math.floor(Math.random() * items.length)];
+  public random<T>(list: T[]): T {
+    return list[Math.floor(Math.random() * list.length)];
   }
 
   public string(test: unknown): test is string {
@@ -97,8 +106,8 @@ export class IsIt {
     return test === undefined;
   }
 
-  public unique<T>(out: T[]): T[] {
-    return [...new Set(out)];
+  public unique<T>(items: T[]): T[] {
+    return [...new Set(items)];
   }
 }
 

@@ -31,8 +31,9 @@ import {
   ZCCApplicationDefinition,
   ZCCLibraryDefinition,
 } from "../helpers/wiring.helper.mjs";
-import { ZCCLoadConfig } from "./configuration.extension.mjs";
-import { ILogger, ZCCLogger } from "./logger.extension.mjs";
+import { ZCC_Cache } from "./cache.extension.mjs";
+import { ZCC_Configuration } from "./configuration.extension.mjs";
+import { ILogger, ZCC_Logger } from "./logger.extension.mjs";
 
 const NONE = -1;
 
@@ -225,8 +226,10 @@ async function WireService(
         ZCC.config.get(is.string(property) ? [project, property] : property),
       lifecycle,
       loader: ContextLoader(project),
-      // logger: ZCC.logger.context(`${project}:${service}`),
-      logger: undefined,
+      // logger gets defined first, so this really is only for the start of the start of bootstrapping
+      logger: ZCC.logger
+        ? ZCC.logger.context(`${project}:${service}`)
+        : undefined,
     });
     REVERSE_MODULE_MAPPING.set(definition, [project, service]);
     const loaded = LOADED_MODULES.get(project) ?? {};
@@ -300,8 +303,10 @@ async function Bootstrap(
       configuration: LIB_BOILERPLATE_CONFIGURATION,
       name: BOILERPLATE_LIB_NAME,
       services: [
-        ["logger", ZCCLogger],
-        ["configuration", ZCCLoadConfig],
+        ["logger", ZCC_Logger],
+        ["configuration", ZCC_Configuration],
+        ["cache", ZCC_Cache],
+        // ["fetch", ZCC_Fetch],
       ],
     });
     await boilerplate.wire();

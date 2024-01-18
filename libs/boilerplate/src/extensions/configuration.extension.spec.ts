@@ -8,7 +8,10 @@ import {
   TESTING_APP_NAME,
 } from "../helpers/testing.helper.mjs";
 import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
-import { ConfigManager, ZCCLoadConfig } from "./configuration.extension.mjs";
+import {
+  ConfigManager,
+  ZCC_Configuration,
+} from "./configuration.extension.mjs";
 import { TEST_WIRING } from "./wiring.extension.mjs";
 
 describe("Configuration Extension Tests", () => {
@@ -35,7 +38,7 @@ describe("Configuration Extension Tests", () => {
   }
 
   beforeAll(() => {
-    config = ZCCLoadConfig();
+    config = ZCC_Configuration();
   });
 
   beforeEach(() => {

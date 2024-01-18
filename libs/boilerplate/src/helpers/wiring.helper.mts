@@ -32,11 +32,15 @@ export type ApplicationDefinition = {
   name: string;
 };
 
+export type TGetConfig = <T>(
+  property: string | [project: string, property: string],
+) => T;
+
 export type TServiceParams<T extends object = object> = {
   logger: ILogger;
   lifecycle: TLifecycleBase;
   loader: Loader<T>;
-  getConfig: <T>(property: string | [project: string, property: string]) => T;
+  getConfig: TGetConfig;
   event: EventEmitter;
 };
 export type TServiceDefinition = (parameters: TServiceParams) => TServiceReturn;

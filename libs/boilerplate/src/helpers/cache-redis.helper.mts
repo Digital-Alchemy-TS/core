@@ -2,31 +2,28 @@
 import { is, SECOND, ZCC } from "@zcc/utilities";
 import { createClient } from "redis";
 
-import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
 import { ICacheDriver } from "../extensions/cache.extension.mjs";
 import { REDIS_URL } from "./config.constants.mjs";
 import {
   REDIS_ERROR_COUNT,
   REDIS_OPERATION_LATENCY_MS,
 } from "./metrics.helper.mjs";
+import { TServiceParams } from "./wiring.helper.mjs";
 
 /**
  * url & name properties automatically generated from config
  */
 export function createRedisDriver(
+  { logger, getConfig }: Pick<TServiceParams, "getConfig" | "logger">,
   options?: Parameters<typeof createClient>[0],
 ): ICacheDriver {
-  const REDIS_CLIENT_NAME = ZCC.application?.name || "ZCC";
-  const logger = ZCC.logger.context(`redis:${REDIS_CLIENT_NAME}`);
+  const REDIS_CLIENT_NAME = ZCC.application?.application.name || "ZCC";
 
-  ZCC.systemLogger.debug(
-    { name: REDIS_CLIENT_NAME },
-    `Initializing redis driver`,
-  );
+  logger.debug({ name: REDIS_CLIENT_NAME }, `Initializing redis driver`);
 
   const client = createClient({
     name: REDIS_CLIENT_NAME,
-    url: LIB_BOILERPLATE.getConfig(REDIS_URL),
+    url: getConfig(REDIS_URL),
     ...options,
   });
 

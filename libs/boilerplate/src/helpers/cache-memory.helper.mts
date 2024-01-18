@@ -1,21 +1,22 @@
-import { is, ZCC } from "@zcc/utilities";
+import { is } from "@zcc/utilities";
 import NodeCache from "node-cache";
 
-import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
 import { ICacheDriver } from "../extensions/cache.extension.mjs";
 import { CACHE_TTL } from "./config.constants.mjs";
 import { MEMORY_CACHE_ERROR_COUNT } from "./metrics.helper.mjs";
+import { TServiceParams } from "./wiring.helper.mjs";
 
 /**
  * url & name properties automatically generated from config
  */
-export function createMemoryDriver(options?: NodeCache.Options): ICacheDriver {
+export function createMemoryDriver(
+  { logger, getConfig }: Pick<TServiceParams, "getConfig" | "logger">,
+  options?: NodeCache.Options,
+): ICacheDriver {
   const client = new NodeCache({
-    stdTTL: LIB_BOILERPLATE.getConfig(CACHE_TTL),
+    stdTTL: getConfig(CACHE_TTL),
     ...options,
   });
-
-  const logger = ZCC.logger.context("memory-cache");
 
   return {
     async del(key: string) {

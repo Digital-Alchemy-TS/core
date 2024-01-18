@@ -95,9 +95,3 @@ Used for errors in network requests to the Home Assistant API.
 > [HomeAssistantFetchError - 401] Error: Unauthorized, Message: Invalid token, authentication failed | Timestamp: 2021-07-01T12:00:00.000Z
 
 **Best Practice**: Employ this error for handling all types of HTTP errors encountered when interacting with the Home Assistant API, including authentication issues, resource not found, or server errors. This error should contain sufficient information to understand the HTTP context and the nature of the error.
-
-### Sign-Off for the Errors File
-
-> That's the end of our code caper! If you stumble upon any digital dilemmas in these pages, don’t just code in silence – let's make some noise together. And remember, every error is just a step towards perfection. Keep those feedback rockets firing!
->
-> - Nyx, your cheeky companion in coding conundrums

@@ -4,20 +4,26 @@ import chalk from "chalk";
 import pino from "pino";
 
 import { LOG_LEVEL } from "../helpers/config.constants.mjs";
-import { bootTestingModule } from "../helpers/testing.helper.mjs";
+import { TESTING_APP_NAME } from "../helpers/testing.helper.mjs";
+import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
 import {
   highlightContext,
   ILogger,
   METHOD_COLORS,
   prettyFormatMessage,
 } from "./logger.extension.mjs";
+import { TEST_WIRING } from "./wiring.extension.mjs";
 
 describe("Logger Extension", () => {
+  let loadedModule: ZCCApplicationDefinition;
+
   beforeAll(async () => {
-    await bootTestingModule(
-      {},
-      { libs: { boilerplate: { [LOG_LEVEL]: "trace" } } },
-    );
+    loadedModule = ZCC.createApplication({
+      name: TESTING_APP_NAME,
+    });
+    await loadedModule.bootstrap({
+      configuration: { libs: { boilerplate: { [LOG_LEVEL]: "trace" } } },
+    });
     // LIB_BOILERPLATE.lifecycle.register();
     // start from a known state
     ZCC.logger.setPrettyLogger(false);
@@ -42,6 +48,7 @@ describe("Logger Extension", () => {
 
   afterEach(() => {
     ZCC.logger.setBaseLogger(base);
+    TEST_WIRING.testing.Reset();
   });
 
   it("should attach logger and systemLogger to ZCC", () => {

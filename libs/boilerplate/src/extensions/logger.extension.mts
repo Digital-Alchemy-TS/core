@@ -5,8 +5,11 @@ import chalkTemplate from "chalk-template";
 import { pino } from "pino";
 import { inspect } from "util";
 
-import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
-import { LOG_LEVEL, LOG_METRICS } from "../helpers/config.constants.mjs";
+import {
+  BOILERPLATE_LIB_NAME,
+  LOG_LEVEL,
+  LOG_METRICS,
+} from "../helpers/config.constants.mjs";
 import { LOGGER_CONTEXT_ENTRIES_COUNT } from "../helpers/metrics.helper.mjs";
 import { TServiceParams } from "../helpers/wiring.helper.mjs";
 
@@ -293,7 +296,7 @@ export function ZCCLogger({ lifecycle, getConfig }: TServiceParams) {
     setBaseLogger: (base: ILogger) => (logger = base),
     setLogLevel: (level: pino.Level) => {
       logLevel = level;
-      ZCC.config.set([LIB_BOILERPLATE.name, LOG_LEVEL], level);
+      ZCC.config.set([BOILERPLATE_LIB_NAME, LOG_LEVEL], level);
     },
     setMaxCutoff: (cutoff: number) => (maxCutoff = cutoff),
     setPrettyLogger: (state: boolean) => {
@@ -305,4 +308,11 @@ export function ZCCLogger({ lifecycle, getConfig }: TServiceParams) {
   ZCC.systemLogger = ZCC.logger.context("ZCC:system");
 
   return out;
+}
+
+declare module "@zcc/utilities" {
+  export interface ZCCDefinition {
+    logger: ReturnType<typeof ZCCLogger>;
+    systemLogger: ILogger;
+  }
 }

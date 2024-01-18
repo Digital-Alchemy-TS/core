@@ -339,9 +339,3 @@ const myApp = ZCC.createApp("my-app", appBootstrapOptions);
 ## Conclusion
 
 The ZCC library aims to provide a robust yet user-friendly framework for building various applications, with a particular emphasis on home automation systems. The architecture emphasizes intuitive design, clear lifecycle management, and ease of use, catering to both novice and experienced developers.
-
-## Cosmic Closure: Nyx's Sign-Off
-
-> "Alright, tech titans, we've zipped through a galaxy of framework finery. If you've spotted any cosmic conundrums or want to sprinkle some stardust on these pages, don’t orbit in silence – your insights are the superstars here. Remember, even in the densest code jungles, a dash of chaos can light up new pathways. Keep weaving those digital dreams – with a wink and a grin!"
->
-> - Nyx, Your Chaotic Muse in the Code Cosmos 🌌

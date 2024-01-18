@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { deepExtend, is, SINGLE, ZCC } from "@zcc/utilities";
+import { is, SINGLE } from "@zcc/utilities";
 import JSON from "comment-json";
 import { existsSync, unlinkSync, writeFileSync } from "fs";
 import { encode as iniEncode } from "ini";
@@ -7,11 +7,6 @@ import { dump as yamlDump } from "js-yaml";
 import { homedir } from "os";
 import { extname, join } from "path";
 import { cwd } from "process";
-
-import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
-import { ModuleConfiguration } from "../extensions/configuration.extension.mjs";
-import { LOG_METRICS } from "./config.constants.mjs";
-import { AbstractConfig } from "./config.helper.mjs";
 
 export const TESTING_APP_NAME = "zcc-unit-tests";
 
@@ -123,28 +118,4 @@ export function ConfigurationFiles() {
       });
     },
   };
-}
-
-export async function bootTestingModule(
-  configDefs?: ModuleConfiguration,
-  environmentDefaults?: Partial<AbstractConfig>,
-) {
-  const application = ZCC.createApplication({
-    configuration: configDefs,
-    libraries: [LIB_BOILERPLATE],
-    name: TESTING_APP_NAME,
-  });
-  environmentDefaults = deepExtend(
-    {
-      libs: {
-        boilerplate: {
-          // [LOG_LEVEL]: "warn",
-          [LOG_METRICS]: false,
-        },
-      },
-    },
-    { ...environmentDefaults },
-  );
-  // a
-  return application;
 }

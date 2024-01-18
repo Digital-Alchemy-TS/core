@@ -61,7 +61,7 @@ export type BootstrapOptions = {
   /**
    * default values to use for configurations, before user values come in
    */
-  configuration?: AbstractConfig;
+  configuration?: Partial<AbstractConfig>;
   /**
    * use this logger, instead of the baked in one. Maybe you want some custom transports or something? Put your customized thing here
    */

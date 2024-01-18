@@ -1,16 +1,15 @@
 import { faker } from "@faker-js/faker";
 import { ZCC } from "@zcc/utilities";
 
-import { LIB_BOILERPLATE } from "../boilerplate.module.mjs";
 import { CodeConfigDefinition } from "../helpers/config.helper.mjs";
 import {
-  bootTestingModule,
   ConfigurationFiles,
   RandomFileTestingDataFormat,
   TESTING_APP_NAME,
 } from "../helpers/testing.helper.mjs";
 import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
 import { ConfigManager, ZCCLoadConfig } from "./configuration.extension.mjs";
+import { TEST_WIRING } from "./wiring.extension.mjs";
 
 describe("Configuration Extension Tests", () => {
   const originalEnvironment = process.env;
@@ -32,6 +31,7 @@ describe("Configuration Extension Tests", () => {
       },
       name: TESTING_APP_NAME,
     });
+    await loadedModule.bootstrap();
   }
 
   beforeAll(() => {
@@ -47,6 +47,7 @@ describe("Configuration Extension Tests", () => {
       await loadedModule.teardown();
       loadedModule = undefined;
     }
+    TEST_WIRING.testing.Reset();
   });
 
   describe("Pre-Initialization Tests", () => {
@@ -375,8 +376,11 @@ describe("Configuration Extension Tests", () => {
       const environmentTestValue = faker.lorem.word();
       process.env[`ENVIRONMENT_TEST`] = environmentTestValue;
 
-      loadedModule = await bootTestingModule({
-        ENVIRONMENT_TEST: { default: "module default", type: "string" },
+      loadedModule = ZCC.createApplication({
+        configuration: {
+          ENVIRONMENT_TEST: { default: "module default", type: "string" },
+        },
+        name: TESTING_APP_NAME,
       });
       config.setApplicationDefinition(loadedModule.configuration);
       await config.loadConfig(loadedModule);

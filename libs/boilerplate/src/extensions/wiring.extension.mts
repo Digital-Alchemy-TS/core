@@ -1,4 +1,12 @@
-import { DOWN, each, eachSeries, is, UP, ZCC } from "@zcc/utilities";
+import {
+  DOWN,
+  each,
+  eachSeries,
+  is,
+  UP,
+  ZCC,
+  ZCC_Testing,
+} from "@zcc/utilities";
 import { EventEmitter } from "eventemitter3";
 import { exit } from "process";
 
@@ -19,6 +27,7 @@ import {
   TLifecycleBase,
   TLoadableChildLifecycle,
 } from "../helpers/lifecycle.helper.mjs";
+import { ConfigurationFiles } from "../helpers/testing.helper.mjs";
 import {
   ApplicationConfigurationOptions,
   BootstrapOptions,
@@ -117,14 +126,14 @@ const processEvents = new Map([
     "SIGTERM",
     async () => {
       await Teardown();
-      await TEST_WIRING.FailFast();
+      await ZCC_Testing.FailFast();
     },
   ],
   [
     "SIGINT",
     async () => {
       await Teardown();
-      await TEST_WIRING.FailFast();
+      await ZCC_Testing.FailFast();
     },
   ],
   // ["uncaughtException", () => {}],
@@ -242,7 +251,7 @@ async function WireService(
     // logger.fatal({ error, name: context }, `Initialization error`);
     // eslint-disable-next-line no-console
     console.log(error);
-    TEST_WIRING.FailFast();
+    ZCC_Testing.FailFast();
   }
 }
 
@@ -331,7 +340,7 @@ async function Bootstrap(
     // eslint-disable-next-line no-console
     console.error(error);
     // await Teardown();
-    TEST_WIRING.FailFast();
+    ZCC_Testing.FailFast();
   }
 }
 
@@ -397,7 +406,7 @@ function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
       (callback: LifecycleCallback, priority = NONE) => {
         if (completedLifecycleCallbacks.has(`on${stage}`)) {
           logger.fatal(`[on${stage}] late attach, cannot attach callback`);
-          TEST_WIRING.FailFast();
+          ZCC_Testing.FailFast();
           return;
         }
         childCallbacks[stage].push([callback, priority]);
@@ -429,37 +438,37 @@ ZCC.loader = GlobalLoader;
 ZCC.teardown = Teardown;
 ZCC.lifecycle = CreateChildLifecycle;
 
-/**
- * For unit testing,
- */
-export const TEST_WIRING = {
-  Bootstrap,
-  ContextLoader,
-  CreateApplication,
-  // void for unit testing, never for reality
-  FailFast: (): void => exit(),
-  GlobalLoader,
-  Lifecycle: CreateChildLifecycle,
-  Teardown,
-  /**
-   * exported helpers for unit testing, no use to applications
-   */
-  testing: {
-    LOADED_MODULES: () => LOADED_MODULES,
-    MODULE_MAPPINGS: () => MODULE_MAPPINGS,
-    REVERSE_MODULE_MAPPING: () => REVERSE_MODULE_MAPPING,
-    Reset: () => {
-      process.removeAllListeners();
-      MODULE_MAPPINGS = new Map();
-      LOADED_MODULES = new Map();
-      LOADED_LIFECYCLES = new Map();
-      REVERSE_MODULE_MAPPING = new Map();
-      completedLifecycleCallbacks = new Set<string>();
-      ACTIVE_APPLICATION = undefined;
-    },
-    WireService,
-  },
+ZCC_Testing.configurationFiles = ConfigurationFiles;
+ZCC_Testing.FailFast = (): void => exit();
+ZCC_Testing.LOADED_MODULES = () => LOADED_MODULES;
+ZCC_Testing.MODULE_MAPPINGS = () => MODULE_MAPPINGS;
+ZCC_Testing.REVERSE_MODULE_MAPPING = () => REVERSE_MODULE_MAPPING;
+ZCC_Testing.WiringReset = () => {
+  process.removeAllListeners();
+  MODULE_MAPPINGS = new Map();
+  LOADED_MODULES = new Map();
+  LOADED_LIFECYCLES = new Map();
+  REVERSE_MODULE_MAPPING = new Map();
+  completedLifecycleCallbacks = new Set<string>();
+  ACTIVE_APPLICATION = undefined;
 };
+ZCC_Testing.WireService = WireService;
+
+declare module "@zcc/utilities" {
+  export interface ZCCTestingDefinition {
+    // void for unit testing, never for reality
+    FailFast: () => void;
+    Teardown: typeof Teardown;
+    /**
+     * exported helpers for unit testing, no use to applications
+     */
+    LOADED_MODULES: () => typeof LOADED_MODULES;
+    MODULE_MAPPINGS: () => typeof MODULE_MAPPINGS;
+    REVERSE_MODULE_MAPPING: () => typeof REVERSE_MODULE_MAPPING;
+    WiringReset: () => void;
+    WireService: typeof WireService;
+  }
+}
 
 // Type definitions for global ZCC attachments
 declare module "@zcc/utilities" {

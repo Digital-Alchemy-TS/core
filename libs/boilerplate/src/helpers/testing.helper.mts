@@ -1,5 +1,4 @@
-import { faker } from "@faker-js/faker";
-import { is, SINGLE } from "@zcc/utilities";
+import { is, SINGLE, ZCC_Testing } from "@zcc/utilities";
 import JSON from "comment-json";
 import { existsSync, unlinkSync, writeFileSync } from "fs";
 import { encode as iniEncode } from "ini";
@@ -10,27 +9,9 @@ import { cwd } from "process";
 
 export const TESTING_APP_NAME = "zcc-unit-tests";
 
-export type RandomFileTestingDataFormat = ReturnType<typeof generateRandomData>;
-function generateRandomData() {
-  return {
-    application: {
-      boolean: faker.datatype.boolean(),
-      internal: {
-        mqtt: {
-          host: faker.internet.ip(),
-          port: faker.number.int({ max: 65_535, min: 1024 }),
-        },
-      },
-      number: faker.number.int(),
-      record: {
-        key1: faker.lorem.word(),
-        key2: faker.lorem.word(),
-      },
-      string: faker.lorem.word(),
-      stringArray: [faker.lorem.word(), faker.lorem.word(), faker.lorem.word()],
-    },
-  };
-}
+export type RandomFileTestingDataFormat = ReturnType<
+  typeof ZCC_Testing.generateRandomData
+>;
 
 export function ConfigurationFiles() {
   const testDataMap = new Map<string, RandomFileTestingDataFormat>();
@@ -72,7 +53,7 @@ export function ConfigurationFiles() {
             ])
           : paths,
       ).forEach(filename => {
-        const data = generateRandomData();
+        const data = ZCC_Testing.generateRandomData();
         writeConfigFile(filename, data);
       });
     },
@@ -118,4 +99,12 @@ export function ConfigurationFiles() {
       });
     },
   };
+}
+
+ZCC_Testing.configurationFiles = ConfigurationFiles;
+
+declare module "@zcc/utilities" {
+  export interface ZCCTestingDefinition {
+    configurationFiles: typeof ConfigurationFiles;
+  }
 }

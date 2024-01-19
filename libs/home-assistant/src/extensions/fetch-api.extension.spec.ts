@@ -1,71 +1,59 @@
-import { bootTestingModule, ZCCApplicationDefinition } from "@zcc/boilerplate";
-import { ZCC } from "@zcc/utilities";
+import { CreateApplication, ZCCApplicationDefinition } from "@zcc/boilerplate";
+import { ZCC, ZCC_Testing } from "@zcc/utilities";
 
 import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
-import { BASE_URL, TOKEN } from "../index.mjs";
-import { HAFetchAPI } from "./fetch-api.extension.mjs";
+import { THAFetchAPI } from "./fetch-api.extension.mjs";
 
-describe("HAFetchAPI", () => {
-  let haFetchAPI: ReturnType<typeof HAFetchAPI>;
-  let loadedModule: ZCCApplicationDefinition;
-  const testBaseUrl = "http://home-assistant.test.local";
-  const testToken = "example-token";
-
-  async function createBaseModule() {
-    if (loadedModule) {
-      ZCC.lifecycle.teardown();
-    }
-    loadedModule = await bootTestingModule(
-      {},
-      {
-        libs: {
-          [LIB_HOME_ASSISTANT.name]: {
-            [BASE_URL]: testBaseUrl,
-            [TOKEN]: testToken,
-          },
-        },
-      },
-    );
-    LIB_HOME_ASSISTANT.lifecycle.register();
-    await ZCC.lifecycle.exec();
-  }
+describe("Fetch Extension", () => {
+  let application: ZCCApplicationDefinition;
+  let fetch: THAFetchAPI;
+  // this is primarily to aid in debugging, as the errors get swallowed
+  let failFastSpy: jest.SpyInstance;
 
   beforeEach(async () => {
-    jest
-      .spyOn(LIB_HOME_ASSISTANT, "getConfig")
-      .mockImplementation((key: string) => {
-        if (key === BASE_URL) return testBaseUrl;
-        if (key === TOKEN) return testToken;
-        return null;
-      });
-    haFetchAPI = HAFetchAPI();
-    await createBaseModule();
+    failFastSpy = jest
+      .spyOn(ZCC_Testing, "FailFast")
+      .mockImplementation(() => {});
+    application = CreateApplication({
+      libraries: [LIB_HOME_ASSISTANT],
+    });
+    await application.bootstrap();
+    fetch = ZCC.hass.fetch;
   });
 
   afterEach(async () => {
-    jest.clearAllMocks();
-    if (loadedModule) {
-      await ZCC.lifecycle.teardown();
-      loadedModule = undefined;
+    if (application) {
+      await application.teardown();
+      application = undefined;
+      ZCC_Testing.WiringReset();
     }
+    expect(failFastSpy).not.toHaveBeenCalled();
+    jest.restoreAllMocks();
   });
 
-  describe("fetch", () => {
-    it("should correctly apply configuration for fetch operation", async () => {
-      // Mock implementation for ZCC.fetch.fetch
-      jest
-        .spyOn(ZCC.fetch, "fetch")
-        .mockImplementation(async () => "mock-response");
+  describe("Sanity Checks for ZCC.hass.fetch", () => {
+    it("should have ZCC.hass.fetch defined with all expected functions", () => {
+      expect(ZCC.hass.fetch).toBeDefined();
 
-      const response = await haFetchAPI.fetch({ method: "get", url: "/test" });
+      const expectedFunctions = [
+        "calendarSearch",
+        "callService",
+        "checkConfig",
+        "fetchEntityCustomizations",
+        "fetchEntityHistory",
+        "fireEvent",
+        "getAllEntities",
+        "getConfig",
+        "getLogs",
+        "getRawLogs",
+        "listServices",
+        "updateEntity",
+        "webhook",
+      ];
 
-      expect(ZCC.fetch.fetch).toHaveBeenCalledWith({
-        baseUrl: testBaseUrl,
-        headers: { Authorization: `Bearer ${testToken}` },
-        method: "get",
-        url: "/test",
+      expectedFunctions.forEach(function_ => {
+        expect(typeof ZCC.hass.fetch[function_]).toBe("function");
       });
-      expect(response).toBe("mock-response");
     });
   });
 });

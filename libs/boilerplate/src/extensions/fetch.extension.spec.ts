@@ -1,8 +1,8 @@
-import { ZCC } from "@zcc/utilities";
+import { ZCC, ZCC_Testing } from "@zcc/utilities";
 
 import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
 import { TFetch } from "./fetch.extension.mjs";
-import { CreateApplication, TEST_WIRING } from "./wiring.extension.mjs";
+import { CreateApplication } from "./wiring.extension.mjs";
 
 describe("Fetch Extension", () => {
   let application: ZCCApplicationDefinition;
@@ -12,7 +12,7 @@ describe("Fetch Extension", () => {
 
   beforeEach(async () => {
     failFastSpy = jest
-      .spyOn(TEST_WIRING, "FailFast")
+      .spyOn(ZCC_Testing, "FailFast")
       .mockImplementation(() => {});
     application = CreateApplication({
       //
@@ -25,7 +25,7 @@ describe("Fetch Extension", () => {
     if (application) {
       await application.teardown();
       application = undefined;
-      TEST_WIRING.testing.Reset();
+      ZCC_Testing.WiringReset();
     }
     expect(failFastSpy).not.toHaveBeenCalled();
     jest.restoreAllMocks();

@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { ZCC } from "@zcc/utilities";
+import { ZCC, ZCC_Testing } from "@zcc/utilities";
 import chalk from "chalk";
 import pino from "pino";
 
@@ -12,13 +12,13 @@ import {
   METHOD_COLORS,
   prettyFormatMessage,
 } from "./logger.extension.mjs";
-import { TEST_WIRING } from "./wiring.extension.mjs";
+import { CreateApplication } from "./wiring.extension.mjs";
 
 describe("Logger Extension", () => {
   let loadedModule: ZCCApplicationDefinition;
 
   beforeAll(async () => {
-    loadedModule = ZCC.createApplication({
+    loadedModule = CreateApplication({
       name: TESTING_APP_NAME,
     });
     await loadedModule.bootstrap({
@@ -48,7 +48,7 @@ describe("Logger Extension", () => {
 
   afterEach(() => {
     ZCC.logger.setBaseLogger(base);
-    TEST_WIRING.testing.Reset();
+    ZCC_Testing.WiringReset();
   });
 
   it("should attach logger and systemLogger to ZCC", () => {

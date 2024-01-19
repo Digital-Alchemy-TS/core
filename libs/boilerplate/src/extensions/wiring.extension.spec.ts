@@ -1,8 +1,8 @@
-import { ZCC } from "@zcc/utilities";
+import { ZCC, ZCC_Testing } from "@zcc/utilities";
 
 import { BootstrapException } from "../helpers/errors.helper.mjs";
 import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
-import { TEST_WIRING } from "./wiring.extension.mjs";
+import { CreateApplication, CreateLibrary } from "./wiring.extension.mjs";
 
 describe("Wiring Extension", () => {
   let application: ZCCApplicationDefinition;
@@ -12,13 +12,15 @@ describe("Wiring Extension", () => {
       application = undefined;
     }
     jest.restoreAllMocks();
-    TEST_WIRING.testing.Reset();
+    ZCC_Testing.WiringReset();
   });
 
   it("Should attach to ZCC", () => {
     expect(ZCC.application).not.toBeDefined();
+    expect(CreateLibrary).toBeDefined();
+    expect(CreateApplication).toBeDefined();
     expect(ZCC.bootstrap).toBeDefined();
-    expect(ZCC.createApplication).toBeDefined();
+    expect(CreateApplication).toBeDefined();
     expect(ZCC.createLibrary).toBeDefined();
     expect(ZCC.lifecycle).toBeDefined();
     expect(ZCC.loader).toBeDefined();
@@ -36,7 +38,7 @@ describe("Wiring Extension", () => {
         const projectName = "testProject";
 
         // First wiring should succeed
-        await TEST_WIRING.testing.WireService(
+        await ZCC_Testing.WireService(
           projectName,
           serviceName,
           testService,
@@ -45,7 +47,7 @@ describe("Wiring Extension", () => {
 
         // Second wiring with the same service name should throw an exception
         await expect(
-          TEST_WIRING.testing.WireService(
+          ZCC_Testing.WireService(
             projectName,
             serviceName,
             testService,
@@ -67,11 +69,11 @@ describe("Wiring Extension", () => {
           .mockImplementation(() => {});
 
         const failFastSpy = jest
-          .spyOn(TEST_WIRING, "FailFast")
+          .spyOn(ZCC_Testing, "FailFast")
           .mockImplementation(() => {});
 
         // Attempt to wire the faulty service
-        await TEST_WIRING.testing.WireService(
+        await ZCC_Testing.WireService(
           projectName,
           serviceName,
           faultyService,
@@ -185,7 +187,7 @@ describe("Wiring Extension", () => {
           services: [["TestService", testService]],
         });
 
-        application = ZCC.createApplication({
+        application = CreateApplication({
           libraries: [testLibrary],
           name: "testApp",
           services: [["AppService", jest.fn()]],
@@ -206,7 +208,7 @@ describe("Wiring Extension", () => {
           services: [["TestService", testService]],
         });
 
-        application = ZCC.createApplication({
+        application = CreateApplication({
           libraries: [testLibrary],
           name: "testApp",
           services: [["AppService", jest.fn()]],
@@ -225,13 +227,13 @@ describe("Wiring Extension", () => {
         const testServiceName = "TestService";
 
         // Create an application with a test service
-        application = ZCC.createApplication({
+        application = CreateApplication({
           name: "testApp",
           services: [[testServiceName, testService]],
         });
 
         // Wire the test service to the application
-        await TEST_WIRING.testing.WireService(
+        await ZCC_Testing.WireService(
           "testApp",
           testServiceName,
           testService,
@@ -246,13 +248,14 @@ describe("Wiring Extension", () => {
         // Assertions
         expect(testService).toHaveBeenCalled();
         expect(wiredService).toBeDefined();
-        expect(
-          TEST_WIRING.testing.REVERSE_MODULE_MAPPING().get(testService),
-        ).toEqual(["testApp", "TestService"]);
+        expect(ZCC_Testing.REVERSE_MODULE_MAPPING().get(testService)).toEqual([
+          "testApp",
+          "TestService",
+        ]);
       });
 
       it("integrates correctly with the event emitter for error handling in an application", () => {
-        const application = ZCC.createApplication({ name: "eventApp" });
+        const application = CreateApplication({ name: "eventApp" });
         const eventSpy = jest.spyOn(application, "onError");
         // Simulate an error event
         application.onError(() => {
@@ -266,7 +269,7 @@ describe("Wiring Extension", () => {
   describe("Application Lifecycle", () => {
     beforeEach(() => {
       // Create application instance
-      application = ZCC.createApplication({ name: "testApp" });
+      application = CreateApplication({ name: "testApp" });
     });
 
     it("should call the lifecycle events in order during application bootstrap", async () => {
@@ -352,7 +355,7 @@ describe("Wiring Extension", () => {
       application.lifecycle.onBootstrap(errorMock);
       jest.spyOn(console, "error").mockImplementation(() => {});
       const failFastSpy = jest
-        .spyOn(TEST_WIRING, "FailFast")
+        .spyOn(ZCC_Testing, "FailFast")
         .mockImplementation(() => {});
 
       // Execute the Bootstrap function
@@ -364,16 +367,16 @@ describe("Wiring Extension", () => {
 
     it("wires services correctly in applications and libraries", async () => {
       const testService = jest.fn();
-      await TEST_WIRING.testing.WireService(
+      await ZCC_Testing.WireService(
         "testLibrary",
         "TestService",
         testService,
         application.lifecycle,
       );
 
-      // Assuming WireService modifies the MODULE_MAPPINGS in TEST_WIRING.testing
+      // Assuming WireService modifies the MODULE_MAPPINGS in ZCC_Testing
       expect(
-        TEST_WIRING.testing.MODULE_MAPPINGS().get("testLibrary")["TestService"],
+        ZCC_Testing.MODULE_MAPPINGS().get("testLibrary")["TestService"],
       ).toBe(testService);
     });
 

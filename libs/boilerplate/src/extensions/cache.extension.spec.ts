@@ -1,4 +1,4 @@
-import { ZCC } from "@zcc/utilities";
+import { ZCC, ZCC_Testing } from "@zcc/utilities";
 
 import {
   CACHE_DELETE_OPERATIONS_TOTAL,
@@ -7,7 +7,7 @@ import {
 } from "../helpers/metrics.helper.mjs";
 import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
 import { TCache } from "./cache.extension.mjs";
-import { CreateApplication, TEST_WIRING } from "./wiring.extension.mjs";
+import { CreateApplication } from "./wiring.extension.mjs";
 
 describe("Cache Extension", () => {
   let application: ZCCApplicationDefinition;
@@ -17,7 +17,7 @@ describe("Cache Extension", () => {
 
   beforeEach(async () => {
     failFastSpy = jest
-      .spyOn(TEST_WIRING, "FailFast")
+      .spyOn(ZCC_Testing, "FailFast")
       .mockImplementation(() => {});
     application = CreateApplication({
       //
@@ -30,7 +30,7 @@ describe("Cache Extension", () => {
     if (application) {
       await application.teardown();
       application = undefined;
-      TEST_WIRING.testing.Reset();
+      ZCC_Testing.WiringReset();
     }
     expect(failFastSpy).not.toHaveBeenCalled();
     jest.restoreAllMocks();

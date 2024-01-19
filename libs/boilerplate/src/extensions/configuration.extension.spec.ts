@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import { ZCC } from "@zcc/utilities";
+import { ZCC_Testing } from "@zcc/utilities";
 
 import { CodeConfigDefinition } from "../helpers/config.helper.mjs";
 import {
@@ -12,7 +12,7 @@ import {
   ConfigManager,
   ZCC_Configuration,
 } from "./configuration.extension.mjs";
-import { TEST_WIRING } from "./wiring.extension.mjs";
+import { CreateApplication } from "./wiring.extension.mjs";
 
 describe("Configuration Extension Tests", () => {
   const originalEnvironment = process.env;
@@ -23,7 +23,7 @@ describe("Configuration Extension Tests", () => {
   const APPLICATION = Symbol.for("APPLICATION_CONFIGURATION");
 
   async function CreateStandardTestModule() {
-    loadedModule = ZCC.createApplication({
+    loadedModule = CreateApplication({
       configuration: {
         boolean: { default: false, type: "boolean" },
         internal: { type: "internal" },
@@ -50,7 +50,7 @@ describe("Configuration Extension Tests", () => {
       await loadedModule.teardown();
       loadedModule = undefined;
     }
-    TEST_WIRING.testing.Reset();
+    ZCC_Testing.WiringReset();
   });
 
   describe("Pre-Initialization Tests", () => {
@@ -363,7 +363,7 @@ describe("Configuration Extension Tests", () => {
       const argvTestValue = faker.lorem.word();
       process.argv.push(`--ARGV_TEST=${argvTestValue}`);
 
-      loadedModule = ZCC.createApplication({
+      loadedModule = CreateApplication({
         configuration: {
           ARGV_TEST: { default: "module default", type: "string" },
         },
@@ -379,7 +379,7 @@ describe("Configuration Extension Tests", () => {
       const environmentTestValue = faker.lorem.word();
       process.env[`ENVIRONMENT_TEST`] = environmentTestValue;
 
-      loadedModule = ZCC.createApplication({
+      loadedModule = CreateApplication({
         configuration: {
           ENVIRONMENT_TEST: { default: "module default", type: "string" },
         },

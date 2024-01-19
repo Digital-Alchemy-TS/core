@@ -1,4 +1,4 @@
-import { is, ZCC } from "@zcc/utilities";
+import { is, NONE, ZCC } from "@zcc/utilities";
 
 import { createMemoryDriver } from "../helpers/cache-memory.helper.mjs";
 import { createRedisDriver } from "../helpers/cache-redis.helper.mjs";
@@ -42,7 +42,7 @@ export function ZCC_Cache({
   }
 
   lifecycle.onPostConfig(() => {
-    prefix = getConfig(CACHE_PREFIX);
+    prefix = getConfig(CACHE_PREFIX) || "";
     DEFAULT_TTL = getConfig(CACHE_TTL);
     provider = getConfig(CACHE_PROVIDER);
     logger.trace(
@@ -64,7 +64,8 @@ export function ZCC_Cache({
     client = createMemoryDriver({ getConfig, logger });
   });
 
-  const cache: TCache = {
+  const cache = {
+    [Symbol.for("cache_logger")]: logger,
     del: async (key: string): Promise<void> => {
       try {
         const fullKey = fullKeyName(key);
@@ -94,9 +95,11 @@ export function ZCC_Cache({
         return defaultValue;
       }
     },
-    keys: async (pattern?: string): Promise<string[]> => {
+    keys: async (pattern = ""): Promise<string[]> => {
       try {
-        return await client.keys(fullKeyName(pattern || "*"));
+        const fullPattern = fullKeyName(pattern);
+        const keys = await client.keys(fullPattern);
+        return keys.map(key => key.slice(Math.max(NONE, prefix.length)));
       } catch (error) {
         CACHE_DRIVER_ERROR_COUNT.labels("keys").inc();
         logger.warn({ error }, `Cache keys error`);
@@ -124,7 +127,7 @@ export function ZCC_Cache({
       logger.debug(`Using new cache driver`);
       client = newClient;
     },
-  };
+  } as TCache;
   ZCC.cache = cache;
   return cache;
 }

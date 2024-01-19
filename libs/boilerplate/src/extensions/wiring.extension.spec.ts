@@ -12,9 +12,6 @@ describe("Wiring Extension", () => {
       application = undefined;
     }
     jest.restoreAllMocks();
-    // This needs to be done more than normal due to some tests unevenly testing things
-    // Teardown should be sufficient in other files
-    process.removeAllListeners();
     TEST_WIRING.testing.Reset();
   });
 

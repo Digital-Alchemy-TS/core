@@ -18,6 +18,7 @@ import {
   FETCH_REQUESTS_INITIATED,
   FETCH_REQUESTS_SUCCESSFUL,
 } from "../helpers/metrics.helper.mjs";
+import { TServiceParams } from "../helpers/wiring.helper.mjs";
 
 /**
  * Properties that alter the way that fetcher works.
@@ -77,144 +78,167 @@ function buildFilterString(
   }).toString();
 }
 
-// eslint-disable-next-line sonarjs/cognitive-complexity
-export function CreateFetcher({
-  logContext,
-  baseUrl = "",
-  headers: baseHeaders = {},
-  bottleneck,
-}: FetcherOptions) {
-  logContext ??= is.empty(baseUrl) ? `Fetcher` : `Fetcher:${baseUrl}`;
-  const logger = ZCC.logger.context(logContext || "Fetcher");
-  let limiter: Bottleneck;
-  const capabilities: string[] = [];
-  if (bottleneck) {
-    capabilities.push("bottleneck");
-    limiter = new Bottleneck(bottleneck);
-  }
-  if (!is.empty(capabilities)) {
-    logger.trace({ capabilities }, `Initialized fetcher`);
-  }
-
-  function checkForHttpErrors<T extends unknown = unknown>(
-    maybeError: MaybeHttpError,
-  ): T {
-    if (
-      is.object(maybeError) &&
-      maybeError !== null &&
-      is.number(maybeError.statusCode) &&
-      is.string(maybeError.error)
-    ) {
-      // Log the error if needed
-      logger.error({ error: maybeError }, maybeError.message);
-
-      // Throw a FetchRequestError
-      // throw new FetchRequestError(maybeError);
-      throw new FetchRequestError(
-        maybeError.statusCode,
-        maybeError.error,
-        maybeError.message,
-      );
+export function ZCC_Fetch({ logger }: TServiceParams) {
+  const createFetcher = ({
+    bottleneck,
+    headers: baseHeaders,
+    baseUrl,
+    logContext,
+    // eslint-disable-next-line sonarjs/cognitive-complexity
+  }: FetcherOptions) => {
+    const extras: Record<string, string> = {};
+    if (!is.empty(logContext)) {
+      extras.context = logContext;
+    }
+    let limiter: Bottleneck;
+    const capabilities: string[] = [];
+    if (bottleneck) {
+      capabilities.push("bottleneck");
+      limiter = new Bottleneck(bottleneck);
+    }
+    if (!is.empty(capabilities)) {
+      logger.trace({ capabilities, ...extras }, `Initialized fetcher`);
     }
 
-    return maybeError as T;
-  }
+    function checkForHttpErrors<T extends unknown = unknown>(
+      maybeError: MaybeHttpError,
+    ): T {
+      if (
+        is.object(maybeError) &&
+        maybeError !== null &&
+        is.number(maybeError.statusCode) &&
+        is.string(maybeError.error)
+      ) {
+        // Log the error if needed
+        logger.error({ error: maybeError, ...extras }, maybeError.message);
 
-  async function fetchHandleResponse<T extends unknown = unknown>(
-    process: FetchProcessTypes,
-    response: Response,
-  ): Promise<T> {
-    if (process === false || process === "raw") {
-      return response as T;
-    }
-    const text = await response.text();
-    if (process === "text") {
-      return text as unknown as T;
-    }
-    if (!["{", "["].includes(text.charAt(FIRST))) {
-      if (["OK"].includes(text)) {
-        logger.debug({ text }, "Full response text");
-      } else {
-        // It's probably a coding error error, and not something a user did.
-        // Will try to keep the array up to date if any other edge cases pop up
-        logger.warn({ text }, `Unexpected API Response`);
+        // Throw a FetchRequestError
+        // throw new FetchRequestError(maybeError);
+        throw new FetchRequestError(
+          maybeError.statusCode,
+          maybeError.error,
+          maybeError.message,
+        );
       }
-      return text as T;
-    }
-    const parsed = JSON.parse(text);
-    return checkForHttpErrors<T>(parsed);
-  }
 
-  function fetchCreateUrl({ rawUrl, url, ...fetchWith }: FetchWith): string {
-    let out = url || "";
-    if (!rawUrl) {
-      const base = fetchWith.baseUrl || baseUrl;
-      out = base + url;
+      return maybeError as T;
     }
-    if (!is.empty(fetchWith.params)) {
-      out = `${out}?${buildFilterString(fetchWith)}`;
-    }
-    return out;
-  }
 
-  async function execFetch<T, BODY extends TFetchBody = undefined>({
-    body,
-    headers = {},
-    method = "get",
-    process,
-    ...fetchWith
-  }: Partial<FetchArguments<BODY>>) {
-    const url = fetchCreateUrl(fetchWith);
-    try {
-      const result = await fetch(url, {
-        body: is.object(body) ? JSON.stringify(body) : body,
-        headers: {
-          ...baseHeaders,
-          ...headers,
-        },
-        method,
-      });
-      const out = await fetchHandleResponse<T>(process, result);
-      FETCH_REQUESTS_SUCCESSFUL.inc();
+    async function fetchHandleResponse<T extends unknown = unknown>(
+      process: FetchProcessTypes,
+      response: Response,
+    ): Promise<T> {
+      if (process === false || process === "raw") {
+        return response as T;
+      }
+      const text = await response.text();
+      if (process === "text") {
+        return text as unknown as T;
+      }
+      if (!["{", "["].includes(text.charAt(FIRST))) {
+        if (["OK"].includes(text)) {
+          logger.debug({ text, ...extras }, "Full response text");
+        } else {
+          // It's probably a coding error error, and not something a user did.
+          // Will try to keep the array up to date if any other edge cases pop up
+          logger.warn({ text, ...extras }, `Unexpected API Response`);
+        }
+        return text as T;
+      }
+      const parsed = JSON.parse(text);
+      return checkForHttpErrors<T>(parsed);
+    }
+
+    function fetchCreateUrl({ rawUrl, url, ...fetchWith }: FetchWith): string {
+      let out = url || "";
+      if (!rawUrl) {
+        const base = fetchWith.baseUrl || baseUrl;
+        out = base + url;
+      }
+      if (!is.empty(fetchWith.params)) {
+        out = `${out}?${buildFilterString(fetchWith)}`;
+      }
       return out;
-    } catch (error) {
-      logger.error({ error }, `Request failed`);
-      FETCH_REQUESTS_FAILED.inc();
-      throw error;
     }
-  }
 
-  return {
-    // !! TODO: implement later.
-    // !! Some fetch internals changed in refactor, and this isn't important enough right now to be worth solving
-    // !! ----
-    // download: async ({ destination, ...fetchWith }: DownloadOptions) => {
-    //   const url: string = await fetchCreateUrl(fetchWith);
-    //   const requestInit = await fetchCreateMeta(fetchWith);
-    //   const response = await fetch(url, requestInit);
-
-    //   await new Promise<void>((resolve, reject) => {
-    //     if (!response?.body) {
-    //       return;
-    //     }
-    //     const fileStream = createWriteStream(destination);
-    //     response.body.pipeThrough(fileStream);
-    //     response.body.on("error", error => reject(error));
-    //     fileStream.on("finish", () => resolve());
-    //   });
-    // },
-    fetch: async <T, BODY extends TFetchBody = undefined>(
-      fetchWith: Partial<FetchArguments<BODY>>,
-    ): Promise<T | undefined> => {
-      FETCH_REQUESTS_INITIATED.inc();
-      if (limiter) {
-        const start = Date.now();
-        return limiter.schedule(async () => {
-          FETCH_REQUEST_BOTTLENECK_DELAY.set(Date.now() - start);
-          return await execFetch(fetchWith);
+    async function execFetch<T, BODY extends TFetchBody = undefined>({
+      body,
+      headers = {},
+      method = "get",
+      process,
+      ...fetchWith
+    }: Partial<FetchArguments<BODY>>) {
+      const url = fetchCreateUrl(fetchWith);
+      try {
+        const result = await fetch(url, {
+          body: is.object(body) ? JSON.stringify(body) : body,
+          headers: {
+            ...baseHeaders,
+            ...headers,
+          },
+          method,
         });
+        const out = await fetchHandleResponse<T>(process, result);
+        FETCH_REQUESTS_SUCCESSFUL.inc();
+        return out;
+      } catch (error) {
+        logger.error({ error, ...extras }, `Request failed`);
+        FETCH_REQUESTS_FAILED.inc();
+        throw error;
       }
-      return await execFetch(fetchWith);
-    },
+    }
+
+    return {
+      // !! TODO: implement later.
+      // !! Some fetch internals changed in refactor, and this isn't important enough right now to be worth solving
+      // !! ----
+      // download: async ({ destination, ...fetchWith }: DownloadOptions) => {
+      //   const url: string = await fetchCreateUrl(fetchWith);
+      //   const requestInit = await fetchCreateMeta(fetchWith);
+      //   const response = await fetch(url, requestInit);
+
+      //   await new Promise<void>((resolve, reject) => {
+      //     if (!response?.body) {
+      //       return;
+      //     }
+      //     const fileStream = createWriteStream(destination);
+      //     response.body.pipeThrough(fileStream);
+      //     response.body.on("error", error => reject(error));
+      //     fileStream.on("finish", () => resolve());
+      //   });
+      // },
+      fetch: async <T, BODY extends TFetchBody = undefined>(
+        fetchWith: Partial<FetchArguments<BODY>>,
+      ): Promise<T | undefined> => {
+        FETCH_REQUESTS_INITIATED.inc();
+        if (limiter) {
+          const start = Date.now();
+          return limiter.schedule(async () => {
+            FETCH_REQUEST_BOTTLENECK_DELAY.set(Date.now() - start);
+            return await execFetch(fetchWith);
+          });
+        }
+        return await execFetch(fetchWith);
+      },
+    };
   };
+  ZCC.createFetcher = createFetcher;
+  const globalFetch = createFetcher({
+    logContext: "ZCC:fetch",
+  });
+  ZCC.fetch = globalFetch.fetch;
+  return createFetcher;
+}
+
+export type TFetch = <T, BODY extends object = undefined>(
+  fetchWith: Partial<FetchArguments<BODY>>,
+) => Promise<T>;
+
+declare module "@zcc/utilities" {
+  export interface ZCCDefinition {
+    createFetcher: (options: FetcherOptions) => {
+      fetch: TFetch;
+    };
+    fetch: TFetch;
+  }
 }

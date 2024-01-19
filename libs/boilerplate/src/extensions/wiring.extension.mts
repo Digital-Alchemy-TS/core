@@ -33,6 +33,7 @@ import {
 } from "../helpers/wiring.helper.mjs";
 import { ZCC_Cache } from "./cache.extension.mjs";
 import { ZCC_Configuration } from "./configuration.extension.mjs";
+import { ZCC_Fetch } from "./fetch.extension.mjs";
 import { ILogger, ZCC_Logger } from "./logger.extension.mjs";
 
 const NONE = -1;
@@ -306,7 +307,7 @@ async function Bootstrap(
         ["logger", ZCC_Logger],
         ["configuration", ZCC_Configuration],
         ["cache", ZCC_Cache],
-        // ["fetch", ZCC_Fetch],
+        ["fetch", ZCC_Fetch],
       ],
     });
     await boilerplate.wire();
@@ -448,6 +449,7 @@ export const TEST_WIRING = {
     MODULE_MAPPINGS: () => MODULE_MAPPINGS,
     REVERSE_MODULE_MAPPING: () => REVERSE_MODULE_MAPPING,
     Reset: () => {
+      process.removeAllListeners();
       MODULE_MAPPINGS = new Map();
       LOADED_MODULES = new Map();
       LOADED_LIFECYCLES = new Map();

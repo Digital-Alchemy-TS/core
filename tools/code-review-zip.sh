@@ -3,6 +3,8 @@
 # Destination of the zip file
 zip_file="review.zip"
 
+rm "$zip_file"
+
 # Read .zipignore patterns into an array
 readarray -t ignore_patterns < .zipignore
 

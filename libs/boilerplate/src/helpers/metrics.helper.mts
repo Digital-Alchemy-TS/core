@@ -6,7 +6,7 @@ import { Counter, Gauge, Histogram } from "prom-client";
  */
 export const CACHE_DELETE_OPERATIONS_TOTAL = new Counter({
   help: "Total number of cache delete operations",
-  labelNames: ["prefix", "key"],
+  labelNames: ["prefix", "key"] as const,
   name: "cache_delete_operations_total",
 });
 
@@ -15,7 +15,7 @@ export const CACHE_DELETE_OPERATIONS_TOTAL = new Counter({
  */
 export const CACHE_GET_OPERATIONS_TOTAL = new Counter({
   help: "Total number of cache get operations",
-  labelNames: ["prefix", "key", "hit_miss"],
+  labelNames: ["prefix", "key", "hit_miss"] as const,
   name: "cache_get_operations_total",
 });
 
@@ -24,7 +24,7 @@ export const CACHE_GET_OPERATIONS_TOTAL = new Counter({
  */
 export const CACHE_DRIVER_ERROR_COUNT = new Counter({
   help: "Counts the number of errors caught in the cache driver",
-  labelNames: ["methodName"],
+  labelNames: ["methodName"] as const,
   name: "CACHE_DRIVER_ERROR_COUNT",
 });
 
@@ -33,7 +33,7 @@ export const CACHE_DRIVER_ERROR_COUNT = new Counter({
  */
 export const CACHE_SET_OPERATIONS_TOTAL = new Counter({
   help: "Total number of cache set operations",
-  labelNames: ["prefix", "key"],
+  labelNames: ["prefix", "key"] as const,
   name: "cache_set_operations_total",
 });
 

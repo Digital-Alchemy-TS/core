@@ -97,3 +97,5 @@ export function PEAT<T = number>(length: number, fill?: T): T[] {
     (_, index) => fill ?? ((index + ARRAY_OFFSET) as T),
   );
 }
+
+export type TBlackHole = void | unknown | Promise<void | unknown>;

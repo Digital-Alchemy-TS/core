@@ -1,4 +1,4 @@
-import { is } from "@zcc/utilities";
+import { is, TBlackHole } from "@zcc/utilities";
 import type { Get } from "type-fest";
 
 import { ENTITY_SETUP, iCallService, MODULE_SETUP } from "../../dynamic.mjs";
@@ -30,14 +30,12 @@ export type PICK_SERVICE<
   [key in DOMAIN]: `${key}.${keyof iCallService[key] & string}`;
 }[DOMAIN];
 
-export type PICK_SERVICE_PARAMETERS<SERVICE extends PICK_SERVICE> = Get<
-  iCallService,
-  SERVICE
-> extends (
-  serviceParams: infer ServiceParams,
-) => unknown | void | Promise<void> | Promise<unknown>
-  ? ServiceParams
-  : never;
+export type PICK_SERVICE_PARAMETERS<SERVICE extends PICK_SERVICE> =
+  Get<iCallService, SERVICE> extends (
+    serviceParams: infer ServiceParams,
+  ) => TBlackHole
+    ? ServiceParams
+    : never;
 
 export function entity_split(
   entity: { entity_id: PICK_ENTITY } | PICK_ENTITY,

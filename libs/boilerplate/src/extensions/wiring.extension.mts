@@ -215,11 +215,13 @@ async function WireService(
   }
   mappings[service] = definition;
   MODULE_MAPPINGS.set(project, mappings);
+  const context = `${project}:${service}`;
 
   // const context = `${project}:${service}`;
   try {
     // logger.trace(`Initializing %s#%s`, project, service);
     const resolved = await definition({
+      context,
       event: ZCC.event,
       getConfig: <T,>(
         property: string | [project: string, property: string],
@@ -228,9 +230,7 @@ async function WireService(
       lifecycle,
       loader: ContextLoader(project),
       // logger gets defined first, so this really is only for the start of the start of bootstrapping
-      logger: ZCC.logger
-        ? ZCC.logger.context(`${project}:${service}`)
-        : undefined,
+      logger: ZCC.logger ? ZCC.logger.context(context) : undefined,
     });
     REVERSE_MODULE_MAPPING.set(definition, [project, service]);
     const loaded = LOADED_MODULES.get(project) ?? {};

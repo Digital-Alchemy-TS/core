@@ -1,4 +1,4 @@
-import { InternalError } from "@zcc/boilerplate";
+import { InternalError, TServiceParams } from "@zcc/boilerplate";
 import { SECOND, sleep, START, ZCC } from "@zcc/utilities";
 import { exit } from "process";
 import WS from "ws";
@@ -6,8 +6,8 @@ import WS from "ws";
 import {
   BASE_URL,
   CRASH_REQUESTS_PER_SEC,
-  RENDER_TIMEOUT,
   RETRY_INTERVAL,
+  SOCKET_AUTO_CONNECT,
   TOKEN,
   WARN_REQUESTS_PER_SEC,
   WEBSOCKET_URL,
@@ -27,7 +27,6 @@ import {
   SOCKET_MESSAGES,
   SocketMessageDTO,
 } from "../helpers/types/websocket.helper.mjs";
-import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
 let connection: WS;
 const CONNECTION_OPEN = 1;
@@ -36,35 +35,102 @@ const CLEANUP_INTERVAL = 5;
 const PING_INTERVAL = 10;
 let messageCount = START;
 
-export function WebsocketAPI() {
-  const logger = LIB_HOME_ASSISTANT.childLogger("websocket-api");
+export function WebsocketAPIService({
+  logger,
+  getConfig,
+  lifecycle,
+}: TServiceParams) {
   let token: string;
   let WARN_REQUESTS: number;
   let CRASH_REQUESTS: number;
-  let renderTimeout: number;
   let AUTH_TIMEOUT: ReturnType<typeof setTimeout>;
   let baseUrl: string;
-  const subscriptionCallbacks = new Map<number, (result) => void>();
   let websocketUrl: string;
   let pingInterval: ReturnType<typeof setInterval>;
   let cleanupInterval: ReturnType<typeof setInterval>;
   let retryInterval: number;
+  let autoConnect = false;
+
   let MESSAGE_TIMESTAMPS: number[] = [];
   const waitingCallback = new Map<number, (result) => void>();
 
-  LIB_HOME_ASSISTANT.lifecycle.onPostConfig(() => {
-    token = LIB_HOME_ASSISTANT.getConfig<string>(TOKEN);
-    baseUrl = LIB_HOME_ASSISTANT.getConfig<string>(BASE_URL);
-    websocketUrl = LIB_HOME_ASSISTANT.getConfig<string>(WEBSOCKET_URL);
-    WARN_REQUESTS = LIB_HOME_ASSISTANT.getConfig<number>(WARN_REQUESTS_PER_SEC);
-    CRASH_REQUESTS = LIB_HOME_ASSISTANT.getConfig<number>(
-      CRASH_REQUESTS_PER_SEC,
+  // Load configurations
+  lifecycle.onPostConfig(() => {
+    autoConnect = getConfig<boolean>(SOCKET_AUTO_CONNECT);
+    token = getConfig<string>(TOKEN);
+    baseUrl = getConfig<string>(BASE_URL);
+    websocketUrl = getConfig<string>(WEBSOCKET_URL);
+    WARN_REQUESTS = getConfig<number>(WARN_REQUESTS_PER_SEC);
+    CRASH_REQUESTS = getConfig<number>(CRASH_REQUESTS_PER_SEC);
+    retryInterval = getConfig<number>(RETRY_INTERVAL);
+    logger.trace(
+      { CRASH_REQUESTS, WARN_REQUESTS, autoConnect, retryInterval },
+      `Load configuration`,
     );
-    renderTimeout = LIB_HOME_ASSISTANT.getConfig<number>(RENDER_TIMEOUT);
-    retryInterval = LIB_HOME_ASSISTANT.getConfig<number>(RETRY_INTERVAL);
   });
 
-  function teardown() {
+  // Start the socket
+  lifecycle.onBootstrap(async () => {
+    if (autoConnect) {
+      logger.debug(`Auto starting connection`);
+      await init();
+    }
+  });
+
+  // Set up intervals
+  lifecycle.onReady(() => {
+    if (pingInterval) {
+      clearInterval(pingInterval);
+    }
+    if (cleanupInterval) {
+      clearInterval(cleanupInterval);
+    }
+    pingInterval = setInterval(ping, PING_INTERVAL * SECOND);
+    logger.trace(`Starting ping interval`);
+    cleanupInterval = setInterval(() => {
+      const now = Date.now();
+      MESSAGE_TIMESTAMPS = MESSAGE_TIMESTAMPS.filter(
+        time => time > now - SECOND,
+      );
+    }, CLEANUP_INTERVAL * SECOND);
+  });
+
+  lifecycle.onShutdownStart(async () => {
+    logger.debug(`Tearing down connection`);
+    await teardown();
+    if (cleanupInterval) {
+      clearInterval(cleanupInterval);
+    }
+    if (pingInterval) {
+      clearInterval(pingInterval);
+    }
+  });
+
+  async function ping() {
+    if (!CONNECTION_ACTIVE) {
+      return;
+    }
+    try {
+      logger.trace(`ping`);
+      const pong = await sendMessage({
+        type: HASSIO_WS_COMMAND.ping,
+      });
+      if (pong) {
+        return;
+      }
+      // Tends to happen when HA resets
+      // Resolution is to re-connect when it's up again
+      logger.error(`Failed to pong!`);
+    } catch (error) {
+      logger.error({ error }, `ping error`);
+    }
+    logger.debug(`[ping] teardown`);
+    await teardown();
+    logger.debug(`[ping] re-init`);
+    await init();
+  }
+
+  async function teardown() {
     if (!connection) {
       return;
     }
@@ -136,49 +202,6 @@ export function WebsocketAPI() {
       }/api/websocket`
     );
   }
-
-  LIB_HOME_ASSISTANT.lifecycle.onReady(() => {
-    if (pingInterval) {
-      clearInterval(pingInterval);
-    }
-    pingInterval = setInterval(async () => {
-      if (!CONNECTION_ACTIVE) {
-        return;
-      }
-      try {
-        const pong = await sendMessage({
-          type: HASSIO_WS_COMMAND.ping,
-        });
-        if (pong) {
-          return;
-        }
-        // Tends to happen when HA resets
-        // Resolution is to re-connect when it's up again
-        logger.error(`Failed to pong!`);
-      } catch (error) {
-        logger.error({ error }, `ping error`);
-      }
-      teardown();
-      init();
-    }, PING_INTERVAL * SECOND);
-    if (cleanupInterval) {
-      clearInterval(cleanupInterval);
-    }
-    cleanupInterval = setInterval(() => {
-      const now = Date.now();
-      MESSAGE_TIMESTAMPS = MESSAGE_TIMESTAMPS.filter(
-        time => time > now - SECOND,
-      );
-    }, CLEANUP_INTERVAL * SECOND);
-  });
-  LIB_HOME_ASSISTANT.lifecycle.onShutdownStart(() => {
-    if (cleanupInterval) {
-      clearInterval(cleanupInterval);
-    }
-    if (pingInterval) {
-      clearInterval(pingInterval);
-    }
-  });
 
   /**
    * Set up a new websocket connection to home assistant
@@ -288,14 +311,9 @@ export function WebsocketAPI() {
   }
 
   function onMessageEvent(id: number, message: SocketMessageDTO) {
-    eventManager.onMessage(message);
     if (waitingCallback.has(id)) {
       const f = waitingCallback.get(id);
       waitingCallback.delete(id);
-      f(message.event.result);
-    }
-    if (subscriptionCallbacks.has(id)) {
-      const f = subscriptionCallbacks.get(id);
       f(message.event.result);
     }
   }
@@ -323,9 +341,28 @@ export function WebsocketAPI() {
     });
   }
 
+  ZCC.hass.socket = {
+    getConnectionActive: () => CONNECTION_ACTIVE,
+    init,
+    sendMessage,
+    teardown,
+  };
+
   return {
     getConnectionActive: () => CONNECTION_ACTIVE,
+    sendAuth,
     sendMessage,
     teardown,
   };
 }
+
+export type HassSocket = {
+  teardown: () => Promise<void>;
+  getConnectionActive: () => boolean;
+  init: () => Promise<void>;
+  sendMessage: <RESPONSE_VALUE extends unknown = unknown>(
+    data: SOCKET_MESSAGES,
+    waitForResponse?: boolean,
+    subscription?: () => void,
+  ) => Promise<RESPONSE_VALUE>;
+};

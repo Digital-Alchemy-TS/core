@@ -1,3 +1,4 @@
+import { TServiceParams } from "@zcc/boilerplate";
 import {
   eachSeries,
   EMPTY,
@@ -11,14 +12,14 @@ import {
 import dayjs from "dayjs";
 import { get, set } from "object-path";
 import { exit, nextTick } from "process";
+import { Get } from "type-fest";
 import { v4 } from "uuid";
 
-import {
-  HASS_ONMESSAGE_CALLBACK,
-  HassOnMessageCallbackData,
-} from "../helpers/dynamic.helper.mjs";
 import { HASSIO_WS_COMMAND } from "../helpers/types/constants.helper.mjs";
-import { HassEventDTO } from "../helpers/types/entity-state.helper.mjs";
+import {
+  GenericEntityDTO,
+  HassEventDTO,
+} from "../helpers/types/entity-state.helper.mjs";
 import {
   ALL_DOMAINS,
   ENTITY_STATE,
@@ -27,9 +28,7 @@ import {
 import {
   EntityHistoryDTO,
   EntityHistoryResult,
-  SocketMessageDTO,
 } from "../helpers/types/websocket.helper.mjs";
-import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
 export type OnHassEventOptions = {
   event_type: string;
@@ -49,9 +48,8 @@ type Watcher<ENTITY_ID extends PICK_ENTITY = PICK_ENTITY> = {
   id: string;
   type: "once" | "dynamic" | "annotation";
 };
-type BindingPair = [context: string, callback: AnnotationPassThrough];
 
-export function EntityManager() {
+export function HAEntityManager({ logger }: TServiceParams) {
   /**
    * MASTER_STATE.switch.desk_light = {entity_id,state,attributes,...}
    */
@@ -64,53 +62,6 @@ export function EntityManager() {
   const entityWatchers = new Map<PICK_ENTITY, Watcher[]>();
 
   let init = false;
-  const logger = LIB_HOME_ASSISTANT.childLogger("entity-manager");
-  const bindings = new Map<OnHassEventOptions, BindingPair>();
-
-  function onMessage(message: SocketMessageDTO): void {
-    if (message.event.event_type === "state_changed") {
-      // This needs to explicitly happen first to ensure data availability
-      onStateChanged(message.event);
-    }
-    const activate: [OnHassEventOptions, BindingPair][] = [];
-    bindings.forEach((callback, options) => {
-      if (options.event_type !== message.event.event_type) {
-        return;
-      }
-      activate.push([options, callback]);
-    });
-    nextTick(async () => {
-      await eachSeries(activate, async ([data, [context, exec]]) => {
-        if (is.function(data.match)) {
-          const filterMatch = data.match(message.event);
-          if (!filterMatch) {
-            return;
-          }
-        }
-        logger.trace({ context }, `[@OnHassEvent]({%s})`, data.event_type);
-        const start = Date.now();
-        await exec(message.event);
-        ZCC.event.emit(HASS_ONMESSAGE_CALLBACK, {
-          context,
-          event: data.event_type,
-          time: Date.now() - start,
-        } as HassOnMessageCallbackData);
-      });
-    });
-  }
-
-  function onStateChanged(event: HassEventDTO): void {
-    // Always keep entity manager up to date
-    // It also implements the interrupt internally
-    const { new_state, old_state } = event.data;
-    if (!new_state) {
-      // FIXME: probably removal
-      return;
-    }
-    logger.trace(``);
-    onEntityUpdate(new_state.entity_id, new_state, old_state);
-  }
-
   /**
    * Pretend like this has an `@OnEvent(HA_EVENT_STATE_CHANGE)` on it.
    * Socket service calls this separately from the event to ensure data is available here first.
@@ -155,7 +106,7 @@ export function EntityManager() {
       property.startsWith(i),
     );
     if (!valid) {
-      return;
+      return undefined;
     }
     const current = byId<ENTITY>(entity);
     const defaultValue = (property === "state" ? undefined : {}) as Get<
@@ -210,7 +161,7 @@ export function EntityManager() {
     payload: Omit<EntityHistoryDTO<ENTITES>, "type">,
   ) {
     logger.trace(`Finding stuff`);
-    const result = await socket.sendMessage({
+    const result = await ZCC.hass.socket.sendMessage({
       ...payload,
       end_time: dayjs(payload.end_time).toISOString(),
       start_time: dayjs(payload.start_time).toISOString(),
@@ -281,8 +232,8 @@ export function EntityManager() {
 
   function createEntityProxy(entity: PICK_ENTITY) {
     return new Proxy({} as ENTITY_STATE<typeof entity>, {
-      get: (t, property: string) => proxyGetLogic(entity, property),
-      set: (t, property: string, value: unknown) =>
+      get: (_, property: string) => proxyGetLogic(entity, property),
+      set: (_, property: string, value: unknown) =>
         proxySetLogic(entity, property, value),
     });
   }
@@ -293,7 +244,7 @@ export function EntityManager() {
    * Refresh occurs through home assistant rest api, and is not bound by the websocket lifecycle
    */
   async function refresh(recursion = START): Promise<void> {
-    const states = await fetch.getAllEntities();
+    const states = await ZCC.hass.fetch.getAllEntities();
     if (is.empty(states)) {
       if (recursion > MAX_ATTEMPTS) {
         logger.fatal(
@@ -344,7 +295,7 @@ export function EntityManager() {
     return is.undefined(get(MASTER_STATE, entityId));
   }
 
-  return {
+  const out = {
     byId,
     createEntityProxy,
     findByDomain,
@@ -353,7 +304,28 @@ export function EntityManager() {
     isEntity,
     listEntities,
     nextState,
-    onMessage,
     refresh,
-  };
+  } as THAEntityManager;
+
+  ZCC.hass.entity = out;
+
+  return out;
 }
+
+export type THAEntityManager = {
+  byId: <ENTITY_ID extends `${string}.${string}`>(
+    entity_id: ENTITY_ID,
+  ) => ENTITY_STATE<ENTITY_ID>;
+  createEntityProxy: (entity: PICK_ENTITY) => GenericEntityDTO;
+  // findByDomain: <DOMAIN extends string = string>(target: DOMAIN) => ENTITY_STATE<...>[];
+  getEntities: <T extends GenericEntityDTO = GenericEntityDTO>(
+    entityId: PICK_ENTITY[],
+  ) => T[];
+  // history: <ENTITES extends `${string}.${string}`[]>(payload: Omit<...>) => Promise<...>;
+  isEntity: (entityId: PICK_ENTITY) => entityId is `${string}.${string}`;
+  listEntities: () => PICK_ENTITY[];
+  nextState: <ID extends `${string}.${string}` = `${string}.${string}`>(
+    entity_id: ID,
+  ) => Promise<ENTITY_STATE<ID>>;
+  refresh: (recursion?: number) => Promise<void>;
+};

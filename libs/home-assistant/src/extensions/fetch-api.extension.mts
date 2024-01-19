@@ -1,4 +1,4 @@
-import { FilteredFetchArguments, TFetchBody } from "@zcc/boilerplate";
+import { TFetch, TFetchBody, TServiceParams } from "@zcc/boilerplate";
 import { DOWN, is, NO_CHANGE, SECOND, UP, ZCC } from "@zcc/utilities";
 import dayjs from "dayjs";
 
@@ -25,7 +25,6 @@ import {
   PICK_SERVICE,
   PICK_SERVICE_PARAMETERS,
 } from "../helpers/types/utility.helper.mjs";
-import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 import { BASE_URL, TOKEN } from "../index.mjs";
 
 type SendBody<
@@ -36,20 +35,27 @@ type SendBody<
   state?: STATE;
 };
 
-export function HAFetchAPI() {
-  const baseUrl = LIB_HOME_ASSISTANT.getConfig<string>(BASE_URL);
-  const token = LIB_HOME_ASSISTANT.getConfig<string>(TOKEN);
-  const logger = LIB_HOME_ASSISTANT.childLogger("FetchAPI");
+export function HAFetchAPI({
+  logger,
+  getConfig,
+  lifecycle,
+  context,
+}: TServiceParams) {
+  let baseUrl: string;
+  let token: string;
+  let fetch: TFetch;
 
-  async function fetch<T, BODY extends TFetchBody = object>(
-    fetchWith: FilteredFetchArguments<BODY>,
-  ): Promise<T> {
-    return await ZCC.fetch.fetch({
-      ...fetchWith,
+  // Load configurations
+  lifecycle.onPostConfig(() => {
+    token = getConfig<string>(TOKEN);
+    baseUrl = getConfig<string>(BASE_URL);
+    fetch = ZCC.createFetcher({
       baseUrl,
       headers: { Authorization: `Bearer ${token}` },
-    });
-  }
+      logContext: context,
+    }).fetch;
+    logger.trace(`Load configuration`);
+  });
 
   async function calendarSearch({
     calendar,
@@ -169,7 +175,8 @@ export function HAFetchAPI() {
   ): Promise<void> {
     logger.trace({ name: event, ...data }, `Firing event`);
     const response = await fetch<{ message: string }>({
-      body: data,
+      // body: data,
+      body: {},
       method: "post",
       url: `/api/events/${event}`,
     });
@@ -183,7 +190,7 @@ export function HAFetchAPI() {
     return await fetch<GenericEntityDTO[]>({ url: `/api/states` });
   }
 
-  async function getConfig(): Promise<HassConfig> {
+  async function getHassConfig(): Promise<HassConfig> {
     logger.trace(`Get config`);
     return await fetch({ url: `/api/config` });
   }
@@ -239,7 +246,7 @@ export function HAFetchAPI() {
     });
   }
 
-  return {
+  const out: THAFetchAPI = {
     calendarSearch,
     callService,
     checkConfig,
@@ -249,11 +256,64 @@ export function HAFetchAPI() {
     fetchEntityHistory,
     fireEvent,
     getAllEntities,
-    getConfig,
+    getConfig: getHassConfig,
     getLogs,
     getRawLogs,
     listServices,
     updateEntity,
     webhook,
   };
+
+  ZCC.hass.fetch = out;
+  return out;
 }
+
+export type THAFetchAPI = {
+  calendarSearch: ({
+    calendar,
+    start,
+    end,
+  }: CalendarFetchOptions) => Promise<CalendarEvent[]>;
+  callService: <SERVICE extends `${string}.${string}`>(
+    serviceName: SERVICE,
+    data: PICK_SERVICE_PARAMETERS<SERVICE>,
+  ) => Promise<ENTITY_STATE<PICK_ENTITY>[]>;
+  checkConfig: () => Promise<CheckConfigResult>;
+  fetch: TFetch;
+  fetchEntityCustomizations: <
+    T extends Record<never, unknown> = Record<
+      "global" | "local",
+      Record<string, string>
+    >,
+  >(
+    entityId: string | string[],
+  ) => Promise<T>;
+  fetchEntityHistory: <
+    ENTITY extends PICK_ENTITY = PICK_ENTITY,
+    T extends ENTITY_STATE<ENTITY> = ENTITY_STATE<ENTITY>,
+  >(
+    entity_id: ENTITY,
+    from: Date,
+    to: Date,
+    extra?: {
+      minimal_response?: "";
+    },
+  ) => Promise<T[]>;
+  fireEvent: <DATA extends object = object>(
+    event: string,
+    data?: DATA,
+  ) => Promise<void>;
+  getAllEntities: () => Promise<GenericEntityDTO[]>;
+  getConfig: () => Promise<HassConfig>;
+  getLogs: () => Promise<HomeAssistantServerLogItem[]>;
+  getRawLogs: () => Promise<string>;
+  listServices: () => Promise<HassServiceDTO[]>;
+  updateEntity: <
+    STATE extends string | number = string,
+    ATTRIBUTES extends object = object,
+  >(
+    entity_id: PICK_ENTITY,
+    { attributes, state }: SendBody<STATE, ATTRIBUTES>,
+  ) => Promise<void>;
+  webhook: (name: string, data?: object) => Promise<void>;
+};

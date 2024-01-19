@@ -1,6 +1,12 @@
 import deepEqual from "deep-equal";
 
-import { EMPTY, EVEN, NONE, START } from "../helpers/utilities.helper.mjs";
+import {
+  EMPTY,
+  EVEN,
+  NONE,
+  START,
+  TBlackHole,
+} from "../helpers/utilities.helper.mjs";
 
 type MaybeEmptyTypes =
   | string
@@ -10,9 +16,7 @@ type MaybeEmptyTypes =
   | Map<unknown, unknown>
   | object;
 
-type MaybeFunction = (
-  ...parameters: unknown[]
-) => unknown | void | Promise<unknown | void>;
+type MaybeFunction = (...parameters: unknown[]) => TBlackHole;
 
 const HASH_PRIME_MULTIPLIER = 31;
 

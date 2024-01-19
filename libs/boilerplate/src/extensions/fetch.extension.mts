@@ -230,7 +230,7 @@ export function ZCC_Fetch({ logger }: TServiceParams) {
   return createFetcher;
 }
 
-export type TFetch = <T, BODY extends object = undefined>(
+export type TFetch = <T, BODY extends object = object>(
   fetchWith: Partial<FetchArguments<BODY>>,
 ) => Promise<T>;
 

@@ -1,11 +1,26 @@
 import { ZCC } from "@zcc/utilities";
 
 import {
+  HACallProxy,
+  THACallProxy,
+} from "./extensions/call-proxy.extension.mjs";
+import {
+  HAEntityManager,
+  THAEntityManager,
+} from "./extensions/entity-manager.extension.mjs";
+import { HAFetchAPI, THAFetchAPI } from "./extensions/fetch-api.extension.mjs";
+import { HAUtilities, THAUtils } from "./extensions/utilities.extension.mjs";
+import {
+  HassSocket,
+  WebsocketAPIService,
+} from "./extensions/websocket-api.extension.mjs";
+import {
   BASE_URL,
   CRASH_REQUESTS_PER_SEC,
   HOME_ASSISTANT_PACKAGE_FOLDER,
   RENDER_TIMEOUT,
   RETRY_INTERVAL,
+  SOCKET_AUTO_CONNECT,
   TALK_BACK_BASE_URL,
   TOKEN,
   VERIFICATION_FILE,
@@ -47,6 +62,11 @@ export const LIB_HOME_ASSISTANT = ZCC.createLibrary({
       description: "How often to retry connecting on connection failure (ms).",
       type: "number",
     },
+    [SOCKET_AUTO_CONNECT]: {
+      default: true,
+      description: "Websocket must be manually initialized if set to false",
+      type: "boolean",
+    },
     [TALK_BACK_BASE_URL]: {
       default: "http://192.168.1.1:7000",
       description: "Base url to use with callbacks in home assistant",
@@ -59,7 +79,7 @@ export const LIB_HOME_ASSISTANT = ZCC.createLibrary({
       type: "string",
     },
     [VERIFICATION_FILE]: {
-      default: "digital_alchemy_configuration",
+      default: "zcc_configuration",
       description:
         "Target file for storing app configurations within the package folder.",
       type: "string",
@@ -75,5 +95,27 @@ export const LIB_HOME_ASSISTANT = ZCC.createLibrary({
       type: "string",
     },
   },
-  library: "home-assistant",
+  name: "home-assistant",
+  services: [
+    ["fetch", HAFetchAPI],
+    ["socket", WebsocketAPIService],
+    ["call", HACallProxy],
+    ["entity", HAEntityManager],
+    ["utils", HAUtilities],
+  ],
 });
+
+type HassDefinition = {
+  socket: HassSocket;
+  fetch: THAFetchAPI;
+  call: THACallProxy;
+  entity: THAEntityManager;
+  utils: THAUtils;
+};
+
+declare module "@zcc/utilities" {
+  export interface ZCCDefinition {
+    hass: HassDefinition;
+  }
+}
+ZCC.hass = {} as HassDefinition;

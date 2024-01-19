@@ -1,5 +1,6 @@
-type tReturn = void | unknown;
-export type LifecycleCallback = () => tReturn | Promise<tReturn>;
+import { TBlackHole } from "@zcc/utilities";
+
+export type LifecycleCallback = () => TBlackHole;
 export type LifecyclePrioritizedCallback = [
   callback: LifecycleCallback,
   priority: number,

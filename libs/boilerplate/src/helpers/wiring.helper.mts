@@ -37,6 +37,7 @@ export type TGetConfig = <T>(
 ) => T;
 
 export type TServiceParams<T extends object = object> = {
+  context: string;
   logger: ILogger;
   lifecycle: TLifecycleBase;
   loader: Loader<T>;

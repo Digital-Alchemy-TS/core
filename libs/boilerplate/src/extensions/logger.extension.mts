@@ -194,7 +194,7 @@ function log(
   standardLogger(method, context, ...parameters);
 }
 
-export function ZCC_Logger({ lifecycle, getConfig }: TServiceParams) {
+export function ZCC_Logger({ lifecycle }: TServiceParams) {
   // tuned to be most useful in debugging this
   inspect.defaultOptions.colors = true;
   inspect.defaultOptions.depth = 10;

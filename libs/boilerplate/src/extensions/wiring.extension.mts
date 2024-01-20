@@ -266,9 +266,6 @@ async function WireService(
 
   // logger gets defined first, so this really is only for the start of the start of bootstrapping
   const logger = ZCC.logger ? ZCC.logger.context(context) : undefined;
-  const getConfig = (property: string) => {
-    return ZCC.config.get([project, property]);
-  };
 
   try {
     logger?.trace(`Initializing`);
@@ -291,9 +288,7 @@ async function WireService(
         API_CACHE.set(project, generated);
         return generated;
       },
-      getConfig: getConfig as TGetConfig,
       lifecycle,
-      loader,
       logger,
     });
     REVERSE_MODULE_MAPPING.set(definition, [project, service]);

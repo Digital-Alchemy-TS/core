@@ -2,14 +2,12 @@ import { TServiceParams } from "@zcc/boilerplate";
 import {
   domain,
   ENTITY_STATE,
-  HAEntityManager,
   LIB_HOME_ASSISTANT,
   PICK_ENTITY,
 } from "@zcc/home-assistant";
 import { CronExpression, each, is, ZCC } from "@zcc/utilities";
 
 import { LIB_AUTOMATION_LOGIC } from "../automation-logic.module.mjs";
-import { AGGRESSIVE_SCENES } from "../helpers/configuration.helper.mjs";
 import {
   AGGRESSIVE_SCENES_ADJUSTMENT,
   AggressiveScenesAdjustmentData,
@@ -17,17 +15,15 @@ import {
 
 export function AggressiveScenes({
   logger,
-  getConfig,
   lifecycle,
-  loader,
   getApis,
-}: TServiceParams<typeof LIB_AUTOMATION_LOGIC>) {
+}: TServiceParams) {
   let aggressiveScenes = false;
 
   const hass = getApis(LIB_HOME_ASSISTANT);
   // loader("")
   lifecycle.onPostConfig(() => {
-    aggressiveScenes = getConfig("AGGRESSIVE_SCENES");
+    aggressiveScenes = LIB_AUTOMATION_LOGIC.getConfig("AGGRESSIVE_SCENES");
   });
 
   ZCC.cron(CronExpression.EVERY_30_SECONDS, async () => {

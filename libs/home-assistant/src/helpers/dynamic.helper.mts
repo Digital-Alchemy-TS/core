@@ -36,7 +36,7 @@ export type HassOnUpdateEventData = {
   time: number;
 };
 
-export const HASS_ONBACKUP = "HASS_ONBACKUP";
+export const HASS_ON_BACKUP = "HASS_ON_BACKUP";
 export type HassOnBackupData = {
   time: number;
 };

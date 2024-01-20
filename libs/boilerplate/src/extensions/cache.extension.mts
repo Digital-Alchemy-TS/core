@@ -27,11 +27,7 @@ export enum CacheProviders {
   memory = "memory",
 }
 
-export function ZCC_Cache({
-  logger,
-  getConfig,
-  lifecycle,
-}: TServiceParams): TCache {
+export function ZCC_Cache({ logger, lifecycle }: TServiceParams): TCache {
   let prefix: string = "";
   let DEFAULT_TTL: number;
   let provider: `${CacheProviders}`;

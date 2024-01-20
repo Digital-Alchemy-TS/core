@@ -28,9 +28,10 @@ export type ApplicationConfigurationOptions<
   configuration?: C;
 };
 
-export type TConfigurable =
-  | ZCCLibraryDefinition<ServiceMap, OptionalModuleConfiguration>
-  | ZCCApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
+export type TConfigurable<
+  S extends ServiceMap = ServiceMap,
+  C extends OptionalModuleConfiguration = OptionalModuleConfiguration,
+> = ZCCLibraryDefinition<S, C> | ZCCApplicationDefinition<S, C>;
 
 export type TGetConfig<PARENT extends TConfigurable = TConfigurable> = <
   K extends keyof ExtractConfig<PARENT>,
@@ -47,18 +48,24 @@ export type GetApisResult<S extends ServiceMap> = {
 type ExtractConfig<T> =
   T extends ZCCLibraryDefinition<ServiceMap, infer C> ? C : never;
 
-export type TServiceParams<PARENT extends TConfigurable = TConfigurable> = {
+type TGetApi = <S extends ServiceMap, C extends OptionalModuleConfiguration>(
+  project: TConfigurable<S, C>,
+) => GetApisResult<S>;
+
+export type TServiceParams = {
   context: string;
   logger: ILogger;
   lifecycle: TLifecycleBase;
-  loader: Loader<PARENT>;
-  getConfig: TGetConfig<PARENT>;
   event: EventEmitter;
-  getApis: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
-    project: ZCCLibraryDefinition<S, C> | ZCCApplicationDefinition<S, C>,
-  ) => GetApisResult<S>;
+  getApis: TGetApi;
   cache: TCache;
 };
+export type GetApis<T> =
+  T extends ZCCLibraryDefinition<infer S, OptionalModuleConfiguration>
+    ? GetApisResult<S>
+    : T extends ZCCApplicationDefinition<infer S, OptionalModuleConfiguration>
+      ? GetApisResult<S>
+      : never;
 
 type CastConfigResult<T extends AnyConfig> = T extends StringConfig
   ? string
@@ -78,9 +85,7 @@ export type Loader<PARENT extends TConfigurable> = <
   : ReturnType<PARENT["services"][K]>;
 
 export type ServiceFunction<R = unknown> = (
-  params: TServiceParams<
-    ZCCLibraryDefinition<ServiceMap, OptionalModuleConfiguration>
-  >,
+  params: TServiceParams,
 ) => R | Promise<R>;
 export type ServiceMap = Record<string, ServiceFunction>;
 export type LibraryConfigurationOptions<

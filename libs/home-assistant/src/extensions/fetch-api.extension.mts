@@ -25,7 +25,7 @@ import {
   PICK_SERVICE,
   PICK_SERVICE_PARAMETERS,
 } from "../helpers/types/utility.helper.mjs";
-import { BASE_URL, TOKEN } from "../index.mjs";
+import { LIB_HOME_ASSISTANT } from "../index.mjs";
 
 type SendBody<
   STATE extends string | number = string,
@@ -35,20 +35,15 @@ type SendBody<
   state?: STATE;
 };
 
-export function HAFetchAPI({
-  logger,
-  getConfig,
-  lifecycle,
-  context,
-}: TServiceParams) {
+export function HAFetchAPI({ logger, lifecycle, context }: TServiceParams) {
   let baseUrl: string;
   let token: string;
   let fetch: TFetch;
 
   // Load configurations
   lifecycle.onPostConfig(() => {
-    token = getConfig<string>(TOKEN);
-    baseUrl = getConfig<string>(BASE_URL);
+    token = LIB_HOME_ASSISTANT.getConfig("TOKEN");
+    baseUrl = LIB_HOME_ASSISTANT.getConfig("BASE_URL");
     fetch = ZCC.createFetcher({
       baseUrl,
       context,
@@ -246,7 +241,7 @@ export function HAFetchAPI({
     });
   }
 
-  const out: THAFetchAPI = {
+  return {
     calendarSearch,
     callService,
     checkConfig,
@@ -263,57 +258,4 @@ export function HAFetchAPI({
     updateEntity,
     webhook,
   };
-
-  ZCC.hass.fetch = out;
-  return out;
 }
-
-export type THAFetchAPI = {
-  calendarSearch: ({
-    calendar,
-    start,
-    end,
-  }: CalendarFetchOptions) => Promise<CalendarEvent[]>;
-  callService: <SERVICE extends `${string}.${string}`>(
-    serviceName: SERVICE,
-    data: PICK_SERVICE_PARAMETERS<SERVICE>,
-  ) => Promise<ENTITY_STATE<PICK_ENTITY>[]>;
-  checkConfig: () => Promise<CheckConfigResult>;
-  fetch: TFetch;
-  fetchEntityCustomizations: <
-    T extends Record<never, unknown> = Record<
-      "global" | "local",
-      Record<string, string>
-    >,
-  >(
-    entityId: string | string[],
-  ) => Promise<T>;
-  fetchEntityHistory: <
-    ENTITY extends PICK_ENTITY = PICK_ENTITY,
-    T extends ENTITY_STATE<ENTITY> = ENTITY_STATE<ENTITY>,
-  >(
-    entity_id: ENTITY,
-    from: Date,
-    to: Date,
-    extra?: {
-      minimal_response?: "";
-    },
-  ) => Promise<T[]>;
-  fireEvent: <DATA extends object = object>(
-    event: string,
-    data?: DATA,
-  ) => Promise<void>;
-  getAllEntities: () => Promise<GenericEntityDTO[]>;
-  getConfig: () => Promise<HassConfig>;
-  getLogs: () => Promise<HomeAssistantServerLogItem[]>;
-  getRawLogs: () => Promise<string>;
-  listServices: () => Promise<HassServiceDTO[]>;
-  updateEntity: <
-    STATE extends string | number = string,
-    ATTRIBUTES extends object = object,
-  >(
-    entity_id: PICK_ENTITY,
-    { attributes, state }: SendBody<STATE, ATTRIBUTES>,
-  ) => Promise<void>;
-  webhook: (name: string, data?: object) => Promise<void>;
-};

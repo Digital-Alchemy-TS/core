@@ -1,5 +1,5 @@
-import { InternalError, TServiceParams } from "@zcc/boilerplate";
-import { INCREMENT, is, SECOND, sleep, START, ZCC } from "@zcc/utilities";
+import { GetApis, InternalError, TServiceParams } from "@zcc/boilerplate";
+import { INCREMENT, is, SECOND, sleep, START } from "@zcc/utilities";
 import { exit } from "process";
 
 import {
@@ -14,6 +14,7 @@ import {
   PICK_SERVICE,
   PICK_SERVICE_PARAMETERS,
 } from "../helpers/types/utility.helper.mjs";
+import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
 let services: HassServiceDTO[];
 let domains: string[];
@@ -31,15 +32,22 @@ export function HACallProxy({
   logger,
   lifecycle,
   context,
-  getConfig,
+  event,
+  getApis,
 }: TServiceParams) {
+  let hass: GetApis<typeof LIB_HOME_ASSISTANT>;
+
+  lifecycle.onPreInit(() => {
+    hass = getApis(LIB_HOME_ASSISTANT);
+  });
+
   /**
    * Describe the current services, and build up a proxy api based on that.
    *
    * This API matches the api at the time the this function is run, which may be different from any generated typescript definitions from the past.
    */
   lifecycle.onBootstrap(async () => {
-    if (!getConfig<boolean>(CALL_PROXY_PROXY_COMMAND)) {
+    if (!LIB_HOME_ASSISTANT.getConfig("CALL_PROXY_AUTO_SCAN")) {
       return;
     }
     logger.debug(`Runtime populate service interfaces`);
@@ -73,7 +81,7 @@ export function HACallProxy({
 
   async function loadServiceList(recursion = START): Promise<void> {
     logger.info(`Fetching service list`);
-    services = await ZCC.hass.fetch.listServices();
+    services = await hass.fetch.listServices();
     if (is.empty(services)) {
       if (recursion > MAX_ATTEMPTS) {
         logger.fatal(
@@ -97,7 +105,7 @@ export function HACallProxy({
         logger.debug(` - {%s}`, serviceName),
       );
     });
-    ZCC.event.emit(PROXY_SERVICE_LIST_UPDATED);
+    event.emit(PROXY_SERVICE_LIST_UPDATED);
   }
 
   /**
@@ -107,16 +115,16 @@ export function HACallProxy({
     serviceName: SERVICE,
     service_data: PICK_SERVICE_PARAMETERS<SERVICE>,
   ) {
-    if (!ZCC.hass.socket.getConnectionActive()) {
-      return await ZCC.hass.fetch.callService(serviceName, service_data);
+    if (!hass.socket.getConnectionActive()) {
+      return await hass.fetch.callService(serviceName, service_data);
     }
     const [domain, service] = serviceName.split(".");
     // User can just not await this call if they don't care about the "waitForChange"
-    ZCC.event.emit(CALL_PROXY_PROXY_COMMAND, {
+    event.emit(CALL_PROXY_PROXY_COMMAND, {
       domain,
       service,
     } as CallProxyCommandData);
-    return await ZCC.hass.socket.sendMessage(
+    return await hass.socket.sendMessage(
       {
         domain,
         service,
@@ -134,9 +142,5 @@ export function HACallProxy({
     );
   }
 
-  const out = buildCallProxy();
-  ZCC.hass.call = out;
-  return out;
+  return buildCallProxy();
 }
-
-export type THACallProxy = CallProxy;

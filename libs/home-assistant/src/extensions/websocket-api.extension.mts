@@ -4,15 +4,6 @@ import { exit } from "process";
 import WS from "ws";
 
 import {
-  BASE_URL,
-  CRASH_REQUESTS_PER_SEC,
-  RETRY_INTERVAL,
-  SOCKET_AUTO_CONNECT,
-  TOKEN,
-  WARN_REQUESTS_PER_SEC,
-  WEBSOCKET_URL,
-} from "../helpers/config.constants.mjs";
-import {
   HASS_WEBSOCKET_RECEIVE_MESSAGE,
   HASS_WEBSOCKET_SEND_MESSAGE,
   HassWebsocketReceiveMessageData,
@@ -27,6 +18,7 @@ import {
   SOCKET_MESSAGES,
   SocketMessageDTO,
 } from "../helpers/types/websocket.helper.mjs";
+import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
 let connection: WS;
 const CONNECTION_OPEN = 1;
@@ -35,11 +27,7 @@ const CLEANUP_INTERVAL = 5;
 const PING_INTERVAL = 10;
 let messageCount = START;
 
-export function WebsocketAPIService({
-  logger,
-  getConfig,
-  lifecycle,
-}: TServiceParams) {
+export function WebsocketAPIService({ logger, lifecycle }: TServiceParams) {
   let token: string;
   let WARN_REQUESTS: number;
   let CRASH_REQUESTS: number;
@@ -56,13 +44,13 @@ export function WebsocketAPIService({
 
   // Load configurations
   lifecycle.onPostConfig(() => {
-    autoConnect = getConfig<boolean>(SOCKET_AUTO_CONNECT);
-    token = getConfig<string>(TOKEN);
-    baseUrl = getConfig<string>(BASE_URL);
-    websocketUrl = getConfig<string>(WEBSOCKET_URL);
-    WARN_REQUESTS = getConfig<number>(WARN_REQUESTS_PER_SEC);
-    CRASH_REQUESTS = getConfig<number>(CRASH_REQUESTS_PER_SEC);
-    retryInterval = getConfig<number>(RETRY_INTERVAL);
+    autoConnect = LIB_HOME_ASSISTANT.getConfig("SOCKET_AUTO_CONNECT");
+    token = LIB_HOME_ASSISTANT.getConfig("TOKEN");
+    baseUrl = LIB_HOME_ASSISTANT.getConfig("BASE_URL");
+    websocketUrl = LIB_HOME_ASSISTANT.getConfig("WEBSOCKET_URL");
+    WARN_REQUESTS = LIB_HOME_ASSISTANT.getConfig("WARN_REQUESTS_PER_SEC");
+    CRASH_REQUESTS = LIB_HOME_ASSISTANT.getConfig("CRASH_REQUESTS_PER_SEC");
+    retryInterval = LIB_HOME_ASSISTANT.getConfig("RETRY_INTERVAL");
     logger.trace(
       { CRASH_REQUESTS, WARN_REQUESTS, autoConnect, retryInterval },
       `Load configuration`,
@@ -341,28 +329,11 @@ export function WebsocketAPIService({
     });
   }
 
-  ZCC.hass.socket = {
-    getConnectionActive: () => CONNECTION_ACTIVE,
-    init,
-    sendMessage,
-    teardown,
-  };
-
   return {
     getConnectionActive: () => CONNECTION_ACTIVE,
+    init,
     sendAuth,
     sendMessage,
     teardown,
   };
 }
-
-export type HassSocket = {
-  teardown: () => Promise<void>;
-  getConnectionActive: () => boolean;
-  init: () => Promise<void>;
-  sendMessage: <RESPONSE_VALUE extends unknown = unknown>(
-    data: SOCKET_MESSAGES,
-    waitForResponse?: boolean,
-    subscription?: () => void,
-  ) => Promise<RESPONSE_VALUE>;
-};

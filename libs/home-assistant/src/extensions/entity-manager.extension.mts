@@ -1,4 +1,4 @@
-import { TServiceParams } from "@zcc/boilerplate";
+import { GetApis, TServiceParams } from "@zcc/boilerplate";
 import {
   eachSeries,
   EMPTY,
@@ -7,7 +7,6 @@ import {
   SECOND,
   sleep,
   START,
-  ZCC,
 } from "@zcc/utilities";
 import dayjs from "dayjs";
 import { get, set } from "object-path";
@@ -16,10 +15,7 @@ import { Get } from "type-fest";
 import { v4 } from "uuid";
 
 import { HASSIO_WS_COMMAND } from "../helpers/types/constants.helper.mjs";
-import {
-  GenericEntityDTO,
-  HassEventDTO,
-} from "../helpers/types/entity-state.helper.mjs";
+import { HassEventDTO } from "../helpers/types/entity-state.helper.mjs";
 import {
   ALL_DOMAINS,
   ENTITY_STATE,
@@ -29,6 +25,7 @@ import {
   EntityHistoryDTO,
   EntityHistoryResult,
 } from "../helpers/types/websocket.helper.mjs";
+import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
 export type OnHassEventOptions = {
   event_type: string;
@@ -49,7 +46,17 @@ type Watcher<ENTITY_ID extends PICK_ENTITY = PICK_ENTITY> = {
   type: "once" | "dynamic" | "annotation";
 };
 
-export function HAEntityManager({ logger }: TServiceParams) {
+export function HAEntityManager({
+  logger,
+  lifecycle,
+  getApis,
+}: TServiceParams) {
+  let hass: GetApis<typeof LIB_HOME_ASSISTANT>;
+
+  lifecycle.onPreInit(() => {
+    hass = getApis(LIB_HOME_ASSISTANT);
+  });
+
   /**
    * MASTER_STATE.switch.desk_light = {entity_id,state,attributes,...}
    */
@@ -161,7 +168,7 @@ export function HAEntityManager({ logger }: TServiceParams) {
     payload: Omit<EntityHistoryDTO<ENTITES>, "type">,
   ) {
     logger.trace(`Finding stuff`);
-    const result = await ZCC.hass.socket.sendMessage({
+    const result = await hass.socket.sendMessage({
       ...payload,
       end_time: dayjs(payload.end_time).toISOString(),
       start_time: dayjs(payload.start_time).toISOString(),
@@ -244,7 +251,7 @@ export function HAEntityManager({ logger }: TServiceParams) {
    * Refresh occurs through home assistant rest api, and is not bound by the websocket lifecycle
    */
   async function refresh(recursion = START): Promise<void> {
-    const states = await ZCC.hass.fetch.getAllEntities();
+    const states = await hass.fetch.getAllEntities();
     if (is.empty(states)) {
       if (recursion > MAX_ATTEMPTS) {
         logger.fatal(
@@ -295,7 +302,7 @@ export function HAEntityManager({ logger }: TServiceParams) {
     return is.undefined(get(MASTER_STATE, entityId));
   }
 
-  const out = {
+  return {
     byId,
     createEntityProxy,
     findByDomain,
@@ -305,27 +312,5 @@ export function HAEntityManager({ logger }: TServiceParams) {
     listEntities,
     nextState,
     refresh,
-  } as THAEntityManager;
-
-  ZCC.hass.entity = out;
-
-  return out;
+  };
 }
-
-export type THAEntityManager = {
-  byId: <ENTITY_ID extends `${string}.${string}`>(
-    entity_id: ENTITY_ID,
-  ) => ENTITY_STATE<ENTITY_ID>;
-  createEntityProxy: (entity: PICK_ENTITY) => GenericEntityDTO;
-  // findByDomain: <DOMAIN extends string = string>(target: DOMAIN) => ENTITY_STATE<...>[];
-  getEntities: <T extends GenericEntityDTO = GenericEntityDTO>(
-    entityId: PICK_ENTITY[],
-  ) => T[];
-  // history: <ENTITES extends `${string}.${string}`[]>(payload: Omit<...>) => Promise<...>;
-  isEntity: (entityId: PICK_ENTITY) => entityId is `${string}.${string}`;
-  listEntities: () => PICK_ENTITY[];
-  nextState: <ID extends `${string}.${string}` = `${string}.${string}`>(
-    entity_id: ID,
-  ) => Promise<ENTITY_STATE<ID>>;
-  refresh: (recursion?: number) => Promise<void>;
-};

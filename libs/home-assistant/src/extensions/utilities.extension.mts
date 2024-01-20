@@ -1,14 +1,24 @@
-import { TServiceParams } from "@zcc/boilerplate";
+import { GetApis, TServiceParams } from "@zcc/boilerplate";
 import { HALF, SECOND, sleep, ZCC } from "@zcc/utilities";
 
-import { HASS_ONBACKUP, HassOnBackupData } from "../helpers/dynamic.helper.mjs";
+import {
+  HASS_ON_BACKUP,
+  HassOnBackupData,
+} from "../helpers/dynamic.helper.mjs";
 import {
   BackupResponse,
   HomeAssistantBackup,
 } from "../helpers/types/backup.helper.mjs";
 import { HASSIO_WS_COMMAND } from "../helpers/types/constants.helper.mjs";
+import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
-export function HAUtilities({ logger }: TServiceParams) {
+export function HAUtilities({ logger, getApis, lifecycle }: TServiceParams) {
+  let hass: GetApis<typeof LIB_HOME_ASSISTANT>;
+
+  lifecycle.onPreInit(() => {
+    hass = getApis(LIB_HOME_ASSISTANT);
+  });
+
   async function generate(): Promise<HomeAssistantBackup> {
     let current = await list();
     // const originalLength = current.backups.length;
@@ -20,7 +30,7 @@ export function HAUtilities({ logger }: TServiceParams) {
     } else {
       start = Date.now();
       logger.info("Initiating new backup");
-      ZCC.hass.socket.sendMessage({
+      hass.socket.sendMessage({
         type: HASSIO_WS_COMMAND.generate_backup,
       });
       while (current.backing_up === false) {
@@ -35,7 +45,7 @@ export function HAUtilities({ logger }: TServiceParams) {
       current = await list();
     }
     if (start) {
-      ZCC.event.emit(HASS_ONBACKUP, {
+      ZCC.event.emit(HASS_ON_BACKUP, {
         time: Date.now() - start,
       } as HassOnBackupData);
     }
@@ -44,25 +54,17 @@ export function HAUtilities({ logger }: TServiceParams) {
   }
 
   async function list(): Promise<BackupResponse> {
-    return await ZCC.hass.socket.sendMessage<BackupResponse>({
+    return await hass.socket.sendMessage<BackupResponse>({
       type: HASSIO_WS_COMMAND.backup_info,
     });
   }
 
   async function remove(slug: string): Promise<void> {
-    await ZCC.hass.socket.sendMessage(
+    await hass.socket.sendMessage(
       { slug, type: HASSIO_WS_COMMAND.remove_backup },
       false,
     );
   }
 
-  const out = { generate, list, remove } as THAUtils;
-  ZCC.hass.utils = out;
-  return out;
+  return { generate, list, remove };
 }
-
-export type THAUtils = {
-  generate(): Promise<HomeAssistantBackup>;
-  list(): Promise<BackupResponse>;
-  remove(slug: string): Promise<void>;
-};

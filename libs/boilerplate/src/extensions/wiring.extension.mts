@@ -33,10 +33,8 @@ import {
   BootstrapOptions,
   GetApisResult,
   LibraryConfigurationOptions,
-  Loader,
   ServiceFunction,
   ServiceMap,
-  TConfigurable,
   TGetConfig,
   TModuleMappings,
   TResolvedModuleMappings,
@@ -176,6 +174,7 @@ export function CreateLibrary<
   const getConfig = (property: string) => {
     return ZCC.config.get([libraryName, property]);
   };
+  const generated = {};
 
   const library = {
     configuration,
@@ -185,11 +184,17 @@ export function CreateLibrary<
     onError: callback => ZCC.event.on(ZCC_LIBRARY_ERROR(libraryName), callback),
     services,
     wire: async () => {
+      // This one hasn't been loaded yet, generate an object with all the correct properties
       LOADED_LIFECYCLES.set(libraryName, lifecycle);
       await eachSeries(
         Object.entries(services),
         async ([service, definition]) => {
-          await WireService(libraryName, service, definition, lifecycle);
+          generated[service] = await WireService(
+            libraryName,
+            service,
+            definition,
+            lifecycle,
+          );
         },
       );
       // mental note: people should probably do all their lifecycle attachments at the base level function
@@ -197,6 +202,10 @@ export function CreateLibrary<
       return lifecycle;
     },
   } as ZCCLibraryDefinition<S, C>;
+
+  // The API cache has the base object defined prior to any of the constructors being run
+  // Properties will be filled in at wiring time
+  API_CACHE.set(library, generated);
   return library;
 }
 
@@ -250,7 +259,6 @@ async function WireService(
   definition: ServiceFunction,
   lifecycle: TLifecycleBase,
 ) {
-  // logger.trace(`Inserting %s#%s`, project, service);
   const mappings = MODULE_MAPPINGS.get(project) ?? {};
   if (!is.undefined(mappings[service])) {
     throw new BootstrapException(
@@ -262,7 +270,6 @@ async function WireService(
   mappings[service] = definition;
   MODULE_MAPPINGS.set(project, mappings);
   const context = `${project}:${service}`;
-  const loader = ContextLoader(project) as Loader<TConfigurable>;
 
   // logger gets defined first, so this really is only for the start of the start of bootstrapping
   const logger = ZCC.logger ? ZCC.logger.context(context) : undefined;
@@ -273,20 +280,27 @@ async function WireService(
       cache: ZCC.cache,
       context,
       event: ZCC.event,
+      /**
+       * - Type definitions should always be valid
+       * - Calling prior to preInit will return an empty object
+       *  - Methods will be inserted into the object after construction phase
+       * - Calling after will return a fully populated
+       */
       getApis: <S extends ServiceMap>(
         project:
           | ZCCLibraryDefinition<S, OptionalModuleConfiguration>
           | ZCCApplicationDefinition<S, OptionalModuleConfiguration>,
       ): GetApisResult<S> => {
+        // If the work was already done, return from cache
         const cached = API_CACHE.get(project);
         if (cached) {
           return cached as GetApisResult<S>;
         }
-        const generated = Object.fromEntries(
-          Object.keys(project.services).map(key => [key, loader(key)]),
-        ) as GetApisResult<S>;
+        // This one hasn't been loaded yet, generate an object with all the correct properties
+        const generated = {};
+
         API_CACHE.set(project, generated);
-        return generated;
+        return generated as GetApisResult<S>;
       },
       lifecycle,
       logger,
@@ -295,6 +309,7 @@ async function WireService(
     const loaded = LOADED_MODULES.get(project) ?? {};
     loaded[service] = resolved as TServiceReturn;
     LOADED_MODULES.set(service, loaded);
+    return resolved;
   } catch (error) {
     // Init errors at this level are considered blocking.
     // Doubling up on errors to be extra noisy for now, might back off to single later
@@ -302,6 +317,7 @@ async function WireService(
     // eslint-disable-next-line no-console
     console.log(error);
     ZCC_Testing.FailFast();
+    return undefined;
   }
 }
 
@@ -386,10 +402,9 @@ async function Bootstrap<
     await RunStageCallbacks("Bootstrap");
     await RunStageCallbacks("Ready");
   } catch (error) {
-    // logger.fatal({ application, error }, "Bootstrap failed");
+    logger?.fatal({ application, error }, "Bootstrap failed");
     // eslint-disable-next-line no-console
     console.error(error);
-    // await Teardown();
     ZCC_Testing.FailFast();
   }
 }
@@ -403,21 +418,6 @@ async function Teardown() {
   processEvents.forEach((callback, event) =>
     process.removeListener(event, callback),
   );
-  // logger.info(`teardown complete`);
-  // logger = undefined;
-}
-
-//
-// Loaders
-//
-function ContextLoader(project: string) {
-  return (service: string | ServiceFunction): TServiceReturn => {
-    if (!is.string(service)) {
-      const pair = REVERSE_MODULE_MAPPING.get(service);
-      service = pair.pop();
-    }
-    return LOADED_MODULES.get(project)[service];
-  };
 }
 
 //

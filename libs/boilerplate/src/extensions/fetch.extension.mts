@@ -78,7 +78,7 @@ function buildFilterString(
   }).toString();
 }
 
-export function ZCC_Fetch({ logger }: TServiceParams) {
+export function ZCC_Fetch({ logger, context }: TServiceParams) {
   const createFetcher = ({
     bottleneck,
     headers: baseHeaders,
@@ -223,10 +223,7 @@ export function ZCC_Fetch({ logger }: TServiceParams) {
     };
   };
   ZCC.createFetcher = createFetcher;
-  const globalFetch = createFetcher({
-    context: "ZCC:fetch",
-  });
-  ZCC.fetch = globalFetch.fetch;
+  ZCC.fetch = createFetcher({ context }).fetch;
   return createFetcher;
 }
 

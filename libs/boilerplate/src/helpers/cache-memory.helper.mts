@@ -2,7 +2,7 @@ import { is } from "@zcc/utilities";
 import NodeCache from "node-cache";
 
 import { ICacheDriver } from "../extensions/cache.extension.mjs";
-import { CACHE_TTL } from "./config.constants.mjs";
+import { LIB_BOILERPLATE } from "../extensions/wiring.extension.mjs";
 import { MEMORY_CACHE_ERROR_COUNT } from "./metrics.helper.mjs";
 import { TServiceParams } from "./wiring.helper.mjs";
 
@@ -10,11 +10,11 @@ import { TServiceParams } from "./wiring.helper.mjs";
  * url & name properties automatically generated from config
  */
 export function createMemoryDriver(
-  { logger, getConfig }: Pick<TServiceParams, "getConfig" | "logger">,
+  { logger }: Pick<TServiceParams, "logger">,
   options?: NodeCache.Options,
 ): ICacheDriver {
   const client = new NodeCache({
-    stdTTL: getConfig(CACHE_TTL),
+    stdTTL: LIB_BOILERPLATE.getConfig("CACHE_TTL"),
     ...options,
   });
 

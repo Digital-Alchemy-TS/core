@@ -67,7 +67,7 @@ export type GetApis<T> =
       ? GetApisResult<S>
       : never;
 
-type CastConfigResult<T extends AnyConfig> = T extends StringConfig
+export type CastConfigResult<T extends AnyConfig> = T extends StringConfig
   ? string
   : T extends BooleanConfig
     ? boolean

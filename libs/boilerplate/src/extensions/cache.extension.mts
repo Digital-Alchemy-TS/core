@@ -3,17 +3,13 @@ import { is, NONE, ZCC } from "@zcc/utilities";
 import { createMemoryDriver } from "../helpers/cache-memory.helper.mjs";
 import { createRedisDriver } from "../helpers/cache-redis.helper.mjs";
 import {
-  CACHE_PREFIX,
-  CACHE_PROVIDER,
-  CACHE_TTL,
-} from "../helpers/config.constants.mjs";
-import {
   CACHE_DELETE_OPERATIONS_TOTAL,
   CACHE_DRIVER_ERROR_COUNT,
   CACHE_GET_OPERATIONS_TOTAL,
   CACHE_SET_OPERATIONS_TOTAL,
 } from "../helpers/metrics.helper.mjs";
 import { TServiceParams } from "../helpers/wiring.helper.mjs";
+import { LIB_BOILERPLATE } from "./wiring.extension.mjs";
 
 export interface ICacheDriver {
   get<T>(key: string, defaultValue?: T): Promise<T | undefined>;
@@ -29,7 +25,7 @@ export enum CacheProviders {
 
 export function ZCC_Cache({ logger, lifecycle }: TServiceParams): TCache {
   let prefix: string = "";
-  let DEFAULT_TTL: number;
+  let defaultTtl: number;
   let provider: `${CacheProviders}`;
   let client: ICacheDriver;
 
@@ -38,14 +34,14 @@ export function ZCC_Cache({ logger, lifecycle }: TServiceParams): TCache {
   }
 
   lifecycle.onPostConfig(() => {
-    prefix = getConfig(CACHE_PREFIX) || "";
-    DEFAULT_TTL = getConfig(CACHE_TTL);
-    provider = getConfig(CACHE_PROVIDER);
+    prefix = LIB_BOILERPLATE.getConfig("CACHE_PREFIX") || "";
+    defaultTtl = LIB_BOILERPLATE.getConfig("CACHE_TTL");
+    provider = LIB_BOILERPLATE.getConfig("CACHE_PROVIDER") as CacheProviders;
     logger.trace(
       {
         prefix,
         provider,
-        ttl: DEFAULT_TTL,
+        ttl: defaultTtl,
       },
       `Configure cache`,
     );
@@ -54,10 +50,10 @@ export function ZCC_Cache({ logger, lifecycle }: TServiceParams): TCache {
     }
     logger.trace({ provider }, `Init cache`);
     if (provider === "redis") {
-      client = createRedisDriver({ getConfig, logger });
+      client = createRedisDriver({ logger });
       return;
     }
-    client = createMemoryDriver({ getConfig, logger });
+    client = createMemoryDriver({ logger });
   });
 
   const cache = {
@@ -102,11 +98,7 @@ export function ZCC_Cache({ logger, lifecycle }: TServiceParams): TCache {
         return [];
       }
     },
-    set: async <T,>(
-      key: string,
-      value: T,
-      ttl = DEFAULT_TTL,
-    ): Promise<void> => {
+    set: async <T,>(key: string, value: T, ttl = defaultTtl): Promise<void> => {
       try {
         const fullKey = fullKeyName(key);
         await client.set(fullKey, value, ttl);

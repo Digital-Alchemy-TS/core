@@ -1,4 +1,4 @@
-import { GetApis, InternalError, TServiceParams } from "@zcc/boilerplate";
+import { InternalError, TServiceParams } from "@zcc/boilerplate";
 import { INCREMENT, is, SECOND, sleep, START } from "@zcc/utilities";
 import { exit } from "process";
 
@@ -35,11 +35,7 @@ export function HACallProxy({
   event,
   getApis,
 }: TServiceParams) {
-  let hass: GetApis<typeof LIB_HOME_ASSISTANT>;
-
-  lifecycle.onPreInit(() => {
-    hass = getApis(LIB_HOME_ASSISTANT);
-  });
+  const hass = getApis(LIB_HOME_ASSISTANT);
 
   /**
    * Describe the current services, and build up a proxy api based on that.

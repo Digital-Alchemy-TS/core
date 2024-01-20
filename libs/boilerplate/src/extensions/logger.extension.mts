@@ -2,16 +2,12 @@
 import { is, SECOND, ZCC } from "@zcc/utilities";
 import chalk from "chalk";
 import chalkTemplate from "chalk-template";
-import { pino } from "pino";
+import { Level, pino } from "pino";
 import { inspect } from "util";
 
-import {
-  BOILERPLATE_LIB_NAME,
-  LOG_LEVEL,
-  LOG_METRICS,
-} from "../helpers/config.constants.mjs";
 import { LOGGER_CONTEXT_ENTRIES_COUNT } from "../helpers/metrics.helper.mjs";
 import { TServiceParams } from "../helpers/wiring.helper.mjs";
+import { LIB_BOILERPLATE } from "./wiring.extension.mjs";
 
 export type TLoggerFunction =
   | ((message: string, ...arguments_: unknown[]) => void)
@@ -204,7 +200,7 @@ export function ZCC_Logger({ lifecycle }: TServiceParams) {
 
   let metricsInterval: ReturnType<typeof setInterval>;
   lifecycle.onBootstrap(() => {
-    if (!getConfig<boolean>(LOG_METRICS)) {
+    if (!LIB_BOILERPLATE.getConfig("LOG_LEVEL")) {
       return;
     }
     metricsInterval = setInterval(() => {
@@ -224,7 +220,7 @@ export function ZCC_Logger({ lifecycle }: TServiceParams) {
     LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[logLevel];
 
   function createBaseLogger() {
-    logLevel = getConfig(LOG_LEVEL);
+    logLevel = LIB_BOILERPLATE.getConfig("LOG_LEVEL") as Level;
     logger = pino(
       {
         level: "info",
@@ -296,7 +292,7 @@ export function ZCC_Logger({ lifecycle }: TServiceParams) {
     setBaseLogger: (base: ILogger) => (logger = base),
     setLogLevel: (level: pino.Level) => {
       logLevel = level;
-      ZCC.config.set([BOILERPLATE_LIB_NAME, LOG_LEVEL], level);
+      ZCC.config.set(["boilerplate", "LOG_LEVEL"], level);
     },
     setMaxCutoff: (cutoff: number) => (maxCutoff = cutoff),
     setPrettyLogger: (state: boolean) => {

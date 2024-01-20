@@ -10,10 +10,6 @@ import {
 import { EventEmitter } from "eventemitter3";
 import { exit } from "process";
 
-import {
-  BOILERPLATE_LIB_NAME,
-  LIB_BOILERPLATE_CONFIGURATION,
-} from "../helpers/config.constants.mjs";
 import { BootstrapException } from "../helpers/errors.helper.mjs";
 import {
   ZCC_APPLICATION_ERROR,
@@ -42,7 +38,7 @@ import {
   ZCCApplicationDefinition,
   ZCCLibraryDefinition,
 } from "../helpers/wiring.helper.mjs";
-import { ZCC_Cache } from "./cache.extension.mjs";
+import { CacheProviders, ZCC_Cache } from "./cache.extension.mjs";
 import {
   OptionalModuleConfiguration,
   ZCC_Configuration,
@@ -52,7 +48,7 @@ import { ILogger, ZCC_Logger } from "./logger.extension.mjs";
 
 const NONE = -1;
 
-const FILE_CONTEXT = `${BOILERPLATE_LIB_NAME}:Loader`;
+const FILE_CONTEXT = `boilerplate:Loader`;
 type ActiveApplicationDefinition<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
@@ -327,11 +323,11 @@ async function RunStageCallbacks(stage: LifecycleStages) {
 
   const list = [
     // boilerplate priority
-    LOADED_LIFECYCLES.get(BOILERPLATE_LIB_NAME).getCallbacks(stage),
+    LOADED_LIFECYCLES.get("boilerplate").getCallbacks(stage),
     // children next
     // ...
     ...[...LOADED_LIFECYCLES.entries()]
-      .filter(([name]) => ![BOILERPLATE_LIB_NAME, "application"].includes(name))
+      .filter(([name]) => !["boilerplate", "application"].includes(name))
       .map(([, thing]) => thing.getCallbacks(stage)),
     // finally app
     LOADED_LIFECYCLES.get("application")?.getCallbacks(stage),
@@ -349,6 +345,70 @@ async function RunStageCallbacks(stage: LifecycleStages) {
     await each(quick, async ([callback]) => await callback());
   });
 }
+
+function CreateBoilerplate() {
+  return CreateLibrary({
+    configuration: {
+      CACHE_PREFIX: {
+        description: [
+          "Use a prefix with all cache keys",
+          "If blank, then application name is used",
+        ].join(`. `),
+        type: "string",
+      },
+      CACHE_PROVIDER: {
+        default: "memory",
+        description: "Redis is preferred if available",
+        enum: ["redis", "memory"] as `${CacheProviders}`[],
+        type: "string",
+      },
+      CACHE_TTL: {
+        default: 86_400,
+        description: "Configuration property for cache provider, in seconds",
+        type: "number",
+      },
+      CONFIG: {
+        description: [
+          "Consumable as CLI switch only",
+          "If provided, all other file based configurations will be ignored",
+          "Environment variables + CLI switches will operate normally",
+        ].join(". "),
+        type: "string",
+      },
+      LOG_LEVEL: {
+        default: "info",
+        description: "Minimum log level to process",
+        enum: ["silent", "info", "warn", "debug", "error"],
+        type: "string",
+      },
+      LOG_METRICS: {
+        default: true,
+        type: "boolean",
+      },
+      REDIS_URL: {
+        default: "redis://localhost:6379",
+        description:
+          "Configuration property for cache provider, does not apply to memory caching",
+        type: "string",
+      },
+      SCAN_CONFIG: {
+        default: false,
+        description: "Find all application configurations and output as json",
+        type: "boolean",
+      },
+    },
+    name: "boilerplate",
+    services: {
+      cache: ZCC_Cache,
+      configuration: ZCC_Configuration,
+      fetch: ZCC_Fetch,
+      logger: ZCC_Logger,
+    },
+  });
+}
+
+// (re)defined at bootstrap
+export let LIB_BOILERPLATE: ReturnType<typeof CreateBoilerplate>;
 
 //
 // Lifecycle runners
@@ -375,17 +435,8 @@ async function Bootstrap<
       application,
     };
 
-    const boilerplate = CreateLibrary({
-      configuration: LIB_BOILERPLATE_CONFIGURATION,
-      name: BOILERPLATE_LIB_NAME,
-      services: {
-        cache: ZCC_Cache,
-        configuration: ZCC_Configuration,
-        fetch: ZCC_Fetch,
-        logger: ZCC_Logger,
-      },
-    });
-    await boilerplate.wire();
+    LIB_BOILERPLATE = CreateBoilerplate();
+    await LIB_BOILERPLATE.wire();
     if (!is.empty(options?.configuration)) {
       ZCC.config.merge(options?.configuration);
     }

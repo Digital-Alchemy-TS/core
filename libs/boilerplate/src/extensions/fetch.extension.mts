@@ -39,7 +39,7 @@ type FetcherOptions = {
   /**
    * Alter the context attached to the log statements emitted from the fetcher
    */
-  logContext?: string;
+  context?: string;
 };
 
 // type DownloadOptions = Partial<FetchArguments> & { destination: string };
@@ -83,7 +83,7 @@ export function ZCC_Fetch({ logger }: TServiceParams) {
     bottleneck,
     headers: baseHeaders,
     baseUrl,
-    logContext,
+    context: logContext,
     // eslint-disable-next-line sonarjs/cognitive-complexity
   }: FetcherOptions) => {
     const extras: Record<string, string> = {};
@@ -224,7 +224,7 @@ export function ZCC_Fetch({ logger }: TServiceParams) {
   };
   ZCC.createFetcher = createFetcher;
   const globalFetch = createFetcher({
-    logContext: "ZCC:fetch",
+    context: "ZCC:fetch",
   });
   ZCC.fetch = globalFetch.fetch;
   return createFetcher;

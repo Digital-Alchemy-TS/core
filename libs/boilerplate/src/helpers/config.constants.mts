@@ -23,7 +23,7 @@ export const LIB_BOILERPLATE_CONFIGURATION: ModuleConfiguration = {
   [CACHE_PROVIDER]: {
     default: "memory",
     description: "Redis is preferred if available",
-    enum: Object.values(CacheProviders),
+    enum: ["redis", "memory"] as `${CacheProviders}`[],
     type: "string",
   },
   [CACHE_TTL]: {

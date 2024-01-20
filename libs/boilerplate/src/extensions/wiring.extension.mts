@@ -230,6 +230,7 @@ async function WireService(
   try {
     // logger.trace(`Initializing %s#%s`, project, service);
     const resolved = await definition({
+      cache: ZCC.cache,
       context,
       event: ZCC.event,
       getConfig: <T,>(

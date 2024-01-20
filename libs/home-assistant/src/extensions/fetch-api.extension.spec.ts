@@ -51,8 +51,8 @@ describe("Fetch Extension", () => {
         "webhook",
       ];
 
-      expectedFunctions.forEach(function_ => {
-        expect(typeof ZCC.hass.fetch[function_]).toBe("function");
+      expectedFunctions.forEach(key => {
+        expect(typeof ZCC.hass.fetch[key]).toBe("function");
       });
     });
   });

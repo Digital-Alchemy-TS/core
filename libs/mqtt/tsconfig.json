@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "../../dist/home-assistant-out-tsc",
+    "outDir": "../../dist/mqtt-out-tsc",
   },
   "files": [],
   "include": [],

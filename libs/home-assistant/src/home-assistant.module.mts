@@ -16,6 +16,7 @@ import {
 } from "./extensions/websocket-api.extension.mjs";
 import {
   BASE_URL,
+  CALL_PROXY_AUTO_SCAN,
   CRASH_REQUESTS_PER_SEC,
   HOME_ASSISTANT_PACKAGE_FOLDER,
   RENDER_TIMEOUT,
@@ -34,6 +35,11 @@ export const LIB_HOME_ASSISTANT = ZCC.createLibrary({
       default: "http://localhost:8123",
       description: "Url to reach Home Assistant at",
       type: "string",
+    },
+    [CALL_PROXY_AUTO_SCAN]: {
+      default: true,
+      description: "Websocket must be manually initialized if set to false",
+      type: "boolean",
     },
     [CRASH_REQUESTS_PER_SEC]: {
       default: 500,

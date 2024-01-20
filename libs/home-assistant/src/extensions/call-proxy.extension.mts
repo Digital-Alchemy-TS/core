@@ -28,14 +28,23 @@ const FAILED_LOAD_DELAY = 5;
 const MAX_ATTEMPTS = 50;
 const FAILED = 1;
 
-export function HACallProxy({ logger, lifecycle, context }: TServiceParams) {
+export function HACallProxy({
+  logger,
+  lifecycle,
+  context,
+  getConfig,
+}: TServiceParams) {
   /**
    * Describe the current services, and build up a proxy api based on that.
    *
    * This API matches the api at the time the this function is run, which may be different from any generated typescript definitions from the past.
    */
-  lifecycle.onBootstrap(() => {
-    nextTick(async () => await loadServiceList());
+  lifecycle.onBootstrap(async () => {
+    if (!getConfig<boolean>(CALL_PROXY_PROXY_COMMAND)) {
+      return;
+    }
+    logger.debug(`Runtime populate service interfaces`);
+    await loadServiceList();
   });
 
   function getDomain(domain: ALL_DOMAINS) {

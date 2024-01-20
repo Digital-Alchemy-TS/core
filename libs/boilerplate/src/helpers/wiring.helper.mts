@@ -1,6 +1,7 @@
 import { EventEmitter } from "eventemitter3";
 import { Logger } from "pino";
 
+import { TCache } from "../extensions/cache.extension.mjs";
 import {
   ModuleConfiguration,
   OptionalModuleConfiguration,
@@ -43,6 +44,7 @@ export type TServiceParams<T extends object = object> = {
   loader: Loader<T>;
   getConfig: TGetConfig;
   event: EventEmitter;
+  cache: TCache;
 };
 export type TServiceDefinition = (parameters: TServiceParams) => TServiceReturn;
 

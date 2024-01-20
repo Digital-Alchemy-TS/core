@@ -3,6 +3,9 @@ import { faker } from "@faker-js/faker";
 export class ZCCTestingDefinition {
   public APP_NAME = "zcc-unit-tests";
 
+  /**
+   * Some random that fits within the application config definitions
+   */
   public generateRandomData() {
     return {
       application: {

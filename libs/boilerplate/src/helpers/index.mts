@@ -7,8 +7,6 @@ export * from "./config-file-loader.helper.mjs";
 export * from "./errors.helper.mjs";
 export * from "./events.helper.mjs";
 export * from "./fetch.helper.mjs";
-export * from "./index.mjs";
 export * from "./lifecycle.helper.mjs";
-export * from "./merge.helper.mjs";
 export * from "./metrics.helper.mjs";
 export * from "./testing.helper.mjs";

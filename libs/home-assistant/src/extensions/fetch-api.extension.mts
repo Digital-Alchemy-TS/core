@@ -51,8 +51,8 @@ export function HAFetchAPI({
     baseUrl = getConfig<string>(BASE_URL);
     fetch = ZCC.createFetcher({
       baseUrl,
+      context,
       headers: { Authorization: `Bearer ${token}` },
-      logContext: context,
     }).fetch;
     logger.trace(`Load configuration`);
   });

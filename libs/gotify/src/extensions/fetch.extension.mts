@@ -1,7 +1,10 @@
-import { FilteredFetchArguments } from "@zcc/boilerplate";
+import {
+  FilteredFetchArguments,
+  TFetchBody,
+  TServiceParams,
+} from "@zcc/boilerplate";
 import { ZCC } from "@zcc/utilities";
 
-import { LIB_GOTIFY } from "../gotify.module.mjs";
 import {
   Application,
   ApplicationParameters,
@@ -10,31 +13,44 @@ import {
 } from "../helpers/api.mjs";
 import { BASE_URL, TOKEN } from "../helpers/config.constants.mjs";
 
-export function GotifyFetch() {
-  const baseUrl = LIB_GOTIFY.getConfig<string>(BASE_URL);
-  const token = LIB_GOTIFY.getConfig<string>(TOKEN);
+export function GotifyFetch({
+  logger,
+  getConfig,
+  lifecycle,
+  context,
+}: TServiceParams) {
+  let baseUrl: string;
+  let token: string;
+  const fetcher = ZCC.createFetcher({ context }).fetch;
+
+  lifecycle.onPostConfig(() => {
+    baseUrl = getConfig<string>(BASE_URL);
+    token = getConfig<string>(TOKEN);
+  });
 
   async function fetch<T, BODY extends TFetchBody = undefined>(
     fetchWith: FilteredFetchArguments<BODY>,
   ): Promise<T> {
-    return await ZCC.fetch.fetch({
+    return await fetcher({
       ...fetchWith,
       baseUrl,
       headers: { ["X-Gotify-Key"]: token },
     });
   }
 
-  return {
+  const gotify = {
     application: {
       async create(body: ApplicationParameters): Promise<Application> {
+        logger.trace(`application create`);
         return await fetch({
-          body: JSON.stringify(body),
+          body,
           method: "post",
           url: `/application`,
         });
       },
 
       async delete(id: number): Promise<void> {
+        logger.trace(`application delete`);
         return await fetch({
           method: "delete",
           url: `/application/${id}`,
@@ -42,6 +58,7 @@ export function GotifyFetch() {
       },
 
       async deleteMessages(id: number): Promise<void> {
+        logger.trace(`application deleteMessages`);
         return await fetch({
           method: "delete",
           url: `/application/${id}/message`,
@@ -52,6 +69,7 @@ export function GotifyFetch() {
         id: number,
         params?: { limit?: number; since?: number },
       ): Promise<Message[]> {
+        logger.trace(`application getMessages`);
         return await fetch({
           params,
           url: `/application/${id}/message`,
@@ -59,6 +77,7 @@ export function GotifyFetch() {
       },
 
       async list(): Promise<Application[]> {
+        logger.trace(`application list`);
         return await fetch({
           url: `/application`,
         });
@@ -68,8 +87,9 @@ export function GotifyFetch() {
         id: number,
         body: ApplicationParameters,
       ): Promise<Application> {
+        logger.trace(`application update`);
         return await fetch({
-          body: JSON.stringify(body),
+          body,
           method: "put",
           url: `/application/${id}`,
         });
@@ -77,14 +97,16 @@ export function GotifyFetch() {
     },
     client: {
       async create(body: Client): Promise<Client> {
+        logger.trace(`client create`);
         return await fetch({
-          body: JSON.stringify(body),
+          body,
           method: "post",
           url: "/client",
         });
       },
 
       async delete(id: number) {
+        logger.trace(`client delete`);
         return await fetch({
           method: "delete",
           url: `/client/${id}`,
@@ -92,14 +114,16 @@ export function GotifyFetch() {
       },
 
       async list(): Promise<Client> {
+        logger.trace(`client list`);
         return await fetch({
           url: "/client",
         });
       },
 
       async update(id: number, body: Client): Promise<Client> {
+        logger.trace(`client update`);
         return await fetch({
-          body: JSON.stringify(body),
+          body,
           method: "put",
           url: `/client/${id}`,
         });
@@ -108,14 +132,16 @@ export function GotifyFetch() {
     fetch,
     message: {
       async create(body: Message): Promise<Message> {
+        logger.trace(`message create`);
         return await fetch({
-          body: JSON.stringify(body),
+          body,
           method: "post",
           url: "/message",
         });
       },
 
       async delete(id: number) {
+        logger.trace(`message delete`);
         return await fetch({
           method: "delete",
           url: `/message/${id}`,
@@ -123,6 +149,7 @@ export function GotifyFetch() {
       },
 
       async deleteAll() {
+        logger.trace(`message deleteAll`);
         return await fetch({
           method: "delete",
           url: `/message`,
@@ -130,10 +157,53 @@ export function GotifyFetch() {
       },
 
       async list(): Promise<Message> {
+        logger.trace(`message list`);
         return await fetch({
           url: "/message",
         });
       },
     },
   };
+
+  ZCC.gotify = gotify;
+
+  return gotify;
+}
+
+type GotifyApplication = {
+  create(body: ApplicationParameters): Promise<Application>;
+  delete(id: number): Promise<void>;
+  deleteMessages(id: number): Promise<void>;
+  getMessages(
+    id: number,
+    params?: {
+      limit?: number;
+      since?: number;
+    },
+  ): Promise<Message[]>;
+  list(): Promise<Application[]>;
+  update(id: number, body: ApplicationParameters): Promise<Application>;
+};
+type GotifyClient = {
+  create(body: Client): Promise<Client>;
+  delete(id: number): Promise<unknown>;
+  list(): Promise<Client>;
+  update(id: number, body: Client): Promise<Client>;
+};
+type GotifyMessage = {
+  create(body: Message): Promise<Message>;
+  delete(id: number): Promise<unknown>;
+  deleteAll(): Promise<unknown>;
+  list(): Promise<Message>;
+};
+type GotifyDefinition = {
+  application: GotifyApplication;
+  client: GotifyClient;
+  message: GotifyMessage;
+};
+
+declare module "@zcc/utilities" {
+  export interface ZCCDefinition {
+    gotify: GotifyDefinition;
+  }
 }

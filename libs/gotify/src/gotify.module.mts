@@ -21,5 +21,5 @@ export const LIB_GOTIFY = ZCC.createLibrary({
       type: "string",
     },
   },
-  library: "gotify",
+  name: "gotify",
 });

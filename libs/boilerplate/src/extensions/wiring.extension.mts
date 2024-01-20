@@ -31,37 +31,47 @@ import { ConfigurationFiles } from "../helpers/testing.helper.mjs";
 import {
   ApplicationConfigurationOptions,
   BootstrapOptions,
+  GetApisResult,
   LibraryConfigurationOptions,
   Loader,
+  ServiceFunction,
+  ServiceMap,
+  TConfigurable,
+  TGetConfig,
   TModuleMappings,
   TResolvedModuleMappings,
-  TServiceDefinition,
   TServiceReturn,
   ZCCApplicationDefinition,
   ZCCLibraryDefinition,
 } from "../helpers/wiring.helper.mjs";
 import { ZCC_Cache } from "./cache.extension.mjs";
-import { ZCC_Configuration } from "./configuration.extension.mjs";
+import {
+  OptionalModuleConfiguration,
+  ZCC_Configuration,
+} from "./configuration.extension.mjs";
 import { ZCC_Fetch } from "./fetch.extension.mjs";
 import { ILogger, ZCC_Logger } from "./logger.extension.mjs";
 
 const NONE = -1;
 
 const FILE_CONTEXT = `${BOILERPLATE_LIB_NAME}:Loader`;
-type ActiveApplicationDefinition = {
-  application: ZCCApplicationDefinition;
+type ActiveApplicationDefinition<
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+> = {
+  application: ZCCApplicationDefinition<S, C>;
   LOADED_MODULES: Map<string, TResolvedModuleMappings>;
   MODULE_MAPPINGS: Map<string, TModuleMappings>;
   LOADED_LIFECYCLES: Map<string, TLoadableChildLifecycle>;
   REVERSE_MODULE_MAPPING: Map<
-    TServiceDefinition,
+    ServiceFunction,
     [project: string, service: string]
   >;
 };
 
-function ValidateLibrary(
+function ValidateLibrary<S extends ServiceMap>(
   project: string,
-  services: [name: string, service: TServiceDefinition][] = [],
+  serviceList: S,
 ): void | never {
   if (is.empty(project)) {
     throw new BootstrapException(
@@ -70,6 +80,7 @@ function ValidateLibrary(
       "Library name is required",
     );
   }
+  const services = Object.entries(serviceList);
 
   // Find the first invalid service
   const invalidService = services.find(
@@ -107,7 +118,7 @@ let LOADED_MODULES = new Map<string, TResolvedModuleMappings>();
  * Optimized reverse lookups: Declaration  Function => [project, service]
  */
 let REVERSE_MODULE_MAPPING = new Map<
-  TServiceDefinition,
+  ServiceFunction,
   [project: string, service: string]
 >();
 
@@ -116,7 +127,10 @@ let LOADED_LIFECYCLES = new Map<string, TLoadableChildLifecycle>();
 /**
  * Details relating to the application that is actively running
  */
-let ACTIVE_APPLICATION: ActiveApplicationDefinition = undefined;
+let ACTIVE_APPLICATION: ActiveApplicationDefinition<
+  ServiceMap,
+  OptionalModuleConfiguration
+> = undefined;
 
 // heisenberg's logger. it's probably here, but maybe not
 let logger: ILogger;
@@ -144,49 +158,63 @@ const processEvents = new Map([
 // Module Creation
 //
 
-export function CreateLibrary({
+const getAppConfig = (property: string) => {
+  return ZCC.config.get(["application", property]);
+};
+export function CreateLibrary<
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+>({
   name: libraryName,
   configuration,
-  services = [],
-}: LibraryConfigurationOptions): ZCCLibraryDefinition {
+  services,
+}: LibraryConfigurationOptions<S, C>): ZCCLibraryDefinition<S, C> {
   ValidateLibrary(libraryName, services);
 
   const lifecycle = CreateChildLifecycle();
 
-  const library: ZCCLibraryDefinition = {
+  const getConfig = (property: string) => {
+    return ZCC.config.get([libraryName, property]);
+  };
+
+  const library = {
     configuration,
-    getConfig: <T,>(property: string): T =>
-      ZCC.config.get([libraryName, property]),
+    getConfig: getConfig as TGetConfig,
     lifecycle,
     name: libraryName,
     onError: callback => ZCC.event.on(ZCC_LIBRARY_ERROR(libraryName), callback),
     services,
     wire: async () => {
       LOADED_LIFECYCLES.set(libraryName, lifecycle);
-      await eachSeries(services, async ([service, definition]) => {
-        await WireService(libraryName, service, definition, lifecycle);
-      });
+      await eachSeries(
+        Object.entries(services),
+        async ([service, definition]) => {
+          await WireService(libraryName, service, definition, lifecycle);
+        },
+      );
       // mental note: people should probably do all their lifecycle attachments at the base level function
       // otherwise, it'll happen after this wire() call, and go into a black hole (worst case) or fatal error ("best" case)
       return lifecycle;
     },
-  };
+  } as ZCCLibraryDefinition<S, C>;
   return library;
 }
 
-export function CreateApplication({
+export function CreateApplication<
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+>({
   // you should really define your own tho. using this is just lazy
   name = "zcc",
-  services = [],
+  services,
   libraries = [],
-  configuration = {},
-}: ApplicationConfigurationOptions) {
+  configuration = {} as C,
+}: ApplicationConfigurationOptions<S, C>) {
   const lifecycle = CreateChildLifecycle();
-  const out: ZCCApplicationDefinition = {
+  const out = {
     bootstrap: async options => await Bootstrap(out, options),
     configuration,
-    getConfig: <T,>(property: string): T =>
-      ZCC.config.get(["application", property]),
+    getConfig: getAppConfig as TGetConfig,
     libraries,
     lifecycle,
     name,
@@ -195,14 +223,23 @@ export function CreateApplication({
     teardown: async () => await Teardown(),
     wire: async () => {
       LOADED_LIFECYCLES.set("application", lifecycle);
-      await eachSeries(services, async ([service, definition]) => {
-        await WireService("application", service, definition, lifecycle);
-      });
+      await eachSeries(
+        Object.entries(services),
+        async ([service, definition]) => {
+          await WireService("application", service, definition, lifecycle);
+        },
+      );
       return lifecycle;
     },
-  };
+  } as ZCCApplicationDefinition<S, C>;
   return out;
 }
+
+const API_CACHE = new Map<
+  | ZCCLibraryDefinition<ServiceMap, OptionalModuleConfiguration>
+  | ZCCApplicationDefinition<ServiceMap, OptionalModuleConfiguration>,
+  GetApisResult<ServiceMap>
+>();
 
 //
 // Wiring
@@ -210,7 +247,7 @@ export function CreateApplication({
 async function WireService(
   project: string,
   service: string,
-  definition: TServiceDefinition,
+  definition: ServiceFunction,
   lifecycle: TLifecycleBase,
 ) {
   // logger.trace(`Inserting %s#%s`, project, service);
@@ -225,31 +262,48 @@ async function WireService(
   mappings[service] = definition;
   MODULE_MAPPINGS.set(project, mappings);
   const context = `${project}:${service}`;
+  const loader = ContextLoader(project) as Loader<TConfigurable>;
 
-  // const context = `${project}:${service}`;
+  // logger gets defined first, so this really is only for the start of the start of bootstrapping
+  const logger = ZCC.logger ? ZCC.logger.context(context) : undefined;
+  const getConfig = (property: string) => {
+    return ZCC.config.get([project, property]);
+  };
+
   try {
-    // logger.trace(`Initializing %s#%s`, project, service);
+    logger?.trace(`Initializing`);
     const resolved = await definition({
       cache: ZCC.cache,
       context,
       event: ZCC.event,
-      getConfig: <T,>(
-        property: string | [project: string, property: string],
-      ): T =>
-        ZCC.config.get(is.string(property) ? [project, property] : property),
+      getApis: <S extends ServiceMap>(
+        project:
+          | ZCCLibraryDefinition<S, OptionalModuleConfiguration>
+          | ZCCApplicationDefinition<S, OptionalModuleConfiguration>,
+      ): GetApisResult<S> => {
+        const cached = API_CACHE.get(project);
+        if (cached) {
+          return cached as GetApisResult<S>;
+        }
+        const generated = Object.fromEntries(
+          Object.keys(project.services).map(key => [key, loader(key)]),
+        ) as GetApisResult<S>;
+        API_CACHE.set(project, generated);
+        return generated;
+      },
+      getConfig: getConfig as TGetConfig,
       lifecycle,
-      loader: ContextLoader(project),
-      // logger gets defined first, so this really is only for the start of the start of bootstrapping
-      logger: ZCC.logger ? ZCC.logger.context(context) : undefined,
+      loader,
+      logger,
     });
     REVERSE_MODULE_MAPPING.set(definition, [project, service]);
     const loaded = LOADED_MODULES.get(project) ?? {};
-    loaded[service] = resolved;
+    loaded[service] = resolved as TServiceReturn;
     LOADED_MODULES.set(service, loaded);
   } catch (error) {
     // Init errors at this level are considered blocking.
     // Doubling up on errors to be extra noisy for now, might back off to single later
-    // logger.fatal({ error, name: context }, `Initialization error`);
+    logger?.fatal({ error, name: context }, `Initialization error`);
     // eslint-disable-next-line no-console
     console.log(error);
     ZCC_Testing.FailFast();
@@ -288,10 +342,10 @@ async function RunStageCallbacks(stage: LifecycleStages) {
 //
 // Lifecycle runners
 //
-async function Bootstrap(
-  application: ZCCApplicationDefinition,
-  options: BootstrapOptions,
-) {
+async function Bootstrap<
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+>(application: ZCCApplicationDefinition<S, C>, options: BootstrapOptions) {
   if (ACTIVE_APPLICATION) {
     throw new BootstrapException(
       "wiring.extension",
@@ -313,12 +367,12 @@ async function Bootstrap(
     const boilerplate = CreateLibrary({
       configuration: LIB_BOILERPLATE_CONFIGURATION,
       name: BOILERPLATE_LIB_NAME,
-      services: [
-        ["logger", ZCC_Logger],
-        ["configuration", ZCC_Configuration],
-        ["cache", ZCC_Cache],
-        ["fetch", ZCC_Fetch],
-      ],
+      services: {
+        cache: ZCC_Cache,
+        configuration: ZCC_Configuration,
+        fetch: ZCC_Fetch,
+        logger: ZCC_Logger,
+      },
     });
     await boilerplate.wire();
     if (!is.empty(options?.configuration)) {
@@ -362,27 +416,13 @@ async function Teardown() {
 // Loaders
 //
 function ContextLoader(project: string) {
-  return (service: string | TServiceDefinition): TServiceReturn => {
+  return (service: string | ServiceFunction): TServiceReturn => {
     if (!is.string(service)) {
       const pair = REVERSE_MODULE_MAPPING.get(service);
       service = pair.pop();
     }
     return LOADED_MODULES.get(project)[service];
   };
-}
-
-function GlobalLoader(service: string | TServiceDefinition): TServiceReturn {
-  let project: string;
-  if (!is.string(service)) {
-    const pair = REVERSE_MODULE_MAPPING.get(service);
-    service = pair.pop();
-    project = pair.pop();
-    return LOADED_MODULES.get(project)[service];
-  }
-  project = [...MODULE_MAPPINGS.keys()].find(key =>
-    Object.keys(MODULE_MAPPINGS.get(key)).includes(service as string),
-  );
-  return project ? LOADED_MODULES.get(project)[service] : undefined;
 }
 
 //
@@ -435,7 +475,6 @@ function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
 ZCC.bootstrap = Bootstrap;
 ZCC.createApplication = CreateApplication;
 ZCC.createLibrary = CreateLibrary;
-ZCC.loader = GlobalLoader;
 ZCC.teardown = Teardown;
 ZCC.lifecycle = CreateChildLifecycle;
 
@@ -474,22 +513,29 @@ declare module "@zcc/utilities" {
 // Type definitions for global ZCC attachments
 declare module "@zcc/utilities" {
   export interface ZCCDefinition {
-    application: ActiveApplicationDefinition | undefined;
-    bootstrap: (
-      application: ZCCApplicationDefinition,
+    application:
+      | ActiveApplicationDefinition<ServiceMap, OptionalModuleConfiguration>
+      | undefined;
+    bootstrap: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
+      application: ZCCApplicationDefinition<S, C>,
       options: BootstrapOptions,
     ) => Promise<void>;
-    createApplication: (
-      options: ApplicationConfigurationOptions,
-    ) => ZCCApplicationDefinition;
-    createLibrary: (
-      options: LibraryConfigurationOptions,
-    ) => ZCCLibraryDefinition;
+    createApplication: <
+      S extends ServiceMap,
+      C extends OptionalModuleConfiguration,
+    >(
+      options: ApplicationConfigurationOptions<S, C>,
+    ) => ZCCApplicationDefinition<S, C>;
+    createLibrary: <
+      S extends ServiceMap,
+      C extends OptionalModuleConfiguration,
+    >(
+      options: LibraryConfigurationOptions<S, C>,
+    ) => ZCCLibraryDefinition<S, C>;
     // the mismatched required state (with the implementation) of name is on purpose
     // external consumers of this should be passing names, and operate as if they will definitely want to wire their logic in
     // they lack access to the variables for the conditional loading workflows
     lifecycle: (name: string) => TLifecycleBase;
-    loader: Loader;
     teardown: () => Promise<void>;
   }
 }

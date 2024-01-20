@@ -23,7 +23,10 @@ import {
 import { ConfigLoaderEnvironment } from "../helpers/config-environment-loader.helper.mjs";
 import { ConfigLoaderFile } from "../helpers/config-file-loader.helper.mjs";
 import { BootstrapException } from "../helpers/errors.helper.mjs";
-import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
+import {
+  ServiceMap,
+  ZCCApplicationDefinition,
+} from "../helpers/wiring.helper.mjs";
 
 const ENVIRONMENT_LOAD_PRIORITY = 1;
 const FILE_LOAD_PRIORITY = 2;
@@ -31,8 +34,8 @@ const FILE_LOAD_PRIORITY = 2;
 const APPLICATION = Symbol.for("APPLICATION_CONFIGURATION");
 
 type ConfigLoader = [
-  loader: (
-    application: ZCCApplicationDefinition,
+  loader: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
+    application: ZCCApplicationDefinition<S, C>,
     definedConfigurations: KnownConfigs,
   ) => ConfigLoaderReturn,
   priority: number,
@@ -85,7 +88,9 @@ function initWiringConfig(
     });
   });
 }
-export type ModuleConfiguration = Record<string, AnyConfig>;
+export type ModuleConfiguration = {
+  [key: string]: AnyConfig;
+};
 export type OptionalModuleConfiguration = ModuleConfiguration | undefined;
 
 export function ZCC_Configuration() {
@@ -177,7 +182,12 @@ export function ZCC_Configuration() {
       return cast(value, config?.type ?? "string") as T;
     },
     getConfigDefinitions: () => configDefinitions,
-    loadConfig: async (application: ZCCApplicationDefinition) => {
+    loadConfig: async <
+      S extends ServiceMap,
+      C extends OptionalModuleConfiguration,
+    >(
+      application: ZCCApplicationDefinition<S, C>,
+    ) => {
       if (!application) {
         throw new BootstrapException(
           "configuration",
@@ -233,7 +243,9 @@ export type ConfigManager = {
     dynamic?: AnyConfig,
   ): T;
   getConfigDefinitions: () => KnownConfigs;
-  loadConfig: (application: ZCCApplicationDefinition) => Promise<void>;
+  loadConfig: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
+    application: ZCCApplicationDefinition<S, C>,
+  ) => Promise<void>;
   merge: (
     merge: Partial<AbstractConfig>,
   ) => AbstractConfig & Partial<AbstractConfig>;

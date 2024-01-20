@@ -19,18 +19,6 @@
   ],
   "references": [
     {
-      "path": "../mqtt/tsconfig.lib.json"
-    },
-    {
-      "path": "../home-assistant/tsconfig.lib.json"
-    },
-    {
-      "path": "../ha-virtual-entity-bridge/tsconfig.lib.json"
-    },
-    {
-      "path": "../server/tsconfig.lib.json"
-    },
-    {
       "path": "../boilerplate/tsconfig.lib.json"
     },
     {

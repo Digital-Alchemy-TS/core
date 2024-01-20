@@ -102,13 +102,13 @@ export const LIB_HOME_ASSISTANT = ZCC.createLibrary({
     },
   },
   name: "home-assistant",
-  services: [
-    ["fetch", HAFetchAPI],
-    ["socket", WebsocketAPIService],
-    ["call", HACallProxy],
-    ["entity", HAEntityManager],
-    ["utils", HAUtilities],
-  ],
+  services: {
+    call: HACallProxy,
+    entity: HAEntityManager,
+    fetch: HAFetchAPI,
+    socket: WebsocketAPIService,
+    utils: HAUtilities,
+  },
 });
 
 type HassDefinition = {

@@ -2,60 +2,94 @@ import { EventEmitter } from "eventemitter3";
 import { Logger } from "pino";
 
 import { TCache } from "../extensions/cache.extension.mjs";
-import {
-  ModuleConfiguration,
-  OptionalModuleConfiguration,
-} from "../extensions/configuration.extension.mjs";
+import { OptionalModuleConfiguration } from "../extensions/configuration.extension.mjs";
 import { ILogger } from "../extensions/logger.extension.mjs";
-import { AbstractConfig } from "./config.helper.mjs";
+import {
+  AbstractConfig,
+  AnyConfig,
+  BooleanConfig,
+  NumberConfig,
+  StringConfig,
+} from "./config.helper.mjs";
 import { TChildLifecycle, TLifecycleBase } from "./lifecycle.helper.mjs";
 
 export type TServiceReturn<OBJECT extends object = object> = void | OBJECT;
 
-export type TModuleMappings = Record<string, TServiceDefinition>;
+export type TModuleMappings = Record<string, ServiceFunction>;
 export type TResolvedModuleMappings = Record<string, TServiceReturn>;
-type ServiceListing = Array<[name: string, loader: TServiceDefinition]>;
 
-export type ApplicationConfigurationOptions = {
+export type ApplicationConfigurationOptions<
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+> = {
   name?: string;
-  services?: ServiceListing;
-  libraries?: ZCCLibraryDefinition[];
-  configuration?: OptionalModuleConfiguration;
+  services?: S;
+  libraries?: ZCCLibraryDefinition<ServiceMap, OptionalModuleConfiguration>[];
+  configuration?: C;
 };
 
-export type ApplicationDefinition = {
-  configuration: ModuleConfiguration;
-  getConfig: <T>(property: string) => T;
-  getLibraries: () => never[];
-  getServiceList: () => [name: string, loader: TServiceDefinition][];
-  lifecycle: TLifecycleBase;
-  logger: ILogger;
-  name: string;
+export type TConfigurable =
+  | ZCCLibraryDefinition<ServiceMap, OptionalModuleConfiguration>
+  | ZCCApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
+
+export type TGetConfig<PARENT extends TConfigurable = TConfigurable> = <
+  K extends keyof ExtractConfig<PARENT>,
+>(
+  key: K,
+) => CastConfigResult<ExtractConfig<PARENT>[K]>;
+
+export type GetApisResult<S extends ServiceMap> = {
+  [K in keyof S]: ReturnType<S[K]> extends Promise<infer AsyncResult>
+    ? AsyncResult
+    : ReturnType<S[K]>;
 };
 
-export type TGetConfig = <T>(
-  property: string | [project: string, property: string],
-) => T;
+type ExtractConfig<T> =
+  T extends ZCCLibraryDefinition<ServiceMap, infer C> ? C : never;
 
-export type TServiceParams<T extends object = object> = {
+export type TServiceParams<PARENT extends TConfigurable = TConfigurable> = {
   context: string;
   logger: ILogger;
   lifecycle: TLifecycleBase;
-  loader: Loader<T>;
-  getConfig: TGetConfig;
+  loader: Loader<PARENT>;
+  getConfig: TGetConfig<PARENT>;
   event: EventEmitter;
+  getApis: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
+    project: ZCCLibraryDefinition<S, C> | ZCCApplicationDefinition<S, C>,
+  ) => GetApisResult<S>;
   cache: TCache;
 };
-export type TServiceDefinition = (parameters: TServiceParams) => TServiceReturn;
 
-export type Loader<T extends object = object> = (
-  service: string | TServiceDefinition,
-) => TServiceReturn<T>;
+type CastConfigResult<T extends AnyConfig> = T extends StringConfig
+  ? string
+  : T extends BooleanConfig
+    ? boolean
+    : T extends NumberConfig
+      ? number
+      : // Add other mappings as needed
+        unknown;
 
-export type LibraryConfigurationOptions = {
+export type Loader<PARENT extends TConfigurable> = <
+  K extends keyof PARENT["services"],
+>(
+  serviceName: K,
+) => ReturnType<PARENT["services"][K]> extends Promise<infer AsyncResult>
+  ? AsyncResult
+  : ReturnType<PARENT["services"][K]>;
+
+export type ServiceFunction<R = unknown> = (
+  params: TServiceParams<
+    ZCCLibraryDefinition<ServiceMap, OptionalModuleConfiguration>
+  >,
+) => R | Promise<R>;
+export type ServiceMap = Record<string, ServiceFunction>;
+export type LibraryConfigurationOptions<
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+> = {
   name: string;
-  services?: [name: string, service: TServiceDefinition][];
-  configuration?: OptionalModuleConfiguration;
+  services: S;
+  configuration?: C;
 };
 
 type onErrorCallback = () => void;
@@ -89,17 +123,23 @@ type Wire = {
   wire: () => Promise<TChildLifecycle>;
 };
 
-export type ZCCLibraryDefinition = LibraryConfigurationOptions &
+export type ZCCLibraryDefinition<
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+> = LibraryConfigurationOptions<S, C> &
   Wire & {
-    getConfig: <T>(property: string) => T;
+    getConfig: <K extends keyof C>(property: K) => CastConfigResult<C[K]>;
     lifecycle: TChildLifecycle;
     onError: (callback: onErrorCallback) => void;
   };
 
-export type ZCCApplicationDefinition = ApplicationConfigurationOptions &
+export type ZCCApplicationDefinition<
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+> = ApplicationConfigurationOptions<S, C> &
   Wire & {
     bootstrap: (options?: BootstrapOptions) => Promise<void>;
-    getConfig: <T>(property: string) => T;
+    getConfig: <K extends keyof C>(property: K) => CastConfigResult<C[K]>;
     lifecycle: TChildLifecycle;
     onError: (callback: onErrorCallback) => void;
     teardown: () => Promise<void>;

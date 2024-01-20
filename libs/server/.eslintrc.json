@@ -14,7 +14,7 @@
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
         "project": [
-          "libs/automation-logic/tsconfig.lib.json"
+          "libs/server/tsconfig.lib.json"
         ]
       }
     },
@@ -26,7 +26,7 @@
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
         "project": [
-          "libs/automation-logic/tsconfig.spec.json"
+          "libs/server/tsconfig.spec.json"
         ]
       }
     }

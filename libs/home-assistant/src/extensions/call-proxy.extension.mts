@@ -1,6 +1,5 @@
 import { InternalError, TServiceParams } from "@zcc/boilerplate";
 import { INCREMENT, is, SECOND, sleep, START, ZCC } from "@zcc/utilities";
-import { nextTick } from "async";
 import { exit } from "process";
 
 import {
@@ -137,7 +136,7 @@ export function HACallProxy({
 
   const out = buildCallProxy();
   ZCC.hass.call = out;
-  return buildCallProxy;
+  return out;
 }
 
 export type THACallProxy = CallProxy;

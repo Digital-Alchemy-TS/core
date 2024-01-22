@@ -29,7 +29,7 @@
                 "state": {
                   "type": "markdown",
                   "state": {
-                    "file": "01 Libraries/01 Libraries.md",
+                    "file": "01 Libraries/01.05 Gotify/Configuration/TOKEN.md",
                     "mode": "source",
                     "source": false
                   }
@@ -74,7 +74,7 @@
                     "state": {
                       "type": "localgraph",
                       "state": {
-                        "file": "01 Libraries/01 Libraries.md",
+                        "file": "01 Libraries/01.05 Gotify/Configuration/TOKEN.md",
                         "options": {
                           "collapse-filter": true,
                           "search": "",
@@ -155,7 +155,8 @@
               "state": {}
             }
           }
-        ]
+        ],
+        "currentTab": 1
       }
     ],
     "direction": "horizontal",
@@ -175,7 +176,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "01 Libraries/01 Libraries.md",
+                "file": "01 Libraries/01.05 Gotify/Configuration/TOKEN.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -192,7 +193,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "01 Libraries/01 Libraries.md",
+                "file": "01 Libraries/01.05 Gotify/Configuration/TOKEN.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -215,7 +216,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "01 Libraries/01 Libraries.md"
+                "file": "01 Libraries/01.05 Gotify/Configuration/TOKEN.md"
               }
             }
           }
@@ -235,8 +236,22 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "d94f9e1d237dd9fc",
+  "active": "e04ed803c7b2a399",
   "lastOpenFiles": [
+    "01 Libraries/01.01 Home Assistant/Configuration/WEBSOCKET_URL.md",
+    "01 Libraries/01.01 Home Assistant/Extensions/Websocket API.md",
+    "01 Libraries/01.01 Home Assistant/Configuration/WARN_REQUESTS_PER_SEC.md",
+    "01 Libraries/01.01 Home Assistant/Configuration/VERIFICATION_FILE.md",
+    "01 Libraries/01.01 Home Assistant/Extensions/Utilities.md",
+    "01 Libraries/01.01 Home Assistant/Extensions/Type Writer.md",
+    "01 Libraries/01.01 Home Assistant/Configuration/TOKEN.md",
+    "01 Libraries/01.01 Home Assistant/Configuration/TALK_BACK_BASE_URL.md",
+    "01 Libraries/01.01 Home Assistant/Configuration/SOCKET_AUTO_CONNECT.md",
+    "01 Libraries/01.04 Boilerplate/Metrics/SCHEDULE_EXECUTION_TIME.md",
+    "01 Libraries/01.04 Boilerplate/Metrics/SCHEDULE_ERRORS.md",
+    "01 Libraries/01.04 Boilerplate/Metrics/SCHEDULE_EXECUTION_COUNT.md",
+    "03 Release Notes/0.x/0.1 Tang.md",
+    "01 Libraries/01 Libraries.md",
     "01 Libraries/01.09 Support/Utilities",
     "01 Libraries/Untitled/Untitled",
     "01 Libraries/01.09 Support",
@@ -244,7 +259,6 @@
     "02 Applications/02.02 Code Examples & Inspiration",
     "02 Applications/02.01 Demo Repositories",
     "05 Reference/05.02 External Services/MQTT.md",
-    "01 Libraries/01.04 Boilerplate/Metrics/SCHEDULE_ERRORS.md",
     "05 Reference/05.02 External Services",
     "04 Repository Notes/Publishing Documentation.md",
     "01 Libraries/01.01 Home Assistant/Configuration/RETRY_INTERVAL.md",
@@ -256,22 +270,9 @@
     "01 Libraries/01.05 Gotify/Configuration/CHANNEL_MAPPING.md",
     "01 Libraries/01.01 Home Assistant/Configuration/CALL_PROXY_AUTO_SCAN.md",
     "01 Libraries/01.01 Home Assistant/Extensions/Call Proxy.md",
-    "01 Libraries/01.04 Boilerplate/Boilerplate.md",
-    "01 Libraries/01.01 Home Assistant/Configuration/BASE_URL.md",
-    "01 Libraries/01.05 Gotify/Configuration/BASE_URL.md",
-    "01 Libraries/01.04 Boilerplate/Metrics/ACTIVE_SCHEDULES.md",
-    "index.md",
-    "04 Repository Notes/Typography Notes.md",
-    "01 Libraries/01 Libraries.md",
-    "01 Libraries/01.04 Boilerplate/01.04 Boilerplate.md",
-    "01 Libraries/01.09 Support/MQTT/MQTT.md",
-    "40 ZCC.md",
-    "01 Libraries/01.09 Support/Server/Server.md",
-    "01 Libraries/01.03 Automation Logic/01.03 Automation Logic.md",
     "05 Reference/05.01 Digital Alchemy/utilities",
     "05 Reference/05.01 Digital Alchemy/tty",
     "05 Reference/05.01 Digital Alchemy/server",
-    "05 Reference/05.01 Digital Alchemy/pi-matrix",
-    "05 Reference/05.01 Digital Alchemy/home-assistant"
+    "05 Reference/05.01 Digital Alchemy/pi-matrix"
   ]
 }

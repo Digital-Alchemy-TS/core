@@ -1,4 +1,10 @@
-import { TFetch, TFetchBody, TServiceParams } from "@zcc/boilerplate";
+import {
+  FilteredFetchArguments,
+  TDownload,
+  TFetch,
+  TFetchBody,
+  TServiceParams,
+} from "@zcc/boilerplate";
 import { DOWN, is, NO_CHANGE, SECOND, UP, ZCC } from "@zcc/utilities";
 import dayjs from "dayjs";
 
@@ -35,20 +41,28 @@ type SendBody<
   state?: STATE;
 };
 
-export function HAFetchAPI({ logger, lifecycle, context }: TServiceParams) {
+export function HAFetchAPI({
+  logger,
+  lifecycle,
+  context,
+  event,
+}: TServiceParams) {
   let baseUrl: string;
   let token: string;
-  let fetch: TFetch;
+  let fetcher: TFetch;
+  let downloader: TDownload;
 
   // Load configurations
   lifecycle.onPostConfig(() => {
     token = LIB_HOME_ASSISTANT.getConfig("TOKEN");
     baseUrl = LIB_HOME_ASSISTANT.getConfig("BASE_URL");
-    fetch = ZCC.createFetcher({
+    const fetch = ZCC.createFetcher({
       baseUrl,
       context,
       headers: { Authorization: `Bearer ${token}` },
-    }).fetch;
+    });
+    fetcher = fetch.fetch;
+    downloader = fetch.download;
     logger.trace(`Load configuration`);
   });
 
@@ -75,7 +89,7 @@ export function HAFetchAPI({ logger, lifecycle, context }: TServiceParams) {
     }
 
     const params = { end: end.toISOString(), start: start.toISOString() };
-    const events = await fetch<RawCalendarEvent[]>({
+    const events = await fetcher<RawCalendarEvent[]>({
       params,
       url: `/api/calendars/${calendar}`,
     });
@@ -85,7 +99,7 @@ export function HAFetchAPI({ logger, lifecycle, context }: TServiceParams) {
       calendar,
       events.length,
     );
-    ZCC.event.emit(HASS_CALENDAR_SEARCH);
+    event.emit(HASS_CALENDAR_SEARCH);
     return events.map(({ start, end, ...extra }) => ({
       ...extra,
       end: dayjs(end.dateTime),
@@ -98,8 +112,8 @@ export function HAFetchAPI({ logger, lifecycle, context }: TServiceParams) {
     data: PICK_SERVICE_PARAMETERS<SERVICE>,
   ): Promise<ENTITY_STATE<PICK_ENTITY>[]> {
     const [domain, service] = serviceName.split(".");
-    ZCC.event.emit(HASS_CALL_SERVICE, { domain, service, type: "fetch" });
-    return await fetch({
+    event.emit(HASS_CALL_SERVICE, { domain, service, type: "fetch" });
+    return await fetcher({
       body: data as TFetchBody,
       method: "post",
       url: `/api/services/${domain}/${service}`,
@@ -108,23 +122,23 @@ export function HAFetchAPI({ logger, lifecycle, context }: TServiceParams) {
 
   async function checkConfig(): Promise<CheckConfigResult> {
     logger.trace(`Check config`);
-    return await fetch({
+    return await fetcher({
       method: `post`,
       url: `/api/config/core/check_config`,
     });
   }
 
-  // async function download(
-  //   destination: string,
-  //   fetchWith: FilteredFetchArguments,
-  // ): Promise<void> {
-  //   await ZCC.fetch.download({
-  //     ...fetchWith,
-  //     baseUrl,
-  //     destination,
-  //     headers: { Authorization: `Bearer ${token}` },
-  //   });
-  // }
+  async function download(
+    destination: string,
+    fetchWith: FilteredFetchArguments,
+  ): Promise<void> {
+    await downloader({
+      ...fetchWith,
+      baseUrl,
+      destination,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
 
   async function fetchEntityCustomizations<
     T extends Record<never, unknown> = Record<
@@ -132,7 +146,9 @@ export function HAFetchAPI({ logger, lifecycle, context }: TServiceParams) {
       Record<string, string>
     >,
   >(entityId: string | string[]): Promise<T> {
-    return await fetch<T>({ url: `/api/config/customize/config/${entityId}` });
+    return await fetcher<T>({
+      url: `/api/config/customize/config/${entityId}`,
+    });
   }
 
   async function fetchEntityHistory<
@@ -148,7 +164,7 @@ export function HAFetchAPI({ logger, lifecycle, context }: TServiceParams) {
       { from: from.toISOString(), to: to.toISOString() },
       `[${entity_id}] Fetch entity history`,
     );
-    const result = await fetch<[T[]]>({
+    const result = await fetcher<[T[]]>({
       params: {
         end_time: to.toISOString(),
         filter_entity_id: entity_id,
@@ -169,7 +185,7 @@ export function HAFetchAPI({ logger, lifecycle, context }: TServiceParams) {
     data?: DATA,
   ): Promise<void> {
     logger.trace({ name: event, ...data }, `Firing event`);
-    const response = await fetch<{ message: string }>({
+    const response = await fetcher<{ message: string }>({
       // body: data,
       body: {},
       method: "post",
@@ -182,17 +198,17 @@ export function HAFetchAPI({ logger, lifecycle, context }: TServiceParams) {
 
   async function getAllEntities(): Promise<GenericEntityDTO[]> {
     logger.trace(`Get all entities`);
-    return await fetch<GenericEntityDTO[]>({ url: `/api/states` });
+    return await fetcher<GenericEntityDTO[]>({ url: `/api/states` });
   }
 
   async function getHassConfig(): Promise<HassConfig> {
     logger.trace(`Get config`);
-    return await fetch({ url: `/api/config` });
+    return await fetcher({ url: `/api/config` });
   }
 
   async function getLogs(): Promise<HomeAssistantServerLogItem[]> {
     logger.trace(`Get logs`);
-    const results = await fetch<HomeAssistantServerLogItem[]>({
+    const results = await fetcher<HomeAssistantServerLogItem[]>({
       url: `/api/error/all`,
     });
     return results.map(i => {
@@ -204,12 +220,12 @@ export function HAFetchAPI({ logger, lifecycle, context }: TServiceParams) {
 
   async function getRawLogs(): Promise<string> {
     logger.trace(`Get raw logs`);
-    return await fetch<string>({ process: "text", url: `/api/error_log` });
+    return await fetcher<string>({ process: "text", url: `/api/error_log` });
   }
 
   async function listServices(): Promise<HassServiceDTO[]> {
     logger.trace(`List services`);
-    return await fetch<HassServiceDTO[]>({ url: `/api/services` });
+    return await fetcher<HassServiceDTO[]>({ url: `/api/services` });
   }
 
   async function updateEntity<
@@ -227,13 +243,13 @@ export function HAFetchAPI({ logger, lifecycle, context }: TServiceParams) {
       body.attributes = attributes;
     }
     logger.trace({ ...body, name: entity_id }, `Set entity state`);
-    await fetch({ body, method: "post", url: `/api/states/${entity_id}` });
+    await fetcher({ body, method: "post", url: `/api/states/${entity_id}` });
   }
 
   async function webhook(name: string, data: object = {}): Promise<void> {
     logger.trace({ ...data, name }, `Webhook`);
-    ZCC.event.emit(HASS_SEND_WEBHOOK, { name });
-    await fetch({
+    event.emit(HASS_SEND_WEBHOOK, { name });
+    await fetcher({
       body: data,
       method: "post",
       process: "text",
@@ -245,8 +261,8 @@ export function HAFetchAPI({ logger, lifecycle, context }: TServiceParams) {
     calendarSearch,
     callService,
     checkConfig,
-    // download,
-    fetch,
+    download,
+    fetch: fetcher,
     fetchEntityCustomizations,
     fetchEntityHistory,
     fireEvent,

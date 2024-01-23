@@ -1,5 +1,5 @@
 import { InternalError, TServiceParams } from "@zcc/boilerplate";
-import { SECOND, sleep, START, ZCC } from "@zcc/utilities";
+import { SECOND, sleep, START } from "@zcc/utilities";
 import { exit } from "process";
 import WS from "ws";
 
@@ -27,15 +27,19 @@ const CLEANUP_INTERVAL = 5;
 const PING_INTERVAL = 10;
 let messageCount = START;
 
-export function WebsocketAPIService({ logger, lifecycle }: TServiceParams) {
+export function WebsocketAPIService({
+  logger,
+  lifecycle,
+  scheduler,
+  context,
+  event,
+}: TServiceParams) {
   let token: string;
   let WARN_REQUESTS: number;
   let CRASH_REQUESTS: number;
   let AUTH_TIMEOUT: ReturnType<typeof setTimeout>;
   let baseUrl: string;
   let websocketUrl: string;
-  let pingInterval: ReturnType<typeof setInterval>;
-  let cleanupInterval: ReturnType<typeof setInterval>;
   let retryInterval: number;
   let autoConnect = false;
 
@@ -66,32 +70,25 @@ export function WebsocketAPIService({ logger, lifecycle }: TServiceParams) {
   });
 
   // Set up intervals
-  lifecycle.onReady(() => {
-    if (pingInterval) {
-      clearInterval(pingInterval);
-    }
-    if (cleanupInterval) {
-      clearInterval(cleanupInterval);
-    }
-    pingInterval = setInterval(ping, PING_INTERVAL * SECOND);
-    logger.trace(`Starting ping interval`);
-    cleanupInterval = setInterval(() => {
+  scheduler({
+    context,
+    exec: async () => await ping(),
+    interval: PING_INTERVAL * SECOND,
+  });
+  scheduler({
+    context,
+    exec: () => {
       const now = Date.now();
       MESSAGE_TIMESTAMPS = MESSAGE_TIMESTAMPS.filter(
         time => time > now - SECOND,
       );
-    }, CLEANUP_INTERVAL * SECOND);
+    },
+    interval: CLEANUP_INTERVAL * SECOND,
   });
 
   lifecycle.onShutdownStart(async () => {
-    logger.debug(`Tearing down connection`);
+    logger.debug(`[Shutdown] Tearing down connection`);
     await teardown();
-    if (cleanupInterval) {
-      clearInterval(cleanupInterval);
-    }
-    if (pingInterval) {
-      clearInterval(pingInterval);
-    }
   });
 
   async function ping() {
@@ -100,9 +97,7 @@ export function WebsocketAPIService({ logger, lifecycle }: TServiceParams) {
     }
     try {
       logger.trace(`ping`);
-      const pong = await sendMessage({
-        type: HASSIO_WS_COMMAND.ping,
-      });
+      const pong = await sendMessage({ type: HASSIO_WS_COMMAND.ping });
       if (pong) {
         return;
       }
@@ -140,7 +135,7 @@ export function WebsocketAPIService({ logger, lifecycle }: TServiceParams) {
       return undefined;
     }
     countMessage();
-    ZCC.event.emit(HASS_WEBSOCKET_SEND_MESSAGE, {
+    event.emit(HASS_WEBSOCKET_SEND_MESSAGE, {
       type: data.type,
     } as HassWebsocketSendMessageData);
     if (data.type !== HASSIO_WS_COMMAND.auth) {
@@ -254,7 +249,7 @@ export function WebsocketAPIService({ logger, lifecycle }: TServiceParams) {
    */
   async function onMessage(message: SocketMessageDTO) {
     const id = Number(message.id);
-    ZCC.event.emit(HASS_WEBSOCKET_RECEIVE_MESSAGE, {
+    event.emit(HASS_WEBSOCKET_RECEIVE_MESSAGE, {
       type: message.type,
     } as HassWebsocketReceiveMessageData);
     switch (message.type as HassSocketMessageTypes) {
@@ -268,7 +263,7 @@ export function WebsocketAPIService({ logger, lifecycle }: TServiceParams) {
         CONNECTION_ACTIVE = true;
         clearTimeout(AUTH_TIMEOUT);
         await subscribeEvents();
-        ZCC.event.emit(ON_SOCKET_AUTH);
+        event.emit(ON_SOCKET_AUTH);
         return;
 
       case HassSocketMessageTypes.event:

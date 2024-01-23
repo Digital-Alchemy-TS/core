@@ -1,4 +1,4 @@
-import { GetApis, TServiceParams } from "@zcc/boilerplate";
+import { TServiceParams } from "@zcc/boilerplate";
 import {
   eachSeries,
   EMPTY,
@@ -46,16 +46,8 @@ type Watcher<ENTITY_ID extends PICK_ENTITY = PICK_ENTITY> = {
   type: "once" | "dynamic" | "annotation";
 };
 
-export function HAEntityManager({
-  logger,
-  lifecycle,
-  getApis,
-}: TServiceParams) {
-  let hass: GetApis<typeof LIB_HOME_ASSISTANT>;
-
-  lifecycle.onPreInit(() => {
-    hass = getApis(LIB_HOME_ASSISTANT);
-  });
+export function HAEntityManager({ logger, getApis }: TServiceParams) {
+  const hass = getApis(LIB_HOME_ASSISTANT);
 
   /**
    * MASTER_STATE.switch.desk_light = {entity_id,state,attributes,...}
@@ -95,9 +87,17 @@ export function HAEntityManager({
       return;
     }
     await eachSeries(list, async watcher => {
-      await watcher.callback(new_state, old_state);
-      if (watcher.type === "once") {
-        remove(entity_id, watcher.id);
+      try {
+        await watcher.callback(new_state, old_state);
+      } catch (error) {
+        logger.warn(
+          { entity_id, error, new_state },
+          `Entity update callback threw error`,
+        );
+      } finally {
+        if (watcher.type === "once") {
+          remove(entity_id, watcher.id);
+        }
       }
     });
   }
@@ -302,7 +302,23 @@ export function HAEntityManager({
     return is.undefined(get(MASTER_STATE, entityId));
   }
 
+  function OnUpdate<ENTITY extends PICK_ENTITY>(
+    entity_id: ENTITY,
+    callback: WatchFunction<ENTITY>,
+  ) {
+    const current = entityWatchers.get(entity_id) ?? [];
+    entityWatchers.set(entity_id, [
+      ...current,
+      {
+        callback: async (a, b) => await callback(a, b),
+        id: v4(),
+        type: "dynamic",
+      },
+    ]);
+  }
+
   return {
+    OnUpdate,
     byId,
     createEntityProxy,
     findByDomain,

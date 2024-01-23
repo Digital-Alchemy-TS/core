@@ -1,5 +1,5 @@
-import { GetApis, TServiceParams } from "@zcc/boilerplate";
-import { HALF, SECOND, sleep, ZCC } from "@zcc/utilities";
+import { TServiceParams } from "@zcc/boilerplate";
+import { HALF, SECOND, sleep } from "@zcc/utilities";
 
 import {
   HASS_ON_BACKUP,
@@ -12,12 +12,8 @@ import {
 import { HASSIO_WS_COMMAND } from "../helpers/types/constants.helper.mjs";
 import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
-export function HAUtilities({ logger, getApis, lifecycle }: TServiceParams) {
-  let hass: GetApis<typeof LIB_HOME_ASSISTANT>;
-
-  lifecycle.onPreInit(() => {
-    hass = getApis(LIB_HOME_ASSISTANT);
-  });
+export function HAUtilities({ logger, getApis, event }: TServiceParams) {
+  const hass = getApis(LIB_HOME_ASSISTANT);
 
   async function generate(): Promise<HomeAssistantBackup> {
     let current = await list();
@@ -45,7 +41,7 @@ export function HAUtilities({ logger, getApis, lifecycle }: TServiceParams) {
       current = await list();
     }
     if (start) {
-      ZCC.event.emit(HASS_ON_BACKUP, {
+      event.emit(HASS_ON_BACKUP, {
         time: Date.now() - start,
       } as HassOnBackupData);
     }

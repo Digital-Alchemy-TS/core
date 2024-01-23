@@ -1,16 +1,9 @@
 import { TServiceParams } from "@zcc/boilerplate";
 import { GenericEntityDTO, PICK_ENTITY } from "@zcc/home-assistant";
-import { EMPTY, MINUTE, ZCC } from "@zcc/utilities";
-import async from "async";
+import { EMPTY, MINUTE } from "@zcc/utilities";
 import dayjs from "dayjs";
-import { get } from "object-path";
 
-import {
-  CIRCADIAN_ENABLED,
-  CIRCADIAN_MAX_TEMP,
-  CIRCADIAN_MIN_TEMP,
-  CIRCADIAN_SENSOR,
-} from "../helpers/configuration.helper.mjs";
+import { LIB_AUTOMATION_LOGIC } from "../automation-logic.module.mjs";
 import { LOCATION_UPDATED } from "../helpers/events.helper.mjs";
 
 type ColorModes = "color_temp" | "xy" | "brightness";
@@ -37,7 +30,8 @@ const MIRED_CONVERSION = 1_000_000;
 export function CircadianLighting({
   logger,
   lifecycle,
-  getConfig,
+  getApis,
+  event,
 }: TServiceParams) {
   //
   let maxTemperature: number;
@@ -46,10 +40,10 @@ export function CircadianLighting({
   let circadianSensor: SENSOR;
 
   lifecycle.onPostConfig(() => {
-    maxTemperature = getConfig(CIRCADIAN_MAX_TEMP);
-    minTemperature = getConfig(CIRCADIAN_MIN_TEMP);
-    circadianEnabled = getConfig(CIRCADIAN_ENABLED);
-    circadianSensor = getConfig(CIRCADIAN_SENSOR);
+    maxTemperature = LIB_AUTOMATION_LOGIC.getConfig("CIRCADIAN_MAX_TEMP");
+    minTemperature = LIB_AUTOMATION_LOGIC.getConfig("CIRCADIAN_MIN_TEMP");
+    circadianEnabled = LIB_AUTOMATION_LOGIC.getConfig("CIRCADIAN_ENABLED");
+    circadianSensor = LIB_AUTOMATION_LOGIC.getConfig("CIRCADIAN_SENSOR");
   });
 
   // public get kelvin(): number {
@@ -80,7 +74,7 @@ export function CircadianLighting({
     }, MINUTE);
   }
 
-  ZCC.event.on(LOCATION_UPDATED, () => updateKelvin());
+  event.on(LOCATION_UPDATED, () => updateKelvin());
 
   function updateKelvin() {
     if (!circadianEntity) {

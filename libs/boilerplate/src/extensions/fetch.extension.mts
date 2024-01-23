@@ -136,7 +136,7 @@ export function ZCC_Fetch({ logger, context: parentContext }: TServiceParams) {
       method = "get",
       process,
       label,
-      context = parentContext,
+      context = logContext || parentContext,
       ...fetchWith
     }: Partial<FetchArguments<BODY>>) {
       const out = await MeasureRequest(label, context, async () => {
@@ -160,7 +160,7 @@ export function ZCC_Fetch({ logger, context: parentContext }: TServiceParams) {
         body,
         headers = {},
         label,
-        context = parentContext,
+        context = logContext || parentContext,
         method = "get",
         ...fetchWith
       }: DownloadOptions) => {
@@ -211,9 +211,12 @@ export type TFetch = <T, BODY extends object = object>(
   fetchWith: Partial<FetchArguments<BODY>>,
 ) => Promise<T>;
 
+export type TDownload = (fetchWith: DownloadOptions) => Promise<void>;
+
 declare module "@zcc/utilities" {
   export interface ZCCDefinition {
     createFetcher: (options: FetcherOptions) => {
+      download: TDownload;
       fetch: TFetch;
     };
     fetch: TFetch;

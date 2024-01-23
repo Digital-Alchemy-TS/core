@@ -5,7 +5,7 @@ import {
   LIB_HOME_ASSISTANT,
   PICK_ENTITY,
 } from "@zcc/home-assistant";
-import { CronExpression, each, is, ZCC } from "@zcc/utilities";
+import { CronExpression, each, is } from "@zcc/utilities";
 
 import { LIB_AUTOMATION_LOGIC } from "../automation-logic.module.mjs";
 import {
@@ -17,23 +17,30 @@ export function AggressiveScenes({
   logger,
   lifecycle,
   getApis,
+  scheduler,
+  event,
+  context,
 }: TServiceParams) {
   let aggressiveScenes = false;
 
   const hass = getApis(LIB_HOME_ASSISTANT);
-  // loader("")
+
   lifecycle.onPostConfig(() => {
     aggressiveScenes = LIB_AUTOMATION_LOGIC.getConfig("AGGRESSIVE_SCENES");
   });
 
-  ZCC.cron(CronExpression.EVERY_30_SECONDS, async () => {
-    try {
-      await each([...SceneRoomService.loaded.keys()], async name => {
-        await validateRoomScene(name);
-      });
-    } catch (error) {
-      logger.error({ error });
-    }
+  scheduler({
+    context,
+    exec: async () => {
+      try {
+        await each([...SceneRoomService.loaded.keys()], async name => {
+          await validateRoomScene(name);
+        });
+      } catch (error) {
+        logger.error({ error });
+      }
+    },
+    schedule: CronExpression.EVERY_30_SECONDS,
   });
 
   async function manageSwitch(
@@ -86,15 +93,15 @@ export function AggressiveScenes({
   ) {
     const entity_id = entity.entity_id;
     logger.debug({ name: entity_id }, `changing state to {%s}`, expected.state);
-    ZCC.event.emit(AGGRESSIVE_SCENES_ADJUSTMENT, {
+    event.emit(AGGRESSIVE_SCENES_ADJUSTMENT, {
       entity_id,
       type: "switch_on_off",
     } as AggressiveScenesAdjustmentData);
     if (expected.state === "on") {
-      await call.switch.turn_on({ entity_id });
+      await hass.call.switch.turn_on({ entity_id });
       return;
     }
-    await call.switch.turn_off({ entity_id });
+    await hass.call.switch.turn_off({ entity_id });
   }
 
   /**
@@ -126,7 +133,7 @@ export function AggressiveScenes({
     }
 
     await each(Object.keys(configuration), async (entity_id: PICK_ENTITY) => {
-      const entity = ZCC.hass.entity.byId(entity_id);
+      const entity = hass.entity.byId(entity_id);
       if (!entity) {
         // * Home assistant outright does not send an entity for this id
         // The wrong id was probably input

@@ -320,7 +320,9 @@ export type FetcherOptions = {
   context?: string;
 };
 
-export type DownloadOptions = Partial<FetchArguments> & { destination: string };
+export type DownloadOptions<BODY extends TFetchBody = undefined> = Partial<
+  FetchArguments<BODY>
+> & { destination: string };
 
 export function cast(item: FetchParameterTypes): string {
   if (is.array(item)) {

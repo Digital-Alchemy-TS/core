@@ -190,7 +190,7 @@ function log(
   standardLogger(method, context, ...parameters);
 }
 
-export function ZCC_Logger({ lifecycle }: TServiceParams) {
+export function ZCC_Logger({ lifecycle, getApis, context }: TServiceParams) {
   // tuned to be most useful in debugging this
   inspect.defaultOptions.colors = true;
   inspect.defaultOptions.depth = 10;
@@ -198,21 +198,21 @@ export function ZCC_Logger({ lifecycle }: TServiceParams) {
   inspect.defaultOptions.compact = false;
   inspect.defaultOptions.colors = true;
 
-  let metricsInterval: ReturnType<typeof setInterval>;
+  const apis = getApis(LIB_BOILERPLATE);
+
   lifecycle.onBootstrap(() => {
     if (!LIB_BOILERPLATE.getConfig("LOG_LEVEL")) {
       return;
     }
-    metricsInterval = setInterval(() => {
-      const count = Object.keys(HIGHLIGHTED_CONTEXT_CACHE).length;
-      LOGGER_CONTEXT_ENTRIES_COUNT.set(count);
-    }, 10 * SECOND);
-  });
-
-  lifecycle.onShutdownStart(() => {
-    if (metricsInterval) {
-      clearInterval(metricsInterval);
-    }
+    // logger loads first, this is the easiest way to access the scheduler
+    apis.schedule({
+      context,
+      exec: () => {
+        const count = Object.keys(HIGHLIGHTED_CONTEXT_CACHE).length;
+        LOGGER_CONTEXT_ENTRIES_COUNT.set(count);
+      },
+      interval: 10 * SECOND,
+    });
   });
 
   let logLevel: pino.Level = "info";

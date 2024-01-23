@@ -1,5 +1,6 @@
 import {
   FilteredFetchArguments,
+  LIB_BOILERPLATE,
   TFetchBody,
   TServiceParams,
 } from "@zcc/boilerplate";

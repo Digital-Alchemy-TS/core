@@ -1,3 +1,8 @@
+import { is } from "@zcc/utilities";
+import { get, set } from "object-path";
+
+import { ServiceMap, ZCCApplicationDefinition } from "./wiring.helper.mjs";
+
 type StringFlags = "password" | "url";
 export type CodeConfigDefinition = Record<string, AnyConfig>;
 export type ZccConfigTypes =
@@ -118,3 +123,63 @@ export interface AbstractConfig {
   libs: Record<string, Record<string, unknown>>;
 }
 export type ConfigLoaderReturn = Promise<Partial<AbstractConfig>>;
+
+export type ConfigLoader = [
+  loader: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
+    application: ZCCApplicationDefinition<S, C>,
+    definedConfigurations: KnownConfigs,
+  ) => ConfigLoaderReturn,
+  priority: number,
+];
+
+export function cast<T = unknown>(data: string | string[], type: string): T {
+  switch (type) {
+    case "boolean": {
+      data ??= "";
+      return (
+        is.boolean(data)
+          ? data
+          : ["true", "y", "1"].includes((data as string).toLowerCase())
+      ) as T;
+    }
+    case "number":
+      return Number(data) as T;
+    case "string[]":
+      if (is.undefined(data)) {
+        return [] as T;
+      }
+      if (is.array(data)) {
+        return data.map(String) as T;
+      }
+      // This occurs with cli switches
+      // If only 1 is passed, it'll get the value
+      // ex: --foo=bar  ==== {foo:'bar'}
+      // If duplicates are passed, will receive array
+      // ex: --foo=bar --foo=baz === {foo:['bar','baz']}
+      return [String(data)] as T;
+  }
+  return data as T;
+}
+
+export function initWiringConfig(
+  configs: KnownConfigs,
+  configuration: Partial<AbstractConfig>,
+): void {
+  configs.forEach((configurations, project) => {
+    const isApplication = !is.string(project);
+    Object.entries(configurations).forEach(([key, config]) => {
+      if (config.default !== undefined) {
+        const configPath = isApplication
+          ? `application.${key}`
+          : `libs.${project}.${key}`;
+        if (is.undefined(get(configuration, configPath))) {
+          set(configuration, configPath, config.default);
+        }
+      }
+    });
+  });
+}
+export type ModuleConfiguration = {
+  [key: string]: AnyConfig;
+};
+export type OptionalModuleConfiguration = ModuleConfiguration | undefined;

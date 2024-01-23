@@ -1,14 +1,15 @@
+import { CronExpression, TBlackHole } from "@zcc/utilities";
 import { EventEmitter } from "eventemitter3";
 import { Logger } from "pino";
 
 import { TCache } from "../extensions/cache.extension.mjs";
-import { OptionalModuleConfiguration } from "../extensions/configuration.extension.mjs";
 import { ILogger } from "../extensions/logger.extension.mjs";
 import {
   AbstractConfig,
   AnyConfig,
   BooleanConfig,
   NumberConfig,
+  OptionalModuleConfiguration,
   StringConfig,
 } from "./config.helper.mjs";
 import { TChildLifecycle, TLifecycleBase } from "./lifecycle.helper.mjs";
@@ -26,6 +27,10 @@ export type ApplicationConfigurationOptions<
   services?: S;
   libraries?: ZCCLibraryDefinition<ServiceMap, OptionalModuleConfiguration>[];
   configuration?: C;
+  /**
+   * Define which services should be initialized first. Any remaining services are done at the end in no set order
+   */
+  priorityInit?: Extract<keyof S, string>[];
 };
 
 export type TConfigurable<
@@ -48,17 +53,57 @@ export type GetApisResult<S extends ServiceMap> = {
 type ExtractConfig<T> =
   T extends ZCCLibraryDefinition<ServiceMap, infer C> ? C : never;
 
+//
+type IsObjectReturningFunction<T> = T extends (
+  ...arguments_: never[]
+) => infer R
+  ? R extends Promise<infer P>
+    ? P extends object
+      ? T
+      : never
+    : R extends object
+      ? T
+      : never
+  : never;
+
+type ObjectReturningServiceMap<S extends ServiceMap> = {
+  [K in keyof S as IsObjectReturningFunction<S[K]> extends never
+    ? never
+    : K]: S[K];
+};
+
 type TGetApi = <S extends ServiceMap, C extends OptionalModuleConfiguration>(
   project: TConfigurable<S, C>,
-) => GetApisResult<S>;
+) => GetApisResult<ObjectReturningServiceMap<S>>;
+
+export type Schedule = string | CronExpression;
+export type ScheduleItem = {
+  start: () => void;
+  stop: () => void;
+};
+export type SchedulerOptions = {
+  context: string;
+  exec: () => TBlackHole;
+  /**
+   * if provided, specific metrics will be kept and labelled with provided label
+   *
+   * - execution count
+   * - errors
+   * - execution duration
+   */
+  label?: string;
+} & ({ schedule: Schedule } | { interval: number });
+
+export type TScheduler = (options: SchedulerOptions) => ScheduleItem;
 
 export type TServiceParams = {
+  cache: TCache;
   context: string;
-  logger: ILogger;
-  lifecycle: TLifecycleBase;
   event: EventEmitter;
   getApis: TGetApi;
-  cache: TCache;
+  lifecycle: TLifecycleBase;
+  logger: ILogger;
+  scheduler: TScheduler;
 };
 export type GetApis<T> =
   T extends ZCCLibraryDefinition<infer S, OptionalModuleConfiguration>
@@ -76,6 +121,12 @@ export type CastConfigResult<T extends AnyConfig> = T extends StringConfig
       : // Add other mappings as needed
         unknown;
 
+// export type TModuleInit<S extends ServiceMap> = {
+//   /**
+//    * Define which services should be initialized first. Any remaining services are done at the end in no set order
+//    */
+//   priority?: Extract<keyof S, string>[];
+// };
 export type Loader<PARENT extends TConfigurable> = <
   K extends keyof PARENT["services"],
 >(
@@ -95,6 +146,10 @@ export type LibraryConfigurationOptions<
   name: string;
   services: S;
   configuration?: C;
+  /**
+   * Define which services should be initialized first. Any remaining services are done at the end in no set order
+   */
+  priorityInit?: Extract<keyof S, string>[];
 };
 
 type onErrorCallback = () => void;

@@ -1,7 +1,6 @@
 import { is } from "@zcc/utilities";
+import Bottleneck from "bottleneck";
 import { MergeExclusive } from "type-fest";
-
-import { TFetchBody } from "../extensions/fetch.extension.mjs";
 
 /**
  * Defines the types of parameters that can be used in fetch requests.
@@ -56,6 +55,14 @@ type BaseFetchArguments = {
    * ? boolean values are deprecated
    */
   process?: FetchProcessTypes;
+  /**
+   * If provided, metrics will be kept for this request, and associated with labels
+   */
+  label?: string;
+  /**
+   * Defaults to global fetch context
+   */
+  context?: string;
 };
 
 type BaseFetchUrl = {
@@ -289,4 +296,62 @@ export function queryToControl(
     }
   });
   return out;
+}
+
+/**
+ * Properties that alter the way that fetcher works.
+ */
+export type FetcherOptions = {
+  /**
+   * typically domain names with scheme, added to the front of urls if the individual request doesn't override
+   */
+  baseUrl?: string;
+  /**
+   * if provided, then requests will be rate limited via the bottleneck library
+   */
+  bottleneck?: Bottleneck.ConstructorOptions;
+  /**
+   * merged into every request
+   */
+  headers?: Record<string, string>;
+  /**
+   * Alter the context attached to the log statements emitted from the fetcher
+   */
+  context?: string;
+};
+
+export type DownloadOptions = Partial<FetchArguments> & { destination: string };
+
+export function cast(item: FetchParameterTypes): string {
+  if (is.array(item)) {
+    return item.map(i => cast(i)).join(",");
+  }
+  if (item instanceof Date) {
+    return item.toISOString();
+  }
+  if (is.number(item)) {
+    return item.toString();
+  }
+  if (is.boolean(item)) {
+    return item ? "true" : "false";
+  }
+  return item;
+}
+
+export type TFetchBody = object | undefined;
+
+export function buildFilterString(
+  fetchWith: FetchWith<{
+    filters?: Readonly<ResultControl>;
+    params?: Record<string, FetchParameterTypes>;
+  }>,
+): string {
+  return new URLSearchParams({
+    ...Object.fromEntries(
+      Object.entries(fetchWith.params ?? {}).map(([label, value]) => [
+        label,
+        cast(value),
+      ]),
+    ),
+  }).toString();
 }

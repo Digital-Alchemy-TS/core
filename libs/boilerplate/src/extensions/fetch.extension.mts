@@ -1,84 +1,33 @@
 import { FIRST, is, ZCC } from "@zcc/utilities";
 import Bottleneck from "bottleneck";
+import { createWriteStream } from "fs";
+import { pipeline } from "stream";
+import { promisify } from "util";
 
 import {
   FetchRequestError,
   MaybeHttpError,
 } from "../helpers/errors.helper.mjs";
 import {
+  buildFilterString,
+  DownloadOptions,
   FetchArguments,
-  FetchParameterTypes,
+  FetcherOptions,
   FetchProcessTypes,
   FetchWith,
-  ResultControl,
+  TFetchBody,
 } from "../helpers/fetch.helper.mjs";
 import {
+  FETCH_DOWNLOAD_REQUESTS_SUCCESSFUL,
   FETCH_REQUEST_BOTTLENECK_DELAY,
   FETCH_REQUESTS_FAILED,
-  FETCH_REQUESTS_INITIATED,
   FETCH_REQUESTS_SUCCESSFUL,
 } from "../helpers/metrics.helper.mjs";
 import { TServiceParams } from "../helpers/wiring.helper.mjs";
 
-/**
- * Properties that alter the way that fetcher works.
- */
-type FetcherOptions = {
-  /**
-   * typically domain names with scheme, added to the front of urls if the individual request doesn't override
-   */
-  baseUrl?: string;
-  /**
-   * if provided, then requests will be rate limited via the bottleneck library
-   */
-  bottleneck?: Bottleneck.ConstructorOptions;
-  /**
-   * merged into every request
-   */
-  headers?: Record<string, string>;
-  /**
-   * Alter the context attached to the log statements emitted from the fetcher
-   */
-  context?: string;
-};
+const streamPipeline = promisify(pipeline);
 
-// type DownloadOptions = Partial<FetchArguments> & { destination: string };
-
-function cast(item: FetchParameterTypes): string {
-  if (is.array(item)) {
-    return item.map(i => cast(i)).join(",");
-  }
-  if (item instanceof Date) {
-    return item.toISOString();
-  }
-  if (is.number(item)) {
-    return item.toString();
-  }
-  if (is.boolean(item)) {
-    return item ? "true" : "false";
-  }
-  return item;
-}
-
-export type TFetchBody = object | undefined;
-
-function buildFilterString(
-  fetchWith: FetchWith<{
-    filters?: Readonly<ResultControl>;
-    params?: Record<string, FetchParameterTypes>;
-  }>,
-): string {
-  return new URLSearchParams({
-    ...Object.fromEntries(
-      Object.entries(fetchWith.params ?? {}).map(([label, value]) => [
-        label,
-        cast(value),
-      ]),
-    ),
-  }).toString();
-}
-
-export function ZCC_Fetch({ logger, context }: TServiceParams) {
+export function ZCC_Fetch({ logger, context: parentContext }: TServiceParams) {
   const createFetcher = ({
     bottleneck,
     headers: baseHeaders,
@@ -161,16 +110,37 @@ export function ZCC_Fetch({ logger, context }: TServiceParams) {
       return out;
     }
 
+    async function MeasureRequest<T>(
+      label: string,
+      context: string,
+      exec: () => Promise<T>,
+    ): Promise<T> {
+      try {
+        const out = await exec();
+        if (!is.empty(label)) {
+          FETCH_REQUESTS_SUCCESSFUL.labels(context, label).inc();
+        }
+        return out;
+      } catch (error) {
+        logger.error({ error, ...extras }, `Request failed`);
+        if (!is.empty(label)) {
+          FETCH_REQUESTS_FAILED.labels(context, label).inc();
+        }
+        throw error;
+      }
+    }
+
     async function execFetch<T, BODY extends TFetchBody = undefined>({
       body,
       headers = {},
       method = "get",
       process,
+      label,
+      context = parentContext,
       ...fetchWith
     }: Partial<FetchArguments<BODY>>) {
-      const url = fetchCreateUrl(fetchWith);
-      try {
-        const result = await fetch(url, {
+      const out = await MeasureRequest(label, context, async () => {
+        const result = await fetch(fetchCreateUrl(fetchWith), {
           body: is.object(body) ? JSON.stringify(body) : body,
           headers: {
             ...baseHeaders,
@@ -178,52 +148,62 @@ export function ZCC_Fetch({ logger, context }: TServiceParams) {
           },
           method,
         });
-        const out = await fetchHandleResponse<T>(process, result);
-        FETCH_REQUESTS_SUCCESSFUL.inc();
-        return out;
-      } catch (error) {
-        logger.error({ error, ...extras }, `Request failed`);
-        FETCH_REQUESTS_FAILED.inc();
-        throw error;
-      }
+        return await fetchHandleResponse<T>(process, result);
+      });
+      FETCH_REQUESTS_SUCCESSFUL.labels(context, label).inc();
+      return out;
     }
 
     return {
-      // !! TODO: implement later.
-      // !! Some fetch internals changed in refactor, and this isn't important enough right now to be worth solving
-      // !! ----
-      // download: async ({ destination, ...fetchWith }: DownloadOptions) => {
-      //   const url: string = await fetchCreateUrl(fetchWith);
-      //   const requestInit = await fetchCreateMeta(fetchWith);
-      //   const response = await fetch(url, requestInit);
+      download: async ({
+        destination,
+        body,
+        headers = {},
+        label,
+        context = parentContext,
+        method = "get",
+        ...fetchWith
+      }: DownloadOptions) => {
+        const url: string = await fetchCreateUrl(fetchWith);
+        const response = await fetch(url, {
+          body: is.object(body) ? JSON.stringify(body) : body,
+          headers: {
+            ...baseHeaders,
+            ...headers,
+          },
+          method,
+        });
 
-      //   await new Promise<void>((resolve, reject) => {
-      //     if (!response?.body) {
-      //       return;
-      //     }
-      //     const fileStream = createWriteStream(destination);
-      //     response.body.pipeThrough(fileStream);
-      //     response.body.on("error", error => reject(error));
-      //     fileStream.on("finish", () => resolve());
-      //   });
-      // },
+        const stream = createWriteStream(destination);
+        await streamPipeline(response.body, stream);
+        if (!is.empty(label)) {
+          FETCH_DOWNLOAD_REQUESTS_SUCCESSFUL.labels(context, label).inc();
+        }
+      },
       fetch: async <T, BODY extends TFetchBody = undefined>(
         fetchWith: Partial<FetchArguments<BODY>>,
       ): Promise<T | undefined> => {
-        FETCH_REQUESTS_INITIATED.inc();
-        if (limiter) {
-          const start = Date.now();
-          return limiter.schedule(async () => {
-            FETCH_REQUEST_BOTTLENECK_DELAY.set(Date.now() - start);
-            return await execFetch(fetchWith);
-          });
+        if (!limiter) {
+          return await execFetch(fetchWith);
         }
-        return await execFetch(fetchWith);
+        let end: ReturnType<typeof FETCH_REQUEST_BOTTLENECK_DELAY.startTimer>;
+        if (!is.empty(fetchWith.label)) {
+          end = FETCH_REQUEST_BOTTLENECK_DELAY.startTimer();
+        }
+        return limiter.schedule(async () => {
+          if (end) {
+            end({
+              context: fetchWith.context || parentContext,
+              label: fetchWith.label,
+            });
+          }
+          return await execFetch(fetchWith);
+        });
       },
     };
   };
   ZCC.createFetcher = createFetcher;
-  ZCC.fetch = createFetcher({ context }).fetch;
+  ZCC.fetch = createFetcher({ context: parentContext }).fetch;
   return createFetcher;
 }
 

@@ -16,9 +16,12 @@ import {
   AbstractConfig,
   AnyConfig,
   BaseConfig,
+  cast,
   CodeConfigDefinition,
-  ConfigLoaderReturn,
+  ConfigLoader,
+  initWiringConfig,
   KnownConfigs,
+  OptionalModuleConfiguration,
 } from "../helpers/config.helper.mjs";
 import { ConfigLoaderEnvironment } from "../helpers/config-environment-loader.helper.mjs";
 import { ConfigLoaderFile } from "../helpers/config-file-loader.helper.mjs";
@@ -32,66 +35,6 @@ const ENVIRONMENT_LOAD_PRIORITY = 1;
 const FILE_LOAD_PRIORITY = 2;
 
 const APPLICATION = Symbol.for("APPLICATION_CONFIGURATION");
-
-type ConfigLoader = [
-  loader: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
-    application: ZCCApplicationDefinition<S, C>,
-    definedConfigurations: KnownConfigs,
-  ) => ConfigLoaderReturn,
-  priority: number,
-];
-
-function cast<T = unknown>(data: string | string[], type: string): T {
-  switch (type) {
-    case "boolean": {
-      data ??= "";
-      return (
-        is.boolean(data)
-          ? data
-          : ["true", "y", "1"].includes((data as string).toLowerCase())
-      ) as T;
-    }
-    case "number":
-      return Number(data) as T;
-    case "string[]":
-      if (is.undefined(data)) {
-        return [] as T;
-      }
-      if (is.array(data)) {
-        return data.map(String) as T;
-      }
-      // This occurs with cli switches
-      // If only 1 is passed, it'll get the value
-      // ex: --foo=bar  ==== {foo:'bar'}
-      // If duplicates are passed, will receive array
-      // ex: --foo=bar --foo=baz === {foo:['bar','baz']}
-      return [String(data)] as T;
-  }
-  return data as T;
-}
-
-function initWiringConfig(
-  configs: KnownConfigs,
-  configuration: Partial<AbstractConfig>,
-): void {
-  configs.forEach((configurations, project) => {
-    const isApplication = !is.string(project);
-    Object.entries(configurations).forEach(([key, config]) => {
-      if (config.default !== undefined) {
-        const configPath = isApplication
-          ? `application.${key}`
-          : `libs.${project}.${key}`;
-        if (is.undefined(get(configuration, configPath))) {
-          set(configuration, configPath, config.default);
-        }
-      }
-    });
-  });
-}
-export type ModuleConfiguration = {
-  [key: string]: AnyConfig;
-};
-export type OptionalModuleConfiguration = ModuleConfiguration | undefined;
 
 export function ZCC_Configuration() {
   const configLoaders = new Set<ConfigLoader>();

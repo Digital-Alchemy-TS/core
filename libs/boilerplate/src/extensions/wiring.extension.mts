@@ -10,6 +10,7 @@ import {
 import { EventEmitter } from "eventemitter3";
 import { exit } from "process";
 
+import { OptionalModuleConfiguration } from "../helpers/config.helper.mjs";
 import { BootstrapException } from "../helpers/errors.helper.mjs";
 import {
   ZCC_APPLICATION_ERROR,
@@ -34,17 +35,21 @@ import {
   TGetConfig,
   TModuleMappings,
   TResolvedModuleMappings,
+  TScheduler,
   TServiceReturn,
   ZCCApplicationDefinition,
   ZCCLibraryDefinition,
 } from "../helpers/wiring.helper.mjs";
 import { CacheProviders, ZCC_Cache } from "./cache.extension.mjs";
-import {
-  OptionalModuleConfiguration,
-  ZCC_Configuration,
-} from "./configuration.extension.mjs";
+import { ZCC_Configuration } from "./configuration.extension.mjs";
 import { ZCC_Fetch } from "./fetch.extension.mjs";
 import { ILogger, ZCC_Logger } from "./logger.extension.mjs";
+import { ZCC_Scheduler } from "./scheduler.extension.mjs";
+
+//
+// Notes:
+// - This file is a bit over sized. It was originally built more modular, but some race conditions made this the lesser of two evils
+//
 
 const NONE = -1;
 
@@ -126,7 +131,8 @@ let ACTIVE_APPLICATION: ActiveApplicationDefinition<
   OptionalModuleConfiguration
 > = undefined;
 
-// heisenberg's logger. it's probably here, but maybe not
+// heisenberg's variables. it's probably here, but maybe not
+let scheduler: TScheduler;
 let logger: ILogger;
 
 const processEvents = new Map([
@@ -155,12 +161,30 @@ const processEvents = new Map([
 const getAppConfig = (property: string) => {
   return ZCC.config.get(["application", property]);
 };
+const WIRING_CONTEXT = "boilerplate:wiring";
+
+function WireOrder<T extends string>(priority: T[], list: T[]): T[] {
+  const out = [...priority];
+  if (!is.empty(priority)) {
+    const check = is.unique(priority);
+    if (check.length !== out.length) {
+      throw new BootstrapException(
+        WIRING_CONTEXT,
+        "DOUBLE_PRIORITY",
+        "There are duplicate items in the priority load list",
+      );
+    }
+  }
+  return [...out, ...list.filter(i => !out.includes(i))];
+}
+
 export function CreateLibrary<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
 >({
   name: libraryName,
   configuration,
+  priorityInit,
   services,
 }: LibraryConfigurationOptions<S, C>): ZCCLibraryDefinition<S, C> {
   ValidateLibrary(libraryName, services);
@@ -178,17 +202,18 @@ export function CreateLibrary<
     lifecycle,
     name: libraryName,
     onError: callback => ZCC.event.on(ZCC_LIBRARY_ERROR(libraryName), callback),
+    priorityInit,
     services,
     wire: async () => {
       // This one hasn't been loaded yet, generate an object with all the correct properties
       LOADED_LIFECYCLES.set(libraryName, lifecycle);
       await eachSeries(
-        Object.entries(services),
-        async ([service, definition]) => {
+        WireOrder(priorityInit, Object.keys(services)),
+        async service => {
           generated[service] = await WireService(
             libraryName,
             service,
-            definition,
+            services[service],
             lifecycle,
           );
         },
@@ -214,6 +239,7 @@ export function CreateApplication<
   services,
   libraries = [],
   configuration = {} as C,
+  priorityInit,
 }: ApplicationConfigurationOptions<S, C>) {
   const lifecycle = CreateChildLifecycle();
   const out = {
@@ -224,14 +250,20 @@ export function CreateApplication<
     lifecycle,
     name,
     onError: callback => ZCC.event.on(ZCC_APPLICATION_ERROR, callback),
+    priorityInit,
     services,
     teardown: async () => await Teardown(),
     wire: async () => {
       LOADED_LIFECYCLES.set("application", lifecycle);
       await eachSeries(
-        Object.entries(services),
-        async ([service, definition]) => {
-          await WireService("application", service, definition, lifecycle);
+        WireOrder(priorityInit, Object.keys(services)),
+        async service => {
+          await WireService(
+            "application",
+            service,
+            services[service],
+            lifecycle,
+          );
         },
       );
       return lifecycle;
@@ -300,6 +332,7 @@ async function WireService(
       },
       lifecycle,
       logger,
+      scheduler,
     });
     REVERSE_MODULE_MAPPING.set(definition, [project, service]);
     const loaded = LOADED_MODULES.get(project) ?? {};
@@ -391,18 +424,15 @@ function CreateBoilerplate() {
           "Configuration property for cache provider, does not apply to memory caching",
         type: "string",
       },
-      SCAN_CONFIG: {
-        default: false,
-        description: "Find all application configurations and output as json",
-        type: "boolean",
-      },
     },
     name: "boilerplate",
+    priorityInit: ["logger", "configuration"],
     services: {
       cache: ZCC_Cache,
       configuration: ZCC_Configuration,
       fetch: ZCC_Fetch,
       logger: ZCC_Logger,
+      schedule: ZCC_Scheduler,
     },
   });
 }

@@ -9,29 +9,23 @@ import { DOWN, is, NO_CHANGE, SECOND, UP, ZCC } from "@zcc/utilities";
 import dayjs from "dayjs";
 
 import {
+  CalendarEvent,
+  CalendarFetchOptions,
+  CheckConfigResult,
+  ENTITY_STATE,
+  GenericEntityDTO,
   HASS_CALENDAR_SEARCH,
   HASS_CALL_SERVICE,
   HASS_SEND_WEBHOOK,
-} from "../helpers/dynamic.helper.mjs";
-import { GenericEntityDTO } from "../helpers/types/entity-state.helper.mjs";
-import {
-  CalendarEvent,
-  CalendarFetchOptions,
-  RawCalendarEvent,
-} from "../helpers/types/fetch/calendar.mjs";
-import {
-  CheckConfigResult,
   HassConfig,
-} from "../helpers/types/fetch/configuration.mjs";
-import { HomeAssistantServerLogItem } from "../helpers/types/fetch/index.mjs";
-import { HassServiceDTO } from "../helpers/types/fetch/service-list.mjs";
-import {
-  ENTITY_STATE,
+  HassServiceDTO,
+  HomeAssistantServerLogItem,
   PICK_ENTITY,
   PICK_SERVICE,
   PICK_SERVICE_PARAMETERS,
-} from "../helpers/types/utility.helper.mjs";
-import { LIB_HOME_ASSISTANT } from "../index.mjs";
+  RawCalendarEvent,
+} from "../helpers/index.mjs";
+import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
 type SendBody<
   STATE extends string | number = string,

@@ -6,18 +6,14 @@ import WS from "ws";
 import {
   HASS_WEBSOCKET_RECEIVE_MESSAGE,
   HASS_WEBSOCKET_SEND_MESSAGE,
-  HassWebsocketReceiveMessageData,
-  HassWebsocketSendMessageData,
-} from "../helpers/dynamic.helper.mjs";
-import {
   HASSIO_WS_COMMAND,
   HassSocketMessageTypes,
+  HassWebsocketReceiveMessageData,
+  HassWebsocketSendMessageData,
   ON_SOCKET_AUTH,
-} from "../helpers/types/constants.helper.mjs";
-import {
   SOCKET_MESSAGES,
   SocketMessageDTO,
-} from "../helpers/types/websocket.helper.mjs";
+} from "../helpers/index.mjs";
 import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
 let connection: WS;

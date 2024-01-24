@@ -1,7 +1,7 @@
 import { TServiceParams } from "@zcc/boilerplate";
 
 import { LIB_GOTIFY } from "../gotify.module.mjs";
-import { Client } from "../helpers/api.mjs";
+import { Client } from "../helpers/index.mjs";
 
 export function GotifyClient({ logger, getApis }: TServiceParams) {
   const gotify = getApis(LIB_GOTIFY);

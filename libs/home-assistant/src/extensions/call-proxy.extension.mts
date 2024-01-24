@@ -3,17 +3,15 @@ import { INCREMENT, is, SECOND, sleep, START } from "@zcc/utilities";
 import { exit } from "process";
 
 import {
+  ALL_DOMAINS,
   CALL_PROXY_PROXY_COMMAND,
   CallProxyCommandData,
-  PROXY_SERVICE_LIST_UPDATED,
-} from "../helpers/dynamic.helper.mjs";
-import { HASSIO_WS_COMMAND } from "../helpers/types/constants.helper.mjs";
-import { HassServiceDTO } from "../helpers/types/fetch/service-list.mjs";
-import {
-  ALL_DOMAINS,
+  HASSIO_WS_COMMAND,
+  HassServiceDTO,
   PICK_SERVICE,
   PICK_SERVICE_PARAMETERS,
-} from "../helpers/types/utility.helper.mjs";
+  PROXY_SERVICE_LIST_UPDATED,
+} from "../helpers/index.mjs";
 import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
 let services: HassServiceDTO[];

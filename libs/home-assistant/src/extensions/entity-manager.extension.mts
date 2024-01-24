@@ -14,17 +14,15 @@ import { exit, nextTick } from "process";
 import { Get } from "type-fest";
 import { v4 } from "uuid";
 
-import { HASSIO_WS_COMMAND } from "../helpers/types/constants.helper.mjs";
-import { HassEventDTO } from "../helpers/types/entity-state.helper.mjs";
 import {
   ALL_DOMAINS,
   ENTITY_STATE,
-  PICK_ENTITY,
-} from "../helpers/types/utility.helper.mjs";
-import {
   EntityHistoryDTO,
   EntityHistoryResult,
-} from "../helpers/types/websocket.helper.mjs";
+  HassEventDTO,
+  HASSIO_WS_COMMAND,
+  PICK_ENTITY,
+} from "../helpers/index.mjs";
 import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
 export type OnHassEventOptions = {

@@ -3,9 +3,12 @@ import { ZCC, ZCC_Testing } from "@zcc/utilities";
 import chalk from "chalk";
 import pino from "pino";
 
-import { LOG_LEVEL } from "../helpers/config.constants.mjs";
-import { TESTING_APP_NAME } from "../helpers/testing.helper.mjs";
-import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
+import {
+  OptionalModuleConfiguration,
+  ServiceMap,
+  TESTING_APP_NAME,
+  ZCCApplicationDefinition,
+} from "../helpers/index.mjs";
 import {
   highlightContext,
   ILogger,
@@ -15,14 +18,17 @@ import {
 import { CreateApplication } from "./wiring.extension.mjs";
 
 describe("Logger Extension", () => {
-  let loadedModule: ZCCApplicationDefinition;
+  let loadedModule: ZCCApplicationDefinition<
+    ServiceMap,
+    OptionalModuleConfiguration
+  >;
 
   beforeAll(async () => {
     loadedModule = CreateApplication({
       name: TESTING_APP_NAME,
     });
     await loadedModule.bootstrap({
-      configuration: { libs: { boilerplate: { [LOG_LEVEL]: "trace" } } },
+      configuration: { libs: { boilerplate: { LOG_LEVEL: "trace" } } },
     });
     // LIB_BOILERPLATE.lifecycle.register();
     // start from a known state

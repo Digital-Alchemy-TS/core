@@ -5,7 +5,7 @@ import {
   Application,
   ApplicationParameters,
   Message,
-} from "../helpers/api.mjs";
+} from "../helpers/index.mjs";
 
 export function GotifyApplication({ logger, getApis }: TServiceParams) {
   const gotify = getApis(LIB_GOTIFY);

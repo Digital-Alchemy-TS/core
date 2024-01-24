@@ -1,21 +1,20 @@
 import { TServiceParams } from "@zcc/boilerplate";
 import { sleep } from "@zcc/utilities";
 
-import { SEQUENCE_TIMEOUT } from "../helpers/configuration.helper.mjs";
-
-type SequenceWatcher = SequenceWatchDTO & {
-  callback: () => Promise<void>;
-};
+import { LIB_AUTOMATION_LOGIC } from "../automation-logic.module.mjs";
+import { SequenceWatchOptions } from "../helpers/sequence.helper.mjs";
 
 export function SequenceWatcher({
   logger,
+  context,
   lifecycle,
-  getConfig,
+  getApis,
 }: TServiceParams) {
+  const automation = getApis(LIB_AUTOMATION_LOGIC);
   let matchTimeout: number;
 
   lifecycle.onPostConfig(() => {
-    matchTimeout = getConfig(SEQUENCE_TIMEOUT);
+    matchTimeout = LIB_AUTOMATION_LOGIC.getConfig("SEQUENCE_TIMEOUT");
   });
 
   const ACTIVE = new Map<
@@ -133,4 +132,11 @@ export function SequenceWatcher({
   //     this.trigger(event_type, event.data);
   //   });
   // }
+
+  function SequenceWatcher(options: SequenceWatchOptions) {
+    logger.debug({ context }, `Setting up sequence watcher`);
+    //
+  }
+
+  return SequenceWatcher;
 }

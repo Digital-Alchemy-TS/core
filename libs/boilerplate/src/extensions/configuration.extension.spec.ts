@@ -1,13 +1,15 @@
 import { faker } from "@faker-js/faker";
 import { ZCC_Testing } from "@zcc/utilities";
 
-import { CodeConfigDefinition } from "../helpers/config.helper.mjs";
 import {
+  CodeConfigDefinition,
   ConfigurationFiles,
+  OptionalModuleConfiguration,
   RandomFileTestingDataFormat,
+  ServiceMap,
   TESTING_APP_NAME,
-} from "../helpers/testing.helper.mjs";
-import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
+  ZCCApplicationDefinition,
+} from "../helpers/index.mjs";
 import {
   ConfigManager,
   ZCC_Configuration,
@@ -17,7 +19,10 @@ import { CreateApplication } from "./wiring.extension.mjs";
 describe("Configuration Extension Tests", () => {
   const originalEnvironment = process.env;
   const originalArgv = process.argv;
-  let loadedModule: ZCCApplicationDefinition;
+  let loadedModule: ZCCApplicationDefinition<
+    ServiceMap,
+    OptionalModuleConfiguration
+  >;
   let config: ConfigManager;
   const testFiles = ConfigurationFiles();
   const APPLICATION = Symbol.for("APPLICATION_CONFIGURATION");

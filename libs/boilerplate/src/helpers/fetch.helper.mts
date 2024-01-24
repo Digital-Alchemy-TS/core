@@ -324,9 +324,9 @@ export type DownloadOptions<BODY extends TFetchBody = undefined> = Partial<
   FetchArguments<BODY>
 > & { destination: string };
 
-export function cast(item: FetchParameterTypes): string {
+export function fetchCast(item: FetchParameterTypes): string {
   if (is.array(item)) {
-    return item.map(i => cast(i)).join(",");
+    return item.map(i => fetchCast(i)).join(",");
   }
   if (item instanceof Date) {
     return item.toISOString();
@@ -352,7 +352,7 @@ export function buildFilterString(
     ...Object.fromEntries(
       Object.entries(fetchWith.params ?? {}).map(([label, value]) => [
         label,
-        cast(value),
+        fetchCast(value),
       ]),
     ),
   }).toString();

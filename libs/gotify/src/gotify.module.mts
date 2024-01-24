@@ -1,9 +1,11 @@
 import { ZCC } from "@zcc/utilities";
 
-import { GotifyApplication } from "./extensions/application.extension.mjs";
-import { GotifyClient } from "./extensions/client.extension.mjs";
-import { GotifyFetch } from "./extensions/fetch.extension.mjs";
-import { GotifyMessage } from "./extensions/message.extension.mjs";
+import {
+  GotifyApplication,
+  GotifyClient,
+  GotifyFetch,
+  GotifyMessage,
+} from "./extensions/index.mjs";
 
 export const LIB_GOTIFY = ZCC.createLibrary({
   configuration: {

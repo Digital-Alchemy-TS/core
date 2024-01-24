@@ -1,12 +1,11 @@
 import { ZCC } from "@zcc/utilities";
 import { IClientOptions } from "mqtt";
 
-import { MQTT_Bindings } from "./extensions/bindings.extension.mjs";
-import { CLIENT_OPTIONS } from "./helpers/config.helper.mjs";
+import { MQTT_Bindings } from "./extensions/index.mjs";
 
 export const LIB_MQTT = ZCC.createLibrary({
   configuration: {
-    [CLIENT_OPTIONS]: {
+    CLIENT_OPTIONS: {
       default: {
         host: "localhost",
         password: undefined,
@@ -17,5 +16,7 @@ export const LIB_MQTT = ZCC.createLibrary({
     },
   },
   name: "mqtt",
-  services: [["bindings", MQTT_Bindings]],
+  services: {
+    bindings: MQTT_Bindings,
+  },
 });

@@ -44,36 +44,47 @@ export function ManagedSwitch({
     await hass.call.switch[action]({ entity_id });
   }
 
-  return ({
+  function ManageSwitch({
     context,
     entity_id,
-    interval = CronExpression.EVERY_10_MINUTES,
+    schedule = CronExpression.EVERY_10_MINUTES,
     shouldBeOn,
-    ...data
-  }: ManagedSwitchOptions) => {
+    onEvent = [],
+    onEntityUpdate = [],
+  }: ManagedSwitchOptions) {
     logger.info({ context, entity_id }, `Setting up managed switch`);
-    const { onEntityUpdate: on_entity_update = [], onEvent: on_event = [] } =
-      data;
     const entityList = is.string(entity_id) ? [entity_id] : entity_id;
+
+    // Check if there should be a change
     const update = async () => {
       const expected = shouldBeOn();
       if (!is.boolean(expected)) {
+        if (!is.undefined(expect)) {
+          logger.error(
+            { context, entity_id, expected },
+            `Invalid value from switch manage function`,
+          );
+          return;
+        }
         return;
       }
       await updateEntities(expected, entityList, context);
     };
-    scheduler({
-      context,
-      exec: async () => await update(),
-      schedule: interval,
-    });
-    if (!is.empty(on_entity_update)) {
-      [on_entity_update]
+
+    // Always run on a schedule
+    scheduler({ context, exec: async () => await update(), schedule });
+
+    // Update when relevant entities update
+    if (!is.empty(onEntityUpdate)) {
+      [onEntityUpdate]
         .flat()
         .forEach(i => hass.entity.OnUpdate(i, async () => await update()));
     }
-    [on_event].flat().forEach(eventName => {
+
+    // Update on relevant events
+    [onEvent].flat().forEach(eventName => {
       event.on(eventName, async () => await update());
     });
-  };
+  }
+  return ManageSwitch;
 }

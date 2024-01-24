@@ -16,20 +16,18 @@ import {
   AbstractConfig,
   AnyConfig,
   BaseConfig,
+  BootstrapException,
   cast,
   CodeConfigDefinition,
   ConfigLoader,
+  ConfigLoaderEnvironment,
+  ConfigLoaderFile,
   initWiringConfig,
   KnownConfigs,
   OptionalModuleConfiguration,
-} from "../helpers/config.helper.mjs";
-import { ConfigLoaderEnvironment } from "../helpers/config-environment-loader.helper.mjs";
-import { ConfigLoaderFile } from "../helpers/config-file-loader.helper.mjs";
-import { BootstrapException } from "../helpers/errors.helper.mjs";
-import {
   ServiceMap,
   ZCCApplicationDefinition,
-} from "../helpers/wiring.helper.mjs";
+} from "../helpers/index.mjs";
 
 const ENVIRONMENT_LOAD_PRIORITY = 1;
 const FILE_LOAD_PRIORITY = 2;
@@ -40,7 +38,6 @@ export function ZCC_Configuration() {
   const configLoaders = new Set<ConfigLoader>();
   let configuration: AbstractConfig = { application: {}, libs: {} };
   let configDefinitions: KnownConfigs = new Map();
-  // const logger = ZCC.logger.context("configuration.extension");
 
   function defaultLoaders() {
     configLoaders.add([ConfigLoaderEnvironment, ENVIRONMENT_LOAD_PRIORITY]);

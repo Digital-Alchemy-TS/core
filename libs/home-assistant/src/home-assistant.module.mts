@@ -1,10 +1,12 @@
 import { ZCC } from "@zcc/utilities";
 
-import { HACallProxy } from "./extensions/call-proxy.extension.mjs";
-import { HAEntityManager } from "./extensions/entity-manager.extension.mjs";
-import { HAFetchAPI } from "./extensions/fetch-api.extension.mjs";
-import { HAUtilities } from "./extensions/utilities.extension.mjs";
-import { WebsocketAPIService } from "./extensions/websocket-api.extension.mjs";
+import {
+  HACallProxy,
+  HAEntityManager,
+  HAFetchAPI,
+  HAUtilities,
+  WebsocketAPIService,
+} from "./extensions/index.mjs";
 
 export const LIB_HOME_ASSISTANT = ZCC.createLibrary({
   configuration: {
@@ -23,16 +25,6 @@ export const LIB_HOME_ASSISTANT = ZCC.createLibrary({
       description:
         "Socket service will commit sudoku if more than this many outgoing messages are sent to Home Assistant in a second. Usually indicates runaway code.",
       type: "number",
-    },
-    HOME_ASSISTANT_PACKAGE_FOLDER: {
-      // ? Dev note: if running multiple apps from a single repository (like this repo does), this value should be shared
-      // values are actually nested 1 folder deeper: packages/{APPLICATION_IDENTIFIER}/...
-      default: "/path/to/homeassistant/packages/",
-      description: [
-        "Packages folder to write push entity info to, this will need to be manually included to make operational",
-        "Value only used with push entity configurations, incorrect values will not affect normal websocket operation",
-      ].join(`. `),
-      type: "string",
     },
     PROXY_AUTO_SCAN: {
       default: true,

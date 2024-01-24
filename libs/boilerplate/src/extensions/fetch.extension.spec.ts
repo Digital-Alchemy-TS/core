@@ -1,11 +1,18 @@
 import { ZCC, ZCC_Testing } from "@zcc/utilities";
 
-import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
+import {
+  OptionalModuleConfiguration,
+  ServiceMap,
+  ZCCApplicationDefinition,
+} from "../helpers/index.mjs";
 import { TFetch } from "./fetch.extension.mjs";
 import { CreateApplication } from "./wiring.extension.mjs";
 
 describe("Fetch Extension", () => {
-  let application: ZCCApplicationDefinition;
+  let application: ZCCApplicationDefinition<
+    ServiceMap,
+    OptionalModuleConfiguration
+  >;
   let fetch: TFetch;
   // this is primarily to aid in debugging, as the errors get swallowed
   let failFastSpy: jest.SpyInstance;

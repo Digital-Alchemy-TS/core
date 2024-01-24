@@ -4,13 +4,18 @@ import {
   CACHE_DELETE_OPERATIONS_TOTAL,
   CACHE_GET_OPERATIONS_TOTAL,
   CACHE_SET_OPERATIONS_TOTAL,
-} from "../helpers/metrics.helper.mjs";
-import { ZCCApplicationDefinition } from "../helpers/wiring.helper.mjs";
+  OptionalModuleConfiguration,
+  ServiceMap,
+  ZCCApplicationDefinition,
+} from "../helpers/index.mjs";
 import { TCache } from "./cache.extension.mjs";
 import { CreateApplication } from "./wiring.extension.mjs";
 
 describe("Cache Extension", () => {
-  let application: ZCCApplicationDefinition;
+  let application: ZCCApplicationDefinition<
+    ServiceMap,
+    OptionalModuleConfiguration
+  >;
   let cache: TCache;
   // this is primarily to aid in debugging, as the errors get swallowed
   let failFastSpy: jest.SpyInstance;

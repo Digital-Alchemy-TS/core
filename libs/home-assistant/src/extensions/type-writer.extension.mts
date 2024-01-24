@@ -17,7 +17,7 @@ import {
 import {
   ServiceListFieldDescription,
   ServiceListServiceTarget,
-} from "../helpers/types/fetch/service-list.mjs";
+} from "../helpers/index.mjs";
 import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
 const printer = createPrinter({ newLine: NewLineKind.LineFeed });

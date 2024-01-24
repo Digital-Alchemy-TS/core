@@ -5,8 +5,10 @@ import chalkTemplate from "chalk-template";
 import { Level, pino } from "pino";
 import { inspect } from "util";
 
-import { LOGGER_CONTEXT_ENTRIES_COUNT } from "../helpers/metrics.helper.mjs";
-import { TServiceParams } from "../helpers/wiring.helper.mjs";
+import {
+  LOGGER_CONTEXT_ENTRIES_COUNT,
+  TServiceParams,
+} from "../helpers/index.mjs";
 import { LIB_BOILERPLATE } from "./wiring.extension.mjs";
 
 export type TLoggerFunction =

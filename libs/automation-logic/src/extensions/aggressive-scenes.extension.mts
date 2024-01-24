@@ -11,7 +11,7 @@ import { LIB_AUTOMATION_LOGIC } from "../automation-logic.module.mjs";
 import {
   AGGRESSIVE_SCENES_ADJUSTMENT,
   AggressiveScenesAdjustmentData,
-} from "../helpers/events.helper.mjs";
+} from "../helpers/index.mjs";
 
 export function AggressiveScenes({
   logger,

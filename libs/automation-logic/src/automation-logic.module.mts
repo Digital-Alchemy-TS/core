@@ -1,14 +1,16 @@
 import { PICK_ENTITY } from "@zcc/home-assistant";
 import { ZCC } from "@zcc/utilities";
 
-import { AggressiveScenes } from "./extensions/aggressive-scenes.extension.mjs";
-import { CircadianLighting } from "./extensions/circadian.extension.mjs";
-import { LightManager } from "./extensions/light-manager.extension.mjs";
-import { ManagedSwitch } from "./extensions/managed-switch.extension.mjs";
-import { SceneController } from "./extensions/scene-controller.extension.mjs";
-import { SceneRoom } from "./extensions/scene-room.extension.mjs";
-import { SequenceWatcher } from "./extensions/sequence-matcher.extension.mjs";
-import { SolarCalculator } from "./extensions/solar-calc.extension.mjs";
+import {
+  AggressiveScenes,
+  CircadianLighting,
+  LightManager,
+  ManagedSwitch,
+  SceneController,
+  SceneRoom,
+  SequenceWatcher,
+  SolarCalculator,
+} from "./extensions/index.mjs";
 
 export const LIB_AUTOMATION_LOGIC = ZCC.createLibrary({
   configuration: {

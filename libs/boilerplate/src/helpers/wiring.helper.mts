@@ -92,7 +92,7 @@ export type SchedulerOptions = {
    * - execution duration
    */
   label?: string;
-} & ({ schedule: Schedule } | { interval: number });
+} & ({ schedule: Schedule | Schedule[] } | { interval: number });
 
 export type TScheduler = (options: SchedulerOptions) => ScheduleItem;
 

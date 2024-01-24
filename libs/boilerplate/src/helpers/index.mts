@@ -8,5 +8,6 @@ export * from "./events.helper.mjs";
 export * from "./fetch.helper.mjs";
 export * from "./lifecycle.helper.mjs";
 export * from "./metrics.helper.mjs";
+export * from "./solar.helper.mjs";
 export * from "./testing.helper.mjs";
 export * from "./wiring.helper.mjs";

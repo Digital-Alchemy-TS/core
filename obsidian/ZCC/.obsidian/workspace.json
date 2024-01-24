@@ -29,7 +29,7 @@
                 "state": {
                   "type": "markdown",
                   "state": {
-                    "file": "01 Libraries/01.04 Boilerplate/Metrics/ACTIVE_SCHEDULES.md",
+                    "file": "01 Libraries/01.02 HA Virtual Entity Bridge/01.02 HA Virtual Entity Bridge.md",
                     "mode": "source",
                     "source": false
                   }
@@ -74,7 +74,7 @@
                     "state": {
                       "type": "localgraph",
                       "state": {
-                        "file": "01 Libraries/01.04 Boilerplate/Metrics/ACTIVE_SCHEDULES.md",
+                        "file": "01 Libraries/01.02 HA Virtual Entity Bridge/01.02 HA Virtual Entity Bridge.md",
                         "options": {
                           "collapse-filter": true,
                           "search": "",
@@ -175,7 +175,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "01 Libraries/01.04 Boilerplate/Metrics/ACTIVE_SCHEDULES.md",
+                "file": "01 Libraries/01.02 HA Virtual Entity Bridge/01.02 HA Virtual Entity Bridge.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -192,7 +192,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "01 Libraries/01.04 Boilerplate/Metrics/ACTIVE_SCHEDULES.md",
+                "file": "01 Libraries/01.02 HA Virtual Entity Bridge/01.02 HA Virtual Entity Bridge.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -215,7 +215,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "01 Libraries/01.04 Boilerplate/Metrics/ACTIVE_SCHEDULES.md"
+                "file": "01 Libraries/01.02 HA Virtual Entity Bridge/01.02 HA Virtual Entity Bridge.md"
               }
             }
           }
@@ -237,9 +237,15 @@
   },
   "active": "e04ed803c7b2a399",
   "lastOpenFiles": [
+    "01 Libraries/01.02 HA Virtual Entity Bridge/Untitled.md",
+    "01 Libraries/01.02 HA Virtual Entity Bridge/01.02 HA Virtual Entity Bridge.md",
+    "01 Libraries/01.03 Automation Logic/01.03 Automation Logic.md",
+    "01 Libraries/01.04 Boilerplate/01.04 Boilerplate.md",
+    "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",
+    "01 Libraries/01.03 Automation Logic/Extensions",
+    "01 Libraries/01.04 Boilerplate/Metrics/ACTIVE_SCHEDULES.md",
     "01 Libraries/01.04 Boilerplate/Metrics/Metrics.md",
     "01 Libraries/01.04 Boilerplate/Extensions/Extensions.md",
-    "01 Libraries/01.04 Boilerplate/01.04 Boilerplate.md",
     "01 Libraries/01.05 Gotify/Configuration/TOKEN.md",
     "01 Libraries/01.01 Home Assistant/Configuration/WEBSOCKET_URL.md",
     "01 Libraries/01.01 Home Assistant/Extensions/Websocket API.md",
@@ -264,14 +270,8 @@
     "05 Reference/05.02 External Services/MQTT.md",
     "05 Reference/05.02 External Services",
     "04 Repository Notes/Publishing Documentation.md",
-    "01 Libraries/01.01 Home Assistant/Configuration/RETRY_INTERVAL.md",
-    "01 Libraries/01.01 Home Assistant/Configuration/RENDER_TIMEOUT.md",
-    "01 Libraries/01.01 Home Assistant/Configuration/HOME_ASSISTANT_PACKAGE_FOLDER.md",
-    "01 Libraries/01.01 Home Assistant/Extensions/Fetch API.md",
-    "01 Libraries/01.01 Home Assistant/Extensions/Entity Manager.md",
     "05 Reference/05.01 Digital Alchemy/utilities",
     "05 Reference/05.01 Digital Alchemy/tty",
-    "05 Reference/05.01 Digital Alchemy/server",
-    "05 Reference/05.01 Digital Alchemy/pi-matrix"
+    "05 Reference/05.01 Digital Alchemy/server"
   ]
 }

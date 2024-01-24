@@ -2,7 +2,7 @@ import { TServiceParams } from "@zcc/boilerplate";
 import { LIB_HOME_ASSISTANT, PICK_ENTITY } from "@zcc/home-assistant";
 import { CronExpression, is } from "@zcc/utilities";
 
-import { ManagedSwitchOptions } from "../helpers/managed-switch.helper.mjs";
+import { ManagedSwitchOptions } from "../helpers/index.mjs";
 
 export function ManagedSwitch({
   logger,

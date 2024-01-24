@@ -3,54 +3,57 @@ ignorePaths: []
 dictionaryDefinitions: []
 dictionaries: []
 words:
-  - toolbelt
-  - nrwl
-  - devkit
-  - sinonjs
-  - pino
-  - hass
-  - prettyrc
-  - testrc
-  - creationrc
-  - managerrc
-  - testrc
-  - creationrc
-  - prettyrc
-  - managerrc
-  - vsix
-  - terminalizer
+  - astro
+  - bithound
   - buildable
-  - sonarjs
+  - codez
+  - creationrc
+  - dbaeumer
+  - devkit
+  - dhall
+  - entites
+  - esbenp
+  - execa
+  - exiasr
+  - unitless
+  - falsey
+  - gotify
+  - gridsome
+  - hadolint
+  - hass
+  - hassio
+  - homeassistant
+  - idris
+  - intellij
+  - interwebs
+  - julianday
+  - keylist
+  - kusto
+  - lifecycles
+  - managerrc
+  - mireds
+  - mrad
+  - nrwl
+  - nsoult
+  - nxignore
+  - pino
   - pkief
   - postdata
-  - dbaeumer
-  - execa
-  - purescript
-  - idris
-  - undici
+  - prettyrc
   - proto
-  - entites
-  - keylist
-  - exiasr
-  - hadolint
-  - homeassistant
-  - lifecycles
-  - codez
-  - interwebs
-  - falsey
-  - esbenp
-  - typeof
-  - gridsome
-  - hassio
-  - nsoult
-  - kusto
-  - nxignore
-  - visbility
-  - timonwong
+  - purescript
+  - reftimes
   - shellcheck
-  - bithound
-  - dhall
-  - gotify
-  - intellij
+  - sinm
+  - sinonjs
+  - sonarjs
+  - terminalizer
+  - testrc
+  - timonwong
+  - toolbelt
+  - typeof
+  - undici
+  - visbility
+  - vsix
 ignoreWords: []
 import: []

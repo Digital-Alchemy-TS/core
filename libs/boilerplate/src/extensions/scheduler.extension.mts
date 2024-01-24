@@ -74,18 +74,22 @@ export function ZCC_Scheduler({
             "Attempted to start a schedule that was already started, this can lead to leaks",
           );
         }
+
         // node-cron
         if ("schedule" in options) {
-          const schedule = options.schedule;
-          logger.debug({ context, label, schedule }, `Starting schedule`);
-          const cronJob = new CronJob(schedule, async () => await SafeExec());
-          cronJob.start();
-          ACTIVE_SCHEDULES.labels("cron").inc();
-          stop = () => {
-            ACTIVE_SCHEDULES.labels("cron").dec();
-          };
+          // I enjoy .flat() too much
+          [options.schedule].flat().forEach(schedule => {
+            logger.debug({ context, label, schedule }, `Starting schedule`);
+            const cronJob = new CronJob(schedule, async () => await SafeExec());
+            cronJob.start();
+            ACTIVE_SCHEDULES.labels("cron").inc();
+            stop = () => {
+              ACTIVE_SCHEDULES.labels("cron").dec();
+            };
+          });
           return;
         }
+
         // intervals
         if ("interval" in options) {
           const interval = setInterval(
@@ -99,6 +103,7 @@ export function ZCC_Scheduler({
           };
           return;
         }
+
         // wat
         throw new InternalError(
           parentContext,

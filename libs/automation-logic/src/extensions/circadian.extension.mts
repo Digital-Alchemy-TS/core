@@ -4,7 +4,7 @@ import { EMPTY, MINUTE } from "@zcc/utilities";
 import dayjs from "dayjs";
 
 import { LIB_AUTOMATION_LOGIC } from "../automation-logic.module.mjs";
-import { LOCATION_UPDATED } from "../helpers/events.helper.mjs";
+import { LOCATION_UPDATED } from "../helpers/index.mjs";
 
 type ColorModes = "color_temp" | "xy" | "brightness";
 export type ColorLight = GenericEntityDTO<{

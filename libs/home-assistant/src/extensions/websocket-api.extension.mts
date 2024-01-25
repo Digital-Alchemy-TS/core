@@ -29,6 +29,7 @@ export function WebsocketAPIService({
   scheduler,
   context,
   event,
+  getApis,
 }: TServiceParams) {
   let token: string;
   let WARN_REQUESTS: number;
@@ -40,6 +41,7 @@ export function WebsocketAPIService({
   let autoConnect = false;
 
   let MESSAGE_TIMESTAMPS: number[] = [];
+  const hass = getApis(LIB_HOME_ASSISTANT);
   const waitingCallback = new Map<number, (result) => void>();
 
   // Load configurations
@@ -289,7 +291,24 @@ export function WebsocketAPIService({
     }
   }
 
+  function onEntityUpdate(message: SocketMessageDTO) {
+    if (message.event.event_type !== "state_changed") {
+      return;
+    }
+    // Always keep entity manager up to date
+    // It also implements the interrupt internally
+    const { new_state, old_state } = message.event.data;
+    if (!new_state) {
+      // FIXME: probably removal
+      return;
+    }
+    hass.entity.onEntityUpdate(new_state.entity_id, new_state, old_state);
+  }
+
   function onMessageEvent(id: number, message: SocketMessageDTO) {
+    if (message.event.event_type === "state_changed") {
+      setImmediate(() => onEntityUpdate(message));
+    }
     if (waitingCallback.has(id)) {
       const f = waitingCallback.get(id);
       waitingCallback.delete(id);

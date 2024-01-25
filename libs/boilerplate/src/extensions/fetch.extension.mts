@@ -1,4 +1,4 @@
-import { FIRST, is, ZCC } from "@zcc/utilities";
+import { FIRST, is, TContext, ZCC } from "@zcc/utilities";
 import Bottleneck from "bottleneck";
 import { createWriteStream } from "fs";
 import { pipeline } from "stream";
@@ -108,7 +108,7 @@ export function ZCC_Fetch({ logger, context: parentContext }: TServiceParams) {
 
     async function MeasureRequest<T>(
       label: string,
-      context: string,
+      context: TContext,
       exec: () => Promise<T>,
     ): Promise<T> {
       try {

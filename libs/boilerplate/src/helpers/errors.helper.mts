@@ -1,3 +1,5 @@
+import { TContext } from "@zcc/utilities";
+
 export type MaybeHttpError = {
   error: string;
   message: string;
@@ -5,11 +7,11 @@ export type MaybeHttpError = {
 };
 
 export class BootstrapException extends Error {
-  context: string;
+  context: TContext;
   cause: string;
   timestamp: Date;
 
-  constructor(context: string, cause: string, message: string) {
+  constructor(context: TContext, cause: string, message: string) {
     super(
       `[BootstrapException] Context: ${context}, Cause: ${cause}, Message: ${message} | Timestamp: ${new Date().toISOString()}`,
     );
@@ -21,11 +23,11 @@ export class BootstrapException extends Error {
 }
 
 export class InternalError extends Error {
-  context: string;
+  context: TContext;
   cause: string;
   timestamp: Date;
 
-  constructor(context: string, cause: string, message: string) {
+  constructor(context: TContext, cause: string, message: string) {
     super(
       `[InternalError] Context: ${context}, Cause: ${cause}, Message: ${message} | Timestamp: ${new Date().toISOString()}`,
     );
@@ -53,10 +55,10 @@ export class FetchRequestError extends Error {
 }
 
 export class CacheError extends Error {
-  context: string;
+  context: TContext;
   timestamp: Date;
 
-  constructor(context: string, message: string) {
+  constructor(context: TContext, message: string) {
     super(
       `[CacheError] Context: ${context}, Message: ${message} | Timestamp: ${new Date().toISOString()}`,
     );
@@ -67,10 +69,10 @@ export class CacheError extends Error {
 }
 
 export class ConfigError extends Error {
-  context: string;
+  context: TContext;
   timestamp: Date;
 
-  constructor(context: string, message: string) {
+  constructor(context: TContext, message: string) {
     super(
       `[ConfigError] Context: ${context}, Message: ${message} | Timestamp: ${new Date().toISOString()}`,
     );
@@ -81,10 +83,10 @@ export class ConfigError extends Error {
 }
 
 export class CronError extends Error {
-  context: string;
+  context: TContext;
   timestamp: Date;
 
-  constructor(context: string, message: string) {
+  constructor(context: TContext, message: string) {
     super(
       `[CronError] Context: ${context}, Message: ${message} | Timestamp: ${new Date().toISOString()}`,
     );

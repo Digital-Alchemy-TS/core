@@ -6,7 +6,8 @@ import {
   NONE,
   START,
   TBlackHole,
-} from "../helpers/utilities.helper.mjs";
+  TContext,
+} from "../helpers/index.mjs";
 
 type MaybeEmptyTypes =
   | string
@@ -30,6 +31,13 @@ export class IsIt {
 
   public boolean(test: unknown): test is boolean {
     return typeof test === "boolean";
+  }
+
+  /**
+   * The internals of this test may get more creative as context evolves
+   */
+  public context(test: unknown): test is TContext {
+    return typeof test === "string";
   }
 
   public date(test: unknown): test is Date {

@@ -1,3 +1,5 @@
+import { TContext } from "@zcc/utilities";
+
 export type SequenceWatchOptions<
   DATA extends object = object,
   MATCH extends string = string,
@@ -5,7 +7,7 @@ export type SequenceWatchOptions<
   /**
    * Additional log context
    */
-  context?: string;
+  context: TContext;
 
   /**
    * Pre-filter to only events of a given type

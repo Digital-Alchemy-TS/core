@@ -3,12 +3,15 @@ import {
   each,
   eachSeries,
   is,
+  TBlackHole,
+  TContext,
   UP,
   ZCC,
   ZCC_Testing,
 } from "@zcc/utilities";
 import { EventEmitter } from "eventemitter3";
 import { exit } from "process";
+import { Counter, Summary } from "prom-client";
 
 import {
   ApplicationConfigurationOptions,
@@ -48,8 +51,9 @@ import { ZCC_Scheduler } from "./scheduler.extension.mjs";
 //
 
 const NONE = -1;
+const COERCE_CONTEXT = (context: string): TContext => context as TContext;
 
-const FILE_CONTEXT = `boilerplate:Loader`;
+const FILE_CONTEXT = COERCE_CONTEXT(`boilerplate:Loader`);
 type ActiveApplicationDefinition<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
@@ -70,7 +74,7 @@ function ValidateLibrary<S extends ServiceMap>(
 ): void | never {
   if (is.empty(project)) {
     throw new BootstrapException(
-      "CreateLibrary",
+      COERCE_CONTEXT("CreateLibrary"),
       "MISSING_LIBRARY_NAME",
       "Library name is required",
     );
@@ -84,7 +88,7 @@ function ValidateLibrary<S extends ServiceMap>(
   if (invalidService) {
     const [invalidServiceName, service] = invalidService;
     throw new BootstrapException(
-      "CreateLibrary",
+      COERCE_CONTEXT("CreateLibrary"),
       "INVALID_SERVICE_DEFINITION",
       `Invalid service definition for '${invalidServiceName}' in library '${project}' (${typeof service})`,
     );
@@ -157,7 +161,7 @@ const processEvents = new Map([
 const getAppConfig = (property: string) => {
   return ZCC.config.get(["application", property]);
 };
-const WIRING_CONTEXT = "boilerplate:wiring";
+const WIRING_CONTEXT = COERCE_CONTEXT("boilerplate:wiring");
 
 function WireOrder<T extends string>(priority: T[], list: T[]): T[] {
   const out = [...priority];
@@ -293,7 +297,7 @@ async function WireService(
   }
   mappings[service] = definition;
   MODULE_MAPPINGS.set(project, mappings);
-  const context = `${project}:${service}`;
+  const context = COERCE_CONTEXT(`${project}:${service}`);
 
   // logger gets defined first, so this really is only for the start of the start of bootstrapping
   const logger = ZCC.logger ? ZCC.logger.context(context) : undefined;
@@ -445,7 +449,7 @@ async function Bootstrap<
 >(application: ZCCApplicationDefinition<S, C>, options: BootstrapOptions) {
   if (ACTIVE_APPLICATION) {
     throw new BootstrapException(
-      "wiring.extension",
+      COERCE_CONTEXT("wiring.extension"),
       "NO_DUAL_BOOT",
       "Another application is already active, please terminate",
     );
@@ -550,6 +554,30 @@ ZCC.createLibrary = CreateLibrary;
 ZCC.teardown = Teardown;
 ZCC.lifecycle = CreateChildLifecycle;
 
+ZCC.safeExec = async <LABELS extends BaseLabels>({
+  exec,
+  labels,
+  duration,
+  executions,
+  errors,
+}: SafeExecOptions<LABELS>) => {
+  try {
+    if (is.empty(labels.label)) {
+      await exec();
+      return;
+    }
+    executions.inc(labels as LabelFixer<LABELS>);
+    const end = duration.startTimer();
+    await exec();
+    end(labels as LabelFixer<LABELS>);
+  } catch (error) {
+    ZCC.systemLogger.error({ error, ...labels }, `Callback threw error`);
+    if (!is.empty(labels.label)) {
+      errors.inc(labels as LabelFixer<LABELS>);
+    }
+  }
+};
+
 ZCC_Testing.configurationFiles = ConfigurationFiles;
 ZCC_Testing.FailFast = (): void => exit();
 ZCC_Testing.LOADED_MODULES = () => LOADED_MODULES;
@@ -582,6 +610,22 @@ declare module "@zcc/utilities" {
   }
 }
 
+/**
+ * ugh, really prom?
+ */
+type LabelFixer<LABELS extends BaseLabels> = Record<
+  Extract<keyof LABELS, string>,
+  string | number
+>;
+
+type SafeExecOptions<LABELS extends BaseLabels> = {
+  exec: () => TBlackHole;
+  labels: LABELS;
+  duration: Summary<Extract<keyof LABELS, string>>;
+  executions: Counter<Extract<keyof LABELS, string>>;
+  errors: Counter<Extract<keyof LABELS, string>>;
+};
+
 // Type definitions for global ZCC attachments
 declare module "@zcc/utilities" {
   export interface ZCCDefinition {
@@ -609,5 +653,22 @@ declare module "@zcc/utilities" {
     // they lack access to the variables for the conditional loading workflows
     lifecycle: (name: string) => TLifecycleBase;
     teardown: () => Promise<void>;
+    safeExec: <LABELS extends BaseLabels>(
+      options: SafeExecOptions<LABELS>,
+    ) => Promise<void>;
   }
 }
+
+type BaseLabels = {
+  context: TContext;
+  /**
+   * if provided, specific metrics will be kept
+   *
+   * do not pass label if you do not want metrics to be kept, you may not want / need metrics to be kept on all instances
+   *
+   * - execution count
+   * - error count
+   * - summary of execution time
+   */
+  label?: string;
+};

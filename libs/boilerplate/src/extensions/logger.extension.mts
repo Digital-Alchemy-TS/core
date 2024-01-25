@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
-import { is, SECOND, ZCC } from "@zcc/utilities";
+import { is, SECOND, TContext, ZCC } from "@zcc/utilities";
 import chalk from "chalk";
 import chalkTemplate from "chalk-template";
 import { Level, pino } from "pino";
@@ -274,7 +274,7 @@ export function ZCC_Logger({ lifecycle, getApis, context }: TServiceParams) {
   lifecycle.onPostConfig(() => createBaseLogger());
   const out = {
     LOGGER_CACHE: () => HIGHLIGHTED_CONTEXT_CACHE,
-    context: (context: string) =>
+    context: (context: string | TContext) =>
       ({
         debug: (...params: Parameters<TLoggerFunction>) =>
           shouldLog("debug") && log("debug", context, ...params),

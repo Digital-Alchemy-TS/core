@@ -1,4 +1,5 @@
 import { PICK_ENTITY } from "@zcc/home-assistant";
+import { TContext } from "@zcc/utilities";
 
 export const LOCATION_UPDATED = "LOCATION_UPDATED";
 
@@ -32,13 +33,13 @@ export type RoomSetSceneData = {
 
 export const SEQUENCE_WATCHER_TRIGGER = "SEQUENCE_WATCHER_TRIGGER";
 export type SequenceWatcherTriggerData = {
-  context: string;
+  context: TContext;
   label?: string;
   time: number;
 };
 
 export const SOLAR_EVENT_TRIGGER = "SOLAR_EVENT_TRIGGER";
 export type SolarEventTriggerData = {
-  context: string;
+  context: TContext;
   event: string;
 };

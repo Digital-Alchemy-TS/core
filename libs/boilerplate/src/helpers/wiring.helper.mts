@@ -1,4 +1,4 @@
-import { CronExpression, TBlackHole } from "@zcc/utilities";
+import { CronExpression, TBlackHole, TContext } from "@zcc/utilities";
 import { EventEmitter } from "eventemitter3";
 import { Logger } from "pino";
 
@@ -82,7 +82,7 @@ export type ScheduleItem = {
   stop: () => void;
 };
 export type SchedulerOptions = {
-  context: string;
+  context: TContext;
   exec: () => TBlackHole;
   /**
    * if provided, specific metrics will be kept and labelled with provided label
@@ -98,7 +98,7 @@ export type TScheduler = (options: SchedulerOptions) => ScheduleItem;
 
 export type TServiceParams = {
   cache: TCache;
-  context: string;
+  context: TContext;
   event: EventEmitter;
   getApis: TGetApi;
   lifecycle: TLifecycleBase;

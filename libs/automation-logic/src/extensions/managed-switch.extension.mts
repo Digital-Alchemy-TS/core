@@ -1,6 +1,6 @@
 import { TServiceParams } from "@zcc/boilerplate";
 import { LIB_HOME_ASSISTANT, PICK_ENTITY } from "@zcc/home-assistant";
-import { CronExpression, is } from "@zcc/utilities";
+import { CronExpression, is, TContext } from "@zcc/utilities";
 
 import { ManagedSwitchOptions } from "../helpers/index.mjs";
 
@@ -18,7 +18,7 @@ export function ManagedSwitch({
   async function updateEntities(
     current: boolean,
     entity_id: PICK_ENTITY<"switch">[],
-    context: string,
+    context: TContext,
   ): Promise<void> {
     // ? Bail out if no action can be taken
     if (!hass.socket.getConnectionActive()) {

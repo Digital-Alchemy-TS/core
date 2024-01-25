@@ -1,4 +1,4 @@
-import { is } from "@zcc/utilities";
+import { is, TContext } from "@zcc/utilities";
 import Bottleneck from "bottleneck";
 import { MergeExclusive } from "type-fest";
 
@@ -62,7 +62,7 @@ type BaseFetchArguments = {
   /**
    * Defaults to global fetch context
    */
-  context?: string;
+  context?: TContext;
 };
 
 type BaseFetchUrl = {
@@ -317,7 +317,7 @@ export type FetcherOptions = {
   /**
    * Alter the context attached to the log statements emitted from the fetcher
    */
-  context?: string;
+  context?: TContext;
 };
 
 export type DownloadOptions<BODY extends TFetchBody = undefined> = Partial<

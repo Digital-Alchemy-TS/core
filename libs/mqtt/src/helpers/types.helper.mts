@@ -1,11 +1,7 @@
-import { IClientOptions, IClientSubscribeOptions } from "mqtt";
+import { TBlackHole, TContext } from "@zcc/utilities";
+import { Packet } from "mqtt";
 
 export type MqttMessageTransformer = (payload: Buffer) => unknown;
-
-export interface MqttSubscribeOptions extends Partial<IClientSubscribeOptions> {
-  omitIncoming?: boolean;
-  topic?: string | string[];
-}
 
 export interface MqttSubscriberParameter {
   index: number;
@@ -13,38 +9,25 @@ export interface MqttSubscriberParameter {
   type: "payload" | "topic" | "packet" | "params";
 }
 
-export interface MqttSubscriber {
-  handle: (...parameters) => void;
-  options: MqttSubscribeOptions;
-  parameters: MqttSubscriberParameter[];
-  // provider: unknown;
-  regexp: RegExp;
-  route: string;
-  topic: string;
+export type MQTTParseFormat = "none" | "json";
+
+export interface SubscriptionOptions {
+  noLocal?: boolean;
+  qualityOfService?: number;
+  retainAsPublished?: boolean;
+  retainHandling?: number;
 }
 
-export interface MqttModuleOptions extends IClientOptions {
-  /**
-   * Global queue subscribe.
-   * All topic will be prepend '$queue/' prefix automatically.
-   * More information is here:
-   * https://docs.emqx.io/broker/latest/cn/advanced/shared-subscriptions.html
-   */
-  queue?: boolean;
-  /**
-   * Global shared subscribe.
-   * All topic will be prepend '$share/group/' prefix automatically.
-   * More information is here:
-   * https://docs.emqx.io/broker/latest/cn/advanced/shared-subscriptions.html
-   */
-  share?: string;
-}
+export type MQTTSubscribeOptions<DATA = unknown> = {
+  topic: string | string[];
+  exec: MqttCallback<DATA>;
+  context: TContext;
+  parse?: MQTTParseFormat;
+  label?: string;
+  options?: SubscriptionOptions;
+};
 
-export enum MqttEvents {
-  connect = "MQTT_CONNECT",
-  disconnect = "MQTT_DISCONNECT",
-  error = "MQTT_ERROR",
-  reconnect = "MQTT_RECONNECT",
-  close = "MQTT_CLOSE",
-  offline = "MQTT_OFFLINE",
-}
+export type MqttCallback<DATA = unknown> = (
+  payload: DATA,
+  packet?: Packet,
+) => TBlackHole;

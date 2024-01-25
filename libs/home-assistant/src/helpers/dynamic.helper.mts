@@ -1,3 +1,5 @@
+import { TContext } from "@zcc/utilities";
+
 export const PROXY_SERVICE_LIST_UPDATED = "PROXY_SERVICE_LIST_UPDATED";
 
 // Suggest a better name if you got it
@@ -31,7 +33,7 @@ export type HassWebsocketReceiveMessageData = {
 
 export const HASS_ONUPDATE_EVENT = "HASS_ONUPDATE_EVENT";
 export type HassOnUpdateEventData = {
-  context: string;
+  context: TContext;
   entity_id: string;
   time: number;
 };
@@ -43,7 +45,7 @@ export type HassOnBackupData = {
 
 export const HASS_ONMESSAGE_CALLBACK = "HASS_ONMESSAGE_CALLBACK";
 export type HassOnMessageCallbackData = {
-  context: string;
+  context: TContext;
   event: string;
   time: number;
 };

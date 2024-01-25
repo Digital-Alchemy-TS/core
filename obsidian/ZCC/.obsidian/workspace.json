@@ -29,7 +29,7 @@
                 "state": {
                   "type": "markdown",
                   "state": {
-                    "file": "01 Libraries/01.02 HA Virtual Entity Bridge/01.02 HA Virtual Entity Bridge.md",
+                    "file": "01 Libraries/01.09 Support/MQTT/MQTT.md",
                     "mode": "source",
                     "source": false
                   }
@@ -74,7 +74,7 @@
                     "state": {
                       "type": "localgraph",
                       "state": {
-                        "file": "01 Libraries/01.02 HA Virtual Entity Bridge/01.02 HA Virtual Entity Bridge.md",
+                        "file": "01 Libraries/01.09 Support/MQTT/MQTT.md",
                         "options": {
                           "collapse-filter": true,
                           "search": "",
@@ -175,7 +175,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "01 Libraries/01.02 HA Virtual Entity Bridge/01.02 HA Virtual Entity Bridge.md",
+                "file": "01 Libraries/01.09 Support/MQTT/MQTT.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -192,7 +192,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "01 Libraries/01.02 HA Virtual Entity Bridge/01.02 HA Virtual Entity Bridge.md",
+                "file": "01 Libraries/01.09 Support/MQTT/MQTT.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -215,7 +215,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "01 Libraries/01.02 HA Virtual Entity Bridge/01.02 HA Virtual Entity Bridge.md"
+                "file": "01 Libraries/01.09 Support/MQTT/MQTT.md"
               }
             }
           }
@@ -237,8 +237,10 @@
   },
   "active": "e04ed803c7b2a399",
   "lastOpenFiles": [
-    "01 Libraries/01.02 HA Virtual Entity Bridge/Untitled.md",
+    "01 Libraries/01.01 Home Assistant/FIXME Items.md",
+    "01 Libraries/01.01 Home Assistant/01.01 Home Assistant.md",
     "01 Libraries/01.02 HA Virtual Entity Bridge/01.02 HA Virtual Entity Bridge.md",
+    "01 Libraries/01.02 HA Virtual Entity Bridge/Untitled.md",
     "01 Libraries/01.03 Automation Logic/01.03 Automation Logic.md",
     "01 Libraries/01.04 Boilerplate/01.04 Boilerplate.md",
     "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",
@@ -267,9 +269,7 @@
     "05 Reference/05.02 External Services/Home Assistant.md",
     "02 Applications/02.02 Code Examples & Inspiration",
     "02 Applications/02.01 Demo Repositories",
-    "05 Reference/05.02 External Services/MQTT.md",
     "05 Reference/05.02 External Services",
-    "04 Repository Notes/Publishing Documentation.md",
     "05 Reference/05.01 Digital Alchemy/utilities",
     "05 Reference/05.01 Digital Alchemy/tty",
     "05 Reference/05.01 Digital Alchemy/server"

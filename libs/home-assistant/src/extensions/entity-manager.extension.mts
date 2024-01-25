@@ -308,7 +308,8 @@ export function HAEntityManager({ logger, getApis }: TServiceParams) {
     entityWatchers.set(entity_id, [
       ...current,
       {
-        callback: async (a, b) => await callback(a, b),
+        callback: async (new_state, old_state) =>
+          await callback(new_state, old_state),
         id: v4(),
         type: "dynamic",
       },
@@ -325,6 +326,7 @@ export function HAEntityManager({ logger, getApis }: TServiceParams) {
     isEntity,
     listEntities,
     nextState,
+    onEntityUpdate,
     refresh,
   };
 }

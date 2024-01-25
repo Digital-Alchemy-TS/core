@@ -132,6 +132,21 @@
       "rules": {
         "@nx/dependency-checks": "error"
       }
+    },
+    {
+      "files": [
+        // Applies to all metrics provider files
+        "metrics.helper.mts"
+      ],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": [
+          "tsconfig.base.json"
+        ]
+      },
+      "rules": {
+        "@typescript-eslint/no-magic-numbers": "off"
+      }
     }
   ]
 }

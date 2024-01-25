@@ -1,11 +1,11 @@
 import { PICK_ENTITY } from "@zcc/home-assistant";
-import { CronExpression } from "@zcc/utilities";
+import { CronExpression, TContext } from "@zcc/utilities";
 
 export interface ManagedSwitchOptions {
   /**
    * Logging context
    */
-  context: string;
+  context: TContext;
   /**
    * Set the state of this switch
    */

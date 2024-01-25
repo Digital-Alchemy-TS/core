@@ -1,5 +1,5 @@
 /* eslint-disable sonarjs/cognitive-complexity */
-import { is } from "@zcc/utilities";
+import { is, ZCC } from "@zcc/utilities";
 import { CronJob } from "cron";
 import { nextTick } from "mqtt";
 
@@ -45,25 +45,14 @@ export function ZCC_Scheduler({
     logger.trace({ context, label }, `Creating new schedule`);
 
     let stop: () => void;
-
-    async function SafeExec() {
-      try {
-        // no label, no metrics
-        if (is.empty(label)) {
-          await exec();
-          return;
-        }
-        SCHEDULE_EXECUTION_COUNT.labels(context, label).inc();
-        const end = SCHEDULE_EXECUTION_TIME.startTimer();
-        await exec();
-        end({ context, label });
-      } catch (error) {
-        logger.error({ context, error, label }, `Cron callback threw error`);
-        if (!is.empty(label)) {
-          SCHEDULE_ERRORS.labels(context, label).inc();
-        }
-      }
-    }
+    const safeExec = async () =>
+      await ZCC.safeExec({
+        duration: SCHEDULE_EXECUTION_TIME,
+        errors: SCHEDULE_ERRORS,
+        exec,
+        executions: SCHEDULE_EXECUTION_COUNT,
+        labels: { context, label },
+      });
 
     const item: ScheduleItem = {
       start: () => {
@@ -80,7 +69,7 @@ export function ZCC_Scheduler({
           // I enjoy .flat() too much
           [options.schedule].flat().forEach(schedule => {
             logger.debug({ context, label, schedule }, `Starting schedule`);
-            const cronJob = new CronJob(schedule, async () => await SafeExec());
+            const cronJob = new CronJob(schedule, async () => await safeExec());
             cronJob.start();
             ACTIVE_SCHEDULES.labels("cron").inc();
             stop = () => {
@@ -93,7 +82,7 @@ export function ZCC_Scheduler({
         // intervals
         if ("interval" in options) {
           const interval = setInterval(
-            async () => await SafeExec(),
+            async () => await safeExec(),
             options.interval,
           );
           ACTIVE_SCHEDULES.labels("interval").inc();

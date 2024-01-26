@@ -55,10 +55,6 @@
     "iconName": "SiHomeassistant",
     "iconColor": "#ff5722"
   },
-  "01 Libraries/01.02 HA Virtual Entity Bridge": {
-    "iconName": "SiHomeassistantcommunitystore",
-    "iconColor": "#607d8b"
-  },
   "01 Libraries/01.03 Automation Logic": {
     "iconName": "TiLogicXnor",
     "iconColor": "#ff9800"
@@ -86,5 +82,9 @@
   "03 Release Notes/0.x": {
     "iconName": "TiAlpha",
     "iconColor": "#e91e63"
+  },
+  "01 Libraries/01.02 Virtual Entity": {
+    "iconName": "SiHomeassistantcommunitystore",
+    "iconColor": "#607d8b"
   }
 }

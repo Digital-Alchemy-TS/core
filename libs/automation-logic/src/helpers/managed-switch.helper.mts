@@ -28,6 +28,8 @@ export interface ManagedSwitchOptions {
    * - return true for on
    * - return false for off
    * - return undefined for no change
+   *
+   * Cannot be a promise
    */
   shouldBeOn: () => boolean | undefined;
 }

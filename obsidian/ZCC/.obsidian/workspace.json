@@ -17,7 +17,7 @@
                 "state": {
                   "type": "markdown",
                   "state": {
-                    "file": "01 Libraries/01.03 Automation Logic/Metrics/SEQUENCE_MATCHER_EXECUTION_TIME.md",
+                    "file": "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md",
                     "mode": "source",
                     "source": false
                   }
@@ -54,7 +54,7 @@
                     "state": {
                       "type": "localgraph",
                       "state": {
-                        "file": "01 Libraries/01.03 Automation Logic/Metrics/SEQUENCE_MATCHER_EXECUTION_TIME.md",
+                        "file": "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md",
                         "options": {
                           "collapse-filter": true,
                           "search": "",
@@ -156,7 +156,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "01 Libraries/01.03 Automation Logic/Metrics/SEQUENCE_MATCHER_EXECUTION_TIME.md",
+                "file": "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -173,7 +173,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "01 Libraries/01.03 Automation Logic/Metrics/SEQUENCE_MATCHER_EXECUTION_TIME.md",
+                "file": "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -196,7 +196,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "01 Libraries/01.03 Automation Logic/Metrics/SEQUENCE_MATCHER_EXECUTION_TIME.md"
+                "file": "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md"
               }
             }
           }
@@ -218,8 +218,8 @@
   },
   "active": "cb954889eb65e4f2",
   "lastOpenFiles": [
-    "2024-01-26.md",
     "01 Libraries/01.03 Automation Logic/Metrics/SEQUENCE_MATCHER_EXECUTION_TIME.md",
+    "2024-01-26.md",
     "01 Libraries/01.03 Automation Logic/Metrics/SEQUENCE_MATCHER_EXECUTION_COUNT.md",
     "01 Libraries/01.03 Automation Logic/Metrics/SEQUENCE_MATCHER_ERRORS.md",
     "01 Libraries/01.03 Automation Logic/01.03 Automation Logic.md",
@@ -230,7 +230,7 @@
     "01 Libraries/01.09 Support/MQTT/MQTT.md",
     "01 Libraries/01.01 Home Assistant/FIXME Items.md",
     "01 Libraries/01.01 Home Assistant/01.01 Home Assistant.md",
-    "01 Libraries/01.02 HA Virtual Entity Bridge/01.02 HA Virtual Entity Bridge.md",
+    "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md",
     "01 Libraries/01.02 HA Virtual Entity Bridge/Untitled.md",
     "01 Libraries/01.04 Boilerplate/01.04 Boilerplate.md",
     "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",

@@ -135,8 +135,8 @@
     },
     {
       "files": [
-        // Applies to all metrics provider files
-        "metrics.helper.mts"
+        "metrics.helper.mts",
+        "*.module.mts"
       ],
       "parser": "@typescript-eslint/parser",
       "parserOptions": {

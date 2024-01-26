@@ -6,8 +6,10 @@ words:
   - astro
   - bithound
   - buildable
+  - cbar
   - codez
   - creationrc
+  - Datetime
   - dbaeumer
   - devkit
   - dhall
@@ -15,8 +17,8 @@ words:
   - esbenp
   - execa
   - exiasr
-  - unitless
   - falsey
+  - Gbit
   - gotify
   - gridsome
   - hadolint
@@ -27,10 +29,13 @@ words:
   - intellij
   - interwebs
   - julianday
+  - kbit
   - keylist
   - kusto
   - lifecycles
   - managerrc
+  - mbar
+  - Mbit
   - mireds
   - mrad
   - nrwl
@@ -45,16 +50,18 @@ words:
   - reftimes
   - shellcheck
   - sinm
-  - zipignore
   - sinonjs
   - sonarjs
   - terminalizer
   - testrc
   - timonwong
   - toolbelt
+  - tsdoc
   - typeof
   - undici
+  - unitless
   - visbility
   - vsix
+  - zipignore
 ignoreWords: []
 import: []

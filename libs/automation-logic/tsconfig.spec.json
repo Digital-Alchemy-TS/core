@@ -25,7 +25,7 @@
       "path": "../home-assistant/tsconfig.lib.json"
     },
     {
-      "path": "../ha-virtual-entity-bridge/tsconfig.lib.json"
+      "path": "../virtual-entity/tsconfig.lib.json"
     },
     {
       "path": "../server/tsconfig.lib.json"

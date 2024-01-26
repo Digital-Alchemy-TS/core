@@ -26,7 +26,7 @@ Porting rgb matrix functionality
 #### [[01.01 Home Assistant]]
 
 
-#### [[01.02 HA Virtual Entity Bridge]]
+#### [[01.02 Virtual Entity]]
 
 
 #### [[01.03 Automation Logic]]

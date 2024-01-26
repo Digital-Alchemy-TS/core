@@ -66,7 +66,7 @@
     },
     "material-icon-theme.folders.associations": {
       "design-docs": "changesets",
-      "ha-virtual-entity-bridge": "mappings",
+      "virtual-entity": "mappings",
       "boilerplate": "robot",
       "mqtt": "messages",
       "automation-logic": "scripts",

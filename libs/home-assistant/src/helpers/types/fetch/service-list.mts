@@ -1,50 +1,50 @@
-export class ServiceListSelector {
-  public boolean?: null;
-  public entity?: ServiceListEntityTarget;
-  public number?: {
+export interface ServiceListSelector {
+  boolean?: null;
+  entity?: ServiceListEntityTarget;
+  number?: {
     max: number;
     min: number;
     mode?: string;
     step?: number;
     unit_of_measurement: string;
   };
-  public object?: null;
-  public select?: {
+  object?: null;
+  select?: {
     options: Record<"label" | "value", string>[] | string[];
   };
-  public text?: null;
-  public time?: null;
+  text?: null;
+  time?: null;
 }
 
-export class ServiceListFieldDescription {
-  public advanced?: boolean;
-  public default?: unknown;
-  public description?: string;
-  public example?: string | number;
-  public name?: string;
-  public required?: boolean;
-  public selector?: ServiceListSelector;
+export interface ServiceListFieldDescription {
+  advanced?: boolean;
+  default?: unknown;
+  description?: string;
+  example?: string | number;
+  name?: string;
+  required?: boolean;
+  selector?: ServiceListSelector;
 }
 
-export class ServiceListEntityTarget {
-  public domain?: string;
-  public integration?: string;
+export interface ServiceListEntityTarget {
+  domain?: string;
+  integration?: string;
 }
 
-export class ServiceListServiceTarget {
-  public device?: { integration?: string };
-  public entity?: ServiceListEntityTarget;
-  public integration?: string;
+export interface ServiceListServiceTarget {
+  device?: { integration?: string };
+  entity?: ServiceListEntityTarget;
+  integration?: string;
 }
 
-export class ServiceListField {
-  public description?: string;
-  public fields?: Record<string, ServiceListFieldDescription>;
-  public name?: string;
-  public target?: ServiceListServiceTarget;
+export interface ServiceListField {
+  description?: string;
+  fields?: Record<string, ServiceListFieldDescription>;
+  name?: string;
+  target?: ServiceListServiceTarget;
 }
 
-export class HassServiceDTO {
-  public domain: string;
-  public services: Record<string, ServiceListField>;
+export interface HassServiceDTO {
+  domain: string;
+  services: Record<string, ServiceListField>;
 }

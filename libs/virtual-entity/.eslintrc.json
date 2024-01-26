@@ -14,7 +14,7 @@
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
         "project": [
-          "libs/ha-virtual-entity-bridge/tsconfig.lib.json"
+          "libs/virtual-entity/tsconfig.lib.json"
         ]
       }
     },
@@ -26,7 +26,7 @@
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
         "project": [
-          "libs/ha-virtual-entity-bridge/tsconfig.spec.json"
+          "libs/virtual-entity/tsconfig.spec.json"
         ]
       }
     }

@@ -33,8 +33,8 @@
       "@zcc/home-assistant": [
         "libs/home-assistant/src/index.mts"
       ],
-      "@zcc/ha-virtual-entity-bridge": [
-        "libs/ha-virtual-entity-bridge/src/index.mts"
+      "@zcc/virtual-entity": [
+        "libs/virtual-entity/src/index.mts"
       ],
       "@zcc/boilerplate": [
         "libs/boilerplate/src/index.mts"
@@ -53,7 +53,7 @@
       "path": "./libs/home-assistant/tsconfig.json"
     },
     {
-      "path": "./libs/ha-virtual-entity-bridge/tsconfig.json"
+      "path": "./libs/virtual-entity/tsconfig.json"
     },
     {
       "path": "./libs/boilerplate/tsconfig.json"

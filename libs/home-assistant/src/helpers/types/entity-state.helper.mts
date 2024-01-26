@@ -5,10 +5,10 @@ export enum HassEvents {
   hue_event = "hue_event",
 }
 
-export class ContextDTO {
-  public id: string;
-  public parent_id: string;
-  public user_id: string;
+export interface ContextDTO {
+  id: string;
+  parent_id: string;
+  user_id: string;
 }
 
 type GenericEntityAttributes = {
@@ -22,28 +22,28 @@ type GenericEntityAttributes = {
   friendly_name?: string;
 };
 
-export class GenericEntityDTO<
+export interface GenericEntityDTO<
   ATTRIBUTES extends object = GenericEntityAttributes,
   STATE extends unknown = string,
 > {
-  public attributes: ATTRIBUTES;
-  public context: ContextDTO;
+  attributes: ATTRIBUTES;
+  context: ContextDTO;
   // ! DO NOT TIE THIS `PICK_ENTITY` BACK TO ALL_DOMAINS
   // Causes circular references, which results in entity definitions always being `any`
-  public entity_id: PICK_ENTITY;
-  public last_changed: string;
-  public last_updated: string;
-  public state: STATE;
+  entity_id: PICK_ENTITY;
+  last_changed: string;
+  last_updated: string;
+  state: STATE;
 }
 
-export declare class EventDataDTO<ID extends PICK_ENTITY = PICK_ENTITY> {
+export declare interface EventDataDTO<ID extends PICK_ENTITY = PICK_ENTITY> {
   entity_id?: ID;
   event?: number;
   id?: string;
   new_state?: ENTITY_STATE<ID>;
   old_state?: ENTITY_STATE<ID>;
 }
-export declare class HassEventDTO<ID extends PICK_ENTITY = PICK_ENTITY> {
+export declare interface HassEventDTO<ID extends PICK_ENTITY = PICK_ENTITY> {
   context: ContextDTO;
   data: EventDataDTO<ID>;
   event_type: HassEvents;

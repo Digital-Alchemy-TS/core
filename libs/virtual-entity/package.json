@@ -1,5 +1,5 @@
 {
-  "name": "@zcc/ha-virtual-entity-bridge",
+  "name": "@zcc/virtual-entity",
   "type": "module",
   "version": "0.0.1"
 }

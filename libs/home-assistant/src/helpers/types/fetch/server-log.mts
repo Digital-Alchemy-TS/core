@@ -16,13 +16,13 @@
 // 	}
 // }
 
-export class HomeAssistantServerLogItem {
-  public count: number;
-  public exception: string;
-  public first_occurred: number;
-  public level: "ERROR" | "WARNING";
-  public message: string[];
-  public name: string;
-  public source: [string, number];
-  public timestamp: number;
+export interface HomeAssistantServerLogItem {
+  count: number;
+  exception: string;
+  first_occurred: number;
+  level: "ERROR" | "WARNING";
+  message: string[];
+  name: string;
+  source: [string, number];
+  timestamp: number;
 }

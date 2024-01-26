@@ -2,4 +2,6 @@
 import "@zcc/boilerplate";
 import "@zcc/home-assistant";
 
-export * from "./virtual-entity-bridge.module.mjs";
+export * from "./extensions/index.mjs";
+export * from "./helpers/index.mjs";
+export * from "./virtual-entity.module.mjs";

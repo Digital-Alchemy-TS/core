@@ -1,3 +1,4 @@
+import { TBlackHole, TContext } from "@zcc/utilities";
 import { Dayjs } from "dayjs";
 
 import {
@@ -150,3 +151,14 @@ export type SOCKET_MESSAGES = { id?: number } & (
   | UpdateEntityMessageDTO
   | EntityHistoryDTO
 );
+
+export type OnHassEventCallback = <ENTITY extends PICK_ENTITY>(
+  event: HassEventDTO<ENTITY>,
+) => TBlackHole;
+
+export type OnHassEventOptions = {
+  context: TContext;
+  label?: string;
+  exec: OnHassEventCallback;
+  event: string;
+};

@@ -11,7 +11,7 @@ import { Counter, Summary } from "prom-client";
  */
 export const MQTT_MESSAGE_HANDLING_TIME = new Summary({
   help: "Duration of MQTT message handling in seconds",
-  labelNames: ["context", "label", "topic"],
+  labelNames: ["context", "label", "topic"] as const,
   name: "mqtt_message_handling_duration_seconds",
   percentiles: [0.5, 0.9, 0.99],
 });
@@ -27,7 +27,7 @@ export const MQTT_MESSAGE_HANDLING_TIME = new Summary({
  */
 export const MQTT_MESSAGE_EXECUTIONS = new Counter({
   help: "Total number of MQTT message executions",
-  labelNames: ["context", "label", "topic"],
+  labelNames: ["context", "label", "topic"] as const,
   name: "mqtt_message_executions_total",
 });
 
@@ -42,6 +42,6 @@ export const MQTT_MESSAGE_EXECUTIONS = new Counter({
  */
 export const MQTT_MESSAGE_ERRORS = new Counter({
   help: "Total number of errors occurred during MQTT message handling",
-  labelNames: ["context", "label", "topic"],
+  labelNames: ["context", "label", "topic"] as const,
   name: "mqtt_message_handling_errors_total",
 });

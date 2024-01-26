@@ -1,4 +1,4 @@
-import { TContext } from "@zcc/utilities";
+import { sleep, TBlackHole, TContext } from "@zcc/utilities";
 
 export type SequenceWatchOptions<
   DATA extends object = object,
@@ -17,7 +17,7 @@ export type SequenceWatchOptions<
   /**
    * Code to run on match
    */
-  exec: () => Promise<void>;
+  exec: () => TBlackHole;
 
   /**
    * Pick objects of relevance out of the event stream
@@ -49,5 +49,18 @@ export type SequenceWatchOptions<
    *
    * - `tag:${string}`: reset ALL sequence watchers that share the same tag
    */
-  reset?: "none" | "self" | { label: string | string[] };
+  reset?: TSequenceReset;
 };
+
+export type TSequenceReset = "self" | { label: string | string[] };
+export type ActiveWatcher = {
+  interrupt: ReturnType<typeof sleep>;
+  match: string[];
+  label: string;
+  reset: TSequenceReset;
+};
+export type TrackedOptions = SequenceWatchOptions & {
+  id: string;
+};
+
+export type GenericFilter = (data: object) => boolean;

@@ -1,5 +1,6 @@
 import { InternalError, TServiceParams } from "@zcc/boilerplate";
-import { SECOND, sleep, START } from "@zcc/utilities";
+import { SECOND, sleep, START, ZCC } from "@zcc/utilities";
+import { EventEmitter } from "eventemitter3";
 import { exit } from "process";
 import WS from "ws";
 
@@ -11,6 +12,10 @@ import {
   HassWebsocketReceiveMessageData,
   HassWebsocketSendMessageData,
   ON_SOCKET_AUTH,
+  OnHassEventOptions,
+  SOCKET_EVENT_ERRORS,
+  SOCKET_EVENT_EXECUTION_COUNT,
+  SOCKET_EVENT_EXECUTION_TIME,
   SOCKET_MESSAGES,
   SocketMessageDTO,
 } from "../helpers/index.mjs";
@@ -39,6 +44,11 @@ export function WebsocketAPIService({
   let websocketUrl: string;
   let retryInterval: number;
   let autoConnect = false;
+
+  /**
+   * Local attachment points for socket events
+   */
+  const socketEvents = new EventEmitter();
 
   let MESSAGE_TIMESTAMPS: number[] = [];
   const hass = getApis(LIB_HOME_ASSISTANT);
@@ -184,30 +194,38 @@ export function WebsocketAPIService({
     );
   }
 
-  /**
-   * Set up a new websocket connection to home assistant
-   */
   async function init(): Promise<void> {
     if (connection) {
       throw new InternalError(
-        "WebSocketConnection",
+        context,
         "ExistingConnection",
         `Destroy the current connection before creating a new one`,
       );
     }
     logger.debug(`[CONNECTION_ACTIVE] = {false}`);
+    const url = getUrl();
     CONNECTION_ACTIVE = false;
     try {
       messageCount = START;
-      connection = new WS(getUrl());
-      connection.on("message", message => {
-        onMessage(JSON.parse(message.toString()));
+      connection = new WS(url);
+      connection.on("message", async message => {
+        try {
+          await onMessage(JSON.parse(message.toString()));
+        } catch (error) {
+          // My expectation is `ZCC.safeExec` should trap any application errors
+          // This try/catch should actually be excessive
+          // If this error happens, something weird is happening
+          logger.error(
+            { error },
+            `Error bubbled up from websocket message event handler. This should not happen`,
+          );
+        }
       });
       connection.on("error", async error => {
         logger.error({ error: error.message || error }, "Socket error");
         if (!CONNECTION_ACTIVE) {
           await sleep(retryInterval);
-          teardown();
+          await teardown();
           await init();
         }
       });
@@ -215,18 +233,8 @@ export function WebsocketAPIService({
         connection.once("open", () => done());
       });
     } catch (error) {
-      logger.error({ error, url: getUrl() }, `initConnection error`);
+      logger.error({ error, url }, `initConnection error`);
     }
-  }
-
-  async function subscribeEvents(): Promise<void> {
-    // if (!SUBSCRIBE_EVENTS) {
-    //   logger.debug(`[Event Subscriptions] skipping`);
-    //   return;
-    // }
-    logger.debug(`[Event Subscriptions] starting`);
-    // await entity.refresh();
-    await sendMessage({ type: HASSIO_WS_COMMAND.subscribe_events }, false);
   }
 
   /**
@@ -260,7 +268,8 @@ export function WebsocketAPIService({
         // * Flag as valid connection
         CONNECTION_ACTIVE = true;
         clearTimeout(AUTH_TIMEOUT);
-        await subscribeEvents();
+        logger.debug(`[Event Subscriptions] starting`);
+        await sendMessage({ type: HASSIO_WS_COMMAND.subscribe_events }, false);
         event.emit(ON_SOCKET_AUTH);
         return;
 
@@ -291,29 +300,26 @@ export function WebsocketAPIService({
     }
   }
 
-  function onEntityUpdate(message: SocketMessageDTO) {
-    if (message.event.event_type !== "state_changed") {
-      return;
-    }
-    // Always keep entity manager up to date
-    // It also implements the interrupt internally
-    const { new_state, old_state } = message.event.data;
-    if (!new_state) {
-      // FIXME: probably removal
-      return;
-    }
-    hass.entity.onEntityUpdate(new_state.entity_id, new_state, old_state);
-  }
-
   function onMessageEvent(id: number, message: SocketMessageDTO) {
     if (message.event.event_type === "state_changed") {
-      setImmediate(() => onEntityUpdate(message));
+      const { new_state, old_state } = message.event.data;
+      if (new_state) {
+        hass.entity.onEntityUpdate(new_state.entity_id, new_state, old_state);
+      } else {
+        // FIXME: probably removal / rename?
+        // It's an edge case for sure, and not positive this code should handle it
+        // If you have thoughts, chime in somewhere and we can do more sane things
+        logger.debug(`No new state for entity, what caused this?`);
+        return;
+      }
     }
     if (waitingCallback.has(id)) {
       const f = waitingCallback.get(id);
       waitingCallback.delete(id);
       f(message.event.result);
     }
+
+    socketEvents.emit(message.event.event_type, message.event);
   }
 
   function onMessageResult(id: number, message: SocketMessageDTO) {
@@ -321,7 +327,6 @@ export function WebsocketAPIService({
       if (message.error) {
         logger.error({ message });
       }
-
       const f = waitingCallback.get(id);
       waitingCallback.delete(id);
       f(message.result);
@@ -339,11 +344,49 @@ export function WebsocketAPIService({
     });
   }
 
+  function onEvent({ context, label, event, exec }: OnHassEventOptions) {
+    logger.debug({ context, event }, `Attaching socket event listener`);
+    const callback = async data => {
+      await ZCC.safeExec({
+        duration: SOCKET_EVENT_EXECUTION_TIME,
+        errors: SOCKET_EVENT_ERRORS,
+        exec: async () => await exec(data),
+        executions: SOCKET_EVENT_EXECUTION_COUNT,
+        labels: { context, event, label },
+      });
+    };
+    socketEvents.on(event, callback);
+    return () => {
+      logger.debug({ context, event }, `Removing socket event listener`);
+      socketEvents.removeListener(event, callback);
+    };
+  }
+
   return {
     getConnectionActive: () => CONNECTION_ACTIVE,
+    /**
+     * Set up a new websocket connection to home assistant
+     *
+     * This doesn't normally need to be called by applications, the extension self manages
+     */
     init,
-    sendAuth,
+    /**
+     * Attach to the incoming stream of socket events. Do your own filtering and processing from there
+     *
+     * Returns removal function
+     */
+    onEvent,
+    /**
+     * Send a message to home assistant via the socket connection
+     *
+     * Applications probably want a higher level function than this
+     */
     sendMessage,
+    /**
+     * remove the current socket connection to home assistant
+     *
+     * will need to call init() again to start up
+     */
     teardown,
   };
 }

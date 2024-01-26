@@ -45,6 +45,7 @@ words:
   - reftimes
   - shellcheck
   - sinm
+  - zipignore
   - sinonjs
   - sonarjs
   - terminalizer

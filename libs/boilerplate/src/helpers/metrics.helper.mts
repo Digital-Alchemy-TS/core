@@ -27,7 +27,7 @@ export const CACHE_GET_OPERATIONS_TOTAL = new Counter({
  */
 export const SCHEDULE_EXECUTION_COUNT = new Counter({
   help: "Counts the number of times a scheduled task has been executed",
-  labelNames: ["context", "label"],
+  labelNames: ["context", "label"] as const,
   name: "zcc_boilerplate_schedule_execution_count",
 });
 
@@ -39,7 +39,7 @@ export const SCHEDULE_EXECUTION_COUNT = new Counter({
  */
 export const SCHEDULE_ERRORS = new Counter({
   help: "Counts the number of errors during scheduled task executions",
-  labelNames: ["context", "label"],
+  labelNames: ["context", "label"] as const,
   name: "zcc_boilerplate_schedule_errors",
 });
 
@@ -51,7 +51,7 @@ export const SCHEDULE_ERRORS = new Counter({
  */
 export const ACTIVE_SCHEDULES = new Gauge({
   help: "Current number of active scheduled tasks",
-  labelNames: ["schedule_type"],
+  labelNames: ["schedule_type"] as const,
   name: "zcc_boilerplate_active_schedules",
 });
 
@@ -60,7 +60,7 @@ export const ACTIVE_SCHEDULES = new Gauge({
  */
 export const SCHEDULE_EXECUTION_TIME = new Summary({
   help: "Measures the duration of each cron job or interval execution",
-  labelNames: ["context", "label"],
+  labelNames: ["context", "label"] as const,
   name: "zcc_boilerplate_schedule_execution_time",
   // These percentiles are just examples; adjust them based on what's relevant for your analysis
   percentiles: [0.5, 0.9, 0.99],

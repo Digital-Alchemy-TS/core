@@ -59,11 +59,11 @@ export function HAEntityManager({ logger, getApis }: TServiceParams) {
   const entityWatchers = new Map<PICK_ENTITY, Watcher[]>();
 
   let init = false;
+
   /**
-   * Pretend like this has an `@OnEvent(HA_EVENT_STATE_CHANGE)` on it.
-   * Socket service calls this separately from the event to ensure data is available here first.
+   * Receiver function for incoming entity updates
    *
-   * Leave as protected method to hide from editor auto complete
+   * Internal use only, unless you like to watch the world burn
    */
   async function onEntityUpdate<ENTITY extends PICK_ENTITY = PICK_ENTITY>(
     entity_id: PICK_ENTITY,

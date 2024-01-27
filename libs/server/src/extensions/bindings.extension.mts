@@ -1,136 +1,211 @@
-import { TServiceParams } from "@zcc/boilerplate";
+import { BootstrapException, TServiceParams } from "@zcc/boilerplate";
 import { is } from "@zcc/utilities";
+import fastify, {
+  FastifyBaseLogger,
+  FastifyError,
+  FastifyReply,
+  FastifyRequest,
+} from "fastify";
+import { existsSync, readFileSync } from "fs";
+import { Server, ServerOptions } from "https";
+import { register } from "prom-client";
+
 import {
-  connectAsync,
-  IClientOptions,
-  IClientPublishOptions,
-  IClientSubscribeOptions,
-  ISubscriptionGrant,
-  MqttClient,
-  Packet,
-} from "mqtt";
+  BadGatewayError,
+  BadRequestError,
+  ConflictError,
+  ForbiddenError,
+  GatewayTimeoutError,
+  HttpStatusCode,
+  InternalServerError,
+  MethodNotAllowedError,
+  NotFoundError,
+  NotImplementedError,
+  ServiceUnavailableError,
+  THROWN_ERRORS,
+  UnauthorizedError,
+} from "../helpers/index.mjs";
+import { LIB_SERVER } from "../server.module.mjs";
 
-import { CLIENT_OPTIONS } from "../helpers/config.helper.mjs";
-import { MqttSubscribeOptions } from "../helpers/types.helper.mjs";
-
-export type MqttCallback<T = unknown> = (
-  payload: T | T[],
-  packet?: Packet,
-) => void;
-
-const FIRST = 0;
-
-export function MQTT_Bindings({
+export function Server_Bindings({
   logger,
   lifecycle,
-  getConfig,
+  context,
 }: TServiceParams) {
-  let client: MqttClient;
+  let httpServer: ReturnType<typeof initServer>;
+  let port: number;
+  let sslKeyPath: string;
+  let sslCertPath: string;
+  let extraOptions: fastify.FastifyHttpOptions<Server, FastifyBaseLogger>;
+  let exposeMetrics: boolean;
 
-  const callbacks = new Map<string, [MqttCallback[], MqttSubscribeOptions]>();
-  const subscriptions = new Set<string>();
-
-  lifecycle.onPostConfig(async () => {
-    const options = getConfig<IClientOptions>(CLIENT_OPTIONS);
-    client = await connectAsync({ ...options });
-    logger.trace("mqtt connect");
+  lifecycle.onPostConfig(() => {
+    exposeMetrics = LIB_SERVER.getConfig("EXPOSE_METRICS");
+    port = LIB_SERVER.getConfig("PORT");
+    sslCertPath = LIB_SERVER.getConfig("SSL_CERT_PATH");
+    sslKeyPath = LIB_SERVER.getConfig("SSL_KEY_PATH");
+    httpServer = initServer();
+    out.httpServer = httpServer;
   });
 
-  lifecycle.onBootstrap(() => {
-    client.on("message", (topic: string, payload: Buffer, packet: Packet) => {
-      const [callbacks, options] = callbacks.get(topic) ?? [];
-      if (is.empty(callbacks)) {
-        logger.warn(`Incoming MQTT {%s} with no callbacks`, topic);
-        return;
-      }
-      if (!options?.omitIncoming) {
-        logger.debug(`Incoming MQTT {%s} (%s)`, topic, callbacks.length);
-      }
-      callbacks.forEach(callback => {
-        callback(handlePayload(payload), packet);
-      });
-    });
+  lifecycle.onReady(async () => {
+    errorHandler();
+    registerMetrics();
+    if (port) {
+      logger.info({ port }, `server listen`);
+      await httpServer.listen({ port });
+    }
   });
 
-  function listen(
-    topics: string | string[],
-    options?: IClientSubscribeOptions,
-  ): Promise<ISubscriptionGrant[]> {
-    return new Promise((resolve, reject) => {
-      topics = is.string(topics) ? [topics] : topics;
-      topics = topics.filter(topic => !subscriptions.has(topic));
-      if (is.empty(topics)) {
-        return;
-      }
-      (topics as string[]).forEach(topic => {
-        logger.debug(`Subscribe {%s}`, topic);
-        subscriptions.add(topic);
-      });
-      client.subscribe(topics, options, (error, granted) => {
-        if (error) {
-          return reject(error);
-        }
-        resolve(granted);
-      });
-    });
-  }
+  lifecycle.onShutdownStart(async () => {
+    logger.info(`server teardown`);
+    await httpServer.close();
+  });
 
-  function publish(
-    topic: string,
-    message?: string | Buffer | object | Array<unknown>,
-    options?: IClientPublishOptions,
-  ): Promise<Packet> {
-    return new Promise<Packet>((resolve, reject) => {
-      if (is.object(message)) {
-        message = JSON.stringify(message);
-      }
-      client.publish(topic, message ?? "", options, (error, packet) => {
-        if (error) {
-          return reject(error);
-        }
-        resolve(packet);
-      });
-    });
-  }
-
-  function subscribe<TYPE>(
-    topic: string,
-    callback: MqttCallback<TYPE>,
-    options?: MqttSubscribeOptions,
-  ): void {
-    listen(topic, { ...options, qos: 1 });
-    const [callbacks, options_] = callbacks.get(topic) ?? [
-      [] as MqttCallback[],
-      options,
-    ];
-    callbacks.push(callback);
-    callbacks.set(topic, [callbacks, options_]);
-  }
-
-  function unlisten(
-    topic: string,
-    options?: IClientSubscribeOptions,
-  ): Promise<Packet> {
-    return new Promise<Packet>((resolve, reject) => {
-      client.unsubscribe(topic, options, (error, packet) => {
-        if (error) {
-          return reject(error);
-        }
-        resolve(packet);
-      });
-    });
-  }
-
-  function handlePayload<T>(payload: Buffer): T {
-    const text = payload.toString("utf8");
-    if (!["{", "["].includes(text.charAt(FIRST))) {
-      return text as unknown as T;
+  function registerMetrics() {
+    if (!exposeMetrics) {
+      return;
     }
-    try {
-      return JSON.parse(text);
-    } catch {
-      logger.warn(`JSON parse failed`);
-      return undefined;
-    }
+    logger.info(`Exposing /metrics for prometheus requests`);
+    // nothing special
+    httpServer.get("/metrics", async (_, reply) => {
+      reply.header("Content-Type", register.contentType);
+      return register.metrics();
+    });
   }
+
+  function initServer() {
+    let https: ServerOptions;
+    // Allow errors to bubble up to interrupt bootstrapping
+    // Indicates that a port is in use, or a bad port selection or something
+    if (!is.empty(sslKeyPath) && !is.empty(sslCertPath)) {
+      logger.debug({ sslCertPath, sslKeyPath }, `Configuring server for https`);
+      if (!existsSync(sslKeyPath)) {
+        throw new BootstrapException(
+          context,
+          "MISSING_SSL_KEYFILE",
+          "Cannot start https server without a valid ssl key",
+        );
+      }
+      if (!existsSync(sslCertPath)) {
+        throw new BootstrapException(
+          context,
+          "MISSING_SSL_CERTFILE",
+          "Cannot start https server without a valid ssl cert",
+        );
+      }
+      https = {
+        cert: readFileSync(sslCertPath),
+        key: readFileSync(sslKeyPath),
+      };
+    }
+    return fastify({
+      https,
+      ...extraOptions,
+    });
+  }
+
+  function errorHandler() {
+    logger.debug(`Adding error handler`);
+    httpServer.setErrorHandler(
+      (error: FastifyError, _: FastifyRequest, reply: FastifyReply) => {
+        let statusCode = HttpStatusCode.INTERNAL_SERVER_ERROR;
+        let message = "Internal Server Error";
+        let status_code = "INTERNAL_SERVER_ERROR";
+
+        if (error instanceof BadRequestError) {
+          statusCode = HttpStatusCode.BAD_REQUEST;
+          status_code = "BAD_REQUEST";
+          message = error.message;
+        } else if (error instanceof UnauthorizedError) {
+          statusCode = HttpStatusCode.UNAUTHORIZED;
+          status_code = "UNAUTHORIZED";
+          message = error.message;
+        } else if (error instanceof ForbiddenError) {
+          statusCode = HttpStatusCode.FORBIDDEN;
+          status_code = "FORBIDDEN";
+          message = error.message;
+        } else if (error instanceof NotFoundError) {
+          statusCode = HttpStatusCode.NOT_FOUND;
+          status_code = "NOT_FOUND";
+          message = error.message;
+        } else if (error instanceof MethodNotAllowedError) {
+          statusCode = HttpStatusCode.METHOD_NOT_ALLOWED;
+          status_code = "METHOD_NOT_ALLOWED";
+          message = error.message;
+        } else if (error instanceof ConflictError) {
+          statusCode = HttpStatusCode.CONFLICT;
+          status_code = "CONFLICT";
+          message = error.message;
+        } else if (error instanceof InternalServerError) {
+          statusCode = HttpStatusCode.INTERNAL_SERVER_ERROR;
+          status_code = "INTERNAL_SERVER_ERROR";
+          message = error.message;
+        } else if (error instanceof NotImplementedError) {
+          statusCode = HttpStatusCode.NOT_IMPLEMENTED;
+          status_code = "NOT_IMPLEMENTED";
+          message = error.message;
+        } else if (error instanceof BadGatewayError) {
+          statusCode = HttpStatusCode.BAD_GATEWAY;
+          status_code = "BAD_GATEWAY";
+          message = error.message;
+        } else if (error instanceof ServiceUnavailableError) {
+          statusCode = HttpStatusCode.SERVICE_UNAVAILABLE;
+          status_code = "SERVICE_UNAVAILABLE";
+          message = error.message;
+        } else if (error instanceof GatewayTimeoutError) {
+          statusCode = HttpStatusCode.GATEWAY_TIMEOUT;
+          status_code = "GATEWAY_TIMEOUT";
+          message = error.message;
+        }
+
+        THROWN_ERRORS.labels({ status_code }).inc();
+
+        reply.status(statusCode).send({ error: message });
+      },
+    );
+  }
+  function configure(
+    options: fastify.FastifyHttpsOptions<Server, FastifyBaseLogger>,
+  ) {
+    if (httpServer) {
+      throw new BootstrapException(
+        context,
+        "LATE_CONFIGURE",
+        "Call configure before bootstrap event",
+      );
+    }
+    logger.trace(`http server configure`);
+    extraOptions = options;
+  }
+
+  const out = {
+    /**
+     * Pass in extra options for the fastify constructor
+     *
+     * Must be called prior to server init
+     */
+    configure,
+    /**
+     * Reference to fastify
+     */
+    httpServer,
+    /**
+     * If called, will use your instance of fastify as the http server
+     *
+     * Do so prior to `onPostConfig`, or an error will be thrown
+     */
+    setServer: (server: ReturnType<typeof initServer>) => {
+      if (httpServer) {
+        throw new BootstrapException(
+          context,
+          "LATE_SERVER_REGISTER",
+          "To override the internal http server, run `setServer` during construction, or onPreInit",
+        );
+      }
+      httpServer = server;
+      out.httpServer = server;
+    },
+  };
+  return out;
 }

@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "../../dist/mqtt-out-tsc",
+    "outDir": "../../dist/server-out-tsc",
   },
   "files": [],
   "include": [],

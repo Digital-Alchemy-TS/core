@@ -36,6 +36,9 @@
       "@zcc/virtual-entity": [
         "libs/virtual-entity/src/index.mts"
       ],
+      "@zcc/server": [
+        "libs/server/src/index.mts"
+      ],
       "@zcc/boilerplate": [
         "libs/boilerplate/src/index.mts"
       ],
@@ -48,6 +51,9 @@
   "references": [
     {
       "path": "./libs/gotify/tsconfig.json"
+    },
+    {
+      "path": "./libs/server/tsconfig.json"
     },
     {
       "path": "./libs/home-assistant/tsconfig.json"

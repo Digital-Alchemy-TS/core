@@ -15,6 +15,9 @@
       "path": "../utilities/tsconfig.lib.json"
     },
     {
+      "path": "../server/tsconfig.lib.json"
+    },
+    {
       "path": "../boilerplate/tsconfig.lib.json"
     }
   ]

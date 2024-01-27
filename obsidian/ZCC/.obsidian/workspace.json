@@ -17,7 +17,7 @@
                 "state": {
                   "type": "markdown",
                   "state": {
-                    "file": "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md",
+                    "file": "01 Libraries/01.09 Support/Server/Metrics/THROWN_ERRORS.md",
                     "mode": "source",
                     "source": false
                   }
@@ -54,7 +54,7 @@
                     "state": {
                       "type": "localgraph",
                       "state": {
-                        "file": "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md",
+                        "file": "01 Libraries/01.09 Support/Server/Metrics/THROWN_ERRORS.md",
                         "options": {
                           "collapse-filter": true,
                           "search": "",
@@ -77,12 +77,24 @@
                           "repelStrength": 10,
                           "linkStrength": 1,
                           "linkDistance": 250,
-                          "scale": 1,
+                          "scale": 0.4444444444444444,
                           "close": false
                         }
                       }
                     },
                     "group": "e4538bd35ee3cee8"
+                  },
+                  {
+                    "id": "8fbb941dceceb1f2",
+                    "type": "leaf",
+                    "state": {
+                      "type": "markdown",
+                      "state": {
+                        "file": "04 Repository Notes/Typography Notes.md",
+                        "mode": "source",
+                        "source": false
+                      }
+                    }
                   }
                 ]
               }
@@ -119,7 +131,7 @@
             "state": {
               "type": "search",
               "state": {
-                "query": "",
+                "query": "tag:#redis  ",
                 "matchingCase": false,
                 "explainSearch": false,
                 "collapseAll": false,
@@ -156,7 +168,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md",
+                "file": "01 Libraries/01.09 Support/Server/Metrics/THROWN_ERRORS.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -173,7 +185,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md",
+                "file": "01 Libraries/01.09 Support/Server/Metrics/THROWN_ERRORS.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -196,7 +208,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md"
+                "file": "01 Libraries/01.09 Support/Server/Metrics/THROWN_ERRORS.md"
               }
             }
           }
@@ -218,41 +230,41 @@
   },
   "active": "cb954889eb65e4f2",
   "lastOpenFiles": [
-    "01 Libraries/01.03 Automation Logic/Metrics/SEQUENCE_MATCHER_EXECUTION_TIME.md",
-    "2024-01-26.md",
-    "01 Libraries/01.03 Automation Logic/Metrics/SEQUENCE_MATCHER_EXECUTION_COUNT.md",
-    "01 Libraries/01.03 Automation Logic/Metrics/SEQUENCE_MATCHER_ERRORS.md",
-    "01 Libraries/01.03 Automation Logic/01.03 Automation Logic.md",
-    "01 Libraries/01.03 Automation Logic/Extensions/Sequence Watcher.md",
-    "01 Libraries/01.03 Automation Logic/Metrics",
-    "01 Libraries/01 Libraries.md",
-    "index.md",
-    "01 Libraries/01.09 Support/MQTT/MQTT.md",
-    "01 Libraries/01.01 Home Assistant/FIXME Items.md",
-    "01 Libraries/01.01 Home Assistant/01.01 Home Assistant.md",
-    "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md",
-    "01 Libraries/01.02 HA Virtual Entity Bridge/Untitled.md",
-    "01 Libraries/01.04 Boilerplate/01.04 Boilerplate.md",
-    "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",
-    "01 Libraries/01.03 Automation Logic/Extensions",
+    "01 Libraries/01.04 Boilerplate/Boilerplate.md",
+    "01 Libraries/01.09 Support/Server/Metrics/THROWN_ERRORS.md",
+    "05 Reference/05.02 External Services/Redis.md",
+    "03 Release Notes/0.x/0.1 Tang.md",
+    "01 Libraries/01.09 Support/Server/Configuration/ADMIN_KEY.md",
+    "01 Libraries/01.04 Boilerplate/Metrics/SCHEDULE_EXECUTION_COUNT.md",
+    "01 Libraries/01.04 Boilerplate/Metrics/SCHEDULE_ERRORS.md",
+    "01 Libraries/01.04 Boilerplate/Extensions/Scheduler.md",
+    "01 Libraries/01.04 Boilerplate/Metrics/CACHE_GET_OPERATIONS_TOTAL.md",
+    "01 Libraries/01.04 Boilerplate/Metrics/CACHE_SET_OPERATIONS_TOTAL.md",
+    "01 Libraries/01.04 Boilerplate/Metrics/CACHE_DRIVER_ERROR_COUNT.md",
+    "01 Libraries/01.04 Boilerplate/Metrics/CACHE_DELETE_OPERATIONS_TOTAL.md",
+    "01 Libraries/01.09 Support/Server/Extensions/Bindings.md",
     "01 Libraries/01.04 Boilerplate/Metrics/ACTIVE_SCHEDULES.md",
-    "01 Libraries/01.04 Boilerplate/Metrics/Metrics.md",
+    "01 Libraries/01.04 Boilerplate/Metrics/SCHEDULE_EXECUTION_TIME.md",
+    "05 Reference/05.02 External Services/Prometheus.md",
+    "01 Libraries/01.05 Gotify/01.05 Gotify.md",
+    "01 Libraries/01.04 Boilerplate/01.04 Boilerplate.md",
     "01 Libraries/01.04 Boilerplate/Extensions/Extensions.md",
-    "01 Libraries/01.05 Gotify/Configuration/TOKEN.md",
-    "01 Libraries/01.01 Home Assistant/Configuration/WEBSOCKET_URL.md",
-    "01 Libraries/01.01 Home Assistant/Extensions/Websocket API.md",
-    "01 Libraries/01.01 Home Assistant/Configuration/WARN_REQUESTS_PER_SEC.md",
-    "01 Libraries/01.01 Home Assistant/Configuration/VERIFICATION_FILE.md",
-    "01 Libraries/01.01 Home Assistant/Extensions/Utilities.md",
-    "01 Libraries/01.01 Home Assistant/Extensions/Type Writer.md",
-    "01 Libraries/01.01 Home Assistant/Configuration/TOKEN.md",
-    "01 Libraries/01.09 Support/Utilities",
-    "01 Libraries/Untitled/Untitled",
-    "01 Libraries/01.09 Support",
-    "02 Applications/02.02 Code Examples & Inspiration",
-    "02 Applications/02.01 Demo Repositories",
-    "05 Reference/05.02 External Services",
-    "05 Reference/05.01 Digital Alchemy/utilities",
-    "05 Reference/05.01 Digital Alchemy/tty"
+    "01 Libraries/01.04 Boilerplate/Lifecycle Events/onPreInit.md",
+    "01 Libraries/01.04 Boilerplate/Lifecycle Events/onPostConfig.md",
+    "01 Libraries/01.04 Boilerplate/Lifecycle Events/onBootstrap.md",
+    "01 Libraries/01.04 Boilerplate/Lifecycle Events/onReady.md",
+    "01 Libraries/01.04 Boilerplate/Lifecycle Events/onShutdownStart.md",
+    "01 Libraries/01.04 Boilerplate/Lifecycle Events/onShutdownEnd.md",
+    "01 Libraries/01.04 Boilerplate/Extensions/Lifecycle.md",
+    "01 Libraries/01.04 Boilerplate/Lifecycle Events",
+    "01 Libraries/01.09 Support/Server/COnfiguration",
+    "01 Libraries/01.09 Support/Server/Configuration/SSL_KEY_PATH",
+    "01 Libraries/01.09 Support/Server/Configuration/SSL_CERT_PATH",
+    "01 Libraries/01.09 Support/Server/Configuration/PORT",
+    "01 Libraries/01.09 Support/Server/Configuration/KEEP_ALIVE_TIMEOUT",
+    "01 Libraries/01.09 Support/Server/Configuration/HEADERS_TIMEOUT",
+    "01 Libraries/01.09 Support/Server/Configuration/EXPOSE_METRICS",
+    "01 Libraries/01.09 Support/Server/Configuration/CONNECTION_TIMEOUT",
+    "01 Libraries/01.09 Support/Server/Configuration/BODY_LIMIT"
   ]
 }

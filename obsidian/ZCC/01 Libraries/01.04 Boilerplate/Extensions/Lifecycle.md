@@ -1,11 +1,12 @@
 ## Lifecycle Events
 ### Startup Events
 
-#### #lifecycle-onPreInit
-#### #lifecycle-onPostConfig
-#### #lifecycle-onBootstrap
-#### #lifecycle-onReady
+- [[onPreInit]]
+- [[onPostConfig]]
+- [[onBootstrap]]
+- [[onReady]]
 
 ### Shutdown Events
-#### #lifecycle-onShutdownStart
-#### #lifecycle-onShutdownComplete
+
+- [[onShutdownStart]]
+- [[onShutdownEnd]]

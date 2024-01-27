@@ -11,7 +11,7 @@
         "outputPath": "dist/libs/virtual-entity",
         "tsConfig": "libs/virtual-entity/tsconfig.lib.json",
         "packageJson": "libs/virtual-entity/package.json",
-        "main": "libs/virtual-entity/src/index.ts",
+        "main": "libs/virtual-entity/src/index.mts",
         "assets": ["libs/virtual-entity/*.md"]
       }
     },

@@ -1,6 +1,6 @@
 - [[01 Libraries/01.04 Boilerplate/Boilerplate]]
 - [[Lifecycle]]
-- #metrics
+- #ZCC/Metrics
 - #cron
 - #throws
 

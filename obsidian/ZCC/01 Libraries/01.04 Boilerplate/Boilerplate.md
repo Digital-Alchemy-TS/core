@@ -27,7 +27,7 @@ What connects all the dots
 - `CreateLibrary`
 - #bootstrap
 - #teardown
-- #lifecycle
+- [[Lifecycle]]
 
 ### [[Logging]]
 
@@ -37,12 +37,12 @@ Wrapper around [pino](https://www.npmjs.com/package/pino). Automatically provide
 Base level fetch operations, utilizing node's built in #fetch method at the base. Wrapped by other libraries to create standardized #rest-api interfaces
 ### [[Cache]]
 
-Generic caching interface. Built in support for memory caching & #redis
+Generic caching interface. Built in support for memory caching & [[Redis]]
 ### [[Scheduler]]
 
 Lifecycle aware scheduling functions
 - #cron
 ### [[Metrics]]
 
-#metrics 
+- #ZCC/Metrics
 [prom-client - npm](https://www.npmjs.com/package/prom-client)

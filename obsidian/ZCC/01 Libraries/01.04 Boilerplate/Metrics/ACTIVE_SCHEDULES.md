@@ -1,4 +1,3 @@
-- #metrics 
-- #Prometheus
+- [[Prometheus]]
 - [[Scheduler]]
 - [[01.04 Boilerplate]]

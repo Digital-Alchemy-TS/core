@@ -35,18 +35,6 @@
     "iconName": "TiApps",
     "iconColor": "#29b6f6"
   },
-  "03 Release Notes": {
-    "iconName": "SiSemanticrelease",
-    "iconColor": "#ffca28"
-  },
-  "04 Repository Notes": {
-    "iconName": "SiReadme",
-    "iconColor": "#ab47bc"
-  },
-  "05 Reference": {
-    "iconName": "SiCloudways",
-    "iconColor": "#7e57c2"
-  },
   "index.md": {
     "iconName": "CoMainComponent",
     "iconColor": "#26a69a"
@@ -79,12 +67,24 @@
     "iconName": "FasCode",
     "iconColor": "#cddc39"
   },
-  "03 Release Notes/0.x": {
-    "iconName": "TiAlpha",
-    "iconColor": "#e91e63"
-  },
   "01 Libraries/01.02 Virtual Entity": {
     "iconName": "SiHomeassistantcommunitystore",
     "iconColor": "#607d8b"
+  },
+  "04 Release Notes": {
+    "iconName": "SiSemanticrelease",
+    "iconColor": "#ffca28"
+  },
+  "04 Release Notes/0.x": {
+    "iconName": "TiAlpha",
+    "iconColor": "#e91e63"
+  },
+  "05 Repository Notes": {
+    "iconName": "SiReadme",
+    "iconColor": "#ab47bc"
+  },
+  "06 Reference": {
+    "iconName": "SiCloudways",
+    "iconColor": "#7e57c2"
   }
 }

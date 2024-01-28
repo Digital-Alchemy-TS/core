@@ -73,7 +73,7 @@
       "home-assistant": "home",
       "common": "shared",
       ".nx": "next",
-      "controllers": "controller",
+      "custom_components": "connection",
       "services": "server",
       "helpers": "helper",
       "extensions": "plugin",

@@ -22,7 +22,7 @@ export const SOCKET_EVENT_ERRORS = new Counter({
  * Summary for Execution Time
  */
 export const SOCKET_EVENT_EXECUTION_TIME = new Summary({
-  help: "Measures the duration of each cron job or interval execution",
+  help: "Measures the duration of each socket event callback execution",
   labelNames: ["context", "label", "event"] as const,
   name: "zcc_home_assistant_socket_event_callback_execution_time",
   percentiles: [0.5, 0.9, 0.99],

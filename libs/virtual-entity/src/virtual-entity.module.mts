@@ -1,6 +1,6 @@
 import { MINUTE, ZCC } from "@zcc/utilities";
 
-import { Button, PushExtension, TalkBack } from "./index.mjs";
+import { BinarySensor, Button, Sensor, Switch } from "./index.mjs";
 
 export const LIB_VIRTUAL_ENTITY = ZCC.createLibrary({
   configuration: {
@@ -23,8 +23,9 @@ export const LIB_VIRTUAL_ENTITY = ZCC.createLibrary({
   },
   name: "virtual-entity",
   services: {
+    binary_sensor: BinarySensor,
     button: Button,
-    push: PushExtension,
-    talk: TalkBack,
+    sensor: Sensor,
+    switch: Switch,
   },
 });

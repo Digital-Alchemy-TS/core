@@ -74,6 +74,7 @@
       "common": "shared",
       ".nx": "next",
       "custom_components": "connection",
+      "zcc": "connection",
       "services": "server",
       "helpers": "helper",
       "extensions": "plugin",

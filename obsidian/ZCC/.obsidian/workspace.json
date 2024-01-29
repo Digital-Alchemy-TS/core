@@ -230,8 +230,9 @@
   },
   "active": "cb954889eb65e4f2",
   "lastOpenFiles": [
-    "01 Libraries/01.09 Support/Server/Metrics/THROWN_ERRORS.md",
+    "2024-01-28.md",
     "03 Custom Components/Untitled.md",
+    "01 Libraries/01.09 Support/Server/Metrics/THROWN_ERRORS.md",
     "03 Custom Components",
     "01 Libraries/01.04 Boilerplate/Boilerplate.md",
     "06 Reference/05.02 External Services/Redis.md",
@@ -256,7 +257,6 @@
     "01 Libraries/01.04 Boilerplate/Lifecycle Events/onBootstrap.md",
     "01 Libraries/01.04 Boilerplate/Lifecycle Events/onReady.md",
     "01 Libraries/01.04 Boilerplate/Lifecycle Events/onShutdownStart.md",
-    "01 Libraries/01.04 Boilerplate/Lifecycle Events/onShutdownEnd.md",
     "01 Libraries/01.04 Boilerplate/Lifecycle Events",
     "01 Libraries/01.09 Support/Server/COnfiguration",
     "01 Libraries/01.09 Support/Server/Configuration/SSL_KEY_PATH",

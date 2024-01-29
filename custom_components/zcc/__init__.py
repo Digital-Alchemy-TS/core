@@ -1,13 +1,12 @@
 import asyncio
 from homeassistant.core import HomeAssistant, ConfigEntry
 from .const import CONF_BASE_URL, CONF_ADMIN_KEY, DOMAIN
-from .http_api import HTTPApiHandler
+from .zcc_api import HTTPApiHandler
 
-async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    # Setup code here
-    return True
-
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(
+    hass: HomeAssistant, entry: ConfigEntry
+) -> bool:
+    """Set up platform from a ConfigEntry."""
     # Initialize HTTP API handler
     base_url = entry.data[CONF_BASE_URL]
     admin_key = entry.data[CONF_ADMIN_KEY]

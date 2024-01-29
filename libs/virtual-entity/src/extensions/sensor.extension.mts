@@ -1,7 +1,7 @@
 import { InternalError, TServiceParams } from "@zcc/boilerplate";
 import { is, TContext } from "@zcc/utilities";
 
-import { Icon } from "../helpers/index.mjs";
+import { Icon, SensorDeviceClasses } from "../helpers/index.mjs";
 
 type TSensor<STATE extends SensorValue> = {
   context: TContext;
@@ -9,7 +9,7 @@ type TSensor<STATE extends SensorValue> = {
   icon?: Icon;
   id: string;
   name?: string;
-};
+} & SensorDeviceClasses;
 
 type SensorValue = string | number;
 
@@ -17,11 +17,6 @@ const CACHE_KEY = (key: string) => `sensor_state_cache:${key}`;
 
 export function Sensor({ logger, cache, context, lifecycle }: TServiceParams) {
   const registry = new Map<string, TSensor<SensorValue>>();
-  let available = false;
-
-  lifecycle.onBootstrap(() => {
-    available = true;
-  });
 
   function create<STATE extends SensorValue>(sensor: TSensor<STATE>) {
     if (is.empty(sensor.id)) {
@@ -40,32 +35,28 @@ export function Sensor({ logger, cache, context, lifecycle }: TServiceParams) {
     let state: STATE;
 
     async function setState(newState: STATE) {
+      logger.trace({ id: sensor.id, newState }, `update sensor state`);
       state = newState;
       await cache.set(CACHE_KEY(sensor.id), state);
     }
 
-    async function loadValue() {
+    lifecycle.onBootstrap(async () => {
       state = await cache.get(CACHE_KEY(sensor.id), sensor.defaultState);
-    }
-    if (available) {
-      setImmediate(async () => await loadValue());
-    }
+    });
 
-    return new Proxy(
-      {},
-      {
-        get(_, property: string) {
-          return property === "state" ? state : undefined;
-        },
-        set(_, property: string, value: STATE) {
-          if (property === "state") {
-            setImmediate(async () => await setState(value));
-            return true;
-          }
-          return false;
-        },
+    // trust the magic of proxies
+    return new Proxy({} as { state: STATE }, {
+      get(_, property: string) {
+        return property === "state" ? state : undefined;
       },
-    );
+      set(_, property: string, value: STATE) {
+        if (property === "state") {
+          setImmediate(async () => await setState(value));
+          return true;
+        }
+        return false;
+      },
+    });
   }
 
   return create;

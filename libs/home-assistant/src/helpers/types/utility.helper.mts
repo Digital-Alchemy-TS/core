@@ -84,3 +84,20 @@ export type ALL_SERVICE_DOMAINS = keyof iCallService;
 
 export type GetDomain<ENTITY extends PICK_ENTITY> =
   ENTITY extends `${infer domain}.${string}` ? domain : never;
+
+is.domain = <DOMAIN extends string>(
+  entity: PICK_ENTITY,
+  domain: DOMAIN,
+): entity is PICK_ENTITY<DOMAIN> => {
+  const [entityDomain] = entity.split(".");
+  return entityDomain === domain;
+};
+
+declare module "@zcc/utilities" {
+  export interface IsIt {
+    domain: <DOMAIN extends string>(
+      entity: PICK_ENTITY,
+      domain: DOMAIN,
+    ) => entity is PICK_ENTITY<DOMAIN>;
+  }
+}

@@ -3,6 +3,7 @@ import "@zcc/boilerplate";
 import "@zcc/home-assistant";
 import "@zcc/mqtt";
 import "@zcc/server";
+import "@zcc/virtual-entity";
 
 export * from "./automation-logic.module.mjs";
 export * from "./extensions/index.mjs";

@@ -1,7 +1,9 @@
-import { calcSolNoon, calcSunriseSet, TServiceParams } from "@zcc/boilerplate";
+import { TServiceParams } from "@zcc/boilerplate";
 import { HassConfig, LIB_HOME_ASSISTANT } from "@zcc/home-assistant";
 import { CronExpression } from "@zcc/utilities";
 import dayjs, { Dayjs } from "dayjs";
+
+import { calcSolNoon, calcSunriseSet } from "../index.mjs";
 
 export type SolarEvents =
   | "dawn"
@@ -142,9 +144,11 @@ export function SolarCalculator({
     );
 
     solarReference.solarNoon = dayjs(calcSolNoon(config.longitude));
+    solarReference.loaded = true;
   }
+  solarReference.loaded = false;
 
   return solarReference as SolarReference;
 }
 
-type SolarReference = Record<SolarEvents, Dayjs>;
+type SolarReference = Record<SolarEvents, Dayjs> & { loaded: boolean };

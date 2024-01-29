@@ -1,6 +1,7 @@
 import { TServiceParams } from "@zcc/boilerplate";
 import { GenericEntityDTO, PICK_ENTITY } from "@zcc/home-assistant";
-import { EMPTY, MINUTE } from "@zcc/utilities";
+import { MINUTE } from "@zcc/utilities";
+import { LIB_VIRTUAL_ENTITY } from "@zcc/virtual-entity";
 import dayjs from "dayjs";
 
 import { LIB_AUTOMATION_LOGIC } from "../automation-logic.module.mjs";
@@ -31,48 +32,43 @@ export function CircadianLighting({
   logger,
   lifecycle,
   getApis,
+  scheduler,
+  context,
   event,
 }: TServiceParams) {
-  //
+  const virtual = getApis(LIB_VIRTUAL_ENTITY);
+  const automation = getApis(LIB_AUTOMATION_LOGIC);
+
   let maxTemperature: number;
   let minTemperature: number;
   let circadianEnabled: boolean;
-  let circadianSensor: SENSOR;
+
+  let circadianEntity: ReturnType<typeof virtual.sensor<number>>;
 
   lifecycle.onPostConfig(() => {
     maxTemperature = LIB_AUTOMATION_LOGIC.getConfig("CIRCADIAN_MAX_TEMP");
     minTemperature = LIB_AUTOMATION_LOGIC.getConfig("CIRCADIAN_MIN_TEMP");
     circadianEnabled = LIB_AUTOMATION_LOGIC.getConfig("CIRCADIAN_ENABLED");
-    circadianSensor = LIB_AUTOMATION_LOGIC.getConfig("CIRCADIAN_SENSOR");
-  });
 
-  // public get kelvin(): number {
-  //   return Number(circadianEntity.state);
-  // }
-
-  // public get mireds(): number {
-  //   return Math.floor(MIRED_CONVERSION / kelvin);
-  // }
-
-  // public circadianEntity: PUSH_PROXY<SENSOR>;
-
-  async function onApplicationBootstrap() {
     if (!circadianEnabled) {
-      logger.warn(`Circadian lighting updates disabled`);
+      logger.info(`circadian disabled`);
       return;
     }
-    pushEntity.insert(circadianSensor, {
+    circadianEntity = virtual.sensor({
+      context,
       device_class: "temperature",
       icon: "mdi:sun-thermometer",
+      id: LIB_AUTOMATION_LOGIC.getConfig("CIRCADIAN_SENSOR"),
       name: "Light temperature",
       unit_of_measurement: "K",
     });
-    circadianEntity = await pushProxy.createPushProxy(circadianSensor);
-    updateKelvin();
-    setInterval(() => {
-      updateKelvin();
-    }, MINUTE);
-  }
+
+    scheduler({
+      context,
+      exec: () => updateKelvin(),
+      interval: MINUTE,
+    });
+  });
 
   event.on(LOCATION_UPDATED, () => updateKelvin());
 
@@ -80,7 +76,7 @@ export function CircadianLighting({
     if (!circadianEntity) {
       return;
     }
-    if (solarCalc.latitude === EMPTY && solarCalc.longitude === EMPTY) {
+    if (!automation.solar.loaded) {
       logger.debug(`[lat]/[long] not loaded yet`);
       return;
     }
@@ -92,30 +88,40 @@ export function CircadianLighting({
 
   /**
    * Returns 0 when it's dark out, increasing to 1 at solar noon
-   *
-   * ! The math needs work, this seems more thought out because math reasons:
-   * https://github.com/claytonjn/hass-circadian_lighting/blob/master/custom_components/circadian_lighting/__init__.py#L206
    */
   function getColorOffset(): number {
-    const calc = solarCalc.getCalcSync();
-    const noon = dayjs(calc.solarNoon);
-    const dusk = dayjs(calc.dusk);
-    const dawn = dayjs(calc.dawn);
+    if (!circadianEntity) {
+      return MIN;
+    }
+    if (!automation.solar.loaded) {
+      logger.debug(`[lat]/[long] not loaded yet`);
+      return MIN;
+    }
     const now = dayjs();
+    const { solarNoon, dawn, dusk } = automation.solar;
 
     if (now.isBefore(dawn)) {
       // After midnight, but before dawn
       return MIN;
     }
-    if (now.isBefore(noon)) {
+    if (now.isBefore(solarNoon)) {
       // After dawn, but before solar noon
-      return Math.abs(noon.diff(now, "s") / noon.diff(dawn, "s") - MAX);
+      return Math.abs(
+        solarNoon.diff(now, "s") / solarNoon.diff(dawn, "s") - MAX,
+      );
     }
     if (now.isBefore(dusk)) {
       // Afternoon, but before dusk
-      return Math.abs(noon.diff(now, "s") / noon.diff(dusk, "s") - MAX);
+      return Math.abs(
+        solarNoon.diff(now, "s") / solarNoon.diff(dusk, "s") - MAX,
+      );
     }
     // Until midnight
     return MIN;
   }
+
+  return {
+    getKelvin: () => circadianEntity?.state,
+    updateKelvin,
+  };
 }

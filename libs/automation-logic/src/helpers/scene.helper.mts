@@ -1,4 +1,5 @@
 import { ALL_DOMAINS, GetDomain, PICK_ENTITY } from "@zcc/home-assistant";
+import { TContext } from "@zcc/utilities";
 
 type SceneAwareDomains = "switch" | "light";
 type RGB = [r: number, g: number, b: number];
@@ -74,15 +75,21 @@ export type SceneList<SCENES extends string> = Record<
   Partial<Record<PICK_ENTITY<AllowedSceneDomains>, SceneDefinition>>
 >;
 
-export type RoomConfiguration = {
+export type RoomConfiguration<SCENES extends string> = {
+  context: TContext;
   /**
    * Friendly name
    */
   name?: string;
+
+  /**
+   * Used for construction of entity ids and such
+   */
+  id: string;
   /**
    * Global scenes are required to be declared within the room
    */
-  scenes?: Record<string, RoomScene> & Record<string, RoomScene>;
+  scenes?: Record<SCENES, RoomScene>;
 };
 
 export type RoomScene = {
@@ -109,4 +116,5 @@ export type RoomScene = {
    * Human understandable description of this scene (short form)
    */
   friendly_name?: string;
+  definition: Record<PICK_ENTITY<AllowedSceneDomains>, SceneDefinition>;
 };

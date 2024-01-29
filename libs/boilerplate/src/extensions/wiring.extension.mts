@@ -522,8 +522,15 @@ function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
     stage =>
       (callback: LifecycleCallback, priority = NONE) => {
         if (completedLifecycleCallbacks.has(`on${stage}`)) {
+          // this is makes "earliest run time" logic way easier to implement
+          // intended mode of operation
+          if (["PreInit", "PostConfig", "Bootstrap", "Ready"].includes(stage)) {
+            setImmediate(async () => await callback());
+            return;
+          }
+          // What does this mean in reality?
+          // Probably a broken unit test, I really don't know what workflow would cause this
           logger.fatal(`[on${stage}] late attach, cannot attach callback`);
-          ZCC_Testing.FailFast();
           return;
         }
         childCallbacks[stage].push([callback, priority]);

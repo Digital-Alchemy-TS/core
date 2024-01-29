@@ -17,7 +17,7 @@
                 "state": {
                   "type": "markdown",
                   "state": {
-                    "file": "03 Custom Components/Untitled.md",
+                    "file": "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",
                     "mode": "source",
                     "source": false
                   }
@@ -54,7 +54,7 @@
                     "state": {
                       "type": "localgraph",
                       "state": {
-                        "file": "03 Custom Components/Untitled.md",
+                        "file": "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",
                         "options": {
                           "collapse-filter": true,
                           "search": "",
@@ -96,7 +96,8 @@
                       }
                     }
                   }
-                ]
+                ],
+                "currentTab": 1
               }
             ],
             "direction": "horizontal"
@@ -168,7 +169,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "03 Custom Components/Untitled.md",
+                "file": "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -185,7 +186,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "03 Custom Components/Untitled.md",
+                "file": "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -208,11 +209,12 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "03 Custom Components/Untitled.md"
+                "file": "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md"
               }
             }
           }
-        ]
+        ],
+        "currentTab": 3
       }
     ],
     "direction": "horizontal",
@@ -230,9 +232,14 @@
   },
   "active": "cb954889eb65e4f2",
   "lastOpenFiles": [
-    "2024-01-28.md",
-    "03 Custom Components/Untitled.md",
+    "05 Repository Notes/Typography Notes.md",
+    "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",
+    "01 Libraries/01.03 Automation Logic/01.03 Automation Logic.md",
+    "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md",
+    "01 Libraries/01 Libraries.md",
     "01 Libraries/01.09 Support/Server/Metrics/THROWN_ERRORS.md",
+    "03 Custom Components/Untitled.md",
+    "2024-01-28.md",
     "03 Custom Components",
     "01 Libraries/01.04 Boilerplate/Boilerplate.md",
     "06 Reference/05.02 External Services/Redis.md",
@@ -252,11 +259,6 @@
     "01 Libraries/01.05 Gotify/01.05 Gotify.md",
     "01 Libraries/01.04 Boilerplate/01.04 Boilerplate.md",
     "01 Libraries/01.04 Boilerplate/Extensions/Extensions.md",
-    "01 Libraries/01.04 Boilerplate/Lifecycle Events/onPreInit.md",
-    "01 Libraries/01.04 Boilerplate/Lifecycle Events/onPostConfig.md",
-    "01 Libraries/01.04 Boilerplate/Lifecycle Events/onBootstrap.md",
-    "01 Libraries/01.04 Boilerplate/Lifecycle Events/onReady.md",
-    "01 Libraries/01.04 Boilerplate/Lifecycle Events/onShutdownStart.md",
     "01 Libraries/01.04 Boilerplate/Lifecycle Events",
     "01 Libraries/01.09 Support/Server/COnfiguration",
     "01 Libraries/01.09 Support/Server/Configuration/SSL_KEY_PATH",

@@ -1,7 +1,7 @@
 /* eslint-disable */
 export default {
-  displayName: "automation-logic",
-  preset: "../../jest.preset.js",
+  displayName: "automation-example",
+  preset: "../jest.preset.js",
   testEnvironment: "node",
   transform: {
     "^.+\\.[tj]s$": ["ts-jest", { tsconfig: "<rootDir>/tsconfig.spec.json" }],
@@ -11,5 +11,5 @@ export default {
     `node_modules/(?!chalk)`,
   ],
   moduleFileExtensions: ["mts", "ts", "js", "html"],
-  coverageDirectory: "../../coverage/libs/automation-logic",
+  coverageDirectory: "../../coverage/automation-example",
 };

@@ -39,6 +39,9 @@
       "@zcc/server": [
         "libs/server/src/index.mts"
       ],
+      "@zcc/automation-logic": [
+        "libs/automation-logic/src/index.mts"
+      ],
       "@zcc/boilerplate": [
         "libs/boilerplate/src/index.mts"
       ],

@@ -26,6 +26,7 @@ export function AggressiveScenes({
   let aggressiveScenes = false;
 
   const hass = getApis(LIB_HOME_ASSISTANT);
+  const automation = getApis(LIB_AUTOMATION_LOGIC);
 
   lifecycle.onPostConfig(() => {
     aggressiveScenes = LIB_AUTOMATION_LOGIC.getConfig("AGGRESSIVE_SCENES");

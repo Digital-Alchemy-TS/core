@@ -24,7 +24,7 @@ export type ApplicationConfigurationOptions<
   C extends OptionalModuleConfiguration,
 > = {
   name?: string;
-  services?: S;
+  services: S;
   libraries?: ZCCLibraryDefinition<ServiceMap, OptionalModuleConfiguration>[];
   configuration?: C;
   /**

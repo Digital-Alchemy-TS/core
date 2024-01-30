@@ -561,26 +561,34 @@ ZCC.createLibrary = CreateLibrary;
 ZCC.teardown = Teardown;
 ZCC.lifecycle = CreateChildLifecycle;
 
-ZCC.safeExec = async <LABELS extends BaseLabels>({
-  exec,
-  labels,
-  duration,
-  executions,
-  errors,
-}: SafeExecOptions<LABELS>) => {
+ZCC.safeExec = async <LABELS extends BaseLabels>(
+  options: () => TBlackHole | SafeExecOptions<LABELS>,
+) => {
+  let labels = {} as BaseLabels;
+  let errorMetric: Counter<Extract<keyof LABELS, string>>;
   try {
+    if (is.function(options)) {
+      await options();
+      return;
+    }
+    const opt = options as SafeExecOptions<LABELS>;
+    labels = opt.labels;
+    errorMetric = opt.errors;
+    const { exec, duration, executions } = opt;
     if (is.empty(labels.label)) {
       await exec();
       return;
     }
-    executions.inc(labels as LabelFixer<LABELS>);
-    const end = duration.startTimer();
+    executions?.inc(labels as LabelFixer<LABELS>);
+    const end = duration?.startTimer();
     await exec();
-    end(labels as LabelFixer<LABELS>);
+    if (end) {
+      end(labels as LabelFixer<LABELS>);
+    }
   } catch (error) {
     ZCC.systemLogger.error({ error, ...labels }, `Callback threw error`);
     if (!is.empty(labels.label)) {
-      errors.inc(labels as LabelFixer<LABELS>);
+      errorMetric?.inc(labels as LabelFixer<LABELS>);
     }
   }
 };
@@ -632,7 +640,6 @@ type SafeExecOptions<LABELS extends BaseLabels> = {
   executions: Counter<Extract<keyof LABELS, string>>;
   errors: Counter<Extract<keyof LABELS, string>>;
 };
-
 // Type definitions for global ZCC attachments
 declare module "@zcc/utilities" {
   export interface ZCCDefinition {
@@ -661,7 +668,7 @@ declare module "@zcc/utilities" {
     lifecycle: (name: string) => TLifecycleBase;
     teardown: () => Promise<void>;
     safeExec: <LABELS extends BaseLabels>(
-      options: SafeExecOptions<LABELS>,
+      options: () => TBlackHole | SafeExecOptions<LABELS>,
     ) => Promise<void>;
   }
 }

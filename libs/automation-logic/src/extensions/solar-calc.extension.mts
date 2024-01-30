@@ -148,7 +148,15 @@ export function SolarCalculator({
   }
   solarReference.loaded = false;
 
+  solarReference.isBetween = (a: SolarEvents, b: SolarEvents) => {
+    const now = dayjs();
+    return now.isBetween(solarReference[a], solarReference[b]);
+  };
+
   return solarReference as SolarReference;
 }
 
-type SolarReference = Record<SolarEvents, Dayjs> & { loaded: boolean };
+type SolarReference = Record<SolarEvents, Dayjs> & {
+  isBetween: (a: SolarEvents, b: SolarEvents) => boolean;
+  loaded: boolean;
+};

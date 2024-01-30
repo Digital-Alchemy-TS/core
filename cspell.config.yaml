@@ -6,6 +6,7 @@ words:
   - astro
   - bithound
   - buildable
+  - caseta
   - cbar
   - codeowners
   - codez
@@ -36,6 +37,7 @@ words:
   - keylist
   - kusto
   - lifecycles
+  - Lutron
   - managerrc
   - mbar
   - Mbit
@@ -44,6 +46,7 @@ words:
   - nrwl
   - nsoult
   - nxignore
+  - Pico
   - pino
   - pkief
   - postdata

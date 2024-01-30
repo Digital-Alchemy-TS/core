@@ -78,7 +78,7 @@ export const LIB_AUTOMATION_LOGIC = ZCC.createLibrary({
     circadian: CircadianLighting,
     controller: SceneController,
     light: LightManager,
-    manage: ManagedSwitch,
+    managedSwitch: ManagedSwitch,
     room: SceneRoom,
     sequence: SequenceWatcher,
     solar: SolarCalculator,

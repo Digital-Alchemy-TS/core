@@ -89,7 +89,7 @@ export type RoomConfiguration<SCENES extends string> = {
   /**
    * Global scenes are required to be declared within the room
    */
-  scenes?: Record<SCENES, RoomScene>;
+  scenes: Record<SCENES, RoomScene>;
 };
 
 export type RoomScene = {

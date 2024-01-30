@@ -3,25 +3,29 @@ import { is, TContext } from "@zcc/utilities";
 
 import { Icon } from "../helpers/index.mjs";
 
-type TBinarySensor = {
+type OnOff = "on" | "off";
+
+type TSwitch = {
   context: TContext;
-  defaultState?: boolean;
+  defaultState?: OnOff;
   icon?: Icon;
   id: string;
   name?: string;
 };
 
-const CACHE_KEY = (key: string) => `binary_sensor_state_cache:${key}`;
+const CACHE_KEY = (key: string) => `switch_state_cache:${key}`;
+
+type SwitchInterface = { state: "on" | "off"; on: boolean };
 
 export function Switch({ logger, cache, context, lifecycle }: TServiceParams) {
-  const registry = new Map<string, TBinarySensor>();
+  const registry = new Map<string, TSwitch>();
   let available = false;
 
   lifecycle.onBootstrap(() => {
     available = true;
   });
 
-  function create(sensor: TBinarySensor) {
+  function create(sensor: TSwitch) {
     if (is.empty(sensor.id)) {
       throw new InternalError(context, "INVALID_ID", "id is required");
     }
@@ -35,9 +39,9 @@ export function Switch({ logger, cache, context, lifecycle }: TServiceParams) {
     logger.debug({ sensor }, `create sensor`);
     registry.set(sensor.id, sensor);
 
-    let state: boolean;
+    let state: OnOff;
 
-    async function setState(newState: boolean) {
+    async function setState(newState: OnOff) {
       state = newState;
       await cache.set(CACHE_KEY(sensor.id), state);
     }
@@ -45,28 +49,31 @@ export function Switch({ logger, cache, context, lifecycle }: TServiceParams) {
     async function loadValue() {
       state = await cache.get(
         CACHE_KEY(sensor.id),
-        sensor.defaultState ?? false,
+        sensor.defaultState ?? "off",
       );
     }
     if (available) {
       setImmediate(async () => await loadValue());
     }
 
-    return new Proxy(
-      {},
-      {
-        get(_, property: string) {
-          return property === "state" ? state : undefined;
-        },
-        set(_, property: string, value: boolean) {
-          if (property === "state") {
-            setImmediate(async () => await setState(value));
-            return true;
-          }
-          return false;
-        },
+    return new Proxy({} as SwitchInterface, {
+      get(_, property: keyof SwitchInterface) {
+        if (property === "state") {
+          return state;
+        }
+        if (property === "on") {
+          return state === "on";
+        }
+        return undefined;
       },
-    );
+      set(_, property: keyof SwitchInterface, value: OnOff) {
+        if (property === "state") {
+          setImmediate(async () => await setState(value));
+          return true;
+        }
+        return false;
+      },
+    });
   }
 
   return create;

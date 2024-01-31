@@ -60,7 +60,7 @@ export function LightManager({ logger, getApis, lifecycle }: TServiceParams) {
       return;
     }
     if (entity.state === "unavailable") {
-      logger.warn(`[%s] is {unavailable}, cannot manage state`);
+      logger.warn(`%s is unavailable, cannot manage state`);
       return;
     }
     const performedUpdate = await matchToScene(entity, expected);
@@ -72,7 +72,7 @@ export function LightManager({ logger, getApis, lifecycle }: TServiceParams) {
         const child = entity.byId(child_id);
         if (!child) {
           logger.warn(
-            `[%s] => {%s} child entity of group cannot be found`,
+            `%s => %s child entity of group cannot be found`,
             entity_id,
             child_id,
           );
@@ -185,7 +185,7 @@ export function LightManager({ logger, getApis, lifecycle }: TServiceParams) {
     // } as AggressiveScenesAdjustmentData);
     logger.debug(
       { reasons, rgb_color: state.rgb_color },
-      `[%s] setting light {color}`,
+      `%s setting light color`,
       entity.entity_id,
     );
     await hass.call.light.turn_on({
@@ -208,7 +208,7 @@ export function LightManager({ logger, getApis, lifecycle }: TServiceParams) {
     const entity_id = entity.entity_id as PICK_ENTITY<"light">;
     if (expected.state === "off") {
       if (entity.state === "on") {
-        logger.debug(`[%s] {on} => {off}`, entity_id);
+        logger.debug(`%s on => off`, entity_id);
         // event.emit(AGGRESSIVE_SCENES_ADJUSTMENT, {
         //   entity_id,
         //   type: "light_on_off",

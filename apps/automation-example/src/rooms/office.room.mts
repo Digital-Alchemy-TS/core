@@ -40,22 +40,14 @@ export function Office({
   async function Focus() {
     logger.info(`Focus office`);
     await hass.call.scene.turn_on({
-      entity_id: [
-        "scene.bedroom_off",
-        "scene.games_off",
-        "scene.kitchen_off",
-        "scene.living_off",
-        "scene.loft_off",
-        "scene.misc_off",
-        AutoScene(),
-      ],
+      entity_id: ["scene.bedroom_off", "scene.living_off", AutoScene()],
     });
   }
 
   //
   // scheduler
   //
-  scheduler({
+  scheduler.cron({
     context,
     exec: async () => {
       if (!["auto", "dim"].includes(room.getScene())) {
@@ -158,13 +150,10 @@ export function Office({
   //
   // official
   const isHome = hass.entity.byId("binary_sensor.is_home");
+  const doorbell = hass.entity.byId("binary_sensor.doorbell_doorbell");
+  const { meetingMode } = app.sensors;
 
   // virtual
-  const meetingMode = virtual.switch({
-    context,
-    id: "meeting_mode",
-    name: "Meeting Mode",
-  });
 
   virtual.button({
     context,
@@ -256,12 +245,6 @@ export function Office({
   //
   app.pico.office({
     context,
-    exec: async () => await app.mock.findPhone(),
-    match: ["stop", "lower", "raise"],
-  });
-
-  app.pico.office({
-    context,
     exec: async () => await room.setScene("high"),
     match: ["on"],
   });
@@ -334,4 +317,13 @@ export function Office({
     exec: async () => await app.mock.findPhone(),
     match: ["stop", "lower", "raise"],
   });
+
+  hass.entity.OnUpdate("binary_sensor.doorbell_doorbell", async () => {
+    if (doorbell.state === "off") {
+      return;
+    }
+    await app.mock.computerDoorbell();
+  });
+
+  return room;
 }

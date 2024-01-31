@@ -44,18 +44,6 @@ export const SCHEDULE_ERRORS = new Counter({
 });
 
 /**
- * The current number of active scheduled tasks.
- * Labels:
- * - context: The broader category or module the schedule belongs to.
- * - label: A user-defined label to identify the specific active schedule.
- */
-export const ACTIVE_SCHEDULES = new Gauge({
-  help: "Current number of active scheduled tasks",
-  labelNames: ["schedule_type"] as const,
-  name: "zcc_boilerplate_active_schedules",
-});
-
-/**
  * Summary for Execution Time
  */
 export const SCHEDULE_EXECUTION_TIME = new Summary({

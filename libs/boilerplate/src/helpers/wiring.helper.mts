@@ -1,4 +1,5 @@
 import { CronExpression, TBlackHole, TContext } from "@zcc/utilities";
+import { Dayjs } from "dayjs";
 import { EventEmitter } from "eventemitter3";
 import { Logger } from "pino";
 
@@ -92,9 +93,44 @@ export type SchedulerOptions = {
    * - execution duration
    */
   label?: string;
-} & ({ schedule: Schedule | Schedule[] } | { interval: number });
+};
 
-export type TScheduler = (options: SchedulerOptions) => ScheduleItem;
+/**
+ * General code scheduling functions
+ *
+ * Each method returns a stop function, for temporary scheduling items
+ */
+export type TScheduler = {
+  /**
+   * Run code on a cron schedule
+   */
+  cron: (
+    options: SchedulerOptions & {
+      schedule: Schedule | Schedule[];
+    },
+  ) => () => TBlackHole;
+  /**
+   * Run code on a regular periodic interval
+   */
+  interval: (
+    options: SchedulerOptions & {
+      interval: number;
+    },
+  ) => () => void;
+  /**
+   * Run code at a different time every {period}
+   *
+   * Calls `next` at start, and as determined by `reset`.
+   *
+   * Next returns the date/time for the next execution
+   */
+  sliding: (
+    options: SchedulerOptions & {
+      reset: Schedule;
+      next: () => Dayjs;
+    },
+  ) => () => TBlackHole;
+};
 
 export type TServiceParams = {
   cache: TCache;

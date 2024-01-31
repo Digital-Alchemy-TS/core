@@ -53,7 +53,7 @@ export function HACallProxy({
       return undefined;
     }
     if (!domains || !domains?.includes(domain)) {
-      logger.error(`[%s] unknown domain`, domain);
+      logger.error(`%s unknown domain`, domain);
       return undefined;
     }
     const domainItem: HassServiceDTO = services.find(i => i.domain === domain);
@@ -94,7 +94,7 @@ export function HACallProxy({
     }
     domains = services.map(i => i.domain);
     services.forEach(value => {
-      logger.info(`[%s] scanning`, value.domain);
+      logger.info(`%s scanning`, value.domain);
       Object.entries(value.services).forEach(([serviceName]) =>
         logger.debug(` - {%s}`, serviceName),
       );

@@ -1,9 +1,8 @@
 import { InternalError, TServiceParams } from "@zcc/boilerplate";
+import { PICK_ENTITY } from "@zcc/home-assistant";
 import { is, TContext } from "@zcc/utilities";
 
-import { Icon } from "../helpers/index.mjs";
-
-type OnOff = "on" | "off";
+import { Icon, OnOff } from "../helpers/index.mjs";
 
 type TSwitch = {
   context: TContext;
@@ -15,7 +14,11 @@ type TSwitch = {
 
 const CACHE_KEY = (key: string) => `switch_state_cache:${key}`;
 
-type SwitchInterface = { state: "on" | "off"; on: boolean };
+export type VirtualSwitch = {
+  state: "on" | "off";
+  on: boolean;
+  entity_id: PICK_ENTITY<"switch">;
+};
 
 export function Switch({ logger, cache, context, lifecycle }: TServiceParams) {
   const registry = new Map<string, TSwitch>();
@@ -56,17 +59,20 @@ export function Switch({ logger, cache, context, lifecycle }: TServiceParams) {
       setImmediate(async () => await loadValue());
     }
 
-    return new Proxy({} as SwitchInterface, {
-      get(_, property: keyof SwitchInterface) {
+    return new Proxy({} as VirtualSwitch, {
+      get(_, property: keyof VirtualSwitch) {
         if (property === "state") {
           return state;
         }
         if (property === "on") {
           return state === "on";
         }
+        if (property === "entity_id") {
+          return `switch.${sensor.id}`;
+        }
         return undefined;
       },
-      set(_, property: keyof SwitchInterface, value: OnOff) {
+      set(_, property: keyof VirtualSwitch, value: OnOff) {
         if (property === "state") {
           setImmediate(async () => await setState(value));
           return true;

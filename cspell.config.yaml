@@ -68,6 +68,7 @@ words:
   - unitless
   - visbility
   - vsix
+  - womp
   - zipignore
 ignoreWords: []
 import: []

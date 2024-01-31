@@ -26,6 +26,7 @@ describe("Logger Extension", () => {
   beforeAll(async () => {
     loadedModule = CreateApplication({
       name: TESTING_APP_NAME,
+      services: {},
     });
     await loadedModule.bootstrap({
       configuration: { libs: { boilerplate: { LOG_LEVEL: "trace" } } },

@@ -1,120 +1,168 @@
 /* eslint-disable sonarjs/cognitive-complexity */
-import { is, ZCC } from "@zcc/utilities";
+import { TBlackHole, ZCC } from "@zcc/utilities";
 import { CronJob } from "cron";
-import { nextTick } from "mqtt";
+import dayjs, { Dayjs } from "dayjs";
 
 import {
-  ACTIVE_SCHEDULES,
-  InternalError,
+  Schedule,
   SCHEDULE_ERRORS,
   SCHEDULE_EXECUTION_COUNT,
   SCHEDULE_EXECUTION_TIME,
-  ScheduleItem,
   SchedulerOptions,
-  TScheduler,
   TServiceParams,
 } from "../helpers/index.mjs";
 
-export function ZCC_Scheduler({
-  logger,
-  lifecycle,
-  context: parentContext,
-}: TServiceParams): TScheduler {
-  let started = false;
-  const schedules = new Set<ScheduleItem>();
-
-  lifecycle.onReady(() => {
-    started = true;
-    schedules.forEach(i => i.start());
-  });
+export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
+  const stop = new Set<() => TBlackHole>();
 
   lifecycle.onShutdownStart(() => {
-    started = false;
-    schedules.forEach(i => {
-      i.stop();
-      schedules.delete(i);
+    stop.forEach(stopFunctions => {
+      stopFunctions();
+      stop.delete(stopFunctions);
     });
   });
 
-  return function ({
+  // node-cron
+  function cron({
     context,
     exec,
+    schedule,
     label,
-    ...options
-  }: SchedulerOptions): ScheduleItem {
-    logger.trace({ context, label }, `Creating new schedule`);
+  }: SchedulerOptions & { schedule: Schedule | Schedule[] }) {
+    const stopFunctions: (() => TBlackHole)[] = [];
+    [schedule].flat().forEach(schedule => {
+      logger.debug({ context, label, schedule }, `starting schedule`);
+      const cronJob = new CronJob(
+        schedule,
+        async () =>
+          await ZCC.safeExec({
+            duration: SCHEDULE_EXECUTION_TIME,
+            errors: SCHEDULE_ERRORS,
+            exec,
+            executions: SCHEDULE_EXECUTION_COUNT,
+            labels: { context, label },
+          }),
+      );
+      lifecycle.onReady(() => cronJob.start());
 
-    let stop: () => void;
-    const safeExec = async () =>
-      await ZCC.safeExec({
-        duration: SCHEDULE_EXECUTION_TIME,
-        errors: SCHEDULE_ERRORS,
-        exec,
-        executions: SCHEDULE_EXECUTION_COUNT,
-        labels: { context, label },
-      });
+      const stopFunction = () => {
+        logger.debug({ context, label, schedule }, `stopping schedule`);
+        cronJob.stop();
+      };
 
-    const item: ScheduleItem = {
-      start: () => {
-        if (stop) {
-          throw new InternalError(
-            context,
-            "DOUBLE_SCHEDULE_START",
-            "Attempted to start a schedule that was already started, this can lead to leaks",
-          );
-        }
+      stop.add(stopFunction);
+      stopFunctions.push(stopFunction);
+      return stopFunction;
+    });
 
-        // node-cron
-        if ("schedule" in options) {
-          // I enjoy .flat() too much
-          [options.schedule].flat().forEach(schedule => {
-            logger.debug({ context, label, schedule }, `Starting schedule`);
-            const cronJob = new CronJob(schedule, async () => await safeExec());
-            cronJob.start();
-            ACTIVE_SCHEDULES.labels("cron").inc();
-            stop = () => {
-              ACTIVE_SCHEDULES.labels("cron").dec();
-            };
-          });
-          return;
-        }
+    return () => stopFunctions.forEach(stop => stop());
+  }
 
-        // intervals
-        if ("interval" in options) {
-          const interval = setInterval(
-            async () => await safeExec(),
-            options.interval,
-          );
-          ACTIVE_SCHEDULES.labels("interval").inc();
-          stop = () => {
-            clearInterval(interval);
-            ACTIVE_SCHEDULES.labels("interval").dec();
-          };
-          return;
-        }
-
-        // wat
-        throw new InternalError(
-          parentContext,
-          "INVALID_SCHEDULE",
-          "Not able to determine schedule type",
-        );
-      },
-      stop: () => {
-        if (stop) {
-          stop();
-          stop = undefined;
-          return;
-        }
-        logger.warn({ context, label }, `Nothing to stop`);
-      },
+  // setInterval
+  function interval({
+    context,
+    exec,
+    interval,
+    label,
+  }: SchedulerOptions & { interval: number }) {
+    let runningInterval: ReturnType<typeof setInterval>;
+    lifecycle.onReady(() => {
+      runningInterval = setInterval(
+        async () =>
+          await ZCC.safeExec({
+            duration: SCHEDULE_EXECUTION_TIME,
+            errors: SCHEDULE_ERRORS,
+            exec,
+            executions: SCHEDULE_EXECUTION_COUNT,
+            labels: { context, label },
+          }),
+        interval,
+      );
+    });
+    const stopFunction = () => {
+      if (runningInterval) {
+        clearInterval(runningInterval);
+      }
     };
+    stop.add(stopFunction);
+    return stopFunction;
+  }
 
-    schedules.add(item);
-    if (started) {
-      logger.trace({ context, label }, `Auto starting`);
-      nextTick(() => item.start());
-    }
-    return item;
+  function sliding({
+    context,
+    exec,
+    reset,
+    next,
+    label,
+  }: SchedulerOptions & {
+    /**
+     * How often to run the `next` method, to retrieve the next scheduled execution time
+     */
+    reset: Schedule;
+    /**
+     * Return something time like. undefined = skip next
+     */
+    next: () => Dayjs | string | number | Date | undefined;
+  }) {
+    const scheduleStop = cron({
+      context,
+      exec: () => {
+        if (timeout) {
+          logger.warn(
+            { context },
+            `sliding schedule retrieving next execution time before previous ran`,
+          );
+          clearTimeout(timeout);
+        }
+        let nextTime = next();
+        if (!nextTime) {
+          // nothing to do?
+          // will try again next schedule
+          return;
+        }
+        nextTime = dayjs(nextTime);
+        if (dayjs().isAfter(nextTime)) {
+          logger.warn(
+            { nextTime: nextTime.toISOString() },
+            `cannot schedule sliding schedules for the past`,
+          );
+          // or anything else really
+          // life sucks that way
+          return;
+        }
+        if (nextTime) {
+          timeout = setTimeout(
+            async () => {
+              await ZCC.safeExec({
+                duration: SCHEDULE_EXECUTION_TIME,
+                errors: SCHEDULE_ERRORS,
+                exec,
+                executions: SCHEDULE_EXECUTION_COUNT,
+                labels: { context, label },
+              });
+            },
+            Math.abs(dayjs().diff(nextTime, "ms")),
+          );
+        }
+      },
+      label,
+      schedule: reset,
+    });
+
+    let timeout: ReturnType<typeof setTimeout>;
+
+    return () => {
+      scheduleStop();
+      if (timeout) {
+        clearTimeout(timeout);
+        timeout = undefined;
+      }
+    };
+  }
+
+  return {
+    cron,
+    interval,
+    sliding,
   };
 }

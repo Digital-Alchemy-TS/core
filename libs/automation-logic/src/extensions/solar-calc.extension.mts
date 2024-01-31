@@ -1,7 +1,8 @@
 import { TServiceParams } from "@zcc/boilerplate";
 import { HassConfig, LIB_HOME_ASSISTANT } from "@zcc/home-assistant";
-import { CronExpression } from "@zcc/utilities";
+import { CronExpression, TBlackHole, TContext, ZCC } from "@zcc/utilities";
 import dayjs, { Dayjs } from "dayjs";
+import { EventEmitter } from "eventemitter3";
 
 import { calcSolNoon, calcSunriseSet } from "../index.mjs";
 
@@ -15,6 +16,18 @@ export type SolarEvents =
   | "sunset"
   | "sunriseEnd"
   | "sunsetStart";
+
+const solarEvents = [
+  "dawn",
+  "sunriseEnd",
+  "sunsetStart",
+  "dusk",
+  "nightStart",
+  "nightEnd",
+  "sunrise",
+  "sunset",
+  "solarNoon",
+] as SolarEvents[];
 
 const CACHE_KEY = "SOLAR_CALC_CONFIG_CACHE";
 
@@ -39,7 +52,9 @@ export function SolarCalculator({
   lifecycle,
 }: TServiceParams) {
   let config: HassConfig;
+  const event = new EventEmitter();
   const hass = getApis(LIB_HOME_ASSISTANT);
+  let lastEventAttachment: string;
 
   lifecycle.onBootstrap(async () => {
     config = await cache.get(CACHE_KEY);
@@ -56,7 +71,7 @@ export function SolarCalculator({
 
   // Rebuild references hourly
   //
-  scheduler({
+  scheduler.cron({
     context,
     exec: () => PopulateReferences(),
     schedule: CronExpression.EVERY_HOUR,
@@ -145,6 +160,21 @@ export function SolarCalculator({
 
     solarReference.solarNoon = dayjs(calcSolNoon(config.longitude));
     solarReference.loaded = true;
+
+    const now = dayjs();
+    const today = now.format("YYYY-MM-DD");
+    if (lastEventAttachment !== today) {
+      lastEventAttachment = today;
+      solarEvents.forEach((i: SolarEvents) => {
+        if (solarReference[i].isBefore(now)) {
+          return;
+        }
+        setTimeout(
+          () => event.emit(i),
+          Math.abs(now.diff(solarReference[i], "ms")),
+        );
+      });
+    }
   }
   solarReference.loaded = false;
 
@@ -153,10 +183,35 @@ export function SolarCalculator({
     return now.isBetween(solarReference[a], solarReference[b]);
   };
 
+  solarReference.onEvent = ({
+    context,
+    eventName,
+    label,
+    exec,
+  }: OnSolarEvent) => {
+    event.on(eventName, async () => {
+      await ZCC.safeExec({
+        duration: undefined,
+        errors: undefined,
+        exec: async () => await exec(),
+        executions: undefined,
+        labels: { context, label },
+      });
+    });
+  };
+
   return solarReference as SolarReference;
 }
+
+type OnSolarEvent = {
+  context: TContext;
+  label?: string;
+  eventName: SolarEvents;
+  exec: () => TBlackHole;
+};
 
 type SolarReference = Record<SolarEvents, Dayjs> & {
   isBetween: (a: SolarEvents, b: SolarEvents) => boolean;
   loaded: boolean;
+  onEvent: (options: OnSolarEvent) => TBlackHole;
 };

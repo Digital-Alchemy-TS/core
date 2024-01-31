@@ -17,7 +17,7 @@
                 "state": {
                   "type": "markdown",
                   "state": {
-                    "file": "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",
+                    "file": "01 Libraries/01.03 Automation Logic/Extensions/Scene Room.md",
                     "mode": "source",
                     "source": false
                   }
@@ -54,7 +54,7 @@
                     "state": {
                       "type": "localgraph",
                       "state": {
-                        "file": "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",
+                        "file": "01 Libraries/01.03 Automation Logic/Extensions/Scene Room.md",
                         "options": {
                           "collapse-filter": true,
                           "search": "",
@@ -169,7 +169,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",
+                "file": "01 Libraries/01.03 Automation Logic/Extensions/Scene Room.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -186,7 +186,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",
+                "file": "01 Libraries/01.03 Automation Logic/Extensions/Scene Room.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -209,7 +209,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md"
+                "file": "01 Libraries/01.03 Automation Logic/Extensions/Scene Room.md"
               }
             }
           }
@@ -232,8 +232,10 @@
   },
   "active": "cb954889eb65e4f2",
   "lastOpenFiles": [
-    "05 Repository Notes/Typography Notes.md",
+    "01 Libraries/01.01 Home Assistant/01.01 Home Assistant.md",
+    "01 Libraries/01.03 Automation Logic/Extensions/Scene Room.md",
     "01 Libraries/01.03 Automation Logic/Extensions/Solar Calculator.md",
+    "05 Repository Notes/Typography Notes.md",
     "01 Libraries/01.03 Automation Logic/01.03 Automation Logic.md",
     "01 Libraries/01.02 Virtual Entity/01.02 Virtual Entity.md",
     "01 Libraries/01 Libraries.md",
@@ -257,8 +259,6 @@
     "01 Libraries/01.04 Boilerplate/Metrics/SCHEDULE_EXECUTION_TIME.md",
     "06 Reference/05.02 External Services/Prometheus.md",
     "01 Libraries/01.05 Gotify/01.05 Gotify.md",
-    "01 Libraries/01.04 Boilerplate/01.04 Boilerplate.md",
-    "01 Libraries/01.04 Boilerplate/Extensions/Extensions.md",
     "01 Libraries/01.04 Boilerplate/Lifecycle Events",
     "01 Libraries/01.09 Support/Server/COnfiguration",
     "01 Libraries/01.09 Support/Server/Configuration/SSL_KEY_PATH",

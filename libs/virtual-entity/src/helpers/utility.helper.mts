@@ -117,3 +117,4 @@ export type ConfigDomainMap = {
   sensor: SensorConfig;
   switch: SwitchConfig;
 };
+export type OnOff = "on" | "off";

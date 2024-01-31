@@ -32,7 +32,7 @@ export function AggressiveScenes({
     aggressiveScenes = LIB_AUTOMATION_LOGIC.getConfig("AGGRESSIVE_SCENES");
   });
 
-  scheduler({
+  scheduler.cron({
     context,
     exec: async () => {
       try {
@@ -77,7 +77,7 @@ export function AggressiveScenes({
         const child = entity.byId(child_id);
         if (!child) {
           logger.warn(
-            `[%s] => {%s} child entity of group cannot be found`,
+            `%s => %s child entity of group cannot be found`,
             entity_id,
             child_id,
           );

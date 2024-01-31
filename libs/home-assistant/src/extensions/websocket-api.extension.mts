@@ -78,12 +78,12 @@ export function WebsocketAPIService({
   });
 
   // Set up intervals
-  scheduler({
+  scheduler.interval({
     context,
     exec: async () => await ping(),
     interval: PING_INTERVAL * SECOND,
   });
-  scheduler({
+  scheduler.interval({
     context,
     exec: () => {
       const now = Date.now();
@@ -95,7 +95,7 @@ export function WebsocketAPIService({
   });
 
   lifecycle.onShutdownStart(async () => {
-    logger.debug(`[Shutdown] Tearing down connection`);
+    logger.debug(`shutdown - tearing down connection`);
     await teardown();
   });
 
@@ -115,9 +115,9 @@ export function WebsocketAPIService({
     } catch (error) {
       logger.error({ error }, `ping error`);
     }
-    logger.debug(`[ping] teardown`);
+    logger.debug(`ping teardown`);
     await teardown();
-    logger.debug(`[ping] re-init`);
+    logger.debug(`ping re-init`);
     await init();
   }
 
@@ -202,7 +202,7 @@ export function WebsocketAPIService({
         `Destroy the current connection before creating a new one`,
       );
     }
-    logger.debug(`[CONNECTION_ACTIVE] = {false}`);
+    logger.debug(`CONNECTION_ACTIVE = false`);
     const url = getUrl();
     CONNECTION_ACTIVE = false;
     try {
@@ -264,11 +264,11 @@ export function WebsocketAPIService({
         return await sendAuth();
 
       case HassSocketMessageTypes.auth_ok:
-        logger.debug(`[CONNECTION_ACTIVE] = {true}`);
+        logger.debug(`CONNECTION_ACTIVE = {true}`);
         // * Flag as valid connection
         CONNECTION_ACTIVE = true;
         clearTimeout(AUTH_TIMEOUT);
-        logger.debug(`[Event Subscriptions] starting`);
+        logger.debug(`Event Subscriptions starting`);
         await sendMessage({ type: HASSIO_WS_COMMAND.subscribe_events }, false);
         event.emit(ON_SOCKET_AUTH);
         return;
@@ -289,7 +289,7 @@ export function WebsocketAPIService({
         return await onMessageResult(id, message);
 
       case HassSocketMessageTypes.auth_invalid:
-        logger.debug(`[CONNECTION_ACTIVE] = {false}`);
+        logger.debug(`CONNECTION_ACTIVE = {false}`);
         CONNECTION_ACTIVE = false;
         logger.fatal(message.message);
         return;

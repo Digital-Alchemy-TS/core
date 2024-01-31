@@ -1,5 +1,8 @@
 import { PICK_ENTITY } from "@zcc/home-assistant";
 import { CronExpression, TContext } from "@zcc/utilities";
+import { VirtualBinarySensor, VirtualSwitch } from "@zcc/virtual-entity";
+
+type EntityUpdate = PICK_ENTITY | VirtualSwitch | VirtualBinarySensor;
 
 export interface ManagedSwitchOptions {
   /**
@@ -19,7 +22,7 @@ export interface ManagedSwitchOptions {
   /**
    * Check on update of this entity
    */
-  onEntityUpdate?: PICK_ENTITY | PICK_ENTITY[];
+  onEntityUpdate?: EntityUpdate | EntityUpdate[];
   /**
    * Receive updates from configured annotations
    */

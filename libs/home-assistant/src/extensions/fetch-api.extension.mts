@@ -89,7 +89,7 @@ export function HAFetchAPI({
     });
     logger.trace(
       { ...params },
-      `[%s] search found {%s} events`,
+      `%s search found %s events`,
       calendar,
       events.length,
     );
@@ -156,7 +156,7 @@ export function HAFetchAPI({
   ): Promise<T[]> {
     logger.info(
       { from: from.toISOString(), to: to.toISOString() },
-      `[${entity_id}] Fetch entity history`,
+      `${entity_id} Fetch entity history`,
     );
     const result = await fetcher<[T[]]>({
       params: {

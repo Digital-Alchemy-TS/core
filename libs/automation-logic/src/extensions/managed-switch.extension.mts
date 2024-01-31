@@ -72,13 +72,18 @@ export function ManagedSwitch({
     };
 
     // Always run on a schedule
-    scheduler({ context, exec: async () => await update(), schedule });
+    scheduler.cron({ context, exec: async () => await update(), schedule });
 
     // Update when relevant entities update
     if (!is.empty(onEntityUpdate)) {
       [onEntityUpdate]
         .flat()
-        .forEach(i => hass.entity.OnUpdate(i, async () => await update()));
+        .forEach(i =>
+          hass.entity.OnUpdate(
+            is.object(i) ? i.entity_id : i,
+            async () => await update(),
+          ),
+        );
     }
 
     // Update on relevant events

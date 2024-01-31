@@ -1,17 +1,24 @@
 import { InternalError, TServiceParams } from "@zcc/boilerplate";
+import { PICK_ENTITY } from "@zcc/home-assistant";
 import { is, TContext } from "@zcc/utilities";
 
-import { Icon } from "../helpers/index.mjs";
+import { Icon, OnOff } from "../helpers/index.mjs";
 
 type TBinarySensor = {
   context: TContext;
-  defaultState?: boolean;
+  defaultState?: OnOff;
   icon?: Icon;
   id: string;
   name?: string;
 };
 
 const CACHE_KEY = (key: string) => `binary_sensor_state_cache:${key}`;
+
+export type VirtualBinarySensor = {
+  state: OnOff;
+  entity_id: PICK_ENTITY<"binary_sensor">;
+  on: boolean;
+};
 
 export function BinarySensor({
   logger,
@@ -40,9 +47,9 @@ export function BinarySensor({
     logger.debug({ sensor }, `create sensor`);
     registry.set(sensor.id, sensor);
 
-    let state: boolean;
+    let state: OnOff;
 
-    async function setState(newState: boolean) {
+    async function setState(newState: OnOff) {
       state = newState;
       await cache.set(CACHE_KEY(sensor.id), state);
     }
@@ -50,28 +57,34 @@ export function BinarySensor({
     async function loadValue() {
       state = await cache.get(
         CACHE_KEY(sensor.id),
-        sensor.defaultState ?? false,
+        sensor.defaultState ?? "off",
       );
     }
     if (available) {
       setImmediate(async () => await loadValue());
     }
 
-    return new Proxy(
-      {},
-      {
-        get(_, property: string) {
-          return property === "state" ? state : undefined;
-        },
-        set(_, property: string, value: boolean) {
-          if (property === "state") {
-            setImmediate(async () => await setState(value));
-            return true;
-          }
-          return false;
-        },
+    return new Proxy({} as VirtualBinarySensor, {
+      get(_, property: keyof VirtualBinarySensor) {
+        if (property === "state") {
+          return state;
+        }
+        if (property === "on") {
+          return state === "on";
+        }
+        if (property === "entity_id") {
+          return `binary_sensor.${sensor.id}`;
+        }
+        return undefined;
       },
-    );
+      set(_, property: keyof VirtualBinarySensor, value: OnOff) {
+        if (property === "state") {
+          setImmediate(async () => await setState(value));
+          return true;
+        }
+        return false;
+      },
+    });
   }
 
   return create;

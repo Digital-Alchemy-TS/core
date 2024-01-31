@@ -74,7 +74,7 @@ export function HAEntityManager({ logger, getApis }: TServiceParams) {
     const value = emittingEvents.get(entity_id);
     if (value > EMPTY) {
       logger.error(
-        `[%s] emitted an update before the previous finished processing`,
+        `%s emitted an update before the previous finished processing`,
       );
       emittingEvents.set(entity_id, value + INCREMENT);
       return;
@@ -121,7 +121,7 @@ export function HAEntityManager({ logger, getApis }: TServiceParams) {
     if (!current) {
       logger.error(
         { defaultValue, name: entity },
-        `[proxyGetLogic] cannot find entity {%s}`,
+        `proxyGetLogic cannot find entity %s`,
         property,
       );
     }

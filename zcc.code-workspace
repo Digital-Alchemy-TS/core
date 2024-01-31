@@ -45,6 +45,7 @@
       "*.module.mts": "rust",
       "*.controller.mts": "elm",
       "*.constants.mts": "grain",
+      "*.room.mts": "auto",
       "*.service.mts": "scala",
       "*.helper.mts": "gridsome",
       "*.extension.mts": "purescript",
@@ -67,7 +68,9 @@
     "material-icon-theme.folders.associations": {
       "design-docs": "changesets",
       "virtual-entity": "mappings",
+      "rooms": "robot",
       "boilerplate": "robot",
+      "fetch": "flow",
       "mqtt": "messages",
       "automation-logic": "scripts",
       "home-assistant": "home",

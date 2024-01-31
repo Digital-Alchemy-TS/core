@@ -530,7 +530,7 @@ function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
           }
           // What does this mean in reality?
           // Probably a broken unit test, I really don't know what workflow would cause this
-          logger.fatal(`[on${stage}] late attach, cannot attach callback`);
+          logger.fatal(`on${stage} late attach, cannot attach callback`);
           return;
         }
         childCallbacks[stage].push([callback, priority]);
@@ -562,7 +562,7 @@ ZCC.teardown = Teardown;
 ZCC.lifecycle = CreateChildLifecycle;
 
 ZCC.safeExec = async <LABELS extends BaseLabels>(
-  options: () => TBlackHole | SafeExecOptions<LABELS>,
+  options: (() => TBlackHole) | SafeExecOptions<LABELS>,
 ) => {
   let labels = {} as BaseLabels;
   let errorMetric: Counter<Extract<keyof LABELS, string>>;
@@ -668,7 +668,7 @@ declare module "@zcc/utilities" {
     lifecycle: (name: string) => TLifecycleBase;
     teardown: () => Promise<void>;
     safeExec: <LABELS extends BaseLabels>(
-      options: () => TBlackHole | SafeExecOptions<LABELS>,
+      options: (() => TBlackHole) | SafeExecOptions<LABELS>,
     ) => Promise<void>;
   }
 }

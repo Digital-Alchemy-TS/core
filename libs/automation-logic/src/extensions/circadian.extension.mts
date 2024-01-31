@@ -63,7 +63,7 @@ export function CircadianLighting({
       unit_of_measurement: "K",
     });
 
-    scheduler({
+    scheduler.interval({
       context,
       exec: () => updateKelvin(),
       interval: MINUTE,
@@ -77,7 +77,7 @@ export function CircadianLighting({
       return;
     }
     if (!automation.solar.loaded) {
-      logger.debug(`[lat]/[long] not loaded yet`);
+      logger.debug(`lat/long not loaded yet`);
       return;
     }
     const offset = getColorOffset();
@@ -94,7 +94,7 @@ export function CircadianLighting({
       return MIN;
     }
     if (!automation.solar.loaded) {
-      logger.debug(`[lat]/[long] not loaded yet`);
+      logger.debug(`lat/long not loaded yet`);
       return MIN;
     }
     const now = dayjs();

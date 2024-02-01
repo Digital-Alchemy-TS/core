@@ -307,6 +307,6 @@ export function EntityManager({ logger, getApis }: TServiceParams) {
 
 declare module "@zcc/utilities" {
   export interface IsIt {
-    entity: (entity: PICK_ENTITY) => entity is PICK_ENTITY;
+    entity(entity: PICK_ENTITY): entity is PICK_ENTITY;
   }
 }

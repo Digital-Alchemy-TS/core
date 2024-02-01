@@ -13,7 +13,7 @@
         }
       }
     },
-    "lint": {
+    "@nx/eslint:lint": {
       "cache": true,
       "inputs": [
         "default",

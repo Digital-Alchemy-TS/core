@@ -95,7 +95,7 @@ export function AggressiveScenes({
     expected: SceneSwitchState,
   ) {
     const entity_id = entity.entity_id;
-    logger.debug({ name: entity_id }, `changing state to {%s}`, expected.state);
+    logger.debug({ name: entity_id, state: expected.state }, `changing state`);
     event.emit(AGGRESSIVE_SCENES_ADJUSTMENT, {
       entity_id,
       type: "switch_on_off",

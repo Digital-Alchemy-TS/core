@@ -18,10 +18,10 @@ export function BedRoom({ getApis, context }: TServiceParams) {
   //
 
   async function napTime() {
-    await app.global.GlobalOff();
+    await app.global.globalOff();
     await app.mock.playWhiteNoise();
     setTimeout(async () => {
-      await room.setScene("high");
+      room.scene = "high";
       await app.mock.stopWhiteNoise();
     }, HOUR);
   }
@@ -138,25 +138,25 @@ export function BedRoom({ getApis, context }: TServiceParams) {
 
   app.pico.bed({
     context,
-    exec: async () => await room.setScene("off"),
+    exec: () => (room.scene = "off"),
     match: ["off"],
   });
 
   app.pico.bedroom({
     context,
-    exec: async () => await room.setScene("off"),
+    exec: () => (room.scene = "off"),
     match: ["off"],
   });
 
   app.pico.bed({
     context,
-    exec: async () => await room.setScene("high"),
+    exec: () => (room.scene = "high"),
     match: ["on"],
   });
 
   app.pico.bedroom({
     context,
-    exec: async () => await room.setScene("high"),
+    exec: () => (room.scene = "high"),
     match: ["on"],
   });
 

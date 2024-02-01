@@ -2,7 +2,7 @@ import { TServiceParams } from "@zcc/boilerplate";
 import { LIB_HOME_ASSISTANT, PICK_ENTITY } from "@zcc/home-assistant";
 import { CronExpression, is, TContext } from "@zcc/utilities";
 
-import { ManagedSwitchOptions } from "../helpers/index.mjs";
+import { ManagedSwitchOptions, PickASwitch } from "../helpers/index.mjs";
 
 export function ManagedSwitch({
   logger,
@@ -17,7 +17,7 @@ export function ManagedSwitch({
    */
   async function updateEntities(
     current: boolean,
-    entity_id: PICK_ENTITY<"switch">[],
+    entity_id: PickASwitch[],
     context: TContext,
   ): Promise<void> {
     // ? Bail out if no action can be taken
@@ -32,14 +32,19 @@ export function ManagedSwitch({
     const action = current ? "turn_on" : "turn_off";
 
     const shouldExecute = entity_id.some(
-      id => !action.includes(hass.entity.byId(id)?.state?.toLocaleLowerCase()),
+      id =>
+        !action.includes(
+          hass.entity
+            .byId(is.object(id) ? id.entity_id : id)
+            ?.state?.toLocaleLowerCase(),
+        ),
     );
     if (!shouldExecute) {
       return;
     }
     // * Notify and execute!
     const entities = entity_id.map(i => `[${i}]`).join(", ");
-    logger.debug(`${entities} {${action}}`);
+    logger.debug({ action, entities });
 
     await hass.call.switch[action]({ entity_id });
   }
@@ -53,7 +58,7 @@ export function ManagedSwitch({
     onEntityUpdate = [],
   }: ManagedSwitchOptions) {
     logger.info({ context, entity_id }, `Setting up managed switch`);
-    const entityList = is.string(entity_id) ? [entity_id] : entity_id;
+    const entityList = is.array(entity_id) ? entity_id : [entity_id];
 
     // Check if there should be a change
     const update = async () => {

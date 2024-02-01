@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "files": [],
+  "include": [],
+  "references": [
+    {
+      "path": "./tsconfig.app.json"
+    },
+    {
+      "path": "./tsconfig.spec.json"
+    },
+    {
+      "path": "../../libs/home-assistant/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/boilerplate/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/utilities/tsconfig.lib.json"
+    }
+  ]
+}

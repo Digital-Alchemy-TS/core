@@ -1,4 +1,5 @@
 import { InternalError, TServiceParams } from "@zcc/boilerplate";
+import { PICK_ENTITY } from "@zcc/home-assistant";
 import { is, TContext } from "@zcc/utilities";
 
 import { Icon, SensorDeviceClasses } from "../helpers/index.mjs";
@@ -12,6 +13,10 @@ type TSensor<STATE extends SensorValue> = {
 } & SensorDeviceClasses;
 
 type SensorValue = string | number;
+export type VirtualSensor<STATE extends SensorValue> = {
+  entity_id: PICK_ENTITY<"sensor">;
+  state: STATE;
+};
 
 const CACHE_KEY = (key: string) => `sensor_state_cache:${key}`;
 
@@ -45,9 +50,15 @@ export function Sensor({ logger, cache, context, lifecycle }: TServiceParams) {
     });
 
     // trust the magic of proxies
-    return new Proxy({} as { state: STATE }, {
-      get(_, property: string) {
-        return property === "state" ? state : undefined;
+    return new Proxy({} as VirtualSensor<STATE>, {
+      get(_, property: keyof VirtualSensor<STATE>) {
+        if (property === "entity_id") {
+          return `sensor.${sensor.id}`;
+        }
+        if (property === "state") {
+          return state;
+        }
+        return undefined;
       },
       set(_, property: string, value: STATE) {
         if (property === "state") {

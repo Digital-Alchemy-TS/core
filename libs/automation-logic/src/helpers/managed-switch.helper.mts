@@ -1,8 +1,10 @@
 import { PICK_ENTITY } from "@zcc/home-assistant";
 import { CronExpression, TContext } from "@zcc/utilities";
-import { VirtualBinarySensor, VirtualSwitch } from "@zcc/virtual-entity";
 
-type EntityUpdate = PICK_ENTITY | VirtualSwitch | VirtualBinarySensor;
+export type PickASwitch =
+  | PICK_ENTITY<"switch">
+  | { entity_id: PICK_ENTITY<"switch"> };
+type EntityUpdate = PICK_ENTITY | { entity_id: PICK_ENTITY };
 
 export interface ManagedSwitchOptions {
   /**
@@ -12,7 +14,7 @@ export interface ManagedSwitchOptions {
   /**
    * Set the state of this switch
    */
-  entity_id: PICK_ENTITY<"switch"> | PICK_ENTITY<"switch">[];
+  entity_id: PickASwitch | PickASwitch[];
   /**
    * cron compatible expression
    *

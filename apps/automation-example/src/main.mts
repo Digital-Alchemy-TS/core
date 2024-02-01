@@ -1,8 +1,4 @@
 import "@zcc/automation-logic";
-import "@zcc/boilerplate";
-import "@zcc/home-assistant";
-import "@zcc/server";
-import "@zcc/virtual-entity";
 
 import { LIB_AUTOMATION_LOGIC } from "@zcc/automation-logic";
 import { CreateApplication } from "@zcc/boilerplate";

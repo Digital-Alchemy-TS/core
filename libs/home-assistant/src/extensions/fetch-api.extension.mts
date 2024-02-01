@@ -14,9 +14,6 @@ import {
   CheckConfigResult,
   ENTITY_STATE,
   GenericEntityDTO,
-  HASS_CALENDAR_SEARCH,
-  HASS_CALL_SERVICE,
-  HASS_SEND_WEBHOOK,
   HassConfig,
   HassServiceDTO,
   HomeAssistantServerLogItem,
@@ -35,12 +32,7 @@ type SendBody<
   state?: STATE;
 };
 
-export function HAFetchAPI({
-  logger,
-  lifecycle,
-  context,
-  event,
-}: TServiceParams) {
+export function FetchAPI({ logger, lifecycle, context }: TServiceParams) {
   let baseUrl: string;
   let token: string;
   let fetcher: TFetch;
@@ -57,7 +49,6 @@ export function HAFetchAPI({
     });
     fetcher = fetch.fetch;
     downloader = fetch.download;
-    logger.trace(`Load configuration`);
   });
 
   async function calendarSearch({
@@ -93,7 +84,6 @@ export function HAFetchAPI({
       calendar,
       events.length,
     );
-    event.emit(HASS_CALENDAR_SEARCH);
     return events.map(({ start, end, ...extra }) => ({
       ...extra,
       end: dayjs(end.dateTime),
@@ -106,7 +96,6 @@ export function HAFetchAPI({
     data: PICK_SERVICE_PARAMETERS<SERVICE>,
   ): Promise<ENTITY_STATE<PICK_ENTITY>[]> {
     const [domain, service] = serviceName.split(".");
-    event.emit(HASS_CALL_SERVICE, { domain, service, type: "fetch" });
     return await fetcher({
       body: data as TFetchBody,
       method: "post",
@@ -155,8 +144,8 @@ export function HAFetchAPI({
     extra: { minimal_response?: "" } = {},
   ): Promise<T[]> {
     logger.info(
-      { from: from.toISOString(), to: to.toISOString() },
-      `${entity_id} Fetch entity history`,
+      { entity_id, from: from.toISOString(), to: to.toISOString() },
+      `fetch entity history`,
     );
     const result = await fetcher<[T[]]>({
       params: {
@@ -242,7 +231,6 @@ export function HAFetchAPI({
 
   async function webhook(name: string, data: object = {}): Promise<void> {
     logger.trace({ ...data, name }, `Webhook`);
-    event.emit(HASS_SEND_WEBHOOK, { name });
     await fetcher({
       body: data,
       method: "post",

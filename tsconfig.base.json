@@ -1,21 +1,25 @@
 {
   "compileOnSave": false,
-  "include": ["**/src/**/*.mts"],
+  "include": [
+    "**/src/**/*.mts"
+  ],
   "compilerOptions": {
     "allowJs": false,
     "alwaysStrict": true,
     "baseUrl": ".",
-    "esModuleInterop": true,
     "composite": true,
-    "isolatedModules": true,
+    "esModuleInterop": true,
     "importHelpers": true,
-    "lib": ["ESNext"],
+    "isolatedModules": true,
+    "lib": [
+      "ESNext"
+    ],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "noImplicitAny": true,
+    "noImplicitReturns": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noImplicitReturns": true,
     "rootDir": ".",
     "skipDefaultLibCheck": true,
     "skipLibCheck": true,
@@ -27,48 +31,64 @@
     "strictPropertyInitialization": true,
     "target": "ESNext",
     "paths": {
-      "@zcc/gotify": [
-        "libs/gotify/src/index.mts"
-      ],
-      "@zcc/home-assistant": [
-        "libs/home-assistant/src/index.mts"
-      ],
-      "@zcc/virtual-entity": [
-        "libs/virtual-entity/src/index.mts"
-      ],
-      "@zcc/server": [
-        "libs/server/src/index.mts"
-      ],
       "@zcc/automation-logic": [
         "libs/automation-logic/src/index.mts"
       ],
       "@zcc/boilerplate": [
         "libs/boilerplate/src/index.mts"
       ],
+      "@zcc/gotify": [
+        "libs/gotify/src/index.mts"
+      ],
+      "@zcc/home-assistant": [
+        "libs/home-assistant/src/index.mts"
+      ],
+      "@zcc/server": [
+        "libs/server/src/index.mts"
+      ],
       "@zcc/utilities": [
         "libs/utilities/src/index.mts"
+      ],
+      "@zcc/virtual-entity": [
+        "libs/virtual-entity/src/index.mts"
       ]
     }
   },
-  "exclude": ["node_modules", "tmp", "dist"],
+  "exclude": [
+    "node_modules",
+    "tmp",
+    "dist"
+  ],
   "references": [
+    //
+    // Apps
+    //
     {
-      "path": "./libs/gotify/tsconfig.json"
+      "path": "./apps/automation-example/tsconfig.json"
     },
     {
-      "path": "./libs/server/tsconfig.json"
+      "path": "./apps/hass-type-generate/tsconfig.json"
+    },
+    //
+    // Libraries
+    //
+    {
+      "path": "./libs/boilerplate/tsconfig.json"
+    },
+    {
+      "path": "./libs/gotify/tsconfig.json"
     },
     {
       "path": "./libs/home-assistant/tsconfig.json"
     },
     {
-      "path": "./libs/virtual-entity/tsconfig.json"
-    },
-    {
-      "path": "./libs/boilerplate/tsconfig.json"
+      "path": "./libs/server/tsconfig.json"
     },
     {
       "path": "./libs/utilities/tsconfig.json"
+    },
+    {
+      "path": "./libs/virtual-entity/tsconfig.json"
     }
   ]
 }

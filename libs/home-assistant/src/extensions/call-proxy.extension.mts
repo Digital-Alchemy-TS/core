@@ -4,13 +4,10 @@ import { exit } from "process";
 
 import {
   ALL_DOMAINS,
-  CALL_PROXY_PROXY_COMMAND,
-  CallProxyCommandData,
   HASSIO_WS_COMMAND,
   HassServiceDTO,
   PICK_SERVICE,
   PICK_SERVICE_PARAMETERS,
-  PROXY_SERVICE_LIST_UPDATED,
 } from "../helpers/index.mjs";
 import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
@@ -26,11 +23,10 @@ const FAILED_LOAD_DELAY = 5;
 const MAX_ATTEMPTS = 50;
 const FAILED = 1;
 
-export function HACallProxy({
+export function CallProxy({
   logger,
   lifecycle,
   context,
-  event,
   getApis,
 }: TServiceParams) {
   const hass = getApis(LIB_HOME_ASSISTANT);
@@ -53,7 +49,7 @@ export function HACallProxy({
       return undefined;
     }
     if (!domains || !domains?.includes(domain)) {
-      logger.error(`%s unknown domain`, domain);
+      logger.error({ domain }, `unknown domain`);
       return undefined;
     }
     const domainItem: HassServiceDTO = services.find(i => i.domain === domain);
@@ -94,12 +90,11 @@ export function HACallProxy({
     }
     domains = services.map(i => i.domain);
     services.forEach(value => {
-      logger.info(`%s scanning`, value.domain);
+      logger.info({ domain: value.domain }, `scanning`, value.domain);
       Object.entries(value.services).forEach(([serviceName]) =>
         logger.debug(` - {%s}`, serviceName),
       );
     });
-    event.emit(PROXY_SERVICE_LIST_UPDATED);
   }
 
   /**
@@ -114,10 +109,7 @@ export function HACallProxy({
     }
     const [domain, service] = serviceName.split(".");
     // User can just not await this call if they don't care about the "waitForChange"
-    event.emit(CALL_PROXY_PROXY_COMMAND, {
-      domain,
-      service,
-    } as CallProxyCommandData);
+
     return await hass.socket.sendMessage(
       {
         domain,

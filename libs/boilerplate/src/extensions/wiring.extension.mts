@@ -351,7 +351,6 @@ async function WireService(
 }
 
 async function RunStageCallbacks(stage: LifecycleStages) {
-  // logger.trace(`Running %s callbacks`, stage.toLowerCase());
   completedLifecycleCallbacks.add(`on${stage}`);
 
   const list = [

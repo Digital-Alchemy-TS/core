@@ -69,6 +69,8 @@
       "design-docs": "changesets",
       "virtual-entity": "mappings",
       "rooms": "robot",
+      "hass-type-generate": "godot",
+      "automation-example": "moon",
       "boilerplate": "robot",
       "fetch": "flow",
       "mqtt": "messages",

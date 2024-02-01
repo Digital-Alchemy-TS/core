@@ -5,12 +5,8 @@ import { exit } from "process";
 import WS from "ws";
 
 import {
-  HASS_WEBSOCKET_RECEIVE_MESSAGE,
-  HASS_WEBSOCKET_SEND_MESSAGE,
   HASSIO_WS_COMMAND,
   HassSocketMessageTypes,
-  HassWebsocketReceiveMessageData,
-  HassWebsocketSendMessageData,
   ON_SOCKET_AUTH,
   OnHassEventOptions,
   SOCKET_EVENT_ERRORS,
@@ -28,7 +24,7 @@ const CLEANUP_INTERVAL = 5;
 const PING_INTERVAL = 10;
 let messageCount = START;
 
-export function WebsocketAPIService({
+export function WebsocketAPI({
   logger,
   lifecycle,
   scheduler,
@@ -143,9 +139,6 @@ export function WebsocketAPIService({
       return undefined;
     }
     countMessage();
-    event.emit(HASS_WEBSOCKET_SEND_MESSAGE, {
-      type: data.type,
-    } as HassWebsocketSendMessageData);
     if (data.type !== HASSIO_WS_COMMAND.auth) {
       // You want know how annoying this one was to debug?!
       data.id = messageCount;
@@ -255,9 +248,6 @@ export function WebsocketAPIService({
    */
   async function onMessage(message: SocketMessageDTO) {
     const id = Number(message.id);
-    event.emit(HASS_WEBSOCKET_RECEIVE_MESSAGE, {
-      type: message.type,
-    } as HassWebsocketReceiveMessageData);
     switch (message.type as HassSocketMessageTypes) {
       case HassSocketMessageTypes.auth_required:
         logger.debug(`Sending authentication`);
@@ -304,7 +294,11 @@ export function WebsocketAPIService({
     if (message.event.event_type === "state_changed") {
       const { new_state, old_state } = message.event.data;
       if (new_state) {
-        hass.entity.onEntityUpdate(new_state.entity_id, new_state, old_state);
+        hass.entity[Symbol.for("entityUpdateReceiver")](
+          new_state.entity_id,
+          new_state,
+          old_state,
+        );
       } else {
         // FIXME: probably removal / rename?
         // It's an edge case for sure, and not positive this code should handle it

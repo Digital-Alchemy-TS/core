@@ -1,50 +1,55 @@
 import { TServiceParams } from "@zcc/boilerplate";
 import {
-  eachSeries,
-  EMPTY,
   INCREMENT,
   is,
   SECOND,
   sleep,
   START,
+  TBlackHole,
+  ZCC_Testing,
 } from "@zcc/utilities";
+import { eachLimit } from "async";
 import dayjs from "dayjs";
+import { EventEmitter } from "eventemitter3";
 import { get, set } from "object-path";
-import { exit, nextTick } from "process";
 import { Get } from "type-fest";
-import { v4 } from "uuid";
 
 import {
   ALL_DOMAINS,
   ENTITY_STATE,
   EntityHistoryDTO,
   EntityHistoryResult,
-  HassEventDTO,
+  GenericEntityDTO,
   HASSIO_WS_COMMAND,
   PICK_ENTITY,
 } from "../helpers/index.mjs";
 import { LIB_HOME_ASSISTANT } from "../home-assistant.module.mjs";
 
-export type OnHassEventOptions = {
-  event_type: string;
-  match?: (data: HassEventDTO) => boolean;
+type ByIdProxy<ENTITY_ID extends PICK_ENTITY> = ENTITY_STATE<ENTITY_ID> & {
+  entity_id: ENTITY_ID;
+  /**
+   * Run callback
+   */
+  onUpdate: (
+    callback: (state: NonNullable<ENTITY_STATE<ENTITY_ID>>) => TBlackHole,
+  ) => void;
+  /**
+   * Run callback once, for next update
+   */
+  once: (
+    callback: (state: NonNullable<ENTITY_STATE<ENTITY_ID>>) => TBlackHole,
+  ) => void;
+  /**
+   * Will resolve with the next state of the next value. No time limit
+   */
+  nextState: () => Promise<ENTITY_STATE<ENTITY_ID>>;
 };
+
 const MAX_ATTEMPTS = 50;
 const FAILED_LOAD_DELAY = 5;
-const FAILED = 1;
+const BOTTLENECK_UPDATES = 20;
 
-type WatchFunction<ENTITY_ID extends PICK_ENTITY> = (
-  new_state: ENTITY_STATE<ENTITY_ID>,
-  old_state: ENTITY_STATE<ENTITY_ID>,
-) => Promise<void> | void;
-
-type Watcher<ENTITY_ID extends PICK_ENTITY = PICK_ENTITY> = {
-  callback: WatchFunction<ENTITY_ID>;
-  id: string;
-  type: "once" | "dynamic" | "annotation";
-};
-
-export function HAEntityManager({ logger, getApis }: TServiceParams) {
+export function EntityManager({ logger, getApis }: TServiceParams) {
   const hass = getApis(LIB_HOME_ASSISTANT);
 
   /**
@@ -55,50 +60,9 @@ export function HAEntityManager({ logger, getApis }: TServiceParams) {
     Record<string, ENTITY_STATE<PICK_ENTITY>>
   > = {};
 
-  const emittingEvents = new Map<PICK_ENTITY, number>();
-  const entityWatchers = new Map<PICK_ENTITY, Watcher[]>();
+  const event = new EventEmitter();
 
   let init = false;
-
-  /**
-   * Receiver function for incoming entity updates
-   *
-   * Internal use only, unless you like to watch the world burn
-   */
-  async function onEntityUpdate<ENTITY extends PICK_ENTITY = PICK_ENTITY>(
-    entity_id: PICK_ENTITY,
-    new_state: ENTITY_STATE<ENTITY>,
-    old_state?: ENTITY_STATE<ENTITY>,
-  ): Promise<void> {
-    set(MASTER_STATE, entity_id, new_state);
-    const value = emittingEvents.get(entity_id);
-    if (value > EMPTY) {
-      logger.error(
-        `%s emitted an update before the previous finished processing`,
-      );
-      emittingEvents.set(entity_id, value + INCREMENT);
-      return;
-    }
-
-    const list = entityWatchers.get(entity_id);
-    if (is.empty(list)) {
-      return;
-    }
-    await eachSeries(list, async watcher => {
-      try {
-        await watcher.callback(new_state, old_state);
-      } catch (error) {
-        logger.warn(
-          { entity_id, error, new_state },
-          `Entity update callback threw error`,
-        );
-      } finally {
-        if (watcher.type === "once") {
-          remove(entity_id, watcher.id);
-        }
-      }
-    });
-  }
 
   function proxyGetLogic<
     ENTITY extends PICK_ENTITY = PICK_ENTITY,
@@ -120,45 +84,54 @@ export function HAEntityManager({ logger, getApis }: TServiceParams) {
     >;
     if (!current) {
       logger.error(
-        { defaultValue, name: entity },
-        `proxyGetLogic cannot find entity %s`,
-        property,
+        { defaultValue, name: entity, property },
+        `proxyGetLogic cannot find entity`,
       );
     }
     return get(current, property, defaultValue);
   }
 
-  /**
-   * ... should it? Seems like a bad idea
-   */
-  function proxySetLogic<ENTITY extends PICK_ENTITY = PICK_ENTITY>(
-    entity: ENTITY,
-    property: string,
-    value: unknown,
-  ): boolean {
-    logger.error(
-      { name: entity, property, value },
-      `Entity proxy does not accept value setting`,
-    );
-    return false;
-  }
+  const ENTITY_PROXIES = new Map<PICK_ENTITY, ByIdProxy<PICK_ENTITY>>();
 
-  function remove(entity_id: PICK_ENTITY, id: string): void {
-    const current = entityWatchers.get(entity_id) ?? [];
-    const filtered = current.filter(watcher => id !== watcher.id);
-    if (is.empty(filtered)) {
-      entityWatchers.delete(entity_id);
-      return;
-    }
-    entityWatchers.set(entity_id, filtered);
-  }
-
-  /**
-   * Retrieve an entity's state
-   */
   function byId<ENTITY_ID extends PICK_ENTITY>(
     entity_id: ENTITY_ID,
-  ): ENTITY_STATE<ENTITY_ID> {
+  ): ByIdProxy<ENTITY_ID> {
+    if (!ENTITY_PROXIES.has(entity_id)) {
+      ENTITY_PROXIES.set(
+        entity_id,
+        new Proxy({ entity_id } as ByIdProxy<ENTITY_ID>, {
+          // things that shouldn't be needed: this extract
+          get: (_, property: Extract<keyof ByIdProxy<ENTITY_ID>, string>) => {
+            if (property === "onUpdate") {
+              return callback =>
+                event.on(entity_id, async (a, b) => callback(a, b));
+            }
+            if (property === "once") {
+              return callback =>
+                event.once(entity_id, async (a, b) => callback(a, b));
+            }
+            if (property === "entity_id") {
+              return entity_id;
+            }
+            if (property === "nextState") {
+              return new Promise<ENTITY_STATE<ENTITY_ID>>(done => {
+                event.once(entity_id, (entity: ENTITY_STATE<ENTITY_ID>) =>
+                  done(entity as ENTITY_STATE<ENTITY_ID>),
+                );
+              });
+            }
+            return proxyGetLogic(entity_id, property);
+          },
+        }),
+      );
+    }
+    return ENTITY_PROXIES.get(entity_id) as ByIdProxy<ENTITY_ID>;
+  }
+
+  function getCurrentState<ENTITY_ID extends PICK_ENTITY>(
+    entity_id: ENTITY_ID,
+    // 🖕 TS
+  ): NonNullable<ENTITY_STATE<ENTITY_ID>> {
     return get(MASTER_STATE, entity_id);
   }
 
@@ -189,28 +162,6 @@ export function HAEntityManager({ logger, getApis }: TServiceParams) {
     );
   }
 
-  /**
-   * Wait for this entity to change state.
-   * Returns next state (however long it takes for that to happen)
-   */
-  async function nextState<ID extends PICK_ENTITY = PICK_ENTITY>(
-    entity_id: ID,
-  ): Promise<ENTITY_STATE<ID>> {
-    return await new Promise<ENTITY_STATE<ID>>(done => {
-      const current = entityWatchers.get(entity_id) ?? [];
-      const item: Watcher = {
-        callback: new_state => done(new_state as ENTITY_STATE<ID>),
-        id: v4(),
-        type: "once",
-      };
-      current.push(item);
-      entityWatchers.set(entity_id, current);
-    });
-  }
-
-  /**
-   * Simple listing of all entity ids
-   */
   function listEntities(): PICK_ENTITY[] {
     return Object.keys(MASTER_STATE).flatMap(domain =>
       Object.keys(MASTER_STATE[domain]).map(
@@ -218,36 +169,19 @@ export function HAEntityManager({ logger, getApis }: TServiceParams) {
       ),
     );
   }
-  /**
-   * list all entities by domain
-   */
-  function findByDomain<DOMAIN extends ALL_DOMAINS = ALL_DOMAINS>(
-    target: DOMAIN,
-  ) {
-    return Object.values(MASTER_STATE[target] ?? {}) as ENTITY_STATE<
-      PICK_ENTITY<DOMAIN>
-    >[];
+
+  function findByDomain<DOMAIN extends ALL_DOMAINS>(domain: DOMAIN) {
+    return Object.keys(MASTER_STATE[domain] ?? {}).map(i =>
+      byId(`${domain}.${i}`),
+    );
   }
 
   function getEntities<
     T extends ENTITY_STATE<PICK_ENTITY> = ENTITY_STATE<PICK_ENTITY>,
   >(entityId: PICK_ENTITY[]): T[] {
-    return entityId.map(id => byId(id) as T);
+    return entityId.map(id => getCurrentState(id) as T);
   }
 
-  function createEntityProxy(entity: PICK_ENTITY) {
-    return new Proxy({} as ENTITY_STATE<typeof entity>, {
-      get: (_, property: string) => proxyGetLogic(entity, property),
-      set: (_, property: string, value: unknown) =>
-        proxySetLogic(entity, property, value),
-    });
-  }
-
-  /**
-   * Clear out the current state, and request a refresh.
-   *
-   * Refresh occurs through home assistant rest api, and is not bound by the websocket lifecycle
-   */
   async function refresh(recursion = START): Promise<void> {
     const states = await hass.fetch.getAllEntities();
     if (is.empty(states)) {
@@ -255,10 +189,10 @@ export function HAEntityManager({ logger, getApis }: TServiceParams) {
         logger.fatal(
           `Failed to load service list from Home Assistant. Validate configuration`,
         );
-        exit(FAILED);
+        ZCC_Testing.FailFast();
       }
       logger.warn(
-        "Failed to retrieve {entity} list. Retrying {%s}/[%s]",
+        "Failed to retrieve entity list. Retrying {%s}/[%s]",
         recursion,
         MAX_ATTEMPTS,
       );
@@ -268,6 +202,7 @@ export function HAEntityManager({ logger, getApis }: TServiceParams) {
     }
     const oldState = MASTER_STATE;
     MASTER_STATE = {};
+    const emitUpdates: GenericEntityDTO[] = [];
 
     states.forEach(entity => {
       // ? Set first, ensure data is populated
@@ -283,50 +218,95 @@ export function HAEntityManager({ logger, getApis }: TServiceParams) {
       }
       const old = get(oldState, entity.entity_id);
       if (is.equal(old, entity)) {
-        logger.trace({ name: entity.entity_id }, ` no change on refresh`);
+        logger.trace({ name: entity.entity_id }, `no change on refresh`);
         return;
       }
-      nextTick(async () => {
-        await onEntityUpdate(entity.entity_id, entity);
-      });
+      emitUpdates.push(entity);
+    });
+
+    setImmediate(async () => {
+      await eachLimit(
+        emitUpdates,
+        BOTTLENECK_UPDATES,
+        async entity =>
+          await entityUpdateReceiver(
+            entity.entity_id,
+            entity,
+            get(oldState, entity.entity_id),
+          ),
+      );
     });
     init = true;
   }
 
-  /**
-   * is id a valid entity?
-   */
-  function isEntity(entityId: PICK_ENTITY): entityId is PICK_ENTITY {
-    return is.undefined(get(MASTER_STATE, entityId));
-  }
+  is.entity = (entityId: PICK_ENTITY): entityId is PICK_ENTITY =>
+    is.undefined(get(MASTER_STATE, entityId));
 
-  function OnUpdate<ENTITY extends PICK_ENTITY>(
-    entity_id: ENTITY,
-    callback: WatchFunction<ENTITY>,
+  /**
+   * Receiver function for incoming entity updates
+   *
+   * Internal use only, unless you like to watch the world burn
+   */
+  function entityUpdateReceiver<ENTITY extends PICK_ENTITY = PICK_ENTITY>(
+    entity_id: PICK_ENTITY,
+    new_state: ENTITY_STATE<ENTITY>,
+    old_state: ENTITY_STATE<ENTITY>,
   ) {
-    const current = entityWatchers.get(entity_id) ?? [];
-    entityWatchers.set(entity_id, [
-      ...current,
-      {
-        callback: async (new_state, old_state) =>
-          await callback(new_state, old_state),
-        id: v4(),
-        type: "dynamic",
-      },
-    ]);
+    set(MASTER_STATE, entity_id, new_state);
+    event.emit(entity_id, new_state, old_state);
   }
 
   return {
-    OnUpdate,
+    /**
+     * Internal library use only
+     */
+    [Symbol.for("entityUpdateReceiver")]: entityUpdateReceiver,
+    /**
+     * Retrieves a proxy object for a specified entity. This proxy object
+     * provides current values and event hooks for the entity.
+     */
     byId,
-    createEntityProxy,
+
+    /**
+     * Lists all entities within a specified domain. This is useful for
+     * domain-specific operations or queries.
+     */
     findByDomain,
+
+    /**
+     * Retrieves the current state of a given entity. This method returns
+     * raw data, offering a direct view of the entity's state at a given moment.
+     */
+    getCurrentState,
+
+    /**
+     * Fetches the state of multiple entities based on their IDs. This is
+     * beneficial for bulk operations or comparisons across different entities.
+     */
     getEntities,
+
+    /**
+     * Retrieves the historical state data of entities over a specified time
+     * period. Useful for analysis or tracking changes over time.
+     */
     history,
-    isEntity,
+
+    /**
+     * Provides a simple listing of all entity IDs. Useful for enumeration
+     * and quick reference to all available entities.
+     */
     listEntities,
-    nextState,
-    onEntityUpdate,
+
+    /**
+     * Initiates a refresh of the current entity states. Useful for ensuring
+     * synchronization with the latest state data from Home Assistant.
+     */
     refresh,
   };
+}
+
+declare module "@zcc/utilities" {
+  export interface IsIt {
+    entity: (entity: PICK_ENTITY) => entity is PICK_ENTITY;
+  }
 }

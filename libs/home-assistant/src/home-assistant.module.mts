@@ -1,11 +1,11 @@
 import { ZCC } from "@zcc/utilities";
 
 import {
-  HACallProxy,
-  HAEntityManager,
-  HAFetchAPI,
-  HAUtilities,
-  WebsocketAPIService,
+  CallProxy,
+  EntityManager,
+  FetchAPI,
+  Utilities,
+  WebsocketAPI,
 } from "./extensions/index.mjs";
 
 export const LIB_HOME_ASSISTANT = ZCC.createLibrary({
@@ -78,10 +78,10 @@ export const LIB_HOME_ASSISTANT = ZCC.createLibrary({
   },
   name: "home-assistant",
   services: {
-    call: HACallProxy,
-    entity: HAEntityManager,
-    fetch: HAFetchAPI,
-    socket: WebsocketAPIService,
-    utils: HAUtilities,
+    call: CallProxy,
+    entity: EntityManager,
+    fetch: FetchAPI,
+    socket: WebsocketAPI,
+    utils: Utilities,
   },
 });

@@ -2,19 +2,18 @@ import { TServiceParams } from "@zcc/boilerplate";
 import { LIB_HOME_ASSISTANT, PICK_ENTITY } from "@zcc/home-assistant";
 import { InternalServerError } from "@zcc/server";
 import { eachSeries, is, VALUE } from "@zcc/utilities";
-import { LIB_VIRTUAL_ENTITY } from "@zcc/virtual-entity";
+import { LIB_VIRTUAL_ENTITY, VirtualSensor } from "@zcc/virtual-entity";
 
 import { LIB_AUTOMATION_LOGIC, RoomConfiguration } from "../index.mjs";
 
 type RoomDefinition<SCENES extends string> = {
-  getScene: () => SCENES;
-  setScene: (scene: SCENES) => Promise<void>;
+  scene: SCENES;
+  currentSceneEntity: VirtualSensor<SCENES>;
+  sceneId: (scene: SCENES) => PICK_ENTITY<"scene">;
 };
 interface HasKelvin {
   kelvin: number;
 }
-
-type AllowedSceneDomains = "light" | "switch" | "fan";
 
 export function SceneRoom({
   logger,
@@ -81,7 +80,7 @@ export function SceneRoom({
           if (!shouldCircadian(name, value?.state)) {
             return [name, value];
           }
-          logger.debug(`circadian {%s}`, name);
+          logger.debug({ name }, `circadian`);
           return [name, { kelvin, ...value }];
         })
         .filter(i => !is.undefined(i));
@@ -141,13 +140,29 @@ export function SceneRoom({
       currentScene.state = sceneName;
     }
 
-    function getScene() {
-      return currentScene.state;
-    }
-
-    return {
-      getScene,
-      setScene,
-    };
+    return new Proxy({} as RoomDefinition<SCENES>, {
+      get: (_, property: keyof RoomDefinition<SCENES>) => {
+        if (property === "scene") {
+          return currentScene.state;
+        }
+        if (property === "sceneId") {
+          return (scene: SCENES) => {
+            return `scene.${id}_${scene}`;
+          };
+        }
+        if (property === "currentSceneEntity") {
+          return currentScene;
+        }
+        return undefined;
+      },
+      set: (_, property: keyof RoomDefinition<SCENES>, value) => {
+        if (property === "scene") {
+          setImmediate(async () => await setScene(value as SCENES));
+          return true;
+        }
+        logger.error({ property }, `cannot set property on room`);
+        return false;
+      },
+    });
   };
 }

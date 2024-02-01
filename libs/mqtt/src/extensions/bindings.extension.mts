@@ -90,7 +90,7 @@ export function MQTT_Bindings({
         return;
       }
       (topics as string[]).forEach(topic => {
-        logger.debug(`Subscribe topic {%s}`, topic);
+        logger.debug({ topic }, `subscribe topic`);
         TOPIC_REGEX.set(
           topic,
           new RegExp(

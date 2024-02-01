@@ -39,7 +39,7 @@ export interface ServiceListServiceTarget {
 
 export interface ServiceListField {
   description?: string;
-  fields?: Record<string, ServiceListFieldDescription>;
+  fields: Record<string, ServiceListFieldDescription>;
   name?: string;
   target?: ServiceListServiceTarget;
 }

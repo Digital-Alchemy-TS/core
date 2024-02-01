@@ -1,0 +1,30 @@
+{
+  "extends": [
+    "../../.eslintrc.json"
+  ],
+  "ignorePatterns": [
+    "!**/*"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "src/**/*.mts"
+      ],
+      "rules": {},
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": [
+          "apps/hass-type-generate/tsconfig.app.json"
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/**/*.mts"
+      ],
+      "rules": {
+        "sonarjs/no-duplicate-string": "off"
+      }
+    }
+  ]
+}

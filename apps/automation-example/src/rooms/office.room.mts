@@ -1,6 +1,6 @@
 import { LIB_AUTOMATION_LOGIC } from "@zcc/automation-logic";
 import { TServiceParams } from "@zcc/boilerplate";
-import { LIB_HOME_ASSISTANT, PICK_ENTITY } from "@zcc/home-assistant";
+import { LIB_HOME_ASSISTANT } from "@zcc/home-assistant";
 import { ZCC } from "@zcc/utilities";
 import { LIB_VIRTUAL_ENTITY } from "@zcc/virtual-entity";
 import dayjs from "dayjs";
@@ -24,23 +24,25 @@ export function Office({
   //
   // General use functions
   //
-
-  function AutoScene(): PICK_ENTITY<"scene"> {
+  function AutoScene(): typeof room.scene {
     const [PM10, AM6, PM1030] = ZCC.refTime(["22:00", "06", "22:30"]);
     const now = dayjs();
     if (now.isBetween(AM6, PM10)) {
-      return "scene.office_auto";
+      return "auto";
     }
-    return (now.isBefore(PM1030) && now.isAfter(AM6)) ||
-      room.getScene() === "night"
-      ? "scene.office_dim"
-      : "scene.office_night";
+    return (now.isBefore(PM1030) && now.isAfter(AM6)) || room.scene === "night"
+      ? "dim"
+      : "night";
   }
 
   async function Focus() {
     logger.info(`Focus office`);
     await hass.call.scene.turn_on({
-      entity_id: ["scene.bedroom_off", "scene.living_off", AutoScene()],
+      entity_id: [
+        app.bed.sceneId("off"),
+        app.living.sceneId("off"),
+        room.sceneId(AutoScene()),
+      ],
     });
   }
 
@@ -49,14 +51,12 @@ export function Office({
   //
   scheduler.cron({
     context,
-    exec: async () => {
-      if (!["auto", "dim"].includes(room.getScene())) {
+    exec: () => {
+      if (!["auto", "dim"].includes(room.scene)) {
         return;
       }
       // go to bed, seriously
-      await hass.call.scene.turn_on({
-        entity_id: "scene.office_evening",
-      });
+      room.scene = "evening";
     },
     schedule: "30 22 * * *",
   });
@@ -150,7 +150,6 @@ export function Office({
   //
   // official
   const isHome = hass.entity.byId("binary_sensor.is_home");
-  const doorbell = hass.entity.byId("binary_sensor.doorbell_doorbell");
   const { meetingMode } = app.sensors;
 
   // virtual
@@ -170,7 +169,7 @@ export function Office({
   automation.managedSwitch({
     context,
     entity_id: "switch.blanket_light",
-    onEntityUpdate: ["switch.meeting_mode", "binary_sensor.is_home"],
+    onEntityUpdate: [meetingMode, isHome],
     shouldBeOn() {
       if (isHome.state === "off") {
         return false;
@@ -187,7 +186,7 @@ export function Office({
   automation.managedSwitch({
     context,
     entity_id: "switch.fairy_lights",
-    onEntityUpdate: ["switch.meeting_mode", "binary_sensor.is_home"],
+    onEntityUpdate: [meetingMode, isHome],
     shouldBeOn() {
       if (isHome.state === "off") {
         return false;
@@ -201,7 +200,7 @@ export function Office({
   automation.managedSwitch({
     context,
     entity_id: "switch.desk_strip_office_plants",
-    onEntityUpdate: ["switch.meeting_mode"],
+    onEntityUpdate: [meetingMode],
     shouldBeOn() {
       if (meetingMode.on) {
         return false;
@@ -216,7 +215,7 @@ export function Office({
       if (NOW.isAfter(PM5)) {
         return false;
       }
-      if (room.getScene() !== "high") {
+      if (room.scene !== "high") {
         return false;
       }
       // leave as is
@@ -228,13 +227,9 @@ export function Office({
   automation.managedSwitch({
     context,
     entity_id: "switch.desk_strip_wax",
-    onEntityUpdate: [
-      "switch.windows_open",
-      "sensor.office_current_scene",
-      "sensor.office_current_scene",
-    ],
+    onEntityUpdate: ["switch.windows_open", room.currentSceneEntity],
     shouldBeOn() {
-      const scene = room.getScene();
+      const scene = room.scene;
       const [PM9, AM5, NOW] = ZCC.shortTime(["PM9", "AM5", "NOW"]);
       return (scene !== "off" && NOW.isBetween(AM5, PM9)) || scene === "auto";
     },
@@ -245,7 +240,7 @@ export function Office({
   //
   app.pico.office({
     context,
-    exec: async () => await room.setScene("high"),
+    exec: async () => (room.scene = "high"),
     match: ["on"],
   });
 
@@ -260,7 +255,7 @@ export function Office({
 
   app.pico.office({
     context,
-    exec: async () => await room.setScene("off"),
+    exec: async () => (room.scene = "off"),
     match: ["off"],
   });
 
@@ -302,13 +297,13 @@ export function Office({
 
   app.pico.desk({
     context,
-    exec: async () => await room.setScene("high"),
+    exec: async () => (room.scene = "high"),
     match: ["on"],
   });
 
   app.pico.desk({
     context,
-    exec: async () => await room.setScene("off"),
+    exec: async () => (room.scene = "off"),
     match: ["off"],
   });
 
@@ -318,12 +313,14 @@ export function Office({
     match: ["stop", "lower", "raise"],
   });
 
-  hass.entity.OnUpdate("binary_sensor.doorbell_doorbell", async () => {
-    if (doorbell.state === "off") {
-      return;
-    }
-    await app.mock.computerDoorbell();
-  });
+  hass.entity
+    .byId("binary_sensor.doorbell_doorbell")
+    .onUpdate(async doorbell => {
+      if (doorbell.state === "off") {
+        return;
+      }
+      await app.mock.computerDoorbell();
+    });
 
   return room;
 }

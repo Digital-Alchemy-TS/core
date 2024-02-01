@@ -20,8 +20,8 @@ export function LivingRoom({ getApis, context, scheduler }: TServiceParams) {
     context,
     eventName: "sunriseEnd",
     exec: async () => {
-      if (room.getScene() === "evening_high") {
-        await room.setScene("high");
+      if (room.scene === "evening_high") {
+        room.scene = "high";
       }
     },
   });
@@ -30,8 +30,8 @@ export function LivingRoom({ getApis, context, scheduler }: TServiceParams) {
     context,
     eventName: "sunsetStart",
     exec: async () => {
-      if (room.getScene() === "high") {
-        await room.setScene("evening_high");
+      if (room.scene === "high") {
+        room.scene = "evening_high";
       }
     },
   });
@@ -39,8 +39,8 @@ export function LivingRoom({ getApis, context, scheduler }: TServiceParams) {
   scheduler.cron({
     context,
     exec: async () => {
-      if (room.getScene() === "auto") {
-        await room.setScene("evening");
+      if (room.scene === "auto") {
+        room.scene = "evening";
       }
     },
     schedule: CronExpression.EVERY_DAY_AT_11PM,
@@ -132,7 +132,7 @@ export function LivingRoom({ getApis, context, scheduler }: TServiceParams) {
         return false;
       }
       const [PM8, NOW] = ZCC.shortTime(["PM08", "NOW"]);
-      return NOW.isAfter(PM8) && !room.getScene().includes("high");
+      return NOW.isAfter(PM8) && !room.scene.includes("high");
     },
   });
 
@@ -154,7 +154,7 @@ export function LivingRoom({ getApis, context, scheduler }: TServiceParams) {
   //
   app.pico.living({
     context,
-    exec: async () => await room.setScene("auto"),
+    exec: async () => (room.scene = "auto"),
     match: ["stop", "stop"],
   });
 
@@ -169,18 +169,16 @@ export function LivingRoom({ getApis, context, scheduler }: TServiceParams) {
 
   app.pico.living({
     context,
-    exec: async () =>
-      await room.setScene(
-        automation.solar.isBetween("sunriseEnd", "sunsetStart")
-          ? "high"
-          : "evening_high",
-      ),
+    exec: () =>
+      (room.scene = automation.solar.isBetween("sunriseEnd", "sunsetStart")
+        ? "high"
+        : "evening_high"),
     match: ["on"],
   });
 
   app.pico.living({
     context,
-    exec: async () => await room.setScene("off"),
+    exec: async () => (room.scene = "off"),
     match: ["off"],
   });
 

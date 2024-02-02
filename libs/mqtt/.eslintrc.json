@@ -1,0 +1,34 @@
+{
+  "extends": [
+    "../../.eslintrc.json"
+  ],
+  "ignorePatterns": [
+    "!**/*"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "src/**/*.ts"
+      ],
+      "rules": {},
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": [
+          "libs/mqtt/tsconfig.lib.json"
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/**/*.spec.ts"
+      ],
+      "rules": {},
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": [
+          "libs/mqtt/tsconfig.spec.json"
+        ]
+      }
+    }
+  ]
+}

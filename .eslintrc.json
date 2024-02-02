@@ -21,7 +21,8 @@
   "overrides": [
     {
       "files": [
-        "**/src/**/*.mts"
+        "**/src/**/*.ts",
+        "src/**/*.ts"
       ],
       "extends": [
         "plugin:@nx/typescript",
@@ -79,6 +80,7 @@
             "replacements": {
               "docs": false,
               "e": false,
+              "dir": false,
               "i": false,
               "params": false,
               "props": false,
@@ -103,30 +105,47 @@
         "@typescript-eslint/no-unused-vars": [
           "warn",
           {
-            "varsIgnorePattern": "logger"
+            "varsIgnorePattern": "_|logger"
           }
         ],
         "@typescript-eslint/no-explicit-any": "error"
       }
     },
     {
-      "files": [
-        "*.spec.ts",
-        "*.spec.ts",
-        "*.spec.tsx",
-        "*.spec.js",
-        "*.spec.jsx"
-      ],
+      "files": ["*.spec.ts"],
       "env": {
         "jest": true
       },
-      "rules": {}
+      "rules": {
+        "@typescript-eslint/unbound-method": "off",
+        "@typescript-eslint/no-magic-numbers": "off",
+        "sonarjs/no-duplicate-string": "off",
+        "sonarjs/no-unused-collection": "warn",
+        "unicorn/consistent-function-scoping": "off"
+      }
     },
     {
-      "files": ["*.json"],
+      "files": [
+        "*.json"
+      ],
       "parser": "jsonc-eslint-parser",
       "rules": {
         "@nx/dependency-checks": "error"
+      }
+    },
+    {
+      "files": [
+        "metrics.helper.ts",
+        "*.module.ts"
+      ],
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": [
+          "tsconfig.base.json"
+        ]
+      },
+      "rules": {
+        "@typescript-eslint/no-magic-numbers": "off"
       }
     }
   ]

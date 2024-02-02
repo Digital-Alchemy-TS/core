@@ -1,0 +1,34 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "../../dist/out-tsc",
+    "types": [
+      "jest",
+      "node"
+    ],
+    "allowJs": true,
+    "strictNullChecks": false,
+    "strictPropertyInitialization": false,
+    "noUnusedLocals": false,
+    "noImplicitAny": false
+  },
+  "include": [
+    "jest.config.ts",
+    "src/**/*.ts",
+    "src/**/*.spec.ts"
+  ],
+  "references": [
+    {
+      "path": "../hass/tsconfig.lib.json"
+    },
+    {
+      "path": "../boilerplate/tsconfig.lib.json"
+    },
+    {
+      "path": "../server/tsconfig.lib.json"
+    },
+    {
+      "path": "../utilities/tsconfig.lib.json"
+    }
+  ]
+}

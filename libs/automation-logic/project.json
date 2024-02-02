@@ -12,7 +12,8 @@
         "tsConfig": "libs/automation-logic/tsconfig.lib.json",
         "packageJson": "libs/automation-logic/package.json",
         "main": "libs/automation-logic/src/index.ts",
-        "assets": ["libs/automation-logic/*.md"]
+        "assets": ["libs/automation-logic/*.md"],
+        "srcRootForCompilationRoot": "libs/automation-logic"
       }
     },
     "publish": {
@@ -20,8 +21,7 @@
       "dependsOn": ["build"]
     },
     "lint": {
-      "executor": "@nx/eslint:lint",
-      "outputs": ["{options.outputFile}"]
+      "executor": "@nx/eslint:lint"
     },
     "test": {
       "executor": "@nx/jest:jest",

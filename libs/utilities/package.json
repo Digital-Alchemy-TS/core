@@ -1,9 +1,10 @@
 {
   "name": "@zcc/utilities",
   "version": "0.0.1",
-  "type": "module",
   "dependencies": {
-    "tslib": "^2.6.2",
-    "deep-equal": "^2.2.3"
+    "@faker-js/faker": "^8.4.0",
+    "deep-equal": "^2.2.3",
+    "eventemitter3": "^5.0.1",
+    "tslib": "^2.6.2"
   }
 }

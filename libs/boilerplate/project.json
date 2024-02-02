@@ -11,8 +11,9 @@
         "outputPath": "dist/libs/boilerplate",
         "tsConfig": "libs/boilerplate/tsconfig.lib.json",
         "packageJson": "libs/boilerplate/package.json",
-        "main": "libs/boilerplate/src/index.mts",
-        "assets": ["libs/boilerplate/*.md"]
+        "main": "libs/boilerplate/src/index.ts",
+        "assets": ["libs/boilerplate/*.md"],
+        "srcRootForCompilationRoot": "libs/boilerplate"
       }
     },
     "publish": {
@@ -20,8 +21,7 @@
       "dependsOn": ["build"]
     },
     "lint": {
-      "executor": "@nx/eslint:lint",
-      "outputs": ["{options.outputFile}"]
+      "executor": "@nx/eslint:lint"
     },
     "test": {
       "executor": "@nx/jest:jest",

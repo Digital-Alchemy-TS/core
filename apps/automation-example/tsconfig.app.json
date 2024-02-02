@@ -1,0 +1,30 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "jest.config.ts",
+    "src/**/*.spec.ts"
+  ],
+  "include": [
+    "src/**/*.mts"
+  ],
+  "references": [
+    {
+      "path": "../../libs/home-assistant/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/virtual-entity/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/server/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/boilerplate/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/automation-logic/tsconfig.lib.json"
+    },
+    {
+      "path": "../../libs/utilities/tsconfig.lib.json"
+    }
+  ]
+}

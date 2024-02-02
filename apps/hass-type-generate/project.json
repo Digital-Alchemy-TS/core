@@ -1,0 +1,67 @@
+{
+  "name": "hass-type-generate",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/hass-type-generate/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nx/esbuild:esbuild",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "platform": "node",
+        "outputPath": "dist/hass-type-generate",
+        "format": ["cjs"],
+        "bundle": false,
+        "main": "apps/hass-type-generate/src/main.ts",
+        "tsConfig": "apps/hass-type-generate/tsconfig.app.json",
+        "assets": ["apps/hass-type-generate/src/assets"],
+        "generatePackageJson": true,
+        "esbuildOptions": {
+          "sourcemap": true,
+          "outExtension": {
+            ".js": ".js"
+          }
+        }
+      },
+      "configurations": {
+        "development": {},
+        "production": {
+          "esbuildOptions": {
+            "sourcemap": false,
+            "outExtension": {
+              ".js": ".js"
+            }
+          }
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "options": {
+        "buildTarget": "hass-type-generate:build"
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "hass-type-generate:build:development"
+        },
+        "production": {
+          "buildTarget": "hass-type-generate:build:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"]
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "apps/hass-type-generate/jest.config.ts"
+      }
+    }
+  },
+  "tags": []
+}

@@ -1,0 +1,22 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "../../dist/mqtt-out-tsc",
+  },
+  "files": [],
+  "include": [],
+  "references": [
+    {
+      "path": "./tsconfig.lib.json"
+    },
+    {
+      "path": "./tsconfig.spec.json"
+    },
+    {
+      "path": "../boilerplate/tsconfig.lib.json"
+    },
+    {
+      "path": "../utilities/tsconfig.lib.json"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "extends": "./tsconfig.json",
+  "exclude": [
+    "jest.config.ts",
+    "src/**/*.spec.ts"
+  ],
+  "include": [
+    "src/**/*.ts"
+  ],
+  "references": [
+    {
+      "path": "../hass/tsconfig.lib.json"
+    },
+    {
+      "path": "../utilities/tsconfig.lib.json"
+    },
+    {
+      "path": "../server/tsconfig.lib.json"
+    },
+    {
+      "path": "../boilerplate/tsconfig.lib.json"
+    }
+  ]
+}

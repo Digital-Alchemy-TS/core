@@ -1,7 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "module": "commonjs"
+    "outDir": "../../dist/mqtt-out-tsc",
   },
   "files": [],
   "include": [],
@@ -11,6 +11,24 @@
     },
     {
       "path": "./tsconfig.spec.json"
+    },
+    {
+      "path": "../mqtt/tsconfig.lib.json"
+    },
+    {
+      "path": "../hass/tsconfig.lib.json"
+    },
+    {
+      "path": "../virtual-entity/tsconfig.lib.json"
+    },
+    {
+      "path": "../server/tsconfig.lib.json"
+    },
+    {
+      "path": "../boilerplate/tsconfig.lib.json"
+    },
+    {
+      "path": "../utilities/tsconfig.lib.json"
     }
   ]
 }

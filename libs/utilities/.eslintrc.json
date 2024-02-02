@@ -3,12 +3,26 @@
   "ignorePatterns": ["!**/*"],
   "overrides": [
     {
-      "files": ["src/**/*.mts"],
+      "files": [
+        "src/**/*.ts"
+      ],
       "rules": {},
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
         "project": [
           "libs/utilities/tsconfig.lib.json"
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/**/*.spec.ts"
+      ],
+      "rules": {},
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": [
+          "libs/utilities/tsconfig.spec.json"
         ]
       }
     }

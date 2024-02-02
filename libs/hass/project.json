@@ -1,0 +1,35 @@
+{
+  "name": "hass",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/hass/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/hass",
+        "tsConfig": "libs/hass/tsconfig.lib.json",
+        "packageJson": "libs/hass/package.json",
+        "main": "libs/hass/src/index.ts",
+        "assets": ["libs/hass/*.md"],
+        "srcRootForCompilationRoot": "libs/hass"
+      }
+    },
+    "publish": {
+      "command": "node tools/scripts/publish.mjs hass {args.ver} {args.tag}",
+      "dependsOn": ["build"]
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint"
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/{projectRoot}"],
+      "options": {
+        "jestConfig": "libs/hass/jest.config.ts"
+      }
+    }
+  },
+  "tags": []
+}

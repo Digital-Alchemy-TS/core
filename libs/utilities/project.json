@@ -11,8 +11,9 @@
         "outputPath": "dist/libs/utilities",
         "tsConfig": "libs/utilities/tsconfig.lib.json",
         "packageJson": "libs/utilities/package.json",
-        "main": "libs/utilities/src/index.mts",
-        "assets": ["libs/utilities/*.md"]
+        "main": "libs/utilities/src/index.ts",
+        "assets": ["libs/utilities/*.md"],
+        "srcRootForCompilationRoot": "libs/utilities"
       }
     },
     "publish": {
@@ -20,8 +21,7 @@
       "dependsOn": ["build"]
     },
     "lint": {
-      "executor": "@nx/eslint:lint",
-      "outputs": ["{options.outputFile}"]
+      "executor": "@nx/eslint:lint"
     },
     "test": {
       "executor": "@nx/jest:jest",

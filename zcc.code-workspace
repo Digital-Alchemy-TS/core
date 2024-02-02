@@ -34,94 +34,67 @@
   },
   "settings": {
     "material-icon-theme.files.associations": {
-      // * Deliberately included config files
-      ".auto-config-testrc": "drone",
-      ".entity-creationrc": "drone",
-      ".scene-managerrc": "drone",
-
-      // * TSConfig
+      ".gitignore": "git",
+      "jest.config.ts": "jest",
+      ".pino-prettyrc": "prettier",
+      "jest.preset.js": "jest",
+      "package.json": "npm",
+      "project.json": "proto",
+      "nx.json": "proto",
+      "yarn.lock": "lock",
+      "*.module.ts": "rust",
+      "*.controller.ts": "elm",
+      "*.constants.ts": "grain",
+      "*.room.ts": "auto",
+      "*.service.ts": "scala",
+      "*.helper.ts": "gridsome",
+      "*.extension.ts": "purescript",
+      "*.env.ts": "haskell",
+      "*.bdf": "font",
+      "main.ts": "kotlin",
+      "*.main.ts": "python",
+      "*.test.ts": "ruby",
+      "index.ts": "idris",
       "tsconfig.app.json": "nodejs_alt",
+      "cspell.config.yaml": "twine",
       "tsconfig.base.json": "nodejs_alt",
-      "tsconfig.build.json": "nodejs_alt",
-      "tsconfig.doc.json": "nodejs_alt",
+      "readme.md": "fusebox",
       "tsconfig.json": "nodejs_alt",
+      ".zipignore": "zig",
       "tsconfig.lib.json": "nodejs_alt",
       "tsconfig.spec.json": "nodejs_alt",
-
-      // * Workspace root
-      ".nxignore": "nrwl",
-      ".pino-prettyrc": "prettier",
-      "*.code-workspace": "contributing",
-      "jest.preset.js": "jest",
-      "license": "prolog",
-
-      // * Project Visbility
-      "*.docker-compose.yaml": "docker",
-      "*.entity.ts": "bithound",
-      "*.environment.ts": "dune",
-      "*.interceptor.ts": "nest-pipe",
-      "*.main.ts": "exe",
-      "*.strategy.ts": "nest-resolver",
-      "config.mts": "makefile",
-      "environment.mts": "dune",
-      "index.mts": "stitches",
-      "main.mts": "exe",
-      "package.json": "npm",
-      "project.json": "nrwl",
-      "workspace.json": "nrwl",
-
-      // * Compiled apps
-      "bin/pi-matrix": "image",
-      "bin/config-builder": "dhall",
-      "bin/hass-cli": "exe",
-      "bin/log-formatter": "log",
-      "bin/build-pipeline": "pipeline",
-      "bin/hass-type-generate": "typescript-def",
+      "babel.config.json": "kusto"
     },
     "material-icon-theme.folders.associations": {
-      // * Projects
-      "automation-logic": "tasks",
-      "boilerplate": "core",
-      "build-pipeline": "pipe",
-      "config-builder": "template",
-      "entity-creation": "sublime",
-      "game-of-life": "animation",
+      "design-docs": "changesets",
+      "virtual-entity": "mappings",
+      "rooms": "robot",
+      "hass-type-generate": "godot",
+      "automation-example": "moon",
+      "boilerplate": "robot",
+      "fetch": "flow",
+      "mqtt": "messages",
+      "automation-logic": "scripts",
+      "hass": "home",
+      "common": "shared",
+      ".nx": "next",
+      "custom_components": "connection",
+      "zcc": "connection",
+      "services": "server",
+      "helpers": "helper",
+      "extensions": "plugin",
+      "environments": "environment",
+      "entrypoint": "command",
+      "build": "build",
       "gotify": "messages",
-      "hass-cli": "debug",
-      "hass-type-generate": "batch",
-      "home-assistant": "middleware",
-      "log-formatter": "flow",
-      "mqtt": "connection",
-      "notification-tester": "command",
-      "pi-matrix-client": "bower",
-      "pi-matrix": "plastic",
-      "render-utils": "shader",
-      "rgb-matrix": "intellij",
-      "sampler-app": "content",
-      "scene-manager": "java",
-      "tty": "command",
-
-      // * Root
-      ".config": "config",
-      ".VSCodeCounter": "batch",
-
-      // * Project internal
-      "entrypoints": "kubernetes",
-      "editors": "svelte",
-      "filters": "other",
-      "interceptors": "hook",
-      "modules": "redux-reducer",
-      "recordings": "animation",
-
-      // * Misc
-      "push": "interface",
-      "explorers": "context"
+      "tests": "test"
     },
     "explorer.fileNesting.patterns": {
       "project.json": "jest.config.js, .babelrc",
-      "package.json": ".npmrc, yarn.lock",
+      "package.json": ".npmrc, yarn.lock, package-lock.json",
       ".eslintrc.json": ".editorconfig, jest.preset.js, jest.config.ts, babel.config.json, .prettierrc, .prettierignore, .pino-prettyrc, .gitignore, .eslintignore, .dockerignore",
-      "zcc.code-workspace": "LICENSE, nx.json, .auto-config-testrc, .entity-creationrc, .scene-managerrc, terminalizer.yml"
+      "zcc.code-workspace": "LICENSE, nx.json, .auto-config-testrc, .entity-creationrc, .scene-managerrc, terminalizer.yml, cspell.config.yaml, .zipignore, project.json",
+      "*.ts": "${basename}.*"
     },
     "files.watcherExclude": {
       "**/.git/objects/**": true,
@@ -295,6 +268,7 @@
       }
     ],
     // ! </Decorative>
-    "typescript.tsdk": "node_modules/typescript/lib"
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "CodeGPT.apiKey": "CodeGPT Plus Beta"
   }
 }

@@ -1,10 +1,12 @@
 import { InternalError, TServiceParams } from "@zcc/boilerplate";
-import { SECOND, sleep, START, ZCC } from "@zcc/utilities";
+import { SECOND, sleep, START, TBlackHole, ZCC } from "@zcc/utilities";
 import { EventEmitter } from "eventemitter3";
 import { exit } from "process";
 import WS from "ws";
 
+import { LIB_HOME_ASSISTANT } from "../hass.module";
 import {
+  HassEventDTO,
   HASSIO_WS_COMMAND,
   HassSocketMessageTypes,
   ON_SOCKET_AUTH,
@@ -15,7 +17,6 @@ import {
   SOCKET_MESSAGES,
   SocketMessageDTO,
 } from "../helpers/index";
-import { LIB_HOME_ASSISTANT } from "../hass.module";
 
 let connection: WS;
 const CONNECTION_OPEN = 1;
@@ -48,7 +49,7 @@ export function WebsocketAPI({
 
   let MESSAGE_TIMESTAMPS: number[] = [];
   const hass = getApis(LIB_HOME_ASSISTANT);
-  const waitingCallback = new Map<number, (result) => void>();
+  const waitingCallback = new Map<number, (result: unknown) => TBlackHole>();
 
   // Load configurations
   lifecycle.onPostConfig(() => {
@@ -340,7 +341,7 @@ export function WebsocketAPI({
 
   function onEvent({ context, label, event, exec }: OnHassEventOptions) {
     logger.debug({ context, event }, `Attaching socket event listener`);
-    const callback = async data => {
+    const callback = async (data: HassEventDTO) => {
       await ZCC.safeExec({
         duration: SOCKET_EVENT_EXECUTION_TIME,
         errors: SOCKET_EVENT_ERRORS,

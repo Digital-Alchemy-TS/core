@@ -1,4 +1,17 @@
 {
   "name": "@zcc/hass",
-  "version": "0.0.1"
+  "version": "0.0.1",
+  "dependencies": {
+    "@zcc/boilerplate": "*",
+    "@zcc/utilities": "*",
+    "async": "^3.2.5",
+    "dayjs": "^1.11.10",
+    "eventemitter3": "^5.0.1",
+    "object-path": "^0.11.8",
+    "process": "0.11.10",
+    "prom-client": "^15.1.0",
+    "tslib": "^2.6.2",
+    "type-fest": "^4.10.2",
+    "ws": "^8.16.0"
+  }
 }

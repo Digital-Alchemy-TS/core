@@ -3,7 +3,7 @@ import { LIB_AUTOMATION_LOGIC } from "@zcc/automation-logic";
 import { TServiceParams } from "@zcc/boilerplate";
 import dayjs from "dayjs";
 
-import { AUTOMATION_EXAMPLE_APP } from "../main.mjs";
+import { AUTOMATION_EXAMPLE_APP } from "../main";
 
 const BASICALLY_NOW = 10;
 

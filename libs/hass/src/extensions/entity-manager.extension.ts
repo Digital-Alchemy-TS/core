@@ -140,15 +140,15 @@ export function EntityManager({ logger, getApis }: TServiceParams) {
     payload: Omit<EntityHistoryDTO<ENTITES>, "type">,
   ) {
     logger.trace(`Finding stuff`);
-    const result = await hass.socket.sendMessage({
+    const result = (await hass.socket.sendMessage({
       ...payload,
       end_time: dayjs(payload.end_time).toISOString(),
       start_time: dayjs(payload.start_time).toISOString(),
       type: HASSIO_WS_COMMAND.history_during_period,
-    });
+    })) as Record<PICK_ENTITY, { a: object; s: unknown; lu: number }[]>;
 
     return Object.fromEntries(
-      Object.keys(result).map(entity_id => {
+      Object.keys(result).map((entity_id: PICK_ENTITY) => {
         const key = entity_id;
         const states = result[entity_id];
         const value = states.map(data => {

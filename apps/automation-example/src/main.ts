@@ -10,9 +10,9 @@ import {
   LutronPicoBindings,
   MockExtension,
   SensorsExtension,
-} from "./extensions/index.mjs";
-import { AllRooms } from "./rooms/all.room.mjs";
-import { BedRoom, LivingRoom, Office } from "./rooms/index.mjs";
+} from "./extensions/index";
+import { AllRooms } from "./rooms/all.room";
+import { BedRoom, LivingRoom, Office } from "./rooms/index";
 
 export const AUTOMATION_EXAMPLE_APP = CreateApplication({
   libraries: [

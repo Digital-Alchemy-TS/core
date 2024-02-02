@@ -3,5 +3,5 @@ import "@zcc/boilerplate";
 
 export * from "./dynamic";
 export * from "./extensions/index";
-export * from "./helpers/index";
 export * from "./hass.module";
+export * from "./helpers/index";

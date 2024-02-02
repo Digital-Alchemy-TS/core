@@ -3,7 +3,7 @@ import { TServiceParams } from "@zcc/boilerplate";
 import { LIB_HOME_ASSISTANT } from "@zcc/home-assistant";
 import { CronExpression, ZCC } from "@zcc/utilities";
 
-import { AUTOMATION_EXAMPLE_APP } from "../main.mjs";
+import { AUTOMATION_EXAMPLE_APP } from "../main";
 
 export function LivingRoom({ getApis, context, scheduler }: TServiceParams) {
   //

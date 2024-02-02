@@ -7,3 +7,10 @@ export const ENTITY_SETUP: Record<
   string,
   Record<string, GenericEntityDTO>
 > = {};
+/**
+ * A very primitive approximation of the dynamic content
+ */
+export type iCallService = Record<
+  string,
+  Record<string, (service_data?: Record<string, unknown>) => Promise<void>>
+>;

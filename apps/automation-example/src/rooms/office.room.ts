@@ -5,7 +5,7 @@ import { ZCC } from "@zcc/utilities";
 import { LIB_VIRTUAL_ENTITY } from "@zcc/virtual-entity";
 import dayjs from "dayjs";
 
-import { AUTOMATION_EXAMPLE_APP } from "../main.mjs";
+import { AUTOMATION_EXAMPLE_APP } from "../main";
 
 export function Office({
   getApis,

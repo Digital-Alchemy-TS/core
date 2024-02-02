@@ -3,7 +3,7 @@ import { TServiceParams } from "@zcc/boilerplate";
 import { LIB_HOME_ASSISTANT } from "@zcc/home-assistant";
 import { HOUR } from "@zcc/utilities";
 
-import { AUTOMATION_EXAMPLE_APP } from "../main.mjs";
+import { AUTOMATION_EXAMPLE_APP } from "../main";
 
 export function BedRoom({ getApis, context }: TServiceParams) {
   //

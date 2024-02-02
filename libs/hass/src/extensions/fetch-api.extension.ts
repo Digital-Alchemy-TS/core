@@ -8,6 +8,7 @@ import {
 import { DOWN, is, NO_CHANGE, SECOND, UP, ZCC } from "@zcc/utilities";
 import dayjs from "dayjs";
 
+import { LIB_HOME_ASSISTANT } from "../hass.module";
 import {
   CalendarEvent,
   CalendarFetchOptions,
@@ -22,7 +23,6 @@ import {
   PICK_SERVICE_PARAMETERS,
   RawCalendarEvent,
 } from "../helpers/index";
-import { LIB_HOME_ASSISTANT } from "../hass.module";
 
 type SendBody<
   STATE extends string | number = string,

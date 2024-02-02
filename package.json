@@ -96,11 +96,9 @@
     "webpack": "^5.90.0",
     "webpack-dev-server": "^4.15.1",
     "webpack-merge": "^5.10.0",
-    "webpack-node-externals": "^3.0.0",
-    "yarn": "^1.22.21"
+    "webpack-node-externals": "^3.0.0"
   },
   "nx": {
     "targets": {}
-  },
-  "packageManager": "yarn@4.0.2"
+  }
 }

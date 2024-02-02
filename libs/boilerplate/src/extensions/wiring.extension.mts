@@ -554,11 +554,8 @@ function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
 //
 // Final Attachments!
 //
-ZCC.bootstrap = Bootstrap;
 ZCC.createApplication = CreateApplication;
 ZCC.createLibrary = CreateLibrary;
-ZCC.teardown = Teardown;
-ZCC.lifecycle = CreateChildLifecycle;
 
 ZCC.safeExec = async <LABELS extends BaseLabels>(
   options: (() => TBlackHole) | SafeExecOptions<LABELS>,
@@ -645,10 +642,6 @@ declare module "@zcc/utilities" {
     application:
       | ActiveApplicationDefinition<ServiceMap, OptionalModuleConfiguration>
       | undefined;
-    bootstrap: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
-      application: ZCCApplicationDefinition<S, C>,
-      options: BootstrapOptions,
-    ) => Promise<void>;
     createApplication: <
       S extends ServiceMap,
       C extends OptionalModuleConfiguration,
@@ -661,11 +654,6 @@ declare module "@zcc/utilities" {
     >(
       options: LibraryConfigurationOptions<S, C>,
     ) => ZCCLibraryDefinition<S, C>;
-    // the mismatched required state (with the implementation) of name is on purpose
-    // external consumers of this should be passing names, and operate as if they will definitely want to wire their logic in
-    // they lack access to the variables for the conditional loading workflows
-    lifecycle: (name: string) => TLifecycleBase;
-    teardown: () => Promise<void>;
     safeExec: <LABELS extends BaseLabels>(
       options: (() => TBlackHole) | SafeExecOptions<LABELS>,
     ) => Promise<void>;

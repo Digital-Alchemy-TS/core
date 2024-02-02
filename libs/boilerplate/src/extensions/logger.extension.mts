@@ -192,7 +192,7 @@ function log(
   standardLogger(method, context, ...parameters);
 }
 
-export function ZCC_Logger({ lifecycle, getApis, context }: TServiceParams) {
+export function ZCC_Logger({ lifecycle, getApis, context ,}: TServiceParams) {
   // tuned to be most useful in debugging this
   inspect.defaultOptions.colors = true;
   inspect.defaultOptions.depth = 10;
@@ -207,7 +207,7 @@ export function ZCC_Logger({ lifecycle, getApis, context }: TServiceParams) {
       return;
     }
     // logger loads first, this is the easiest way to access the scheduler
-    apis.schedule({
+    apis.schedule.interval({
       context,
       exec: () => {
         const count = Object.keys(HIGHLIGHTED_CONTEXT_CACHE).length;

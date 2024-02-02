@@ -6,6 +6,7 @@ import {
   LABEL,
   PAIR,
   SINGLE,
+  TContext,
   UP,
   VALUE,
   ZCC,
@@ -130,7 +131,7 @@ export function ZCC_Configuration() {
     ) => {
       if (!application) {
         throw new BootstrapException(
-          "configuration",
+          "configuration" as TContext,
           "NO_APPLICATION",
           "Cannot load configuration without having defined an application",
         );

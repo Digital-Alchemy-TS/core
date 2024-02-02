@@ -1,3 +1,5 @@
+import "@zcc/utilities";
+
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat.js";
 import isBetween from "dayjs/plugin/isBetween.js";

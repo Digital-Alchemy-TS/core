@@ -14,12 +14,12 @@
   },
   "include": [
     "jest.config.ts",
-    "src/**/*.mts",
+    "src/**/*.ts",
     "src/**/*.spec.ts"
   ],
   "references": [
     {
-      "path": "../home-assistant/tsconfig.lib.json"
+      "path": "../hass/tsconfig.lib.json"
     },
     {
       "path": "../boilerplate/tsconfig.lib.json"

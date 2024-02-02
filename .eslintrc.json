@@ -21,7 +21,7 @@
   "overrides": [
     {
       "files": [
-        "**/src/**/*.mts",
+        "**/src/**/*.ts",
         "src/**/*.ts"
       ],
       "extends": [
@@ -135,8 +135,8 @@
     },
     {
       "files": [
-        "metrics.helper.mts",
-        "*.module.mts"
+        "metrics.helper.ts",
+        "*.module.ts"
       ],
       "parser": "@typescript-eslint/parser",
       "parserOptions": {

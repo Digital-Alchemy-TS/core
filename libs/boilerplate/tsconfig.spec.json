@@ -2,24 +2,13 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "outDir": "../../dist/out-tsc",
-    "types": [
-      "jest",
-      "node"
-    ],
-    "allowJs": true,
-    "strictNullChecks": false,
-    "strictPropertyInitialization": false,
-    "noUnusedLocals": false,
-    "noImplicitAny": false
+    "module": "commonjs",
+    "types": ["jest", "node"]
   },
   "include": [
     "jest.config.ts",
-    "src/**/*.mts",
-    "src/**/*.spec.ts"
-  ],
-  "references": [
-    {
-      "path": "../utilities/tsconfig.lib.json"
-    }
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/**/*.d.ts"
   ]
 }

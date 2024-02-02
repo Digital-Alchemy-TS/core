@@ -7,9 +7,9 @@ import {
   OptionalModuleConfiguration,
   ServiceMap,
   ZCCApplicationDefinition,
-} from "../helpers/index.mjs";
-import { TCache } from "./cache.extension.mjs";
-import { CreateApplication } from "./wiring.extension.mjs";
+} from "../helpers/index";
+import { TCache } from "./cache.extension";
+import { CreateApplication } from "./wiring.extension";
 
 describe("Cache Extension", () => {
   let application: ZCCApplicationDefinition<

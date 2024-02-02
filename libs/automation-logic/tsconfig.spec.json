@@ -14,7 +14,7 @@
   },
   "include": [
     "jest.config.ts",
-    "src/**/*.mts",
+    "src/**/*.ts",
     "src/**/*.spec.ts"
   ],
   "references": [
@@ -22,7 +22,7 @@
       "path": "../mqtt/tsconfig.lib.json"
     },
     {
-      "path": "../home-assistant/tsconfig.lib.json"
+      "path": "../hass/tsconfig.lib.json"
     },
     {
       "path": "../virtual-entity/tsconfig.lib.json"

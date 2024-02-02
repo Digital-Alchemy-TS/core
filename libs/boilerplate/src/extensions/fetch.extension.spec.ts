@@ -4,9 +4,9 @@ import {
   OptionalModuleConfiguration,
   ServiceMap,
   ZCCApplicationDefinition,
-} from "../helpers/index.mjs";
-import { TFetch } from "./fetch.extension.mjs";
-import { CreateApplication } from "./wiring.extension.mjs";
+} from "../helpers/index";
+import { TFetch } from "./fetch.extension";
+import { CreateApplication } from "./wiring.extension";
 
 describe("Fetch Extension", () => {
   let application: ZCCApplicationDefinition<

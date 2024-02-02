@@ -1,4 +1,4 @@
-import { is } from "../extensions/is.extension.mjs";
+import { is } from "../extensions/is.extension";
 
 describe("is", () => {
   describe("array method", () => {
@@ -76,8 +76,16 @@ describe("is", () => {
 
   describe("function method", () => {
     it("identifies functions", () => {
-      expect(is.function(() => {})).toBe(true);
-      expect(is.function(function () {})).toBe(true);
+      expect(
+        is.function(() => {
+          //
+        }),
+      ).toBe(true);
+      expect(
+        is.function(function () {
+          //
+        }),
+      ).toBe(true);
     });
     it("identifies non-functions", () => {
       expect(is.function(123)).toBe(false);

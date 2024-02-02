@@ -1,14 +1,10 @@
 {
-  "extends": [
-    "../../.eslintrc.json"
-  ],
-  "ignorePatterns": [
-    "!**/*"
-  ],
+  "extends": ["../../.eslintrc.json"],
+  "ignorePatterns": ["!**/*"],
   "overrides": [
     {
       "files": [
-        "src/**/*.mts"
+        "src/**/*.ts"
       ],
       "rules": {},
       "parser": "@typescript-eslint/parser",

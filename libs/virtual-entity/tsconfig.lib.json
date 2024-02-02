@@ -5,11 +5,11 @@
     "src/**/*.spec.ts"
   ],
   "include": [
-    "src/**/*.mts"
+    "src/**/*.ts"
   ],
   "references": [
     {
-      "path": "../home-assistant/tsconfig.lib.json"
+      "path": "../hass/tsconfig.lib.json"
     },
     {
       "path": "../utilities/tsconfig.lib.json"

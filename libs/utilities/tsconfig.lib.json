@@ -8,6 +8,6 @@
     "src/**/*.spec.ts"
   ],
   "include": [
-    "src/**/*.mts"
+    "src/**/*.ts"
   ]
 }

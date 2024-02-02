@@ -8,14 +8,14 @@ import {
   ServiceMap,
   TESTING_APP_NAME,
   ZCCApplicationDefinition,
-} from "../helpers/index.mjs";
+} from "../helpers/index";
 import {
   highlightContext,
   ILogger,
   METHOD_COLORS,
   prettyFormatMessage,
-} from "./logger.extension.mjs";
-import { CreateApplication } from "./wiring.extension.mjs";
+} from "./logger.extension";
+import { CreateApplication } from "./wiring.extension";
 
 describe("Logger Extension", () => {
   let loadedModule: ZCCApplicationDefinition<

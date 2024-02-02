@@ -8,7 +8,7 @@ uplinks:
     maxage: 60m
 
 packages:
-  "**":
+  '**':
     # give all users (including non-authenticated users) full access
     # because it is a local registry
     access: $all

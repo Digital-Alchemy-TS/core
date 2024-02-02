@@ -9,12 +9,9 @@ import {
   ServiceMap,
   TESTING_APP_NAME,
   ZCCApplicationDefinition,
-} from "../helpers/index.mjs";
-import {
-  ConfigManager,
-  ZCC_Configuration,
-} from "./configuration.extension.mjs";
-import { CreateApplication } from "./wiring.extension.mjs";
+} from "../helpers/index";
+import { ConfigManager, ZCC_Configuration } from "./configuration.extension";
+import { CreateApplication } from "./wiring.extension";
 
 describe("Configuration Extension Tests", () => {
   const originalEnvironment = process.env;

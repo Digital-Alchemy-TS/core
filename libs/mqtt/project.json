@@ -11,7 +11,7 @@
         "outputPath": "dist/libs/mqtt",
         "tsConfig": "libs/mqtt/tsconfig.lib.json",
         "packageJson": "libs/mqtt/package.json",
-        "main": "libs/mqtt/src/index.mts",
+        "main": "libs/mqtt/src/index.ts",
         "assets": ["libs/mqtt/*.md"]
       }
     },
@@ -20,8 +20,7 @@
       "dependsOn": ["build"]
     },
     "lint": {
-      "executor": "@nx/eslint:lint",
-      "outputs": ["{options.outputFile}"]
+      "executor": "@nx/eslint:lint"
     },
     "test": {
       "executor": "@nx/jest:jest",

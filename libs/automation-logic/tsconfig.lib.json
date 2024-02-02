@@ -5,14 +5,14 @@
     "src/**/*.spec.ts"
   ],
   "include": [
-    "src/**/*.mts"
+    "src/**/*.ts"
   ],
   "references": [
     {
       "path": "../mqtt/tsconfig.lib.json"
     },
     {
-      "path": "../home-assistant/tsconfig.lib.json"
+      "path": "../hass/tsconfig.lib.json"
     },
     {
       "path": "../virtual-entity/tsconfig.lib.json"

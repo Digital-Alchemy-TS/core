@@ -5,8 +5,8 @@ import {
   OptionalModuleConfiguration,
   ServiceMap,
   ZCCApplicationDefinition,
-} from "../helpers/index.mjs";
-import { CreateApplication, CreateLibrary } from "./wiring.extension.mjs";
+} from "../helpers/index";
+import { CreateApplication, CreateLibrary } from "./wiring.extension";
 
 describe("Wiring Extension", () => {
   let application: ZCCApplicationDefinition<

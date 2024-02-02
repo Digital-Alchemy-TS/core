@@ -13,7 +13,7 @@
       "path": "./tsconfig.spec.json"
     },
     {
-      "path": "../home-assistant/tsconfig.lib.json"
+      "path": "../hass/tsconfig.lib.json"
     },
     {
       "path": "../boilerplate/tsconfig.lib.json"

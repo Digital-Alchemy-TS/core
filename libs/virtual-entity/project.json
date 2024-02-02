@@ -11,8 +11,9 @@
         "outputPath": "dist/libs/virtual-entity",
         "tsConfig": "libs/virtual-entity/tsconfig.lib.json",
         "packageJson": "libs/virtual-entity/package.json",
-        "main": "libs/virtual-entity/src/index.mts",
-        "assets": ["libs/virtual-entity/*.md"]
+        "main": "libs/virtual-entity/src/index.ts",
+        "assets": ["libs/virtual-entity/*.md"],
+        "srcRootForCompilationRoot": "libs/virtual-entity"
       }
     },
     "publish": {
@@ -20,8 +21,7 @@
       "dependsOn": ["build"]
     },
     "lint": {
-      "executor": "@nx/eslint:lint",
-      "outputs": ["{options.outputFile}"]
+      "executor": "@nx/eslint:lint"
     },
     "test": {
       "executor": "@nx/jest:jest",

@@ -1,4 +1,4 @@
-import { PEAT } from "../helpers/utilities.helper.mjs";
+import { PEAT } from "../helpers/utilities.helper";
 
 describe("PEAT function", () => {
   it("creates an array of the specified length", () => {

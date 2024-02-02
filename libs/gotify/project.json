@@ -11,8 +11,9 @@
         "outputPath": "dist/libs/gotify",
         "tsConfig": "libs/gotify/tsconfig.lib.json",
         "packageJson": "libs/gotify/package.json",
-        "main": "libs/gotify/src/index.mts",
-        "assets": ["libs/gotify/*.md"]
+        "main": "libs/gotify/src/index.ts",
+        "assets": ["libs/gotify/*.md"],
+        "srcRootForCompilationRoot": "libs/gotify"
       }
     },
     "publish": {
@@ -20,8 +21,7 @@
       "dependsOn": ["build"]
     },
     "lint": {
-      "executor": "@nx/eslint:lint",
-      "outputs": ["{options.outputFile}"]
+      "executor": "@nx/eslint:lint"
     },
     "test": {
       "executor": "@nx/jest:jest",

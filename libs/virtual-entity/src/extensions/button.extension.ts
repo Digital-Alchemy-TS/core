@@ -1,4 +1,4 @@
-import { InternalError, TServiceParams } from "@zcc/boilerplate";
+import { GetApis, InternalError, TServiceParams } from "@zcc/boilerplate";
 import {
   BadRequestError,
   GENERIC_SUCCESS_RESPONSE,
@@ -35,7 +35,9 @@ export function Button({
   getApis,
   context: parentContext,
 }: TServiceParams) {
-  const server = getApis(LIB_SERVER);
+  // wtf of the week -
+  // builds fail without this assertion, but vscode is just fine
+  const server = getApis(LIB_SERVER) as GetApis<typeof LIB_SERVER>;
 
   let baseUrl: string;
   let httpPrefix: string;

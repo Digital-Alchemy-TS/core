@@ -1,7 +1,8 @@
-import { ALL_GENERATED_SERVICE_DOMAINS } from "@zcc/hass";
-
 import { SensorDeviceClasses } from "./device-class.helper";
-import { PICK_GENERATED_ENTITY } from "./utility.helper";
+import {
+  ALL_GENERATED_SERVICE_DOMAINS,
+  PICK_GENERATED_ENTITY,
+} from "./utility.helper";
 
 interface Base {
   attributes?: Record<string, Template>;

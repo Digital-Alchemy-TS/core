@@ -32,6 +32,7 @@
       "@zcc/hass": ["libs/hass/src/index.ts"],
       "@zcc/mqtt": ["libs/mqtt/src/index.ts"],
       "@zcc/server": ["libs/server/src/index.ts"],
+      "@zcc/snapse": ["libs/synapse/src/index.ts"],
       "@zcc/utilities": ["libs/utilities/src/index.ts"],
       "@zcc/virtual-entity": ["libs/virtual-entity/src/index.ts"]
     }

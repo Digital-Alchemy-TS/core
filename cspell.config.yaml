@@ -60,6 +60,7 @@ words:
   - shellcheck
   - sinm
   - sinonjs
+  - snapse
   - sonarjs
   - terminalizer
   - testrc

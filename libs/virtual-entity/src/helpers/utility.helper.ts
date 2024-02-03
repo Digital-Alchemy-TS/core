@@ -4,36 +4,12 @@ import { is } from "@zcc/utilities";
 import {
   BinarySensorConfig,
   ButtonConfig,
+  GenerateEntities,
   SensorConfig,
   SwitchConfig,
 } from "./generate.helper";
 
 export const MODULE_SETUP: GenerateEntities = {};
-
-export class GenerateEntities {
-  /**
-   * Binary sensors will not be created unless they are also injected using `@InjectPushEntity`
-   */
-  public binary_sensor?: Record<string, BinarySensorConfig>;
-  /**
-   * Buttons will be created on load.
-   *
-   * Annotate methods with `@TemplateButton` to receive activation events
-   */
-  public button?: Record<string, ButtonConfig>;
-  /**
-   * Binary sensors will not be created unless they are also injected.
-   *
-   * Use `@InjectPushEntity` + `
-   */
-  public sensor?: Record<string, SensorConfig>;
-  /**
-   * Switches are created on load.
-   *
-   * Use standard api commands to manage state
-   */
-  public switch?: Record<string, SwitchConfig>;
-}
 
 type generated = typeof MODULE_SETUP;
 
@@ -84,7 +60,7 @@ export enum PushProxyDomains {
 
 export type PUSH_PROXY_DOMAINS = `${PushProxyDomains}`;
 export function IsPushDomain(domain: string): domain is PushProxyDomains {
-  return is.undefined(PushProxyDomains[domain]);
+  return is.undefined(PushProxyDomains[domain as `${PushProxyDomains}`]);
 }
 
 export type PUSH_PROXY<

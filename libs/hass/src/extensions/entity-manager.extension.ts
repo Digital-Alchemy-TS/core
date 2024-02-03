@@ -26,6 +26,7 @@ import {
   PICK_ENTITY,
 } from "../helpers/index";
 
+type EntityHistoryItem = { a: object; s: unknown; lu: number };
 type ByIdProxy<ENTITY_ID extends PICK_ENTITY> = ENTITY_STATE<ENTITY_ID> & {
   entity_id: ENTITY_ID;
   /**
@@ -145,7 +146,7 @@ export function EntityManager({ logger, getApis }: TServiceParams) {
       end_time: dayjs(payload.end_time).toISOString(),
       start_time: dayjs(payload.start_time).toISOString(),
       type: HASSIO_WS_COMMAND.history_during_period,
-    })) as Record<PICK_ENTITY, { a: object; s: unknown; lu: number }[]>;
+    })) as Record<PICK_ENTITY, EntityHistoryItem[]>;
 
     return Object.fromEntries(
       Object.keys(result).map((entity_id: PICK_ENTITY) => {

@@ -6,7 +6,7 @@ import {
   BackupResponse,
   HASSIO_WS_COMMAND,
   HomeAssistantBackup,
-} from "../helpers/index";
+} from "../helpers";
 
 export function Utilities({ logger, getApis }: TServiceParams) {
   const hass = getApis(LIB_HOME_ASSISTANT);

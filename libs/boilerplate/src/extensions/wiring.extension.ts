@@ -18,6 +18,7 @@ import {
   BootstrapException,
   BootstrapOptions,
   CallbackList,
+  GetApis,
   GetApisResult,
   LibraryConfigurationOptions,
   LIFECYCLE_STAGES,
@@ -26,6 +27,7 @@ import {
   OptionalModuleConfiguration,
   ServiceFunction,
   ServiceMap,
+  TConfigurable,
   TGetConfig,
   TLifecycleBase,
   TLoadableChildLifecycle,
@@ -37,7 +39,7 @@ import {
   ZCC_LIBRARY_ERROR,
   ZCCApplicationDefinition,
   ZCCLibraryDefinition,
-} from "../helpers/index";
+} from "../helpers";
 import { ConfigurationFiles } from "../helpers/testing.helper";
 import { CacheProviders, ZCC_Cache } from "./cache.extension";
 import { ZCC_Configuration } from "./configuration.extension";
@@ -314,21 +316,23 @@ async function WireService(
        *  - Methods will be inserted into the object after construction phase
        * - Calling after will return a fully populated
        */
-      getApis: <S extends ServiceMap>(
-        project:
-          | ZCCLibraryDefinition<S, OptionalModuleConfiguration>
-          | ZCCApplicationDefinition<S, OptionalModuleConfiguration>,
-      ): GetApisResult<S> => {
+      getApis: <
+        S extends ServiceMap,
+        C extends OptionalModuleConfiguration,
+        PROJECT extends TConfigurable<S, C>,
+      >(
+        project: PROJECT,
+      ): GetApis<PROJECT> => {
         // If the work was already done, return from cache
         const cached = API_CACHE.get(project);
         if (cached) {
-          return cached as GetApisResult<S>;
+          return cached as GetApis<PROJECT>;
         }
         // This one hasn't been loaded yet, generate an object with all the correct properties
         const generated = {};
 
         API_CACHE.set(project, generated);
-        return generated as GetApisResult<S>;
+        return generated as GetApis<PROJECT>;
       },
       lifecycle,
       logger,

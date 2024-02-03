@@ -10,7 +10,7 @@
       "path": "./tsconfig.spec.json"
     },
     {
-      "path": "../../libs/home-assistant/tsconfig.lib.json"
+      "path": "../../libs/hass/tsconfig.lib.json"
     },
     {
       "path": "../../libs/virtual-entity/tsconfig.lib.json"

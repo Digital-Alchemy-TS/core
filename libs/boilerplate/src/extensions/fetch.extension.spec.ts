@@ -4,7 +4,7 @@ import {
   OptionalModuleConfiguration,
   ServiceMap,
   ZCCApplicationDefinition,
-} from "../helpers/index";
+} from "../helpers";
 import { TFetch } from "./fetch.extension";
 import { CreateApplication } from "./wiring.extension";
 

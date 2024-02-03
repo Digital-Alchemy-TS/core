@@ -5,7 +5,7 @@ import { LIB_VIRTUAL_ENTITY } from "@zcc/virtual-entity";
 import dayjs from "dayjs";
 
 import { LIB_AUTOMATION_LOGIC } from "../automation-logic.module";
-import { LOCATION_UPDATED } from "../helpers/index";
+import { LOCATION_UPDATED } from "../helpers";
 
 type ColorModes = "color_temp" | "xy" | "brightness";
 export type ColorLight = GenericEntityDTO<{

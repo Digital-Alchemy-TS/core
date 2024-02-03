@@ -8,7 +8,7 @@ import {
   ServiceMap,
   TESTING_APP_NAME,
   ZCCApplicationDefinition,
-} from "../helpers/index";
+} from "../helpers";
 import {
   highlightContext,
   ILogger,

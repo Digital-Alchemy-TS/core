@@ -1,7 +1,7 @@
-import "@zcc/home-assistant";
+import "@zcc/hass";
 
 import { CreateApplication } from "@zcc/boilerplate";
-import { LIB_HOME_ASSISTANT } from "@zcc/home-assistant";
+import { LIB_HOME_ASSISTANT } from "@zcc/hass";
 
 import { BuildTypes } from "./build.extension";
 import { TypeWriter } from "./type-writer.extension";

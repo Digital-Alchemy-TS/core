@@ -11,9 +11,10 @@ import { LIB_AUTOMATION_LOGIC } from "../automation-logic.module";
 import {
   AGGRESSIVE_SCENES_ADJUSTMENT,
   AggressiveScenesAdjustmentData,
+  RoomScene,
   SceneDefinition,
   SceneSwitchState,
-} from "../helpers/index";
+} from "../helpers";
 
 export function AggressiveScenes({
   logger,
@@ -36,9 +37,9 @@ export function AggressiveScenes({
     context,
     exec: async () => {
       try {
-        await each([...SceneRoomService.loaded.keys()], async name => {
-          await validateRoomScene(name);
-        });
+        // await each([...SceneRoomService.loaded.keys()], async name => {
+        //   await validateRoomScene(name);
+        // });
       } catch (error) {
         logger.error({ error });
       }
@@ -50,7 +51,7 @@ export function AggressiveScenes({
     entity: ENTITY_STATE<PICK_ENTITY<"switch">>,
     scene: SceneDefinition,
   ) {
-    const entity_id = entity.entity_id;
+    const entity_id = entity.entity_id as PICK_ENTITY<"switch">;
     const expected = scene[entity_id] as SceneSwitchState;
     if (is.empty(expected)) {
       // ??
@@ -74,7 +75,7 @@ export function AggressiveScenes({
     if (!is.empty(entity.attributes.entity_id)) {
       // ? This is a group
       await each(entity.attributes.entity_id, async child_id => {
-        const child = entity.byId(child_id);
+        const child = hass.entity.byId(child_id);
         if (!child) {
           logger.warn(
             `%s => %s child entity of group cannot be found`,
@@ -114,51 +115,52 @@ export function AggressiveScenes({
    * - warnings
    * - state changes
    */
-  async function validateRoomScene(roomName: string): Promise<void> {
-    const room = SceneRoomService.loaded.get(roomName);
-    const { configuration, options } = room.sceneDefinition;
-    if (aggressiveScenes === false || options?.aggressive?.enabled === false) {
+  async function validateRoomScene(scene: RoomScene): Promise<void> {
+    if (aggressiveScenes === false || scene?.aggressive === false) {
       // nothing to do
       return;
     }
-    if (!configuration) {
-      logger.warn(
-        { configuration, name: roomName, options },
-        `cannot validate room scene`,
-      );
+    if (!scene.definition) {
+      logger.warn({ context }, `cannot validate room scene`);
       return;
     }
-    if (!is.object(configuration) || is.empty(configuration)) {
+    if (!is.object(scene.definition) || is.empty(scene.definition)) {
       // ? There currently is no use case for a scene with no entities in it
       // Not technically an error though
       logger.warn("no definition");
       return;
     }
-
-    await each(Object.keys(configuration), async (entity_id: PICK_ENTITY) => {
-      const entity = hass.entity.byId(entity_id);
-      if (!entity) {
-        // * Home assistant outright does not send an entity for this id
-        // The wrong id was probably input
-        //
-        // ? This is distinct from "unavailable" entities
-        logger.error({ name: entity_id }, `cannot find entity`);
-        return;
-      }
-      const entityDomain = domain(entity_id);
-      switch (entityDomain) {
-        case "light":
-          await light.manageLight(
-            entity as ENTITY_STATE<PICK_ENTITY<"light">>,
-            configuration as SceneDefinition,
-          );
+    await each(
+      Object.keys(scene.definition),
+      async (entity_id: PICK_ENTITY) => {
+        const entity = hass.entity.byId(entity_id);
+        if (!entity) {
+          // * Home assistant outright does not send an entity for this id
+          // The wrong id was probably input
+          //
+          // ? This is distinct from "unavailable" entities
+          logger.error({ name: entity_id }, `cannot find entity`);
           return;
-        case "switch":
-          await manageSwitch(entity, configuration as SceneDefinition);
-          return;
-        default:
-          logger.debug({ name: entityDomain }, `so actions set for domain`);
-      }
-    });
+        }
+        const entityDomain = domain(entity_id);
+        switch (entityDomain) {
+          case "light":
+            await automation.light.manageLight(
+              entity as ENTITY_STATE<PICK_ENTITY<"light">>,
+              scene.definition,
+            );
+            return;
+          case "switch":
+            await manageSwitch(entity, scene.definition as SceneDefinition);
+            return;
+          default:
+            logger.debug({ name: entityDomain }, `so actions set for domain`);
+        }
+      },
+    );
   }
+
+  return {
+    validateRoomScene,
+  };
 }

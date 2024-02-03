@@ -1,10 +1,10 @@
 import { TServiceParams } from "@zcc/boilerplate";
 import { LIB_HOME_ASSISTANT, PICK_ENTITY } from "@zcc/hass";
 import { InternalServerError } from "@zcc/server";
-import { eachSeries, is, VALUE } from "@zcc/utilities";
+import { CronExpression, eachSeries, is, VALUE } from "@zcc/utilities";
 import { LIB_VIRTUAL_ENTITY, VirtualSensor } from "@zcc/virtual-entity";
 
-import { LIB_AUTOMATION_LOGIC, RoomConfiguration } from "../index";
+import { LIB_AUTOMATION_LOGIC, RoomConfiguration, RoomScene } from "..";
 
 type RoomDefinition<SCENES extends string> = {
   scene: SCENES;
@@ -18,6 +18,7 @@ interface HasKelvin {
 export function SceneRoom({
   logger,
   getApis,
+  scheduler,
   context: parentContext,
 }: TServiceParams) {
   const hass = getApis(LIB_HOME_ASSISTANT);
@@ -38,6 +39,15 @@ export function SceneRoom({
       id: `${id}_current_scene`,
     });
 
+    scheduler.cron({
+      context,
+      exec: async () =>
+        await automation.aggressive.validateRoomScene(
+          scenes[currentScene.state as SCENES],
+        ),
+      schedule: CronExpression.EVERY_30_SECONDS,
+    });
+
     /**
      * Should circadian if:
      *  - auto circadian is not disabled
@@ -54,12 +64,13 @@ export function SceneRoom({
       if (!is.empty(target) && target !== "on") {
         return false;
       }
-      const current = scenes[currentScene.state] ?? {};
-      if (!current[entity_id]) {
+      const current = (scenes[currentScene.state as SCENES] ?? {}) as RoomScene;
+      if (!current.definition[entity_id]) {
         return true;
       }
-      return Object.keys(current[entity_id]).every(i =>
-        ["state", "brightness"].includes(i),
+      const definition = current.definition;
+      return Object.keys(definition[entity_id as PICK_ENTITY<"light">]).every(
+        i => ["state", "brightness"].includes(i),
       );
     }
 

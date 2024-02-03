@@ -22,7 +22,7 @@ import {
   PICK_SERVICE,
   PICK_SERVICE_PARAMETERS,
   RawCalendarEvent,
-} from "../helpers/index";
+} from "../helpers";
 
 type SendBody<
   STATE extends string | number = string,

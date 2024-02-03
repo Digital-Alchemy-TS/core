@@ -10,7 +10,7 @@ import {
   SceneRoom,
   SequenceWatcher,
   SolarCalculator,
-} from "./extensions/index";
+} from "./extensions";
 
 export const LIB_AUTOMATION_LOGIC = ZCC.createLibrary({
   configuration: {

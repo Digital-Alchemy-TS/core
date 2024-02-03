@@ -19,7 +19,7 @@ import {
   MaybeHttpError,
   TFetchBody,
   TServiceParams,
-} from "../helpers/index";
+} from "../helpers";
 
 const streamPipeline = promisify(pipeline);
 

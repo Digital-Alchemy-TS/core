@@ -1,4 +1,4 @@
-import { GetApis, InternalError, TServiceParams } from "@zcc/boilerplate";
+import { InternalError, TServiceParams } from "@zcc/boilerplate";
 import {
   BadRequestError,
   GENERIC_SUCCESS_RESPONSE,
@@ -7,7 +7,7 @@ import {
 import { is, TBlackHole, TContext, ZCC } from "@zcc/utilities";
 import { FastifyRequest } from "fastify";
 
-import { Icon } from "../helpers/index";
+import { Icon } from "../helpers";
 import {
   BUTTON_ERRORS,
   BUTTON_EXECUTION_COUNT,
@@ -37,7 +37,7 @@ export function Button({
 }: TServiceParams) {
   // wtf of the week -
   // builds fail without this assertion, but vscode is just fine
-  const server = getApis(LIB_SERVER) as GetApis<typeof LIB_SERVER>;
+  const server = getApis(LIB_SERVER);
 
   let baseUrl: string;
   let httpPrefix: string;

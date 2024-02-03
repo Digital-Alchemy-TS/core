@@ -2,7 +2,7 @@ import "@zcc/automation-logic";
 
 import { LIB_AUTOMATION_LOGIC } from "@zcc/automation-logic";
 import { CreateApplication } from "@zcc/boilerplate";
-import { LIB_HOME_ASSISTANT } from "@zcc/home-assistant";
+import { LIB_HOME_ASSISTANT } from "@zcc/hass";
 import { LIB_SERVER } from "@zcc/server";
 import { LIB_VIRTUAL_ENTITY } from "@zcc/virtual-entity";
 
@@ -10,9 +10,9 @@ import {
   LutronPicoBindings,
   MockExtension,
   SensorsExtension,
-} from "./extensions/index";
+} from "./extensions";
+import { BedRoom, LivingRoom, Office } from "./rooms";
 import { AllRooms } from "./rooms/all.room";
-import { BedRoom, LivingRoom, Office } from "./rooms/index";
 
 export const AUTOMATION_EXAMPLE_APP = CreateApplication({
   libraries: [

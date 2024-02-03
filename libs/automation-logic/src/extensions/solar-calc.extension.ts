@@ -4,7 +4,7 @@ import { CronExpression, TBlackHole, TContext, ZCC } from "@zcc/utilities";
 import dayjs, { Dayjs } from "dayjs";
 import { EventEmitter } from "eventemitter3";
 
-import { calcSolNoon, calcSunriseSet } from "../index";
+import { calcSolNoon, calcSunriseSet } from "..";
 
 export type SolarEvents =
   | "dawn"

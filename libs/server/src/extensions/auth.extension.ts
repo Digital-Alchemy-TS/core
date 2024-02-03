@@ -2,7 +2,7 @@ import { TServiceParams } from "@zcc/boilerplate";
 import { is } from "@zcc/utilities";
 import { FastifyReply, FastifyRequest } from "fastify";
 
-import { HTTP_REJECTED_AUTH, HttpStatusCode } from "../helpers/index";
+import { HTTP_REJECTED_AUTH, HttpStatusCode } from "../helpers";
 import { LIB_SERVER } from "../server.module";
 
 export function Auth({ logger, lifecycle }: TServiceParams) {

@@ -1,9 +1,5 @@
 import { TServiceParams } from "@zcc/boilerplate";
-import {
-  ENTITY_STATE,
-  LIB_HOME_ASSISTANT,
-  PICK_ENTITY,
-} from "@zcc/hass";
+import { ENTITY_STATE, LIB_HOME_ASSISTANT, PICK_ENTITY } from "@zcc/hass";
 import { each, is, NONE } from "@zcc/utilities";
 
 import {
@@ -12,7 +8,7 @@ import {
   SceneDefinition,
   SceneLightState,
   SceneLightStateOn,
-} from "../index";
+} from "..";
 import { ColorLight } from "./circadian.extension";
 
 const MAX_DIFFERENCE = 100;
@@ -69,7 +65,7 @@ export function LightManager({ logger, getApis, lifecycle }: TServiceParams) {
     }
     if (!is.empty(entity.attributes.entity_id)) {
       await each(entity.attributes.entity_id, async child_id => {
-        const child = entity.byId(child_id);
+        const child = hass.entity.byId(child_id);
         if (!child) {
           logger.warn(
             `%s => %s child entity of group cannot be found`,
@@ -135,6 +131,7 @@ export function LightManager({ logger, getApis, lifecycle }: TServiceParams) {
         reasons,
         state,
         to: automation.circadian.getKelvin(),
+        type,
       },
       `setting light {temperature}`,
     );
@@ -162,12 +159,16 @@ export function LightManager({ logger, getApis, lifecycle }: TServiceParams) {
     const stateTests = {
       brightness: entity.attributes.brightness == state.brightness,
       color: entity.attributes.rgb_color.every(
-        (color, index) => state.rgb_color[index] === color,
+        (color, index) =>
+          state.rgb_color[[..."rgb"][index] as keyof typeof state.rgb_color] ===
+          color,
       ),
       state: entity.state === "off",
     };
     // ? Find things that don't currently match expectations
-    const reasons = Object.keys(stateTests).filter(key => !stateTests[key]);
+    const reasons = Object.keys(stateTests).filter(
+      (key: keyof typeof stateTests) => !stateTests[key],
+    );
     let type: AggressiveScenesAdjustmentTypes;
     if (stateTests.state) {
       type = "light_on_off";
@@ -184,7 +185,12 @@ export function LightManager({ logger, getApis, lifecycle }: TServiceParams) {
     //   type,
     // } as AggressiveScenesAdjustmentData);
     logger.debug(
-      { entity_id: entity.entity_id, reasons, rgb_color: state.rgb_color },
+      {
+        entity_id: entity.entity_id,
+        reasons,
+        rgb_color: state.rgb_color,
+        type,
+      },
       `setting light color`,
     );
     await hass.call.light.turn_on({

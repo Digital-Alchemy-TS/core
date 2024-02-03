@@ -31,7 +31,7 @@ export type SceneDescription<RoomNames extends string = string> = {
 };
 export interface AutomationLogicModuleConfiguration {
   global_scenes?: Record<string, boolean>;
-  room_configuration?: Record<string, RoomConfiguration>;
+  room_configuration?: Record<string, RoomConfiguration<string>>;
 }
 
 export type AllowedSceneDomains = Extract<
@@ -101,13 +101,10 @@ export type RoomScene = {
    *
    * - Ensure lights match the brightness / color the scene says they should be
    *   - sometimes things don't fully make brightness transitions, this will fix
+   *
+   * default: `true` (controlled by config)
    */
-  aggressive?: {
-    /**
-     * default: `true` (controlled by config)
-     */
-    enabled?: boolean;
-  };
+  aggressive?: boolean;
   /**
    * Human understandable description of this scene (long form)
    */

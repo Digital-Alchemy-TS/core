@@ -1,6 +1,7 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 import { LIB_AUTOMATION_LOGIC } from "@zcc/automation-logic";
 import { TServiceParams } from "@zcc/boilerplate";
-import { LIB_HOME_ASSISTANT } from "@zcc/home-assistant";
+import { LIB_HOME_ASSISTANT } from "@zcc/hass";
 import { ZCC } from "@zcc/utilities";
 import { LIB_VIRTUAL_ENTITY } from "@zcc/virtual-entity";
 import dayjs from "dayjs";

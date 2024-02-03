@@ -28,7 +28,7 @@ import {
   OptionalModuleConfiguration,
   ServiceMap,
   ZCCApplicationDefinition,
-} from "../helpers/index";
+} from "../helpers";
 
 const ENVIRONMENT_LOAD_PRIORITY = 1;
 const FILE_LOAD_PRIORITY = 2;

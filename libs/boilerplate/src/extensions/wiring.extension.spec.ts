@@ -5,7 +5,7 @@ import {
   OptionalModuleConfiguration,
   ServiceMap,
   ZCCApplicationDefinition,
-} from "../helpers/index";
+} from "../helpers";
 import { CreateApplication, CreateLibrary } from "./wiring.extension";
 
 describe("Wiring Extension", () => {

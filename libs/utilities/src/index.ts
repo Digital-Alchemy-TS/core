@@ -1,2 +1,2 @@
-export * from "./extensions/index";
-export * from "./helpers/index";
+export * from "./extensions";
+export * from "./helpers";

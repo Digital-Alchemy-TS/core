@@ -1,6 +1,6 @@
 import { MINUTE, ZCC } from "@zcc/utilities";
 
-import { BinarySensor, Button, Sensor, Switch } from "./index";
+import { BinarySensor, Button, Sensor, Switch } from ".";
 
 export const LIB_VIRTUAL_ENTITY = ZCC.createLibrary({
   configuration: {

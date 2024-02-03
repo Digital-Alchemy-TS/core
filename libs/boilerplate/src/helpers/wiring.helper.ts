@@ -55,27 +55,14 @@ type ExtractConfig<T> =
   T extends ZCCLibraryDefinition<ServiceMap, infer C> ? C : never;
 
 //
-type IsObjectReturningFunction<T> = T extends (
-  ...arguments_: never[]
-) => infer R
-  ? R extends Promise<infer P>
-    ? P extends object
-      ? T
-      : never
-    : R extends object
-      ? T
-      : never
-  : never;
 
-type ObjectReturningServiceMap<S extends ServiceMap> = {
-  [K in keyof S as IsObjectReturningFunction<S[K]> extends never
-    ? never
-    : K]: S[K];
-};
-
-type TGetApi = <S extends ServiceMap, C extends OptionalModuleConfiguration>(
-  project: TConfigurable<S, C>,
-) => GetApisResult<ObjectReturningServiceMap<S>>;
+type TGetApi = <
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+  PROJECT extends TConfigurable<S, C>,
+>(
+  project: PROJECT,
+) => GetApis<PROJECT>;
 
 export type Schedule = string | CronExpression;
 export type ScheduleItem = {

@@ -2,7 +2,7 @@ import { InternalError, TServiceParams } from "@zcc/boilerplate";
 import { PICK_ENTITY } from "@zcc/hass";
 import { is, TContext } from "@zcc/utilities";
 
-import { Icon, SensorDeviceClasses } from "../helpers/index";
+import { Icon, SensorDeviceClasses } from "../helpers";
 
 type TSensor<STATE extends SensorValue> = {
   context: TContext;

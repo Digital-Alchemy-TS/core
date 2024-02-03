@@ -1,7 +1,7 @@
 import { ZCC } from "@zcc/utilities";
 import { IClientOptions } from "mqtt";
 
-import { MQTT_Bindings } from "./extensions/index";
+import { MQTT_Bindings } from "./extensions";
 
 export const LIB_MQTT = ZCC.createLibrary({
   configuration: {

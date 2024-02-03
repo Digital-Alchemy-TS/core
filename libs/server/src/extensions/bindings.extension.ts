@@ -26,7 +26,7 @@ import {
   ServiceUnavailableError,
   THROWN_ERRORS,
   UnauthorizedError,
-} from "../helpers/index";
+} from "../helpers";
 import { LIB_SERVER } from "../server.module";
 
 export function Server_Bindings({

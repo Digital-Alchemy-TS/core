@@ -24,7 +24,7 @@ import {
   GenericEntityDTO,
   HASSIO_WS_COMMAND,
   PICK_ENTITY,
-} from "../helpers/index";
+} from "../helpers";
 
 type EntityHistoryItem = { a: object; s: unknown; lu: number };
 type ByIdProxy<ENTITY_ID extends PICK_ENTITY> = ENTITY_STATE<ENTITY_ID> & {

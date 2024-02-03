@@ -3,7 +3,7 @@ import {
   LIB_HOME_ASSISTANT,
   ServiceListFieldDescription,
   ServiceListServiceTarget,
-} from "@zcc/home-assistant";
+} from "@zcc/hass";
 import { is } from "@zcc/utilities";
 import { dump } from "js-yaml";
 import {

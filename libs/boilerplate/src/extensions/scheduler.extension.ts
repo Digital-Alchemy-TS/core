@@ -10,7 +10,7 @@ import {
   SCHEDULE_EXECUTION_TIME,
   SchedulerOptions,
   TServiceParams,
-} from "../helpers/index";
+} from "../helpers";
 
 export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
   const stop = new Set<() => TBlackHole>();

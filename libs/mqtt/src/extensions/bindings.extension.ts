@@ -20,7 +20,7 @@ import {
   MQTTParseFormat,
   MQTTSubscribeOptions,
   SubscriptionOptions,
-} from "../index";
+} from "..";
 import { LIB_MQTT } from "../mqtt.module";
 
 // Function to translate readable options to MQTT options

@@ -6,12 +6,12 @@
   },
   "include": [
     "jest.config.ts",
-    "src/**/*.mts",
+    "src/**/*.ts",
     "src/**/*.spec.ts"
   ],
   "references": [
     {
-      "path": "../../libs/home-assistant/tsconfig.lib.json"
+      "path": "../../libs/hass/tsconfig.lib.json"
     },
     {
       "path": "../../libs/virtual-entity/tsconfig.lib.json"

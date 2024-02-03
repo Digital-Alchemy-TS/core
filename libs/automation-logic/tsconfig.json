@@ -1,7 +1,8 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "../../dist/mqtt-out-tsc",
+    "outDir": "../../dist/automation-logic-out-tsc",
+    "noImplicitAny": false
   },
   "files": [],
   "include": [],
@@ -11,9 +12,6 @@
     },
     {
       "path": "./tsconfig.spec.json"
-    },
-    {
-      "path": "../mqtt/tsconfig.lib.json"
     },
     {
       "path": "../hass/tsconfig.lib.json"

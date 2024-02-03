@@ -9,7 +9,7 @@ import {
   ServiceMap,
   TESTING_APP_NAME,
   ZCCApplicationDefinition,
-} from "../helpers/index";
+} from "../helpers";
 import { ConfigManager, ZCC_Configuration } from "./configuration.extension";
 import { CreateApplication } from "./wiring.extension";
 

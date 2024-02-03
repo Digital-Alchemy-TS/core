@@ -8,7 +8,7 @@ import {
   createMemoryDriver,
   createRedisDriver,
   TServiceParams,
-} from "../helpers/index";
+} from "../helpers";
 import { LIB_BOILERPLATE } from "./wiring.extension";
 
 export interface ICacheDriver {

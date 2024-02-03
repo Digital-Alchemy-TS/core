@@ -1,8 +1,8 @@
 import { TServiceParams } from "@zcc/boilerplate";
-import { LIB_HOME_ASSISTANT, PICK_ENTITY } from "@zcc/hass";
+import { LIB_HOME_ASSISTANT } from "@zcc/hass";
 import { CronExpression, is, TContext } from "@zcc/utilities";
 
-import { ManagedSwitchOptions, PickASwitch } from "../helpers/index";
+import { ManagedSwitchOptions, PickASwitch } from "../helpers";
 
 export function ManagedSwitch({
   logger,
@@ -84,10 +84,9 @@ export function ManagedSwitch({
       [onEntityUpdate]
         .flat()
         .forEach(i =>
-          hass.entity.OnUpdate(
-            is.object(i) ? i.entity_id : i,
-            async () => await update(),
-          ),
+          hass.entity
+            .byId(is.object(i) ? i.entity_id : i)
+            .onUpdate(async () => await update()),
         );
     }
 

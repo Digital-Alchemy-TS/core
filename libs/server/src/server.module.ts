@@ -1,6 +1,6 @@
 import { HALF, MINUTE, SECOND, ZCC } from "@zcc/utilities";
 
-import { Auth, Server_Bindings } from "./extensions/index";
+import { Auth, Server_Bindings } from "./extensions";
 
 export const LIB_SERVER = ZCC.createLibrary({
   configuration: {

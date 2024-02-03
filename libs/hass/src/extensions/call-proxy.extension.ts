@@ -9,7 +9,7 @@ import {
   HassServiceDTO,
   PICK_SERVICE,
   PICK_SERVICE_PARAMETERS,
-} from "../helpers/index";
+} from "../helpers";
 
 let services: HassServiceDTO[];
 let domains: string[];

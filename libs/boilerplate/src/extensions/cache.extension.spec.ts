@@ -7,7 +7,7 @@ import {
   OptionalModuleConfiguration,
   ServiceMap,
   ZCCApplicationDefinition,
-} from "../helpers/index";
+} from "../helpers";
 import { TCache } from "./cache.extension";
 import { CreateApplication } from "./wiring.extension";
 

@@ -6,7 +6,7 @@ import {
   FetchAPI,
   Utilities,
   WebsocketAPI,
-} from "./extensions/index";
+} from "./extensions";
 
 export const LIB_HOME_ASSISTANT = ZCC.createLibrary({
   configuration: {

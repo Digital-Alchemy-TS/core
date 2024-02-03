@@ -13,7 +13,7 @@ import {
   SEQUENCE_MATCHER_EXECUTION_TIME,
   SequenceWatchOptions,
   TrackedOptions,
-} from "../helpers/index";
+} from "../helpers";
 
 export function SequenceWatcher({
   logger,

@@ -2,7 +2,7 @@ import { InternalError, TServiceParams } from "@zcc/boilerplate";
 import { PICK_ENTITY } from "@zcc/hass";
 import { is, TContext } from "@zcc/utilities";
 
-import { Icon, OnOff } from "../helpers/index";
+import { Icon, OnOff } from "../helpers";
 
 type TSwitch = {
   context: TContext;

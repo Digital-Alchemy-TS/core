@@ -1,4 +1,5 @@
-/* eslint-disable @typescript-eslint/no-magic-numbers */
+/* eslint-disable @typescript-eslint/no-magic-numbers, @typescript-eslint/ban-ts-comment */
+// @ts-nocheck
 
 //
 // NOTE: This file is `sun.js` from the `solar-calc` library, with some light tweaks

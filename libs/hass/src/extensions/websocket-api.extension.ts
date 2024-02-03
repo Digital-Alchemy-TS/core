@@ -16,7 +16,7 @@ import {
   SOCKET_EVENT_EXECUTION_TIME,
   SOCKET_MESSAGES,
   SocketMessageDTO,
-} from "../helpers/index";
+} from "../helpers";
 
 let connection: WS;
 const CONNECTION_OPEN = 1;

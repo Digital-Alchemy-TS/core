@@ -121,3 +121,5 @@ bin/
 
 .nx/cache
 review.zip
+/obsidian
+dynamic.d.ts

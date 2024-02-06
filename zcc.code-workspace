@@ -67,19 +67,19 @@
     },
     "material-icon-theme.folders.associations": {
       "design-docs": "changesets",
-      "virtual-entity": "mappings",
+      "synapse": "mappings",
       "rooms": "robot",
-      "hass-type-generate": "godot",
+      "obsidian": "shader",
+      "type-writer": "godot",
       "automation-example": "moon",
       "boilerplate": "robot",
       "fetch": "flow",
       "mqtt": "messages",
-      "automation-logic": "scripts",
+      "automation": "scripts",
       "hass": "home",
       "common": "shared",
       ".nx": "next",
       "custom_components": "connection",
-      "zcc": "connection",
       "services": "server",
       "helpers": "helper",
       "extensions": "plugin",
@@ -109,9 +109,10 @@
       "**/*.code-search": true,
       "**/tools": true
     },
+    "typescript.preferences.importModuleSpecifier": "relative",
     // ! Config files
     "files.associations": {
-      ".auto-config-testrc": "ini",
+      ".type-writerrc": "ini",
       ".entity-creationrc": "ini",
       ".pino-prettyrc": "json",
       ".scene-managerrc": "ini",
@@ -138,29 +139,29 @@
     // ! <Decorative>
     "better-comments.tags": [
       // ! Important information
+      // > Comment Comment
       // * Block explanations
       // ? Command explanation
       // % Inline code type snippets
       // - List A
       // ~ List B
+      // @doc DOCS LINK
       // TODO: Some example stuff
       // # Block A
       // ## Block B
       // ### Block C
       {
-        // Super important
         "tag": "!",
-        "color": "#000",
+        "color": "#E53935",
         "strikethrough": false,
         "underline": true,
-        "backgroundColor": "#E01541",
+        "backgroundColor": "transparent",
         "bold": true,
         "italic": false
       },
       {
-        // Comment comment
         "tag": ">",
-        "color": "#C25B78",
+        "color": "#8E24AA",
         "strikethrough": false,
         "underline": false,
         "backgroundColor": "transparent",
@@ -168,9 +169,8 @@
         "italic": true
       },
       {
-        // Contextual explanation
         "tag": "?",
-        "color": "#03C956",
+        "color": "#1E88E5",
         "strikethrough": false,
         "underline": false,
         "backgroundColor": "transparent",
@@ -178,9 +178,8 @@
         "italic": true
       },
       {
-        // Block context
         "tag": "*",
-        "color": "#057EF0",
+        "color": "#43A047",
         "strikethrough": false,
         "underline": true,
         "backgroundColor": "transparent",
@@ -188,9 +187,8 @@
         "italic": false
       },
       {
-        // List A
         "tag": "-",
-        "color": "#CC00C5",
+        "color": "#FDD835",
         "strikethrough": false,
         "underline": false,
         "backgroundColor": "transparent",
@@ -198,9 +196,8 @@
         "italic": false
       },
       {
-        // Terse reference snippets
         "tag": "%",
-        "color": "#FF600A",
+        "color": "#FB8C00",
         "strikethrough": false,
         "underline": true,
         "backgroundColor": "transparent",
@@ -208,9 +205,8 @@
         "italic": true
       },
       {
-        // List B (indent)
         "tag": "~",
-        "color": "#E9BA20",
+        "color": "#6D4C41",
         "strikethrough": false,
         "underline": false,
         "backgroundColor": "transparent",
@@ -218,9 +214,8 @@
         "italic": false
       },
       {
-        // Double commented (increase visibility)
         "tag": "//",
-        "color": "#394648",
+        "color": "#B0BEC5",
         "strikethrough": true,
         "underline": false,
         "backgroundColor": "transparent",
@@ -229,40 +224,46 @@
       },
       {
         "tag": "todo",
-        "color": "#000",
+        "color": "#D81B60",
         "strikethrough": false,
         "underline": false,
-        "backgroundColor": "#FF8C00",
+        "backgroundColor": "#FFFDE7",
         "bold": false,
         "italic": false
       },
       {
-        // High level block
         "tag": "###",
-        "color": "#000",
+        "color": "#FFFFFF",
         "strikethrough": false,
         "underline": false,
-        "backgroundColor": "#D36135",
+        "backgroundColor": "#26A69A",
         "bold": true,
         "italic": false
       },
       {
-        // High level block
         "tag": "##",
-        "color": "#000",
+        "color": "#FFFFFF",
         "strikethrough": false,
         "underline": false,
-        "backgroundColor": "#A24936",
+        "backgroundColor": "#EC407A",
         "bold": true,
         "italic": false
       },
       {
-        // High level block
         "tag": "#",
-        "color": "#000",
+        "color": "#FFFFFF",
         "strikethrough": false,
         "underline": false,
-        "backgroundColor": "#3E5641",
+        "backgroundColor": "#5C6BC0",
+        "bold": true,
+        "italic": false
+      },
+      {
+        "tag": "@doc",
+        "color": "#4A90E2",
+        "strikethrough": false,
+        "underline": false,
+        "backgroundColor": "#E1F5FE",
         "bold": true,
         "italic": false
       }

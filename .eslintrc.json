@@ -3,12 +3,7 @@
     "es6": true,
     "node": true
   },
-  "root": true,
-  "ignorePatterns": [
-    "**/*"
-  ],
   "plugins": [
-    "@nx",
     "import",
     "jsonc",
     "no-unsanitized",
@@ -21,11 +16,9 @@
   "overrides": [
     {
       "files": [
-        "**/src/**/*.ts",
         "src/**/*.ts"
       ],
       "extends": [
-        "plugin:@nx/typescript",
         "plugin:@typescript-eslint/recommended",
         "plugin:jsonc/recommended-with-jsonc",
         "plugin:sonarjs/recommended",
@@ -36,26 +29,11 @@
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
         "project": [
-          "tsconfig.base.json"
+          "tsconfig.json"
         ]
       },
       "rules": {
         "prettier/prettier": "error",
-        "@nx/enforce-module-boundaries": [
-          "error",
-          {
-            "enforceBuildableLibDependency": true,
-            "allow": [],
-            "depConstraints": [
-              {
-                "sourceTag": "*",
-                "onlyDependOnLibsWithTags": [
-                  "*"
-                ]
-              }
-            ]
-          }
-        ],
         "unicorn/switch-case-braces": "off",
         "unicorn/prefer-module": "off",
         "@typescript-eslint/no-magic-numbers": "warn",
@@ -126,22 +104,13 @@
     },
     {
       "files": [
-        "*.json"
-      ],
-      "parser": "jsonc-eslint-parser",
-      "rules": {
-        "@nx/dependency-checks": "error"
-      }
-    },
-    {
-      "files": [
         "metrics.helper.ts",
         "*.module.ts"
       ],
       "parser": "@typescript-eslint/parser",
       "parserOptions": {
         "project": [
-          "tsconfig.base.json"
+          "tsconfig.json"
         ]
       },
       "rules": {

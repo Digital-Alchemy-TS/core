@@ -3,32 +3,70 @@ ignorePaths: []
 dictionaryDefinitions: []
 dictionaries: []
 words:
+  - aliceblue
+  - antiquewhite
   - astro
   - bithound
+  - blanchedalmond
+  - blueviolet
   - buildable
+  - burlywood
+  - cadetblue
   - caseta
   - cbar
   - codeowners
   - codez
+  - cornflowerblue
+  - cornsilk
   - creationrc
+  - darkcyan
+  - darkgoldenrod
+  - darkgray
+  - darkgreen
+  - darkgrey
+  - darkkhaki
+  - darkmagenta
+  - darkolivegreen
+  - darkorange
+  - darkorchid
+  - darkred
+  - darksalmon
+  - darkseagreen
+  - darkslateblue
+  - darkslategray
+  - darkslategrey
+  - darkturquoise
+  - darkviolet
   - Datetime
   - dbaeumer
+  - deeppink
+  - deepskyblue
   - devkit
   - dhall
+  - dimgray
+  - dimgrey
+  - dodgerblue
   - entites
   - esbenp
   - execa
   - exiasr
   - falsey
   - fastify
+  - floralwhite
+  - forestgreen
+  - gainsboro
   - Gbit
+  - ghostwhite
   - gotify
+  - greenyellow
   - gridsome
   - hadolint
   - hass
   - hassio
   - homeassistant
+  - hotpink
   - idris
+  - indianred
   - intellij
   - interwebs
   - julianday
@@ -36,33 +74,87 @@ words:
   - KEYFILE
   - keylist
   - kusto
+  - lavenderblush
+  - lawngreen
+  - lemonchiffon
   - lifecycles
+  - lightcoral
+  - lightcyan
+  - lightgoldenrodyellow
+  - lightgray
+  - lightgreen
+  - lightpink
+  - lightsalmon
+  - lightseagreen
+  - lightskyblue
+  - lightslategray
+  - lightslategrey
+  - lightsteelblue
+  - lightyellow
+  - limegreen
   - Lutron
   - managerrc
   - maxage
   - mbar
   - Mbit
+  - mediumaquamarine
+  - mediumblue
+  - mediumorchid
+  - mediumpurple
+  - mediumseagreen
+  - mediumslateblue
+  - mediumspringgreen
+  - mediumturquoise
+  - mediumvioletred
+  - midnightblue
+  - mintcream
   - mireds
+  - mistyrose
   - mrad
+  - navajowhite
+  - navyblue
   - nocheck
   - npmjs
   - nrwl
   - nsoult
   - nxignore
+  - oldlace
+  - olivedrab
+  - orangered
+  - palegoldenrod
+  - palegreen
+  - paleturquoise
+  - palevioletred
+  - papayawhip
+  - peachpuff
   - Pico
   - pino
   - pkief
   - postdata
+  - powderblue
   - prettyrc
   - proto
   - purescript
   - reftimes
+  - RGBW
+  - RGBWW
+  - rosybrown
+  - royalblue
   - rrule
+  - saddlebrown
+  - sandybrown
+  - seagreen
   - shellcheck
   - sinm
   - sinonjs
+  - skyblue
+  - slateblue
+  - slategray
+  - slategrey
   - snapse
   - sonarjs
+  - springgreen
+  - steelblue
   - terminalizer
   - testrc
   - timonwong
@@ -74,7 +166,10 @@ words:
   - unpublish
   - visbility
   - vsix
+  - whitesmoke
   - womp
+  - writerrc
+  - yellowgreen
   - zipignore
 ignoreWords: []
 import: []

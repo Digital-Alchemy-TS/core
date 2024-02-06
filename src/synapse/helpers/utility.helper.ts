@@ -1,4 +1,3 @@
-import { GetDomain } from "../../hass";
 import { is } from "../../utilities";
 import {
   BinarySensorConfig,
@@ -68,7 +67,7 @@ export type PUSH_PROXY<
   binary_sensor: BinarySensorProxy;
   sensor: SensorProxy;
   switch: SwitchProxy;
-}[GetDomain<ENTITY>];
+}[GetGeneratedDomain<ENTITY>];
 
 type PushSensorDomains = "sensor" | "binary_sensor";
 
@@ -77,10 +76,13 @@ type GetGeneratedStateType<DOMAIN extends PushSensorDomains> = {
   sensor: unknown;
 }[DOMAIN];
 
+export type GetGeneratedDomain<ENTITY extends `${string}.${string}`> =
+  ENTITY extends `${infer domain}.${string}` ? domain : never;
+
 export type iPushSensor<
   ENTITY extends PICK_GENERATED_ENTITY<PushSensorDomains>,
 > = {
-  state: GetGeneratedStateType<GetDomain<ENTITY>>;
+  state: GetGeneratedStateType<GetGeneratedDomain<ENTITY>>;
 };
 
 export type GET_CONFIG<DOMAIN extends ALL_GENERATED_SERVICE_DOMAINS> =

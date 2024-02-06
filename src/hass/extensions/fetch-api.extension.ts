@@ -13,7 +13,6 @@ import {
   CalendarFetchOptions,
   CheckConfigResult,
   ENTITY_STATE,
-  GenericEntityDTO,
   HassConfig,
   HassServiceDTO,
   HomeAssistantServerLogItem,
@@ -179,9 +178,9 @@ export function FetchAPI({
     }
   }
 
-  async function getAllEntities(): Promise<GenericEntityDTO[]> {
+  async function getAllEntities(): Promise<ENTITY_STATE<PICK_ENTITY>[]> {
     logger.trace(`Get all entities`);
-    return await fetcher<GenericEntityDTO[]>({ url: `/api/states` });
+    return await fetcher<ENTITY_STATE<PICK_ENTITY>[]>({ url: `/api/states` });
   }
 
   async function getHassConfig(): Promise<HassConfig> {

@@ -34,6 +34,7 @@ export function AggressiveScenes({
     schedule: CronExpression.EVERY_30_SECONDS,
   });
 
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   async function manageSwitch(
     entity: ENTITY_STATE<PICK_ENTITY<"switch">>,
     scene: SceneDefinition,
@@ -59,22 +60,29 @@ export function AggressiveScenes({
     if (performedUpdate) {
       return;
     }
-    if (!is.empty(entity.attributes.entity_id)) {
+
+    if ("entity_id" in entity.attributes) {
       // ? This is a group
-      await each(entity.attributes.entity_id, async child_id => {
-        const child = hass.entity.byId(child_id);
-        if (!child) {
-          logger.warn(
-            `%s => %s child entity of group cannot be found`,
-            entity_id,
-            child_id,
-          );
-          return;
-        }
-        if (child.state !== expected.state) {
-          await matchSwitchToScene(child, expected);
-        }
-      });
+      const id = entity.attributes.entity_id;
+      if (is.array(id) && !is.empty(id)) {
+        await each(
+          entity.attributes.entity_id as PICK_ENTITY<"switch">[],
+          async child_id => {
+            const child = hass.entity.byId(child_id);
+            if (!child) {
+              logger.warn(
+                `%s => %s child entity of group cannot be found`,
+                entity_id,
+                child_id,
+              );
+              return;
+            }
+            if (child.state !== expected.state) {
+              await matchSwitchToScene(child, expected);
+            }
+          },
+        );
+      }
     }
   }
 
@@ -140,7 +148,10 @@ export function AggressiveScenes({
           );
           return;
         case "switch":
-          await manageSwitch(entity, scene.definition as SceneDefinition);
+          await manageSwitch(
+            entity as ENTITY_STATE<PICK_ENTITY<"switch">>,
+            scene.definition,
+          );
           return;
         default:
           logger.debug({ name: entityDomain }, `so actions set for domain`);

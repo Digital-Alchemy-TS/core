@@ -64,10 +64,7 @@ export function SceneRoom({
         return false;
       }
       const current = (scenes[currentScene.state as SCENES] ?? {}) as RoomScene;
-      const definition = current.definition as Record<
-        PICK_ENTITY<"light">,
-        SceneLightState
-      >;
+      const definition = current.definition;
       if (entity_id in definition) {
         const state = definition[entity_id] as SceneLightState;
         return Object.keys(state).every(i =>

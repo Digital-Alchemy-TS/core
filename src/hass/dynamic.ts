@@ -1,8 +1,14 @@
+/* eslint-disable @typescript-eslint/no-magic-numbers */
+/* eslint-disable @cspell/spellchecker */
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable @typescript-eslint/ban-types */
-import { GenericEntityDTO, PICK_ENTITY } from "./helpers";
+// @ts-nocheck
+import { PICK_ENTITY } from "./helpers";
 
 /**
  * ## THIS FILE IS INTENDED TO BE REPLACED
+ *
+ * ! IF YOU STILL SEE THIS IN YOUR `node_modules`, run `npx type-writer`
  *
  * The purpose it to represent the configuration of Home Assistant
  *
@@ -18,11 +24,122 @@ import { GenericEntityDTO, PICK_ENTITY } from "./helpers";
  * The service definition is the switch, light, scene domains from a previously generated file.
  * These are required to make typescript happy for internal library definitions
  */
-
-export const ENTITY_SETUP: Record<
-  string,
-  Record<string, GenericEntityDTO>
-> = {};
+export const ENTITY_SETUP = {
+  binary_sensor: {
+    is_day: {
+      attributes: {
+        friendly_name: "Is day",
+      },
+      context: {
+        id: "01HNZ7RV5ZRHF4R6EVTX210Z82",
+        parent_id: null,
+        user_id: null,
+      },
+      entity_id: "binary_sensor.is_day",
+      last_changed: "2024-02-06T12:55:00.031067+00:00",
+      last_updated: "2024-02-06T12:55:00.031067+00:00",
+      state: "on",
+    },
+  },
+  calendar: {
+    personal: {
+      attributes: {
+        friendly_name: "Personal",
+        offset_reached: false,
+      },
+      context: {
+        id: "01HJYK0H8P96SCF35ZVZGXKRT0",
+        parent_id: null,
+        user_id: null,
+      },
+      entity_id: "calendar.personal",
+      last_changed: "2023-12-31T00:00:06.145302+00:00",
+      last_updated: "2023-12-31T00:05:06.454423+00:00",
+      state: "off",
+    },
+  },
+  light: {
+    womp: {
+      attributes: {
+        brightness: 255,
+        color_mode: "color_temp",
+        color_temp: 253,
+        color_temp_kelvin: 3952,
+        dynamics: "none",
+        friendly_name: "Womp",
+        hs_color: [26.835, 35.746],
+        max_color_temp_kelvin: 6535,
+        max_mireds: 500,
+        min_color_temp_kelvin: 2000,
+        min_mireds: 153,
+        mode: "normal",
+        rgb_color: [255, 204, 163],
+        supported_color_modes: ["color_temp", "xy"],
+        supported_features: 40,
+        xy_color: [0.424, 0.366],
+      },
+      context: {
+        id: "01HK0TW9610XX5C5EZWE6ZEWJ0",
+        parent_id: null,
+        user_id: "72b5dc1d14484f9bb54df2de3ab95773",
+      },
+      entity_id: "light.womp",
+      last_changed: "2023-12-31T16:23:21.270862+00:00",
+      last_updated: "2023-12-31T21:01:05.179072+00:00",
+      state: "on",
+    },
+  },
+  scene: {
+    bedroom_auto: {
+      attributes: {
+        friendly_name: "Bedroom Auto",
+      },
+      context: {
+        id: "01HK02X46S76A2C7JJMENBHF55",
+        parent_id: null,
+        user_id: "72b5dc1d14484f9bb54df2de3ab95773",
+      },
+      entity_id: "scene.bedroom_auto",
+      last_changed: "2023-12-31T14:02:06.428935+00:00",
+      last_updated: "2023-12-31T14:02:06.428935+00:00",
+      state: "2023-12-31T14:02:06.428760+00:00",
+    },
+  },
+  sensor: {
+    loft_current_scene: {
+      attributes: {
+        friendly_name: "Loft current scene",
+        managed_by: "home-automation",
+        scene: "high",
+      },
+      context: {
+        id: "01HNZE7KCPMNXAK1N6G9MWC5M4",
+        parent_id: null,
+        user_id: null,
+      },
+      entity_id: "sensor.loft_current_scene",
+      last_changed: "2024-02-06T14:47:55.030369+00:00",
+      last_updated: "2024-02-06T14:47:55.030369+00:00",
+      state: "High",
+    },
+  },
+  switch: {
+    guest_mode: {
+      attributes: {
+        friendly_name: "Guest mode",
+      },
+      context: {
+        id: "01HK1AAJ4PW4SNPBFV35EDTJME",
+        parent_id: null,
+        user_id: "72b5dc1d14484f9bb54df2de3ab95773",
+      },
+      entity_id: "switch.guest_mode",
+      last_changed: "2024-01-01T01:25:47.375385+00:00",
+      last_updated: "2024-01-01T01:31:01.142980+00:00",
+      state: "off",
+    },
+  },
+} as const;
 
 export type iCallService = {
   switch: {

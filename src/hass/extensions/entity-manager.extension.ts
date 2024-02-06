@@ -20,7 +20,6 @@ import {
   ENTITY_STATE,
   EntityHistoryDTO,
   EntityHistoryResult,
-  GenericEntityDTO,
   HASSIO_WS_COMMAND,
   PICK_ENTITY,
 } from "..";
@@ -54,10 +53,9 @@ export function EntityManager({ logger, hass }: TServiceParams) {
   /**
    * MASTER_STATE.switch.desk_light = {entity_id,state,attributes,...}
    */
-  let MASTER_STATE: Record<
-    ALL_DOMAINS,
-    Record<string, ENTITY_STATE<PICK_ENTITY>>
-  > = {};
+  let MASTER_STATE = {} as Partial<
+    Record<ALL_DOMAINS, Record<string, ENTITY_STATE<PICK_ENTITY>>>
+  >;
 
   const event = new EventEmitter();
 
@@ -164,7 +162,7 @@ export function EntityManager({ logger, hass }: TServiceParams) {
 
   function listEntities(): PICK_ENTITY[] {
     return Object.keys(MASTER_STATE).flatMap(domain =>
-      Object.keys(MASTER_STATE[domain]).map(
+      Object.keys(MASTER_STATE[domain as ALL_DOMAINS]).map(
         id => `${domain}.${id}` as PICK_ENTITY,
       ),
     );
@@ -172,7 +170,7 @@ export function EntityManager({ logger, hass }: TServiceParams) {
 
   function findByDomain<DOMAIN extends ALL_DOMAINS>(domain: DOMAIN) {
     return Object.keys(MASTER_STATE[domain] ?? {}).map(i =>
-      byId(`${domain}.${i}`),
+      byId(`${domain}.${i}` as PICK_ENTITY),
     );
   }
 
@@ -202,7 +200,7 @@ export function EntityManager({ logger, hass }: TServiceParams) {
     }
     const oldState = MASTER_STATE;
     MASTER_STATE = {};
-    const emitUpdates: GenericEntityDTO[] = [];
+    const emitUpdates: ENTITY_STATE<PICK_ENTITY>[] = [];
 
     states.forEach(entity => {
       // ? Set first, ensure data is populated
@@ -231,7 +229,7 @@ export function EntityManager({ logger, hass }: TServiceParams) {
         async entity =>
           await entityUpdateReceiver(
             entity.entity_id,
-            entity,
+            entity as ENTITY_STATE<PICK_ENTITY>,
             get(oldState, entity.entity_id),
           ),
       );

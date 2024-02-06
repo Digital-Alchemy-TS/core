@@ -134,10 +134,15 @@ export interface EntityHistoryDTO<
   type: HASSIO_WS_COMMAND.history_during_period;
 }
 
-export type EntityHistoryResult<ENTITY extends PICK_ENTITY = PICK_ENTITY> =
-  Pick<ENTITY_STATE<ENTITY>, "attributes" | "state"> & {
-    date: Date;
-  };
+export type EntityHistoryResult<
+  ENTITY extends PICK_ENTITY = PICK_ENTITY,
+  ATTRIBUTES extends object = object,
+> = Pick<
+  ENTITY_STATE<ENTITY> & { attributes: ATTRIBUTES },
+  "attributes" | "state"
+> & {
+  date: Date;
+};
 
 export type SOCKET_MESSAGES = { id?: number } & (
   | FindRelatedDTO

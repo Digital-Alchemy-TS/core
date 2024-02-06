@@ -23,7 +23,7 @@ export type tSceneType<ENTITY extends PICK_ENTITY<SceneAwareDomains>> =
   EntitySceneType<GetDomain<ENTITY>>;
 
 export type tScene = {
-  [key: PICK_ENTITY<SceneAwareDomains>]: tSceneType<typeof key>;
+  [key in PICK_ENTITY<SceneAwareDomains>]: tSceneType<key>;
 };
 export type SceneDescription<RoomNames extends string = string> = {
   global: string[];
@@ -65,9 +65,9 @@ type MappedDomains = {
 };
 
 export type SceneDefinition = {
-  [entity_id: PICK_ENTITY<keyof MappedDomains>]: MappedDomains[GetDomain<
-    typeof entity_id
-  >];
+  [entity_id in PICK_ENTITY<
+    keyof MappedDomains
+  >]: MappedDomains[GetDomain<entity_id>];
 };
 
 export type SceneList<SCENES extends string> = Record<
@@ -92,7 +92,7 @@ export type RoomConfiguration<SCENES extends string> = {
   scenes: Record<SCENES, RoomScene>;
 };
 
-export type RoomScene = {
+export type RoomScene<DEFINITION extends SceneDefinition = SceneDefinition> = {
   /**
    * Ensure entities are maintained as the scene says they should be
    *
@@ -113,7 +113,5 @@ export type RoomScene = {
    * Human understandable description of this scene (short form)
    */
   friendly_name?: string;
-  definition: Partial<
-    Record<PICK_ENTITY<AllowedSceneDomains>, SceneDefinition>
-  >;
+  definition: DEFINITION;
 };

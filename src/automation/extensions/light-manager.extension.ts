@@ -58,19 +58,22 @@ export function LightManager({
     if (performedUpdate) {
       return;
     }
-    if (!is.empty(entity.attributes.entity_id)) {
-      await each(entity.attributes.entity_id, async child_id => {
-        const child = hass.entity.byId(child_id);
-        if (!child) {
-          logger.warn(
-            `%s => %s child entity of group cannot be found`,
-            entity_id,
-            child_id,
-          );
-          return;
-        }
-        await matchToScene(child, expected);
-      });
+    if ("entity_id" in entity.attributes) {
+      const list = entity.attributes.entity_id as PICK_ENTITY<"light">[];
+      if (is.array(list) && !is.empty(list)) {
+        await each(list, async child_id => {
+          const child = hass.entity.byId(child_id);
+          if (!child) {
+            logger.warn(
+              `%s => %s child entity of group cannot be found`,
+              entity_id,
+              child_id,
+            );
+            return;
+          }
+          await matchToScene(child, expected);
+        });
+      }
     }
   }
 

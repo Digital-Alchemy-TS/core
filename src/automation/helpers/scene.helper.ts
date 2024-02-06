@@ -64,11 +64,11 @@ type MappedDomains = {
   switch: SceneSwitchState;
 };
 
-export type SceneDefinition = {
+export type SceneDefinition = Partial<{
   [entity_id in PICK_ENTITY<
     keyof MappedDomains
   >]: MappedDomains[GetDomain<entity_id>];
-};
+}>;
 
 export type SceneList<SCENES extends string> = Record<
   SCENES,

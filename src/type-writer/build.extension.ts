@@ -1,6 +1,5 @@
 import { existsSync, writeFileSync } from "fs";
 import { set } from "object-path";
-import { homedir } from "os";
 import { join } from "path";
 
 import { TServiceParams } from "../boilerplate";
@@ -17,7 +16,7 @@ export function BuildTypes({
   lifecycle.onReady(async () => {
     try {
       const path = is.empty(config.type_writer.TARGET_FILE)
-        ? join(homedir(), "output.d.ts")
+        ? join(__dirname, "..", "hass", "dynamic.d.ts")
         : config.type_writer.TARGET_FILE;
       if (!existsSync(path)) {
         if (config.type_writer.TARGET_FILE !== path) {

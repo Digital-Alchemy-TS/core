@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { CreateApplication } from "../boilerplate";
 import { LIB_HASS } from "../hass";
 import { BuildTypes } from "./build.extension";

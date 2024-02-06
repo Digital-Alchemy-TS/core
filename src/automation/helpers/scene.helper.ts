@@ -113,5 +113,7 @@ export type RoomScene = {
    * Human understandable description of this scene (short form)
    */
   friendly_name?: string;
-  definition: Record<PICK_ENTITY<AllowedSceneDomains>, SceneDefinition>;
+  definition: Partial<
+    Record<PICK_ENTITY<AllowedSceneDomains>, SceneDefinition>
+  >;
 };

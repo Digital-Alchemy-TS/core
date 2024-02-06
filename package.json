@@ -1,12 +1,11 @@
 {
   "name": "@zoe-codez/zcc",
   "repository": "https://github.com/zoe-codez/zcc",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe"
   },
-  "main": "./dist/index.js",
   "publishConfig": {
     "registry": "https://npm.pkg.github.com/"
   },
@@ -16,6 +15,14 @@
     "prepublishOnly": "npm run build",
     "dev:type-writer": "nodemon --watch 'src/**' --ext 'ts' --ignore 'src/**/*.spec.ts' --exec 'ts-node src/type-writer/main.ts'",
     "test": "echo 'Error: no test specified' && exit 1"
+  },
+  "exports": {
+    ".": "./dist/index.js",
+    "./hass": "./dist/hass/index.js",
+    "./mqtt": "./dist/mqtt/index.js",
+    "./server": "./dist/server/index.js",
+    "./synapse": "./dist/synapse/index.js",
+    "./automation": "./dist/automation/index.js"
   },
   "bin": {
     "type-writer": "./dist/type-writer/main.js"

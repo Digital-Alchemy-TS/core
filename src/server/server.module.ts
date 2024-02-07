@@ -34,6 +34,11 @@ export const LIB_SERVER = CreateLibrary({
         "This sets the maximum time in milliseconds that a socket can remain idle after sending a response. ",
       type: "number",
     },
+    LISTEN_HOST: {
+      default: "0.0.0.0",
+      description: "Address to listen on for fastify",
+      type: "string",
+    },
     PORT: {
       default: 7000,
       description: "Set to value > 0 to enable",

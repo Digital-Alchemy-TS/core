@@ -47,8 +47,9 @@ export function Server_Bindings({
     registerMetrics();
     const port = config.server.PORT;
     if (port) {
-      logger.info({ port }, `server listen`);
-      await httpServer.listen({ port });
+      const options = { host: config.server.LISTEN_HOST, port };
+      logger.info(options, `server listen`);
+      await httpServer.listen(options);
     }
   });
 

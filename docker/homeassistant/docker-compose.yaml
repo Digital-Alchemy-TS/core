@@ -1,0 +1,9 @@
+---
+services:
+  homeassistant:
+    container_name: zcc_home_assistant
+    image: homeassistant/home-assistant:2024.1
+    network_mode: "host"
+    volumes:
+      - ./config:/config
+    restart: unless-stopped

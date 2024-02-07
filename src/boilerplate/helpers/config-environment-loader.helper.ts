@@ -95,6 +95,5 @@ export async function ConfigLoaderEnvironment(
       }
     });
   });
-  // console.log(out);
   return out;
 }

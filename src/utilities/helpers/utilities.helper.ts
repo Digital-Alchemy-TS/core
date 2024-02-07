@@ -100,5 +100,5 @@ export function PEAT<T = number>(length: number, fill?: T): T[] {
   );
 }
 
-export type TBlackHole = void | unknown | Promise<void | unknown>;
+export type TBlackHole = unknown;
 export type TAnyFunction = (...data: unknown[]) => TBlackHole;

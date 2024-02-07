@@ -48,25 +48,29 @@ export function WebsocketAPI({
     if (config.hass.SOCKET_AUTO_CONNECT) {
       logger.debug(`Auto starting connection`);
       await init();
+      attachScheduledFunctions();
     }
   });
 
-  // Set up intervals
-  scheduler.interval({
-    context,
-    exec: async () => await ping(),
-    interval: PING_INTERVAL * SECOND,
-  });
-  scheduler.interval({
-    context,
-    exec: () => {
-      const now = Date.now();
-      MESSAGE_TIMESTAMPS = MESSAGE_TIMESTAMPS.filter(
-        time => time > now - SECOND,
-      );
-    },
-    interval: CLEANUP_INTERVAL * SECOND,
-  });
+  function attachScheduledFunctions() {
+    logger.trace(`Attaching interval schedules`);
+    // Set up intervals
+    scheduler.interval({
+      context,
+      exec: async () => await ping(),
+      interval: PING_INTERVAL * SECOND,
+    });
+    scheduler.interval({
+      context,
+      exec: () => {
+        const now = Date.now();
+        MESSAGE_TIMESTAMPS = MESSAGE_TIMESTAMPS.filter(
+          time => time > now - SECOND,
+        );
+      },
+      interval: CLEANUP_INTERVAL * SECOND,
+    });
+  }
 
   lifecycle.onShutdownStart(async () => {
     logger.debug(`shutdown - tearing down connection`);

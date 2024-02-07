@@ -7,7 +7,6 @@ import { Counter, Summary } from "prom-client";
 import {
   DOWN,
   is,
-  noop,
   TBlackHole,
   TContext,
   UP,
@@ -101,7 +100,6 @@ let logger: ILogger;
 const COERCE_CONTEXT = (context: string): TContext => context as TContext;
 const WIRING_CONTEXT = COERCE_CONTEXT("boilerplate:wiring");
 const NONE = -1;
-const FILE_CONTEXT = COERCE_CONTEXT(`boilerplate:Loader`);
 // (re)defined at bootstrap
 export let LIB_BOILERPLATE: ReturnType<typeof CreateBoilerplate>;
 // exporting a let makes me feel dirty inside
@@ -190,9 +188,9 @@ function CreateBoilerplate() {
         type: "string",
       },
       LOG_LEVEL: {
-        default: "info",
+        default: "trace",
         description: "Minimum log level to process",
-        enum: ["silent", "info", "warn", "debug", "error"],
+        enum: ["silent", "trace", "info", "warn", "debug", "error"],
         type: "string",
       } as StringConfig<Level>,
       LOG_METRICS: {
@@ -335,7 +333,7 @@ async function WireService(
   const mappings = MODULE_MAPPINGS.get(project) ?? {};
   if (!is.undefined(mappings[service])) {
     throw new BootstrapException(
-      FILE_CONTEXT,
+      WIRING_CONTEXT,
       "DUPLICATE_SERVICE_NAME",
       `${service} is already defined for ${project}`,
     );
@@ -379,7 +377,6 @@ async function WireService(
     // Doubling up on errors to be extra noisy for now, might back off to single later
     logger?.fatal({ error, name: context }, `Initialization error`);
     // eslint-disable-next-line no-console
-    console.log(error);
     ZCC_Testing.FailFast();
     return undefined;
   }
@@ -442,14 +439,23 @@ async function Bootstrap<
     // ~ scheduler (for injecting into other modules)
     scheduler = LOADED_MODULES.get(LIB_BOILERPLATE.name)
       .scheduler as TScheduler;
+    logger = ZCC.logger.context(WIRING_CONTEXT);
+    logger.info(`[boilerplate] wiring complete`);
 
     // * Wire in various shutdown events
-    processEvents.forEach((callback, event) => process.on(event, callback));
+    processEvents.forEach((callback, event) => {
+      process.on(event, callback);
+      logger.trace({ event }, "Shutdown event");
+    });
 
     // * Add in libraries
     application.libraries ??= [];
-    await eachSeries(application.libraries, async i => await i[WIRE_PROJECT]());
+    await eachSeries(application.libraries, async i => {
+      logger.info(`[%s] init project`, i.name);
+      await i[WIRE_PROJECT]();
+    });
 
+    logger.info(`init application`);
     // * Finally the application
     await application[WIRE_PROJECT]();
 
@@ -459,27 +465,24 @@ async function Bootstrap<
     }
 
     // - Kick off lifecycle
-    await noop();
+    logger.debug(`[PreInit] running lifecycle callbacks`);
     await RunStageCallbacks("PreInit");
-    await noop();
     // - Pull in user configurations
+    logger.debug("Loading configuration");
     await CfgManager()[INITIALIZE](application);
-    await noop();
     // - Run through other events in order
+    logger.debug(`[PostConfig] running lifecycle callbacks`);
     await RunStageCallbacks("PostConfig");
-    await noop();
+    logger.debug(`[Bootstrap] running lifecycle callbacks`);
     await RunStageCallbacks("Bootstrap");
-    await noop();
+    logger.debug(`[Ready] running lifecycle callbacks`);
     await RunStageCallbacks("Ready");
-    await noop();
 
     // * App is ready!
-    // logger.info(`application booted!`);
+    logger.info(`🪄 [%s] application bootstrapped`, application.name);
     ACTIVE_APPLICATION = application;
   } catch (error) {
     logger?.fatal({ application, error }, "Bootstrap failed");
-    // eslint-disable-next-line no-console
-    console.error(error);
     ZCC_Testing.FailFast();
   }
 }

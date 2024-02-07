@@ -31,7 +31,6 @@ export function BuildTypes({
       writeFileSync(path, text);
       logger.info(`successfully wrote hass type definitions file`);
     } catch (error) {
-      console.error(error);
       logger.fatal({ error }, `failed to write type definitions file`);
     }
   });
@@ -39,8 +38,7 @@ export function BuildTypes({
   // see file - libs/home-assistant/src/dynamic.ts
   async function DoBuild() {
     logger.info(`Pulling information`);
-    // console.log({ hass, type_writer });
-    const typeInterface = await type_writer.typeWriter();
+    const typeInterface = await type_writer.type_writer();
     const entities = await hass.fetch.getAllEntities();
     const entitySetup = {};
     entities.forEach(i => set(entitySetup, i.entity_id, i));

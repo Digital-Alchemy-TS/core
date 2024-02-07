@@ -10,7 +10,7 @@ import {
   SCHEDULE_EXECUTION_TIME,
   SchedulerOptions,
   TServiceParams,
-} from "..";
+} from "../helpers";
 
 export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
   const stop = new Set<() => TBlackHole>();
@@ -43,7 +43,10 @@ export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
             labels: { context, label },
           }),
       );
-      lifecycle.onReady(() => cronJob.start());
+      lifecycle.onReady(() => {
+        logger.warn("Start cron");
+        cronJob.start();
+      });
 
       const stopFunction = () => {
         logger.debug({ context, label, schedule }, `stopping schedule`);
@@ -67,6 +70,8 @@ export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
   }: SchedulerOptions & { interval: number }) {
     let runningInterval: ReturnType<typeof setInterval>;
     lifecycle.onReady(() => {
+      logger.warn({ context }, "start interval");
+
       runningInterval = setInterval(
         async () =>
           await ZCC.safeExec({

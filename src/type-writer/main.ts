@@ -16,14 +16,14 @@ export const TYPE_WRITER = CreateApplication({
   name: "type_writer",
   services: {
     build: BuildTypes,
-    typeWriter: TypeWriter,
+    type_writer: TypeWriter,
   },
 });
 setImmediate(async () => {
   await TYPE_WRITER.bootstrap({
     configuration: {
       boilerplate: {
-        LOG_LEVEL: "debug",
+        LOG_LEVEL: "trace",
       },
       hass: {
         CALL_PROXY_AUTO_SCAN: false,

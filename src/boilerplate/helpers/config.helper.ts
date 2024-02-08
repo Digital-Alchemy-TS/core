@@ -24,12 +24,10 @@ export interface BaseConfig {
   default?: unknown;
   /**
    * Short descriptive text so humans can understand why this exists.
-   * Ideally should fit on a single line
    */
-  description?: string;
+  description?: string | string[];
   /**
    * Refuse to boot if user provided value is not present.
-   * This value cannot be defaulted, and it is absolutely required in order to do anything
    */
   required?: boolean;
 

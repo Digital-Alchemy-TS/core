@@ -1,21 +1,25 @@
 import { InternalError, TServiceParams } from "../../boilerplate";
 import { PICK_ENTITY } from "../../hass";
 import { is, TContext } from "../../utilities";
-import { Icon, OnOff } from "..";
+import { MaterialIcon, MaterialIconTags, OnOff } from "..";
 
-type TBinarySensor = {
+type TBinarySensor<TAG extends MaterialIconTags = MaterialIconTags> = {
   context: TContext;
   defaultState?: OnOff;
-  icon?: Icon;
+  icon?: MaterialIcon<TAG>;
   id: string;
   name?: string;
 };
 
 const CACHE_KEY = (key: string) => `binary_sensor_state_cache:${key}`;
 
-export type VirtualBinarySensor = {
+export type VirtualBinarySensor<
+  TAG extends MaterialIconTags = MaterialIconTags,
+> = {
   state: OnOff;
   entity_id: PICK_ENTITY<"binary_sensor">;
+  name: string;
+  icon: MaterialIcon<TAG>;
   on: boolean;
 };
 
@@ -24,16 +28,30 @@ export function BinarySensor({
   cache,
   context,
   lifecycle,
+  server,
+  synapse,
 }: TServiceParams) {
-  const registry = new Map<string, TBinarySensor>();
-  let available = false;
+  const registry = new Map<PICK_ENTITY<"binary_sensor">, VirtualBinarySensor>();
+  lifecycle.onBootstrap(() => BindHTTP());
 
-  lifecycle.onBootstrap(() => {
-    available = true;
-  });
+  function BindHTTP() {
+    const fastify = server.bindings.httpServer;
 
-  function create(sensor: TBinarySensor) {
-    if (is.empty(sensor.id)) {
+    // # Describe the current situation
+    fastify.get("/synapse/binary_sensor", synapse.http.validation, () => {
+      logger.trace(`list binary sensors`);
+      return {
+        binary_sensors: [...registry.values()],
+      };
+    });
+  }
+
+  // # Binary sensor entity creation function
+  function create<TAG extends MaterialIconTags = MaterialIconTags>(
+    sensor: TBinarySensor<TAG>,
+  ) {
+    // ## Validate a good id was passed, and it's the only place in code that's using it
+    if (!is.domain(sensor.id, "binary_sensor")) {
       throw new InternalError(context, "INVALID_ID", "id is required");
     }
     if (registry.has(sensor.id)) {
@@ -43,27 +61,27 @@ export function BinarySensor({
         "sensor id is already in use",
       );
     }
-    logger.debug({ sensor }, `create sensor`);
-    registry.set(sensor.id, sensor);
-
+    logger.debug({ sensor }, `create binary sensor`);
     let state: OnOff;
 
+    // ## Handle state updates. Ignore non-updates
     async function setState(newState: OnOff) {
       state = newState;
-      await cache.set(CACHE_KEY(sensor.id), state);
+      setImmediate(async () => {
+        await cache.set(CACHE_KEY(sensor.id), state);
+      });
     }
 
-    async function loadValue() {
+    // ## Wait until bootstrap to load cache
+    lifecycle.onBootstrap(async () => {
       state = await cache.get(
         CACHE_KEY(sensor.id),
         sensor.defaultState ?? "off",
       );
-    }
-    if (available) {
-      setImmediate(async () => await loadValue());
-    }
+    });
 
-    return new Proxy({} as VirtualBinarySensor, {
+    // ## Proxy object as return
+    const out = new Proxy({} as VirtualBinarySensor, {
       get(_, property: keyof VirtualBinarySensor) {
         if (property === "state") {
           return state;
@@ -71,19 +89,30 @@ export function BinarySensor({
         if (property === "on") {
           return state === "on";
         }
+        if (property === "icon") {
+          return sensor.icon;
+        }
+        if (property === "name") {
+          return sensor.name;
+        }
         if (property === "entity_id") {
-          return `binary_sensor.${sensor.id}`;
+          return sensor.id;
         }
         return undefined;
       },
-      set(_, property: keyof VirtualBinarySensor, value: OnOff) {
+      set(_, property: keyof VirtualBinarySensor, value: unknown) {
         if (property === "state") {
-          setImmediate(async () => await setState(value));
+          setState(value as OnOff);
           return true;
+        }
+        if (property === "on") {
+          setState(value ? "on" : "off");
         }
         return false;
       },
     });
+    registry.set(sensor.id, out);
+    return out;
   }
 
   return create;

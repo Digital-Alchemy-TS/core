@@ -10,7 +10,7 @@ import {
   MaterialIconTags,
 } from "..";
 
-type TButton<TAG extends MaterialIconTags = MaterialIconTags> = {
+type TScene<TAG extends MaterialIconTags = MaterialIconTags> = {
   exec: () => TBlackHole;
   context: TContext;
   label?: string;
@@ -19,32 +19,32 @@ type TButton<TAG extends MaterialIconTags = MaterialIconTags> = {
   name?: string;
 };
 
-export function Button({
+export function Scene({
   logger,
   lifecycle,
   server,
   synapse,
   context: parentContext,
 }: TServiceParams) {
-  const registry = new Map<PICK_ENTITY<"button">, TButton>();
+  const registry = new Map<PICK_ENTITY<"scene">, TScene>();
   lifecycle.onBootstrap(() => BindHTTP());
 
   function BindHTTP() {
     const fastify = server.bindings.httpServer;
     // # Receive button press
     fastify.post<{
-      Body: { button: PICK_ENTITY<"button"> };
-    }>(`/synapse/button`, synapse.http.validation, async function (request) {
-      const button = request.body.button;
-      if (!registry.has(button)) {
+      Body: { scene: PICK_ENTITY<"scene"> };
+    }>(`/synapse/scene`, synapse.http.validation, async function (request) {
+      const scene = request.body.scene;
+      if (!registry.has(scene)) {
         throw new BadRequestError(
           parentContext,
-          "INVALID_BUTTON",
-          `${button} is not registered`,
+          "INVALID_SCENE",
+          `${scene} is not registered`,
         );
       }
-      logger.debug({ button }, `received button press`);
-      const { exec, context, label } = registry.get(button);
+      logger.debug({ button: scene }, `Received scene press`);
+      const { exec, context, label } = registry.get(scene);
       setImmediate(async () => {
         await ZCC.safeExec({
           duration: BUTTON_EXECUTION_TIME,
@@ -57,34 +57,31 @@ export function Button({
       return GENERIC_SUCCESS_RESPONSE;
     });
 
-    // # List buttons
-    fastify.get("/synapse/button", synapse.http.validation, () => {
-      logger.trace(`list buttons`);
-      return {
-        buttons: [...registry.values()].map(({ icon, id, name }) => {
-          return { icon, id, name };
-        }),
-      };
-    });
+    // # List scene
+    fastify.get("/synapse/scene", synapse.http.validation, () => ({
+      scenes: [...registry.values()].map(({ icon, id, name }) => {
+        return { icon, id, name };
+      }),
+    }));
   }
 
   /**
-   *  # Register a new button
+   *  # Register a new scene
    */
   function create<TAG extends MaterialIconTags = MaterialIconTags>(
-    entity: TButton<TAG>,
+    entity: TScene<TAG>,
   ) {
-    if (!is.domain(entity.id, "button")) {
+    if (!is.domain(entity.id, "scene")) {
       throw new InternalError(
         parentContext,
         "INVALID_ID",
-        "pass an entity id with a button domain",
+        "pass an entity id with a scene domain",
       );
     }
     if (registry.has(entity.id)) {
       throw new InternalError(
         parentContext,
-        "DUPLICATE_BUTTON",
+        "DUPLICATE_SCENE",
         `${entity.id} is already in use`,
       );
     }

@@ -6,14 +6,13 @@ import voluptuous as vol
 
 
 from .api import ZccApi
-from .const import CONF_BASE_URL, CONF_ADMIN_KEY, CONF_WEBHOOK_ID, DOMAIN
+from .const import CONF_BASE_URL, CONF_ADMIN_KEY, DOMAIN
 from .webhook import handle_webhook
 
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
         vol.Required(CONF_BASE_URL): cv.url,
         vol.Required(CONF_ADMIN_KEY): cv.string,
-        vol.Required(CONF_WEBHOOK_ID): cv.string,
     })
 }, extra=vol.ALLOW_EXTRA)
 
@@ -22,7 +21,6 @@ async def async_setup(hass: HomeAssistant, config):
     conf = config[DOMAIN]
     base_url = conf[CONF_BASE_URL]
     admin_key = conf[CONF_ADMIN_KEY]
-    webhook_id = conf[CONF_WEBHOOK_ID]
 
     # Initialize the API and store it for shared access
     api = ZccApi(hass, base_url, admin_key)
@@ -31,6 +29,7 @@ async def async_setup(hass: HomeAssistant, config):
     hass.data[DOMAIN]['api'] = api
     hass.data[DOMAIN]['health_status'] = True
     hass.data[DOMAIN]['admin_key'] = admin_key
+    hass.data[DOMAIN]['service_data'] = await api.application_data()
 
     hass.async_create_task(
         hass.helpers.discovery.async_load_platform('binary_sensor', DOMAIN, None, config)

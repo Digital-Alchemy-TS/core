@@ -41,6 +41,20 @@ export const ENTITY_SETUP = {
       state: "on",
     },
   },
+  button: {
+    click_me: {
+      attributes: {
+        friendly_name: "Click me",
+      },
+      context: {
+        id: "01HNZ7RV5ZRHF4R6EVTX210Z83",
+        parent_id: null,
+        user_id: null,
+      },
+      entity_id: "button.click_me",
+      last_changed: "2024-02-06T12:55:00.031068+00:00",
+    },
+  },
   calendar: {
     personal: {
       attributes: {

@@ -1,4 +1,4 @@
 export * from "./device-class.helper";
-export * from "./generate.helper";
-export * from "./template.helper";
+export * from "./icon.helper";
+export * from "./metrics.helper";
 export * from "./utility.helper";

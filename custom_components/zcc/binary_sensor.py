@@ -12,8 +12,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     api = hass.data[DOMAIN]['api']
 
     # Fetch service data to create a meaningful sensor name
-    service_data = await api.service_data()
-    service_name = service_data['name']
+    service_name = hass.data[DOMAIN]['service_data']['name']
     sensor_name = f"{service_name}_is_online"
     sensor = HealthCheckSensor(api, sensor_name)
 

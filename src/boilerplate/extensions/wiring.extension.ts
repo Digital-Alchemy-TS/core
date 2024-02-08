@@ -297,7 +297,7 @@ export function CreateApplication<
   priorityInit,
 }: ApplicationConfigurationOptions<S, C>) {
   const lifecycle = CreateChildLifecycle();
-  const out = {
+  const application = {
     [WIRE_PROJECT]: async () => {
       LOADED_LIFECYCLES.set(name, lifecycle);
       CfgManager()[LOAD_PROJECT](name as keyof LoadedModules, configuration);
@@ -309,7 +309,7 @@ export function CreateApplication<
       );
       return lifecycle;
     },
-    bootstrap: async options => await Bootstrap(out, options),
+    bootstrap: async options => await Bootstrap(application, options),
     configuration,
     libraries,
     lifecycle,
@@ -319,7 +319,7 @@ export function CreateApplication<
     services,
     teardown: async () => await Teardown(),
   } as ZCCApplicationDefinition<S, C>;
-  return out;
+  return application;
 }
 
 // # Wiring
@@ -425,6 +425,8 @@ async function Bootstrap<
   try {
     // * Recreate base eventemitter
     ZCC.event = new EventEmitter();
+    // ? Some libraries need to be aware of
+    ZCC.application = application;
 
     // * Generate a new boilerplate module
     LIB_BOILERPLATE = CreateBoilerplate();
@@ -619,6 +621,15 @@ declare module "../../utilities" {
   }
   // ## ZCC
   export interface ZCCDefinition {
+    /**
+     * In case something needs to grab details about the app
+     *
+     * Abnormal operation
+     */
+    application: ZCCApplicationDefinition<
+      ServiceMap,
+      OptionalModuleConfiguration
+    >;
     safeExec: <LABELS extends BaseLabels>(
       options: (() => TBlackHole) | SafeExecOptions<LABELS>,
     ) => Promise<void>;

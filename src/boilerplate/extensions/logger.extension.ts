@@ -2,7 +2,7 @@
 import { pino } from "pino";
 import { inspect } from "util";
 
-import { is, TContext, ZCC } from "../../utilities";
+import { is, TContext, ZCC } from "../..";
 import { TServiceParams } from "..";
 
 export type TLoggerFunction =

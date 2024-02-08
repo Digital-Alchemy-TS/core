@@ -1,7 +1,7 @@
 import { eachSeries } from "async";
 import { get, set } from "object-path";
 
-import { deepExtend, DOWN, is, TContext, UP, ZCC } from "../../utilities";
+import { deepExtend, DOWN, is, TContext, UP, ZCC } from "../..";
 import {
   BootstrapException,
   CodeConfigDefinition,

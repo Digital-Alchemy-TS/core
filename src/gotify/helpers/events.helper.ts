@@ -1,4 +1,4 @@
-import { TContext } from "../../utilities";
+import { TContext } from "../..";
 
 export const GOTIFY_NOTIFICATION_SENT = "GOTIFY_NOTIFICATION_SENT";
 export type GotifyNotificationSentData = {

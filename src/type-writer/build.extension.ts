@@ -2,8 +2,7 @@ import { existsSync, writeFileSync } from "fs";
 import { set } from "object-path";
 import { join } from "path";
 
-import { TServiceParams } from "../boilerplate";
-import { is } from "../utilities";
+import { is, TServiceParams } from "..";
 
 export function BuildTypes({
   logger,

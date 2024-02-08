@@ -1,5 +1,4 @@
-import { TServiceParams } from "../../boilerplate";
-import { HALF, SECOND, sleep } from "../../utilities";
+import { HALF, SECOND, sleep, TServiceParams } from "../..";
 import { BackupResponse, HASSIO_WS_COMMAND, HomeAssistantBackup } from "..";
 
 export function Utilities({ logger, hass }: TServiceParams) {

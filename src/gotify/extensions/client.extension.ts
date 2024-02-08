@@ -1,5 +1,5 @@
-import { TServiceParams } from "../../boilerplate";
-import { Client } from "../helpers";
+import { TServiceParams } from "../..";
+import { Client } from "..";
 
 export function GotifyClient({ logger, gotify }: TServiceParams) {
   return {

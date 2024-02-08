@@ -1,7 +1,14 @@
 import { exit } from "process";
 
-import { InternalError, TServiceParams } from "../../boilerplate";
-import { INCREMENT, is, SECOND, sleep, START } from "../../utilities";
+import {
+  INCREMENT,
+  InternalError,
+  is,
+  SECOND,
+  sleep,
+  START,
+  TServiceParams,
+} from "../..";
 import {
   ALL_DOMAINS,
   HASSIO_WS_COMMAND,

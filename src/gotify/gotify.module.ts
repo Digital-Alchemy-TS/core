@@ -1,4 +1,4 @@
-import { CreateLibrary } from "../boilerplate";
+import { CreateLibrary } from "..";
 import { GotifyApplication, GotifyClient, GotifyFetch } from "./extensions";
 import { GotifyMessage } from "./extensions";
 

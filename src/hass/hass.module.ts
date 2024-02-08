@@ -1,5 +1,11 @@
-import { CreateLibrary } from "../boilerplate";
-import { CallProxy, EntityManager, FetchAPI, Utilities, WebsocketAPI } from ".";
+import { CreateLibrary } from "..";
+import {
+  CallProxy,
+  EntityManager,
+  FetchAPI,
+  Utilities,
+  WebsocketAPI,
+} from "./extensions";
 
 export const LIB_HASS = CreateLibrary({
   configuration: {

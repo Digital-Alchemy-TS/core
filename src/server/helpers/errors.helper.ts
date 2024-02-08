@@ -1,4 +1,4 @@
-import { TContext } from "../../utilities";
+import { TContext } from "../..";
 
 export class BadRequestError extends Error {
   context: TContext;

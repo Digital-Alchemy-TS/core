@@ -1,7 +1,7 @@
 import Bottleneck from "bottleneck";
 import { MergeExclusive } from "type-fest";
 
-import { is, TContext } from "../../utilities";
+import { is, TContext } from "../..";
 
 /**
  * Defines the types of parameters that can be used in fetch requests.

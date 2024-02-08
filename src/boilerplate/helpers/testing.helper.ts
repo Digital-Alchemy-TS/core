@@ -6,7 +6,7 @@ import { homedir } from "os";
 import { extname, join } from "path";
 import { cwd } from "process";
 
-import { is, SINGLE, ZCC_Testing } from "../../utilities";
+import { is, SINGLE, ZCC_Testing } from "../..";
 
 export const TESTING_APP_NAME = "zcc-unit-tests";
 

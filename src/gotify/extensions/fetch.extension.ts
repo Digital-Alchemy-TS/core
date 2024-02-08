@@ -1,9 +1,4 @@
-import {
-  FilteredFetchArguments,
-  TFetchBody,
-  TServiceParams,
-} from "../../boilerplate";
-import { ZCC } from "../../utilities";
+import { FilteredFetchArguments, TFetchBody, TServiceParams, ZCC } from "../..";
 
 export function GotifyFetch({ context, config }: TServiceParams) {
   const fetcher = ZCC.createFetcher({ context }).fetch;

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 import { createClient } from "redis";
 
-import { is, SECOND } from "../../utilities";
+import { is, SECOND } from "../..";
 import { ICacheDriver } from "..";
 import {
   REDIS_ERROR_COUNT,

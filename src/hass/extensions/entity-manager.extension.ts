@@ -4,7 +4,6 @@ import { EventEmitter } from "node-cache";
 import { get, set } from "object-path";
 import { Get } from "type-fest";
 
-import { TServiceParams } from "../../boilerplate";
 import {
   INCREMENT,
   is,
@@ -13,8 +12,9 @@ import {
   START,
   TAnyFunction,
   TBlackHole,
+  TServiceParams,
   ZCC_Testing,
-} from "../../utilities";
+} from "../..";
 import {
   ALL_DOMAINS,
   ENTITY_STATE,

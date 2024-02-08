@@ -1,6 +1,6 @@
 import { Get } from "type-fest";
 
-import { is, TBlackHole } from "../../utilities";
+import { is, TBlackHole } from "../..";
 import { ENTITY_SETUP, iCallService } from "../dynamic";
 import { HassEntityContext } from ".";
 

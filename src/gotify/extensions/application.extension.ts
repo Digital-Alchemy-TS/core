@@ -1,4 +1,4 @@
-import { TServiceParams } from "../../boilerplate";
+import { TServiceParams } from "../..";
 import { Application, ApplicationParameters, Message } from "../helpers";
 
 export function GotifyApplication({ logger, gotify }: TServiceParams) {

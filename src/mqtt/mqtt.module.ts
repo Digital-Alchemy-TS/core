@@ -1,7 +1,7 @@
 import { IClientOptions } from "mqtt";
 
-import { CreateLibrary } from "../boilerplate";
-import { MQTT_Bindings } from ".";
+import { CreateLibrary } from "..";
+import { MQTT_Bindings } from "./extensions";
 
 export const LIB_MQTT = CreateLibrary({
   configuration: {

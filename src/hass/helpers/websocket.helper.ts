@@ -1,6 +1,6 @@
 import { Dayjs } from "dayjs";
 
-import { TBlackHole, TContext } from "../../utilities";
+import { TBlackHole, TContext } from "../..";
 import { HASSIO_WS_COMMAND, HassSocketMessageTypes } from "./constants.helper";
 import { HassEventDTO } from "./entity-state.helper";
 import { ALL_DOMAINS, ENTITY_STATE, PICK_ENTITY } from "./utility.helper";

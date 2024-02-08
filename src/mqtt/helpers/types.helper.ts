@@ -1,6 +1,6 @@
 import { Packet } from "mqtt";
 
-import { TBlackHole, TContext } from "../../utilities";
+import { TBlackHole, TContext } from "../..";
 
 export type MqttMessageTransformer = (payload: Buffer) => unknown;
 

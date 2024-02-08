@@ -1,13 +1,18 @@
 import dayjs from "dayjs";
 
 import {
+  DOWN,
   FilteredFetchArguments,
+  is,
+  NO_CHANGE,
+  SECOND,
   TDownload,
   TFetch,
   TFetchBody,
   TServiceParams,
-} from "../../boilerplate";
-import { DOWN, is, NO_CHANGE, SECOND, UP, ZCC } from "../../utilities";
+  UP,
+  ZCC,
+} from "../..";
 import {
   CalendarEvent,
   CalendarFetchOptions,

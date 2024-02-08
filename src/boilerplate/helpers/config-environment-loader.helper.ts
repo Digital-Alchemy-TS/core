@@ -1,7 +1,7 @@
 import minimist from "minimist";
 import { set } from "object-path";
 
-import { is } from "../../utilities";
+import { is } from "../..";
 import {
   AbstractConfig,
   ConfigLoaderReturn,

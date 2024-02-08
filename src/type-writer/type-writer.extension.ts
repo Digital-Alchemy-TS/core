@@ -15,9 +15,8 @@ import {
   TypeNode,
 } from "typescript";
 
-import { TServiceParams } from "../boilerplate";
+import { DOWN, is, TServiceParams, UP } from "..";
 import { ServiceListFieldDescription, ServiceListServiceTarget } from "../hass";
-import { DOWN, is, UP } from "../utilities";
 
 const printer = createPrinter({ newLine: NewLineKind.LineFeed });
 const resultFile = createSourceFile(

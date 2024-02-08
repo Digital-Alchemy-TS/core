@@ -1,4 +1,4 @@
-import { is } from "../../utilities";
+import { is } from "../..";
 import { ServiceMap, ZCCApplicationDefinition } from "./wiring.helper";
 
 export type CodeConfigDefinition = Record<string, AnyConfig>;

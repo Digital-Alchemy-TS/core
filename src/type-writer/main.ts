@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { CreateApplication } from "../boilerplate";
+import { CreateApplication } from "..";
 import { LIB_HASS } from "../hass";
 import { IconGeneratorExtension } from "../synapse";
 import { BuildTypes } from "./build.extension";

@@ -4,15 +4,7 @@ import { Level } from "pino";
 import { exit } from "process";
 import { Counter, Summary } from "prom-client";
 
-import {
-  DOWN,
-  is,
-  TBlackHole,
-  TContext,
-  UP,
-  ZCC,
-  ZCC_Testing,
-} from "../../utilities";
+import { DOWN, is, TBlackHole, TContext, UP, ZCC, ZCC_Testing } from "../..";
 import {
   ApplicationConfigurationOptions,
   BootstrapException,

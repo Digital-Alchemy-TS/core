@@ -10,8 +10,7 @@ import { existsSync, readFileSync } from "fs";
 import { Server, ServerOptions } from "https";
 import { register } from "prom-client";
 
-import { BootstrapException, TServiceParams } from "../../boilerplate";
-import { is } from "../../utilities";
+import { BootstrapException, is, TServiceParams } from "../..";
 import {
   BadGatewayError,
   BadRequestError,
@@ -26,7 +25,7 @@ import {
   ServiceUnavailableError,
   THROWN_ERRORS,
   UnauthorizedError,
-} from "../helpers";
+} from "..";
 
 export function Server_Bindings({
   logger,

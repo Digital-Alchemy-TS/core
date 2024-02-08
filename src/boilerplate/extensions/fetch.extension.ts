@@ -3,7 +3,7 @@ import { createWriteStream } from "fs";
 import { pipeline } from "stream";
 import { promisify } from "util";
 
-import { FIRST, is, TContext, ZCC } from "../../utilities";
+import { FIRST, is, TContext, ZCC } from "../..";
 import {
   buildFilterString,
   DownloadOptions,

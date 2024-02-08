@@ -2,7 +2,7 @@
 import { CronJob } from "cron";
 import dayjs, { Dayjs } from "dayjs";
 
-import { TBlackHole, ZCC } from "../../utilities";
+import { TBlackHole, ZCC } from "../..";
 import {
   Schedule,
   SCHEDULE_ERRORS,

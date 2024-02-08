@@ -1,4 +1,4 @@
-import { is } from "../../utilities";
+import { is } from "../..";
 
 export const ZCC_NODE_GLOBAL_ERROR = "ZCC_NODE_GLOBAL_ERROR";
 export const ZCC_APPLICATION_ERROR = "ZCC_APPLICATION_ERROR";

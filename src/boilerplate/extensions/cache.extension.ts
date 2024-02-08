@@ -1,4 +1,4 @@
-import { is, NONE, ZCC } from "../../utilities";
+import { is, NONE, ZCC } from "../..";
 import {
   CACHE_DELETE_OPERATIONS_TOTAL,
   CACHE_DRIVER_ERROR_COUNT,

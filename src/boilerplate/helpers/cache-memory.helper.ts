@@ -1,6 +1,6 @@
 import NodeCache from "node-cache";
 
-import { is } from "../../utilities";
+import { is } from "../..";
 import { ICacheDriver } from "..";
 import { MEMORY_CACHE_ERROR_COUNT } from "./metrics.helper";
 import { TServiceParams } from "./wiring.helper";

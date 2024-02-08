@@ -2,8 +2,15 @@ import { EventEmitter } from "node-cache";
 import { exit } from "process";
 import WS from "ws";
 
-import { InternalError, TServiceParams } from "../../boilerplate";
-import { SECOND, sleep, START, TBlackHole, ZCC } from "../../utilities";
+import {
+  InternalError,
+  SECOND,
+  sleep,
+  START,
+  TBlackHole,
+  TServiceParams,
+  ZCC,
+} from "../..";
 import {
   HassEventDTO,
   HASSIO_WS_COMMAND,

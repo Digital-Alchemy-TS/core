@@ -9,8 +9,7 @@ import {
 } from "mqtt";
 import { QoS } from "mqtt-packet";
 
-import { InternalError, TServiceParams } from "../../boilerplate";
-import { is, ZCC } from "../../utilities";
+import { InternalError, is, TServiceParams, ZCC } from "../..";
 import {
   MQTT_MESSAGE_ERRORS,
   MQTT_MESSAGE_EXECUTIONS,

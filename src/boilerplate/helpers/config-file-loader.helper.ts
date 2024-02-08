@@ -5,7 +5,7 @@ import { homedir } from "os";
 import { join } from "path";
 import { cwd, platform } from "process";
 
-import { deepExtend, INVERT_VALUE, is, START } from "../../utilities";
+import { deepExtend, INVERT_VALUE, is, START } from "../..";
 import {
   AbstractConfig,
   ConfigLoaderReturn,

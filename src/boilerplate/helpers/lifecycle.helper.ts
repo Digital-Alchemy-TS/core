@@ -1,4 +1,4 @@
-import { TBlackHole } from "../../utilities";
+import { TBlackHole } from "../..";
 
 export type LifecycleCallback = () => TBlackHole;
 export type LifecyclePrioritizedCallback = [

@@ -1,7 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 
-import { TServiceParams } from "../../boilerplate";
-import { is } from "../../utilities";
+import { is, TServiceParams } from "../..";
 import { HTTP_REJECTED_AUTH, HttpStatusCode } from "..";
 
 export function Auth({ logger, lifecycle, config }: TServiceParams) {

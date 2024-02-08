@@ -1,5 +1,4 @@
-import { CreateLibrary } from "../boilerplate";
-import { HALF, MINUTE, SECOND } from "../utilities";
+import { CreateLibrary, HALF, MINUTE, SECOND } from "..";
 import { Auth, Server_Bindings } from ".";
 
 export const LIB_SERVER = CreateLibrary({

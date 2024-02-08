@@ -2,7 +2,7 @@ import { Dayjs } from "dayjs";
 import { EventEmitter } from "eventemitter3";
 import { Logger } from "pino";
 
-import { CronExpression, TBlackHole, TContext } from "../../utilities";
+import { CronExpression, TBlackHole, TContext } from "../..";
 import { ILogger, LIB_BOILERPLATE, TCache } from "..";
 import {
   AnyConfig,

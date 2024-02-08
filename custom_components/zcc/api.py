@@ -44,6 +44,14 @@ class ZccApi:
             else:
                 return None
 
+    async def list_binary_sensors(self):
+        url = f"{self.base_url}/list-binary-sensors"
+        async with self.session.get(url, headers=self.headers) as response:
+            if response.status == 200:
+                return await response.json()
+            else:
+                return None
+
     async def list_switches(self):
         url = f"{self.base_url}/list-switches"
         async with self.session.get(url, headers=self.headers) as response:
@@ -53,7 +61,7 @@ class ZccApi:
                 return None
 
     async def update_switch(self, switch_id, state):
-        url = f"{self.base_url}/update_switch/{switch_id}/state"
+        url = f"{self.base_url}/update-switch/{switch_id}/{state}"
         try:
             async with self.session.post(url, json={}, headers=self.headers) as response:
                 return response.status == 200

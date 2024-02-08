@@ -1,15 +1,19 @@
+from homeassistant.components.webhook import async_register as async_register_webhook
 from homeassistant.core import HomeAssistant
-import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
-from .api import ZccApi
-from .const import CONF_BASE_URL, CONF_ADMIN_KEY
+import voluptuous as vol
 
-DOMAIN = 'zcc'
+
+
+from .api import ZccApi
+from .const import CONF_BASE_URL, CONF_ADMIN_KEY, CONF_WEBHOOK_ID, DOMAIN
+from .webhook import handle_webhook
 
 CONFIG_SCHEMA = vol.Schema({
     DOMAIN: vol.Schema({
         vol.Required(CONF_BASE_URL): cv.url,
         vol.Required(CONF_ADMIN_KEY): cv.string,
+        vol.Required(CONF_WEBHOOK_ID): cv.string,
     })
 }, extra=vol.ALLOW_EXTRA)
 
@@ -18,6 +22,7 @@ async def async_setup(hass: HomeAssistant, config):
     conf = config[DOMAIN]
     base_url = conf[CONF_BASE_URL]
     admin_key = conf[CONF_ADMIN_KEY]
+    webhook_id = conf[CONF_WEBHOOK_ID]
 
     # Initialize the API and store it for shared access
     api = ZccApi(hass, base_url, admin_key)
@@ -27,17 +32,24 @@ async def async_setup(hass: HomeAssistant, config):
     hass.data[DOMAIN]['health_status'] = True
     hass.data[DOMAIN]['admin_key'] = admin_key
 
-    # Load the binary_sensor platform
-    hass.helpers.discovery.load_platform('binary_sensor', DOMAIN, None, config)
+    hass.async_create_task(
+        hass.helpers.discovery.async_load_platform('binary_sensor', DOMAIN, None, config)
+    )
 
-    # Load the button platform
     hass.async_create_task(
         hass.helpers.discovery.async_load_platform('button', DOMAIN, None, config)
     )
 
-    # Inside your async_setup function, after setting up the API
     hass.async_create_task(
         hass.helpers.discovery.async_load_platform('switch', DOMAIN, None, config)
     )
+
+    hass.async_create_task(
+        hass.helpers.discovery.async_load_platform('scene', DOMAIN, None, config)
+    )
+
+
+    hass.data[DOMAIN]['webhook_id'] = webhook_id
+    hass.components.webhook.async_register(DOMAIN, "ZCC Binary Sensor Webhook", webhook_id, handle_webhook)
 
     return True

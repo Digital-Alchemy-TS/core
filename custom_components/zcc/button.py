@@ -1,20 +1,29 @@
 from homeassistant.components.button import ButtonEntity
-from . import DOMAIN
+from .const import DOMAIN
 import logging
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class ZccButton(ButtonEntity):
-    def __init__(self, api, button_id, name):
+    def __init__(self, api, button_info):
         self._api = api
-        self._id = button_id
-        self._name = name
-        self._attr_unique_id = f"zcc_{button_id}"
+        self._id = button_info['id']
+        self._name = button_info['name']
+        self._icon = button_info['icon']
+
+    @property
+    def unique_id(self):
+        """Return a unique ID."""
+        return self._id
 
     @property
     def name(self):
         return self._name
+
+    @property
+    def icon(self):
+        return self._icon
 
     @property
     def available(self):
@@ -45,8 +54,6 @@ class ZccButton(ButtonEntity):
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Setup button platform."""
-    # if discovery_info is None:
-    #     return
     api = hass.data[DOMAIN]['api']
     buttons_data = await api.list_buttons()
     if buttons_data is None:

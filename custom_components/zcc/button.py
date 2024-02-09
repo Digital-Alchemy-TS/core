@@ -38,7 +38,6 @@ class ZccButton(ButtonEntity):
         except Exception as e:
             _LOGGER.error(f"Error pressing button {self._name} (ID: {self._id}): {e}")
 
-
     async def async_added_to_hass(self):
         """When entity is added to Home Assistant."""
         self.async_on_remove(
@@ -58,5 +57,5 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     buttons_data = await api.list_buttons()
     if buttons_data is None:
         return
-    buttons = [ZccButton(api, button['id'], button['name']) for button in buttons_data['buttons']]
+    buttons = [ZccButton(api, button) for button in buttons_data['buttons']]
     async_add_entities(buttons)

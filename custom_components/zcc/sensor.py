@@ -1,5 +1,5 @@
 from homeassistant.components.sensor import SensorEntity
-from . import DOMAIN
+from .const import DOMAIN
 
 class ZccSensor(SensorEntity):
     def __init__(self, hass, api, sensor_info):

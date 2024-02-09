@@ -98,9 +98,10 @@ export function CallProxy({
     }
     // domains = services.map(i => i.domain);
     services.forEach(value => {
-      logger.info({ domain: value.domain }, `scanning`, value.domain);
-      Object.entries(value.services).forEach(([serviceName]) =>
-        logger.debug(` - {%s}`, serviceName),
+      logger.trace(
+        { name: value.domain, services: Object.keys(value.services) },
+        `loaded`,
+        value.domain,
       );
     });
   }

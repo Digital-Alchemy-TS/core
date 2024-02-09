@@ -15,7 +15,6 @@ type TButton<TAG extends MaterialIconTags = MaterialIconTags> = {
   context: TContext;
   label?: string;
   icon?: MaterialIcon<TAG>;
-  id: string;
   name?: string;
 };
 
@@ -26,7 +25,7 @@ export function Button({
   synapse,
   context: parentContext,
 }: TServiceParams) {
-  const registry = new Map<PICK_ENTITY<"button">, TButton>();
+  const registry = new Map<string, TButton>();
   lifecycle.onBootstrap(() => BindHTTP());
 
   function BindHTTP() {
@@ -43,8 +42,8 @@ export function Button({
           `${button} is not registered`,
         );
       }
-      logger.debug({ button }, `received button press`);
-      const { exec, context, label } = registry.get(button);
+      const { exec, context, label, name } = registry.get(button);
+      logger.trace({ button, label: name }, `received button press`);
       setImmediate(async () => {
         await ZCC.safeExec({
           duration: BUTTON_EXECUTION_TIME,
@@ -59,37 +58,33 @@ export function Button({
 
     // # List buttons
     fastify.get("/synapse/button", synapse.http.validation, () => {
-      logger.trace(`list buttons`);
+      logger.trace(`list [buttons]`);
       return {
-        buttons: [...registry.values()].map(({ icon, id, name }) => {
-          return { icon, id, name };
+        buttons: [...registry.values()].map(({ icon, name }) => {
+          return {
+            icon: is.empty(icon) ? icon : `mdi:${icon}`,
+            id: is.hash(`${ZCC.application.name}:${name}`),
+            name,
+          };
         }),
       };
     });
   }
 
-  /**
-   *  # Register a new button
-   */
+  // # Register a new button
   function create<TAG extends MaterialIconTags = MaterialIconTags>(
     entity: TButton<TAG>,
   ) {
-    if (!is.domain(entity.id, "button")) {
-      throw new InternalError(
-        parentContext,
-        "INVALID_ID",
-        "pass an entity id with a button domain",
-      );
-    }
-    if (registry.has(entity.id)) {
+    const id = is.hash(`${ZCC.application.name}:${entity.name}`);
+    if (registry.has(id)) {
       throw new InternalError(
         parentContext,
         "DUPLICATE_BUTTON",
-        `${entity.id} is already in use`,
+        `${id} is already in use`,
       );
     }
-    logger.debug({ entity }, `register entity`);
-    registry.set(entity.id, entity);
+    logger.debug({ entity, id }, `register [button]`);
+    registry.set(id, entity);
   }
   return create;
 }

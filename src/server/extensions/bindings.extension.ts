@@ -61,7 +61,7 @@ export function Server_Bindings({
     if (!config.server.EXPOSE_METRICS) {
       return;
     }
-    logger.info(`Exposing /metrics for prometheus requests`);
+    logger.debug(`Exposing {/metrics} for prometheus requests`);
     // nothing special
     httpServer.get("/metrics", async (_, reply) => {
       reply.header("Content-Type", register.contentType);

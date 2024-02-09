@@ -1,5 +1,5 @@
 from homeassistant.components.scene import Scene
-from . import DOMAIN
+from .const import DOMAIN
 import logging
 
 _LOGGER = logging.getLogger(__name__)

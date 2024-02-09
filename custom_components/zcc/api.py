@@ -17,6 +17,17 @@ class ZCCButton(TypedDict):
     name: str
     icon: str
 
+class ZCCBinarySensor(TypedDict):
+    id: str
+    name: str
+    icon: str
+    state: str
+
+class ZCCSensor(TypedDict):
+    id: str
+    name: str
+    icon: str
+
 class ZccApi:
     def __init__(self, hass, base_url, admin_key):
         self.hass = hass
@@ -42,7 +53,15 @@ class ZccApi:
                 return None
 
     async def list_buttons(self):
-        url = f"{self.base_url}/synapse/list-buttons"
+        url = f"{self.base_url}/synapse/button"
+        async with self.session.get(url, headers=self.headers) as response:
+            if response.status == 200:
+                return await response.json()
+            else:
+                return None
+
+    async def list_scenes(self):
+        url = f"{self.base_url}/synapse/scene"
         async with self.session.get(url, headers=self.headers) as response:
             if response.status == 200:
                 return await response.json()
@@ -50,7 +69,7 @@ class ZccApi:
                 return None
 
     async def list_sensors(self):
-        url = f"{self.base_url}/synapse/list-sensors"
+        url = f"{self.base_url}/synapse/sensor"
         async with self.session.get(url, headers=self.headers) as response:
             if response.status == 200:
                 return await response.json()
@@ -58,7 +77,7 @@ class ZccApi:
                 return None
 
     async def list_binary_sensors(self):
-        url = f"{self.base_url}/synapse/list-binary-sensors"
+        url = f"{self.base_url}/synapse/binary_sensor"
         async with self.session.get(url, headers=self.headers) as response:
             if response.status == 200:
                 return await response.json()
@@ -74,7 +93,7 @@ class ZccApi:
                 return None
 
     async def update_switch(self, switch_id, state):
-        url = f"{self.base_url}/synapse/update-switch/{switch_id}/{state}"
+        url = f"{self.base_url}/synapse/switch"
         try:
             async with self.session.post(url, json={}, headers=self.headers) as response:
                 return response.status == 200
@@ -83,12 +102,25 @@ class ZccApi:
             return False
 
     async def press_button(self, button_id):
-        url = f"{self.base_url}/synapse/button-press/{button_id}"
+        url = f"{self.base_url}/synapse/button"
         try:
-            async with self.session.post(url, json={}, headers=self.headers) as response:
+            async with self.session.post(url, json={
+                "button": button_id
+            }, headers=self.headers) as response:
                 return response.status == 200
         except Exception as e:
             _LOGGER.error(f"Exception when pressing button {button_id}: {e}")
+            return False
+
+    async def activate_scene(self, scene_id):
+        url = f"{self.base_url}/synapse/scene"
+        try:
+            async with self.session.post(url, json={
+                "scene": scene_id
+            }, headers=self.headers) as response:
+                return response.status == 200
+        except Exception as e:
+            _LOGGER.error(f"Exception when pressing button {scene_id}: {e}")
             return False
 
     async def close(self):

@@ -2,7 +2,7 @@
   "domain": "zcc",
   "name": "ZCC Virtual Entities",
   "documentation": "https://github.com/zoe-codez/zcc",
-  "dependencies": ["http", "aiohttp"],
+  "dependencies": ["http"],
   "codeowners": ["@zoe-codez"],
   "requirements": ["requests>=2.25.1"],
   "version": "0.1"

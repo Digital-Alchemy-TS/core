@@ -48,12 +48,14 @@ export function Sensor({
 
     // # Describe the current situation
     fastify.get(`/synapse/sensor`, synapse.http.validation, () => ({
-      switches: [...registry.values()].map(entity => {
+      sensors: [...registry.values()].map(entity => {
         return {
           attributes: entity.attributes,
+          device_class: entity.device_class,
           icon: entity.icon,
           name: entity.name,
           state: entity.state,
+          unit_of_measurement: entity.unit_of_measurement,
         };
       }),
     }));
@@ -133,6 +135,12 @@ export function Sensor({
         }
         if (property === "state") {
           return state;
+        }
+        if (property === "unit_of_measurement") {
+          return entity.unit_of_measurement;
+        }
+        if (property === "device_class") {
+          return entity.device_class;
         }
         if (property === "attributes") {
           return new Proxy({} as ATTRIBUTES, {

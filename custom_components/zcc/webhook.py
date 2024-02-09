@@ -1,6 +1,6 @@
 from aiohttp.web import Response, json_response
 import logging
-from . import DOMAIN
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 

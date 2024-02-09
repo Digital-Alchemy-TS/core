@@ -1,5 +1,4 @@
 import { TFetch, TServiceParams } from "../../boilerplate";
-import { PICK_ENTITY } from "../../hass";
 import { ZCC } from "../../utilities";
 
 export function HttpExtension({
@@ -27,10 +26,7 @@ export function HttpExtension({
       const application =
         config.synapse.APPLICATION_IDENTIFIER || ZCC.application.name;
       webhook_id = config.synapse.WEBHOOK_ID || `${application}_zcc_webhook`;
-      return {
-        application,
-        webhook_id,
-      };
+      return { application, webhook_id };
     });
   }
 

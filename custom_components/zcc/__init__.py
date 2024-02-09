@@ -5,8 +5,8 @@ import voluptuous as vol
 
 
 
-from .api import ZccApi
 from .const import CONF_BASE_URL, CONF_ADMIN_KEY, DOMAIN
+from .api import ZccApi
 from .webhook import handle_webhook
 
 CONFIG_SCHEMA = vol.Schema({
@@ -47,7 +47,7 @@ async def async_setup(hass: HomeAssistant, config):
         hass.helpers.discovery.async_load_platform('scene', DOMAIN, None, config)
     )
 
-
+    webhook_id = hass.data[DOMAIN]['service_data']['webhook_id']
     hass.data[DOMAIN]['webhook_id'] = webhook_id
     hass.components.webhook.async_register(DOMAIN, "ZCC Binary Sensor Webhook", webhook_id, handle_webhook)
 

@@ -1,13 +1,12 @@
 import { InternalError, TServiceParams } from "../../boilerplate";
 import { PICK_ENTITY } from "../../hass";
-import { is, TContext } from "../../utilities";
+import { is, TContext, ZCC } from "../../utilities";
 import { MaterialIcon, MaterialIconTags, OnOff } from "..";
 
 type TBinarySensor<TAG extends MaterialIconTags = MaterialIconTags> = {
   context: TContext;
   defaultState?: OnOff;
   icon?: MaterialIcon<TAG>;
-  id: string;
   name?: string;
 };
 
@@ -31,7 +30,7 @@ export function BinarySensor({
   server,
   synapse,
 }: TServiceParams) {
-  const registry = new Map<PICK_ENTITY<"binary_sensor">, VirtualBinarySensor>();
+  const registry = new Map<string, VirtualBinarySensor>();
   lifecycle.onBootstrap(() => BindHTTP());
 
   function BindHTTP() {
@@ -39,9 +38,16 @@ export function BinarySensor({
 
     // # Describe the current situation
     fastify.get("/synapse/binary_sensor", synapse.http.validation, () => {
-      logger.trace(`list binary sensors`);
+      logger.trace(`list [binary_sensors]`);
       return {
-        binary_sensors: [...registry.values()],
+        binary_sensors: [...registry.values()].map(i => {
+          return {
+            icon: i.icon,
+            id: i.entity_id,
+            name: i.name,
+            state: i.state,
+          };
+        }),
       };
     });
   }
@@ -50,34 +56,29 @@ export function BinarySensor({
   function create<TAG extends MaterialIconTags = MaterialIconTags>(
     sensor: TBinarySensor<TAG>,
   ) {
+    const id = is.hash(`${ZCC.application.name}:${sensor.name}`);
     // ## Validate a good id was passed, and it's the only place in code that's using it
-    if (!is.domain(sensor.id, "binary_sensor")) {
-      throw new InternalError(context, "INVALID_ID", "id is required");
-    }
-    if (registry.has(sensor.id)) {
+    if (registry.has(id)) {
       throw new InternalError(
         context,
         "DUPLICATE_SENSOR",
         "sensor id is already in use",
       );
     }
-    logger.debug({ sensor }, `create binary sensor`);
+    logger.debug({ sensor }, `register [binary_sensor]`);
     let state: OnOff;
 
     // ## Handle state updates. Ignore non-updates
     async function setState(newState: OnOff) {
       state = newState;
       setImmediate(async () => {
-        await cache.set(CACHE_KEY(sensor.id), state);
+        await cache.set(CACHE_KEY(id), state);
       });
     }
 
     // ## Wait until bootstrap to load cache
     lifecycle.onBootstrap(async () => {
-      state = await cache.get(
-        CACHE_KEY(sensor.id),
-        sensor.defaultState ?? "off",
-      );
+      state = await cache.get(CACHE_KEY(id), sensor.defaultState ?? "off");
     });
 
     // ## Proxy object as return
@@ -89,14 +90,14 @@ export function BinarySensor({
         if (property === "on") {
           return state === "on";
         }
+        if (property === "entity_id") {
+          return id;
+        }
         if (property === "icon") {
           return sensor.icon;
         }
         if (property === "name") {
           return sensor.name;
-        }
-        if (property === "entity_id") {
-          return sensor.id;
         }
         return undefined;
       },
@@ -107,11 +108,12 @@ export function BinarySensor({
         }
         if (property === "on") {
           setState(value ? "on" : "off");
+          return true;
         }
         return false;
       },
     });
-    registry.set(sensor.id, out);
+    registry.set(id, out);
     return out;
   }
 

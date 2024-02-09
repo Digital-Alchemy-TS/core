@@ -68,8 +68,10 @@
     "material-icon-theme.folders.associations": {
       "design-docs": "changesets",
       "synapse": "mappings",
+      ".VSCodeCounter": "mojo",
+      "nexus": "unity",
       "rooms": "robot",
-      "obsidian": "shader",
+      "obsidian": "docs",
       "type-writer": "godot",
       "automation-example": "moon",
       "boilerplate": "robot",
@@ -79,7 +81,8 @@
       "hass": "home",
       "common": "shared",
       ".nx": "next",
-      "custom_components": "connection",
+      "custom_components": "python",
+      "zcc": "python",
       "services": "server",
       "helpers": "helper",
       "extensions": "plugin",
@@ -114,7 +117,10 @@
     "typescript.preferences.importModuleSpecifier": "relative",
     // ! Config files
     "files.associations": {
-      "type-writer": "ini"
+      "type_writer": "ini",
+      "nexus": "ini",
+      ".nexusrc": "ini",
+      ".type_writerrc": "ini",
     },
     "files.exclude": {
       "**/.git": true,

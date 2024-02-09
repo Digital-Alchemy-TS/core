@@ -10,17 +10,17 @@ export function Auth({ logger, lifecycle, config }: TServiceParams) {
     }
   });
 
-  function AdminKey(request: FastifyRequest, reply: FastifyReply) {
+  async function AdminKey(request: FastifyRequest, reply: FastifyReply) {
     if (is.empty(config.server.ADMIN_KEY)) {
       logger.warn(
         `Request was configured for ADMIN_KEY auth, but no ADMIN_KEY configured`,
       );
       return;
     }
-    if (request.headers["admin-key"] === config.server.ADMIN_KEY) {
-      // valid
+    if (request.headers["x-admin-key"] === config.server.ADMIN_KEY) {
       return;
     }
+    logger.warn(`unauthorized`);
     reply.code(HttpStatusCode.UNAUTHORIZED).send({ error: "Unauthorized" });
     HTTP_REJECTED_AUTH.labels("ADMIN_KEY").inc();
   }

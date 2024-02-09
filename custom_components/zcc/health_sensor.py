@@ -1,5 +1,5 @@
 import asyncio
-from . import DOMAIN
+from .const import DOMAIN
 from homeassistant.components.binary_sensor import BinarySensorEntity
 
 class HealthCheckSensor(BinarySensorEntity):
@@ -54,4 +54,4 @@ async def start_health_check_polling(api, sensor, hass):
     """Start polling the health check endpoint."""
     while True:
         await sensor.async_update()
-        await asyncio.sleep(2)  # Adjust polling interval as needed
+        await asyncio.sleep(5)

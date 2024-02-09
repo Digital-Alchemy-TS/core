@@ -2,7 +2,7 @@ import { Dayjs } from "dayjs";
 
 import { TBlackHole, TContext } from "../..";
 import { HASSIO_WS_COMMAND, HassSocketMessageTypes } from "./constants.helper";
-import { HassEventDTO } from "./entity-state.helper";
+import { EntityUpdateEvent } from "./entity-state.helper";
 import { ALL_DOMAINS, ENTITY_STATE, PICK_ENTITY } from "./utility.helper";
 
 export interface AreaDTO {
@@ -51,7 +51,7 @@ export interface SignRequestResponse {
 
 export interface SocketMessageDTO {
   error?: Record<string, unknown>;
-  event?: HassEventDTO;
+  event?: EntityUpdateEvent;
   id: string;
   message?: string;
   result?: Record<string, unknown>;
@@ -65,7 +65,7 @@ export interface SendSocketMessageDTO {
   hidden_by?: "user";
   service?: string;
   service_data?: unknown;
-  type: HASSIO_WS_COMMAND;
+  type: HASSIO_WS_COMMAND | `${HASSIO_WS_COMMAND}`;
 }
 
 export interface UpdateEntityMessageDTO<
@@ -158,13 +158,11 @@ export type SOCKET_MESSAGES = { id?: number } & (
   | EntityHistoryDTO
 );
 
-export type OnHassEventCallback = <ENTITY extends PICK_ENTITY>(
-  event: HassEventDTO<ENTITY>,
-) => TBlackHole;
+export type OnHassEventCallback<T = object> = (event: T) => TBlackHole;
 
-export type OnHassEventOptions = {
+export type OnHassEventOptions<T = object> = {
   context: TContext;
   label?: string;
-  exec: OnHassEventCallback;
+  exec: OnHassEventCallback<T>;
   event: string;
 };

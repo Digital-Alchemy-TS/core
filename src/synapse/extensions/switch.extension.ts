@@ -1,129 +1,94 @@
-import { InternalError, TServiceParams } from "../../boilerplate";
+import { TServiceParams } from "../../boilerplate";
 import { PICK_ENTITY } from "../../hass";
-import { BadRequestError, GENERIC_SUCCESS_RESPONSE } from "../../server";
-import { is, TContext } from "../../utilities";
-import { MaterialIcon, MaterialIconTags, OnOff } from "..";
+import { TContext } from "../../utilities";
 
-type TSwitch<TAG extends MaterialIconTags = MaterialIconTags> = {
+type TSwitch = {
   context: TContext;
-  defaultState?: OnOff;
-  icon?: MaterialIcon<TAG>;
-  id: string;
-  name?: string;
+  defaultState?: LocalOnOff;
+  icon?: string;
+  name: string;
 };
-
-const CACHE_KEY = (key: string) => `switch_state_cache:${key}`;
 
 type LocalOnOff = "on" | "off";
 
-export type VirtualSwitch<TAG extends MaterialIconTags = MaterialIconTags> = {
+export type VirtualSwitch = {
   state: LocalOnOff;
   on: boolean;
-  icon: MaterialIcon<TAG>;
+  icon: string;
   id: string;
   name: string;
-  entity_id: PICK_ENTITY<"switch">;
 };
 
-type UpdateSwitchBody = { switch: PICK_ENTITY<"switch">; state: LocalOnOff };
+type UpdateSwitchBody = {
+  event_type: "zcc_switch_update";
+  data: { switch: PICK_ENTITY<"switch">; state: LocalOnOff };
+};
 
 export function Switch({
   logger,
-  cache,
   context,
   lifecycle,
-  server,
+  hass,
   synapse,
 }: TServiceParams) {
-  const registry = new Map<PICK_ENTITY<"switch">, VirtualSwitch>();
-  lifecycle.onBootstrap(() => BindHTTP());
+  const registry = synapse.registry<VirtualSwitch>({
+    context,
+    details: entity => ({
+      state: entity.state,
+    }),
+    domain: "switch",
+  });
 
-  function BindHTTP() {
-    const fastify = server.bindings.httpServer;
-
-    // # Receive state update requests
-    fastify.post<{
-      Body: UpdateSwitchBody;
-    }>(`/synapse/switch`, synapse.http.validation, request => {
-      const entity = registry.get(request.body.switch);
-      if (!entity) {
-        throw new BadRequestError(
-          context,
-          "INVALID_BUTTON",
-          `${request.body.switch} is not registered`,
-        );
+  // ### Listen for socket events
+  hass.socket.onEvent({
+    context: context,
+    event: "zcc_switch_update",
+    exec({ data }: UpdateSwitchBody) {
+      const item = registry.byId(data.switch);
+      if (!item) {
+        logger.warn({ data }, `Received switch update for unknown switch`);
+        return;
       }
-      if (!["on", "off"].includes(request.body.state)) {
-        throw new BadRequestError(
-          context,
-          "INVALID_STATE",
-          "state must be 'on' or 'off'",
-        );
+      const state = data.state;
+      if (["on", "off"].includes(state)) {
+        logger.warn({ state }, `received bad value for state update`);
+        return;
       }
-      entity.state = request.body.state;
-      return GENERIC_SUCCESS_RESPONSE;
-    });
-
-    // # Describe the current situation
-    fastify.get(`/synapse/switch`, synapse.http.validation, () => ({
-      switches: [...registry.values()].map(entity => {
-        return {
-          icon: entity.icon,
-          name: entity.name,
-          state: entity.state,
-        };
-      }),
-    }));
-  }
-
-  // # Switch entity creation function
-  function create<TAG extends MaterialIconTags = MaterialIconTags>(
-    entity: TSwitch<TAG>,
-  ) {
-    // ## Validate a good id was passed, and it's the only place in code that's using it
-    if (!is.domain(entity.id, "switch")) {
-      throw new InternalError(
-        context,
-        "INVALID_ID",
-        "switch domain entity_id is required",
+      if (item.state === state) {
+        return;
+      }
+      logger.trace(
+        { label: item.name, state: data.state },
+        `received state update`,
       );
-    }
-    if (registry.has(entity.id)) {
-      throw new InternalError(
-        context,
-        "DUPLICATE_SENSOR",
-        "sensor id is already in use",
-      );
-    }
-    logger.debug({ entity }, `register entity`);
+      item.state = state;
+    },
+  });
 
-    let state: OnOff;
+  /**
+   * ### Register a new switch
+   *
+   * Can be interacted with via return object, or standard home assistant switch services
+   */
+  function create(entity: TSwitch) {
+    let state: LocalOnOff;
 
-    // ## Handle state updates. Ignore non-updates
-    async function setState(newState: OnOff) {
+    function setState(newState: LocalOnOff) {
       if (newState === state) {
         return;
       }
       state = newState;
-      await cache.set(CACHE_KEY(entity.id), state);
-      logger.debug({ id: entity.id, newState }, `switch state updated`);
-      synapse.http.emitWebhook({
-        switch: {
-          id: entity.id,
-          state,
-        },
+      setImmediate(async () => {
+        logger.trace({ id, state }, `switch state updated`);
+        await registry.setCache(id, state);
+        await registry.send(id, { state });
       });
     }
 
-    // ## Wait until bootstrap to load cache
     lifecycle.onBootstrap(async () => {
-      state = await cache.get(
-        CACHE_KEY(entity.id),
-        entity.defaultState ?? "off",
-      );
+      state = await registry.getCache(id, entity.defaultState ?? "off");
     });
 
-    // ## Proxy object as return
     const returnEntity = new Proxy({} as VirtualSwitch, {
       get(_, property: keyof VirtualSwitch) {
         if (property === "state") {
@@ -131,9 +96,6 @@ export function Switch({
         }
         if (property === "on") {
           return state === "on";
-        }
-        if (property === "entity_id") {
-          return entity.id;
         }
         if (property === "icon") {
           return entity.icon;
@@ -143,7 +105,7 @@ export function Switch({
         }
         return undefined;
       },
-      set(_, property: keyof VirtualSwitch, value: OnOff) {
+      set(_, property: keyof VirtualSwitch, value: LocalOnOff) {
         if (property === "state") {
           setImmediate(async () => await setState(value));
           return true;
@@ -156,8 +118,7 @@ export function Switch({
       },
     });
 
-    // ## Register it
-    registry.set(entity.id, returnEntity);
+    const id = registry.add(returnEntity);
     return returnEntity;
   }
 

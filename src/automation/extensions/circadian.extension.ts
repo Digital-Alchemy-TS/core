@@ -46,9 +46,8 @@ export function CircadianLighting({
     circadianEntity = synapse.sensor({
       context,
       device_class: "temperature",
-      icon: "mdi:sun-thermometer",
-      id: config.automation.CIRCADIAN_SENSOR,
-      name: "Light temperature",
+      icon: "sun",
+      name: config.automation.CIRCADIAN_SENSOR_NAME,
       unit_of_measurement: "K",
     });
 

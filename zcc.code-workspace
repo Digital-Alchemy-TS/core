@@ -139,6 +139,7 @@
       // % Inline code type snippets
       // - List A
       // ~ List B
+      // // comment that got commented out
       // @doc DOCS LINK
       // TODO: Some example stuff
       // # Block A
@@ -146,7 +147,7 @@
       // ### Block C
       {
         "tag": "!",
-        "color": "#E53935",
+        "color": "#FF6E40", // Vivid orange for high importance
         "strikethrough": false,
         "underline": true,
         "backgroundColor": "transparent",
@@ -155,7 +156,7 @@
       },
       {
         "tag": ">",
-        "color": "#8E24AA",
+        "color": "#BA68C8", // Deep purple for comments
         "strikethrough": false,
         "underline": false,
         "backgroundColor": "transparent",
@@ -164,7 +165,7 @@
       },
       {
         "tag": "?",
-        "color": "#1E88E5",
+        "color": "#4FC3F7", // Bright blue for questions
         "strikethrough": false,
         "underline": false,
         "backgroundColor": "transparent",
@@ -173,7 +174,7 @@
       },
       {
         "tag": "*",
-        "color": "#43A047",
+        "color": "#81C784", // Earthy green for block explanations
         "strikethrough": false,
         "underline": true,
         "backgroundColor": "transparent",
@@ -182,7 +183,7 @@
       },
       {
         "tag": "-",
-        "color": "#FDD835",
+        "color": "#FFD740", // Golden yellow for lists
         "strikethrough": false,
         "underline": false,
         "backgroundColor": "transparent",
@@ -191,7 +192,7 @@
       },
       {
         "tag": "%",
-        "color": "#FB8C00",
+        "color": "#FF8A65", // Soft coral for inline code
         "strikethrough": false,
         "underline": true,
         "backgroundColor": "transparent",
@@ -200,7 +201,7 @@
       },
       {
         "tag": "~",
-        "color": "#6D4C41",
+        "color": "#A1887F", // Muted brown for alternate lists
         "strikethrough": false,
         "underline": false,
         "backgroundColor": "transparent",
@@ -209,7 +210,7 @@
       },
       {
         "tag": "//",
-        "color": "#B0BEC5",
+        "color": "#78909C", // Cool grey for strikethrough
         "strikethrough": true,
         "underline": false,
         "backgroundColor": "transparent",
@@ -218,46 +219,46 @@
       },
       {
         "tag": "todo",
-        "color": "#D81B60",
+        "color": "#FF4081", // Bright pink for TODOs
         "strikethrough": false,
         "underline": false,
-        "backgroundColor": "#FFFDE7",
+        "backgroundColor": "#37474F", // Darker background for emphasis
         "bold": false,
         "italic": false
       },
       {
         "tag": "###",
-        "color": "#FFFFFF",
+        "color": "#FFFFFF", // White on teal for Block C
         "strikethrough": false,
         "underline": false,
-        "backgroundColor": "#26A69A",
+        "backgroundColor": "#00796B",
         "bold": true,
         "italic": false
       },
       {
         "tag": "##",
-        "color": "#FFFFFF",
+        "color": "#FFFFFF", // White on deep pink for Block B
         "strikethrough": false,
         "underline": false,
-        "backgroundColor": "#EC407A",
+        "backgroundColor": "#C2185B",
         "bold": true,
         "italic": false
       },
       {
         "tag": "#",
-        "color": "#FFFFFF",
+        "color": "#FFFFFF", // White on indigo for Block A
         "strikethrough": false,
         "underline": false,
-        "backgroundColor": "#5C6BC0",
+        "backgroundColor": "#303F9F",
         "bold": true,
         "italic": false
       },
       {
         "tag": "@doc",
-        "color": "#4A90E2",
+        "color": "#B3E5FC", // Light blue for docs
         "strikethrough": false,
         "underline": false,
-        "backgroundColor": "#E1F5FE",
+        "backgroundColor": "#0277BD", // Dark blue background
         "bold": true,
         "italic": false
       }

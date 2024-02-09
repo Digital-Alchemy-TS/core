@@ -12,7 +12,7 @@ import {
   ZCC,
 } from "../..";
 import {
-  HassEventDTO,
+  EntityUpdateEvent,
   HASSIO_WS_COMMAND,
   HassSocketMessageTypes,
   ON_SOCKET_AUTH,
@@ -20,7 +20,6 @@ import {
   SOCKET_EVENT_ERRORS,
   SOCKET_EVENT_EXECUTION_COUNT,
   SOCKET_EVENT_EXECUTION_TIME,
-  SOCKET_MESSAGES,
   SocketMessageDTO,
 } from "..";
 
@@ -118,8 +117,19 @@ export function WebsocketAPI({
     connection = undefined;
   }
 
+  async function fireEvent(event_type: string, event_data?: object) {
+    return await sendMessage(
+      { event_data, event_type, type: "fire_event" },
+      false,
+    );
+  }
+
   async function sendMessage<RESPONSE_VALUE extends unknown = unknown>(
-    data: SOCKET_MESSAGES,
+    data: {
+      type: `${HASSIO_WS_COMMAND}`;
+      id?: number;
+      [key: string]: unknown;
+    },
     waitForResponse = true,
     subscription?: () => void,
   ): Promise<RESPONSE_VALUE> {
@@ -330,13 +340,18 @@ export function WebsocketAPI({
     });
   }
 
-  function onEvent({ context, label, event, exec }: OnHassEventOptions) {
+  function onEvent<DATA extends object>({
+    context,
+    label,
+    event,
+    exec,
+  }: OnHassEventOptions<DATA>) {
     logger.debug({ context, event }, `Attaching socket event listener`);
-    const callback = async (data: HassEventDTO) => {
+    const callback = async (data: EntityUpdateEvent) => {
       await ZCC.safeExec({
         duration: SOCKET_EVENT_EXECUTION_TIME,
         errors: SOCKET_EVENT_ERRORS,
-        exec: async () => await exec(data),
+        exec: async () => await exec(data as DATA),
         executions: SOCKET_EVENT_EXECUTION_COUNT,
         labels: { context, event, label },
       });
@@ -349,6 +364,10 @@ export function WebsocketAPI({
   }
 
   return {
+    /**
+     * Convenient wrapper for sendMessage
+     */
+    fireEvent,
     getConnectionActive: () => CONNECTION_ACTIVE,
     /**
      * Set up a new websocket connection to home assistant

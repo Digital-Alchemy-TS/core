@@ -1,7 +1,7 @@
 import { writeFileSync } from "fs";
 import { join } from "path";
 
-import { TServiceParams, ZCC } from "../..";
+import { is, TServiceParams, ZCC } from "../..";
 
 /**
  * For use with type-writer. Not imported as synapse
@@ -16,15 +16,14 @@ export function IconGeneratorExtension({ logger }: TServiceParams) {
       url: `https://raw.githubusercontent.com/Templarian/MaterialDesign/master/meta.json`,
     });
     logger.debug(`Received %s icons`, list.length);
-    const tags = new Set<string>();
-    const ICON_DATA = Object.fromEntries(
-      list.map(i => {
-        i.tag.forEach(tag => tags.add(tag));
-        return [i.name, i.tag];
-      }),
-    );
-    logger.debug({ tags: [...tags.values()] });
-    const iconData = `export const ICON_DATA = ${JSON.stringify(ICON_DATA, undefined, "  ")} as const;\n`;
+    const ICON_DATA = {} as Record<string, string[]>;
+    list.forEach(item => {
+      ICON_DATA[item.name] = item.tags || [];
+    });
+    logger.debug({ tags: is.unique(Object.values(ICON_DATA).flat()) });
+    const iconData = `export type string = ${Object.keys(ICON_DATA)
+      .map(i => `"${i}"`)
+      .join(" |\n ")}\n`;
     const target = join(__dirname, "..", "helpers", "icon.helper.d.ts");
     writeFileSync(target, iconData);
   };
@@ -39,6 +38,6 @@ interface IconData {
   styles: string[];
   version: string;
   deprecated: boolean;
-  tag: string[];
+  tags: string[];
   author: string;
 }

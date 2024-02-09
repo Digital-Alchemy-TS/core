@@ -1,49 +1,41 @@
-import { InternalError, TServiceParams } from "../../boilerplate";
-import { PICK_ENTITY } from "../../hass";
-import { BadRequestError, GENERIC_SUCCESS_RESPONSE } from "../../server";
-import { is, TBlackHole, TContext, ZCC } from "../../utilities";
+import { TBlackHole, TContext, TServiceParams, ZCC } from "../..";
 import {
   BUTTON_ERRORS,
   BUTTON_EXECUTION_COUNT,
   BUTTON_EXECUTION_TIME,
-  MaterialIcon,
-  MaterialIconTags,
 } from "..";
 
-type TButton<TAG extends MaterialIconTags = MaterialIconTags> = {
+type TButton = {
   exec: () => TBlackHole;
   context: TContext;
   label?: string;
-  icon?: MaterialIcon<TAG>;
-  name?: string;
+  icon?: string;
+  name: string;
 };
 
-export function Button({
-  logger,
-  lifecycle,
-  server,
-  synapse,
-  context: parentContext,
-}: TServiceParams) {
-  const registry = new Map<string, TButton>();
-  lifecycle.onBootstrap(() => BindHTTP());
+type HassButtonUpdateEvent = {
+  event_type: "zcc_button_press";
+  data: { button: string };
+};
 
-  function BindHTTP() {
-    const fastify = server.bindings.httpServer;
-    // # Receive button press
-    fastify.post<{
-      Body: { button: PICK_ENTITY<"button"> };
-    }>(`/synapse/button`, synapse.http.validation, async function (request) {
-      const button = request.body.button;
-      if (!registry.has(button)) {
-        throw new BadRequestError(
-          parentContext,
-          "INVALID_BUTTON",
-          `${button} is not registered`,
-        );
+export function Button({ logger, hass, context, synapse }: TServiceParams) {
+  const registry = synapse.registry<TButton>({
+    context,
+    domain: "button",
+  });
+
+  // ### Listen for socket events
+  hass.socket.onEvent({
+    context: context,
+    event: "zcc_button_press",
+    exec({ data }: HassButtonUpdateEvent) {
+      const item = registry.byId(data.button);
+      if (!item) {
+        logger.warn({ data }, `Received button press for unknown button`);
+        return;
       }
-      const { exec, context, label, name } = registry.get(button);
-      logger.trace({ button, label: name }, `received button press`);
+      const { exec, context, label, name } = item;
+      logger.trace({ data, label: name }, `received button press`);
       setImmediate(async () => {
         await ZCC.safeExec({
           duration: BUTTON_EXECUTION_TIME,
@@ -53,38 +45,18 @@ export function Button({
           labels: { context, label },
         });
       });
-      return GENERIC_SUCCESS_RESPONSE;
-    });
+    },
+  });
 
-    // # List buttons
-    fastify.get("/synapse/button", synapse.http.validation, () => {
-      logger.trace(`list [buttons]`);
-      return {
-        buttons: [...registry.values()].map(({ icon, name }) => {
-          return {
-            icon: is.empty(icon) ? icon : `mdi:${icon}`,
-            id: is.hash(`${ZCC.application.name}:${name}`),
-            name,
-          };
-        }),
-      };
-    });
-  }
-
-  // # Register a new button
-  function create<TAG extends MaterialIconTags = MaterialIconTags>(
-    entity: TButton<TAG>,
-  ) {
-    const id = is.hash(`${ZCC.application.name}:${entity.name}`);
-    if (registry.has(id)) {
-      throw new InternalError(
-        parentContext,
-        "DUPLICATE_BUTTON",
-        `${id} is already in use`,
-      );
-    }
-    logger.debug({ entity, id }, `register [button]`);
-    registry.set(id, entity);
-  }
-  return create;
+  /**
+   * ### Register a new button
+   *
+   * Can be called from construction phase - bootstrap.
+   * Auto syncs with home assistant onReady, and will emit warnings for new buttons after.
+   *
+   * Warnings indicate that a manual update of the integration may be required.
+   */
+  return function create(entity: TButton) {
+    registry.add(entity);
+  };
 }

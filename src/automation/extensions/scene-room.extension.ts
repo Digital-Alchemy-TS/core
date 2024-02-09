@@ -35,7 +35,7 @@ export function SceneRoom({
 
     const currentScene = synapse.sensor<SCENES>({
       context,
-      id: `${id}_current_scene`,
+      name: `${name} current scene`,
     });
 
     scheduler.cron({

@@ -21,6 +21,7 @@ export enum HASSIO_WS_COMMAND {
   backup_info = "backup/info",
   download_backup = "auth/sign_path",
   get_states = "get_states",
+  fire_event = "fire_event",
   ping = "ping",
   registry_get = "config/entity_registry/get",
   render_template = "render_template",

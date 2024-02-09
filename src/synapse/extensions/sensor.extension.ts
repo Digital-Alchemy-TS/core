@@ -1,19 +1,13 @@
-import { InternalError, TServiceParams } from "../../boilerplate";
-import { PICK_ENTITY } from "../../hass";
+import { TServiceParams } from "../../boilerplate";
 import { is, TContext } from "../../utilities";
-import { MaterialIcon, MaterialIconTags, SensorDeviceClasses } from "..";
+import { SensorDeviceClasses } from "..";
 
-type TSensor<
-  STATE extends SensorValue,
-  ATTRIBUTES extends object = object,
-  TAG extends MaterialIconTags = MaterialIconTags,
-> = {
+type TSensor<STATE extends SensorValue, ATTRIBUTES extends object = object> = {
   context: TContext;
   defaultState?: STATE;
-  icon?: MaterialIcon<TAG>;
+  icon?: string;
   defaultAttributes?: ATTRIBUTES;
-  id: string;
-  name?: string;
+  name: string;
 } & SensorDeviceClasses;
 
 type SensorValue = string | number;
@@ -21,104 +15,81 @@ type SensorValue = string | number;
 export type VirtualSensor<
   STATE extends SensorValue = SensorValue,
   ATTRIBUTES extends object = object,
-  TAG extends MaterialIconTags = MaterialIconTags,
 > = {
-  entity_id: PICK_ENTITY<"sensor">;
-  icon: MaterialIcon<TAG>;
+  icon: string;
   attributes: Readonly<ATTRIBUTES>;
   name: string;
   state: STATE;
 } & SensorDeviceClasses;
 
-const CACHE_KEY = (key: string) => `sensor_state_cache:${key}`;
-
 export function Sensor({
   logger,
-  cache,
   context,
   lifecycle,
-  server,
   synapse,
 }: TServiceParams) {
-  const registry = new Map<PICK_ENTITY<"sensor">, VirtualSensor>();
-  lifecycle.onBootstrap(() => BindHTTP());
-
-  function BindHTTP() {
-    const fastify = server.bindings.httpServer;
-
-    // # Describe the current situation
-    fastify.get(`/synapse/sensor`, synapse.http.validation, () => ({
-      sensors: [...registry.values()].map(entity => {
-        return {
-          attributes: entity.attributes,
-          device_class: entity.device_class,
-          icon: entity.icon,
-          name: entity.name,
-          state: entity.state,
-          unit_of_measurement: entity.unit_of_measurement,
-        };
-      }),
-    }));
-  }
+  const registry = synapse.registry<VirtualSensor>({
+    context,
+    details: entity => ({
+      attributes: entity.attributes,
+      device_class: entity.device_class,
+      state: entity.state,
+      unit_of_measurement: entity.unit_of_measurement,
+    }),
+    domain: "sensor",
+  });
 
   // # Sensor creation function
   function create<
     STATE extends SensorValue = SensorValue,
     ATTRIBUTES extends object = object,
-    TAG extends MaterialIconTags = MaterialIconTags,
-  >(entity: TSensor<STATE, ATTRIBUTES, TAG>) {
-    // ## Validate a good id was passed, and it's the only place in code that's using it
-    if (!is.domain(entity.id, "sensor")) {
-      throw new InternalError(
-        context,
-        "INVALID_ID",
-        "sensor domain entity_id is required",
-      );
-    }
-    if (registry.has(entity.id)) {
-      throw new InternalError(
-        context,
-        "DUPLICATE_SENSOR",
-        "sensor id is already in use",
-      );
-    }
-    logger.debug({ entity }, `create sensor`);
-
+  >(entity: TSensor<STATE, ATTRIBUTES>) {
     let state: STATE;
     let attributes: ATTRIBUTES;
 
-    async function setState(newState: STATE) {
-      logger.trace({ id: entity.id, newState }, `update sensor state`);
+    function setState(newState: STATE) {
+      if (state === newState) {
+        return;
+      }
+      logger.trace({ name: entity.name, newState }, `update sensor state`);
       state = newState;
-      await cache.set(CACHE_KEY(entity.id), state);
+      setImmediate(async () => {
+        logger.trace({ id, state }, `sending {state} update`);
+        await registry.setCache(id, { attributes, state });
+        await registry.send(id, { state });
+      });
     }
 
-    async function setAttributes(newAttributes: ATTRIBUTES) {
-      logger.trace(
-        { id: entity.id, newAttributes },
-        `update sensor attributes (all)`,
-      );
+    function setAttributes(newAttributes: ATTRIBUTES) {
+      if (is.equal(attributes, newAttributes)) {
+        return;
+      }
       attributes = newAttributes;
-      await cache.set(CACHE_KEY(entity.id), state);
+      setImmediate(async () => {
+        logger.trace({ attributes, id }, `update sensor attributes (all)`);
+        await registry.setCache(id, { attributes, state });
+        await registry.send(id, { attributes });
+      });
     }
 
     async function setAttribute<
       KEY extends keyof ATTRIBUTES,
       VALUE extends ATTRIBUTES[KEY],
     >(key: KEY, value: VALUE) {
-      logger.trace(
-        { id: entity.id, key, value },
-        `update sensor attributes (single)`,
-      );
+      if (is.equal(attributes[key], value)) {
+        return;
+      }
       attributes[key] = value;
       setImmediate(async () => {
-        await cache.set(CACHE_KEY(entity.id), state);
+        logger.trace({ id, key, value }, `update sensor attributes (single)`);
+        await registry.setCache(id, { attributes, state });
+        await registry.send(id, { attributes });
       });
     }
 
     // ## Wait until bootstrap to load cache
     lifecycle.onBootstrap(async () => {
-      const data = await cache.get(CACHE_KEY(entity.id), {
+      const data = await registry.getCache(id, {
         attributes: entity.defaultAttributes,
         state: entity.defaultState,
       });
@@ -130,9 +101,6 @@ export function Sensor({
     const sensorOut = new Proxy({} as VirtualSensor<STATE>, {
       // ### Getters
       get(_, property: keyof VirtualSensor<STATE>) {
-        if (property === "entity_id") {
-          return entity.id;
-        }
         if (property === "state") {
           return state;
         }
@@ -182,8 +150,9 @@ export function Sensor({
       },
     });
 
-    // ## Register it
-    registry.set(entity.id, sensorOut);
+    // ## Validate a good id was passed, and it's the only place in code that's using it
+    const id = registry.add(sensorOut);
+
     return sensorOut;
   }
 

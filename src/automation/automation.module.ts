@@ -1,5 +1,4 @@
 import { CreateLibrary } from "../boilerplate";
-import { PICK_ENTITY } from "../hass";
 import {
   AggressiveScenes,
   CircadianLighting,
@@ -37,8 +36,8 @@ export const LIB_AUTOMATION = CreateLibrary({
         "Minimum color temperature for circadian lighting. Used while it's dark out",
       type: "number",
     },
-    CIRCADIAN_SENSOR: {
-      default: "sensor.light_temperature" as PICK_ENTITY<"sensor">,
+    CIRCADIAN_SENSOR_NAME: {
+      default: "Light temperature",
       description: "Sensor for reading / writing current light temperature to",
       type: "string",
     },

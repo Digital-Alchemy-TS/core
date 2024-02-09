@@ -37,22 +37,22 @@ export interface GenericEntityDTO<
   state: STATE;
 }
 
-export declare interface EventDataDTO<ID extends PICK_ENTITY = PICK_ENTITY> {
+export interface EventData<ID extends PICK_ENTITY = PICK_ENTITY> {
   entity_id?: ID;
   event?: number;
   id?: string;
   new_state?: ENTITY_STATE<ID>;
   old_state?: ENTITY_STATE<ID>;
 }
-export declare interface HassEventDTO<
+export type EntityUpdateEvent<
   ID extends PICK_ENTITY = PICK_ENTITY,
   CONTEXT extends HassEntityContext = HassEntityContext,
-> {
+> = {
   context: CONTEXT;
-  data: EventDataDTO<ID>;
+  data: EventData<ID>;
   event_type: HassEvents;
   origin: "local";
   result?: string;
   time_fired: Date;
   variables: Record<string, unknown>;
-}
+};

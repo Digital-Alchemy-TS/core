@@ -59,7 +59,12 @@ export class IsIt {
     throw new Error("Unsupported type");
   }
 
-  public equal(a: unknown, b: unknown): boolean {
+  /**
+   * ### Deep equality test
+   *
+   * Mostly useful for comparing objects & arrays
+   */
+  public equal<T extends unknown>(a: T, b: T): boolean {
     return deepEqual(a, b);
   }
 

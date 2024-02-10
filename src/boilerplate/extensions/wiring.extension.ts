@@ -1,5 +1,5 @@
 import { each, eachSeries } from "async";
-import { EventEmitter } from "eventemitter3";
+import { EventEmitter } from "events";
 import { Level } from "pino";
 import { exit } from "process";
 import { Counter, Summary } from "prom-client";

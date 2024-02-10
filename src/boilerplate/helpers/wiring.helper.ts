@@ -1,5 +1,5 @@
 import { Dayjs } from "dayjs";
-import { EventEmitter } from "eventemitter3";
+import { EventEmitter } from "events";
 import { Logger } from "pino";
 
 import { CronExpression, TBlackHole, TContext } from "../..";

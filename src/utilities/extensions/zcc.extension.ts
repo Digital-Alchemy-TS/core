@@ -1,4 +1,4 @@
-import { EventEmitter } from "eventemitter3";
+import { EventEmitter } from "events";
 
 const FIRST = 0;
 const EVERYTHING_ELSE = 1;

@@ -1,53 +1,75 @@
-# ZCC Synapse for Home Assistant
+# ZCC Synapse Integration for Home Assistant
 
-ZCC Synapse is a custom integration for Home Assistant that enables the creation and management of virtual entities like binary sensors, buttons, switches, and scenes, offering local push updates for real-time interaction.
+## Installation and Configuration
 
-## Features
+### Enabling ZCC Synapse
 
-- **Local Push Updates**: Instantly reflects changes in entity states within Home Assistant without polling.
-- **Dynamic Entity Management**: Easily add, update, or remove entities based on external events.
-- **Versatile Integration**: Supports binary sensors, buttons, switches, and scenes, catering to a variety of use cases.
+To integrate ZCC Synapse with Home Assistant, follow these steps:
 
-## Installation
+#### Via HACS (Recommended)
 
-### Via HACS (Recommended)
+1. Ensure you have [HACS](https://hacs.xyz/) installed in Home Assistant.
+2. Open HACS from the Home Assistant sidebar.
+3. Navigate to "Integrations" > "+ Explore & add repositories."
+4. Search for "ZCC Synapse" and select it from the list.
+5. Click "Install this repository in HACS."
+6. Restart Home Assistant to apply the changes.
 
-1. Open HACS in the Home Assistant sidebar.
-2. Go to "Integrations" and click the "+ Explore & add repositories" button in the bottom right corner.
-3. Search for "ZCC Synapse" and select it.
-4. Click "Install this repository in HACS".
-5. Restart Home Assistant.
+#### Manual Installation
 
-### Manual Installation
+If you prefer or need to install the integration manually:
 
-1. Navigate to your Home Assistant configuration directory (where your `configuration.yaml` file is located).
-2. Create a new directory `custom_components/zcc` if it does not already exist.
-3. Clone or download this repository and copy the contents of the `custom_components/zcc/` directory into the `custom_components/zcc/` directory you just created.
-4. Restart Home Assistant.
+1. Clone or download this repository.
+2. Copy the `custom_components/zcc/` directory from the repository into the `<config_dir>/custom_components/` directory of your Home Assistant installation.
+3. Restart Home Assistant.
 
-## Configuration
+### Configuration
 
-After installation, add the following lines to your `configuration.yaml` file:
+After installation, add ZCC Synapse to your Home Assistant configuration:
 
 ```yaml
+# Add to configuration.yaml
 zcc:
 ```
 
-*Note: Further configuration might be required depending on your specific setup and use cases. Please refer to the [documentation](https://github.com/zoe-codez/zcc) for more details.*
+### Setting Up the Node.js Application
+
+Ensure your Node.js application using the `@zoe-codez/zcc/synapse` module is correctly configured to connect to Home Assistant:
+
+1. Obtain a long-lived access token from your Home Assistant user profile page.
+2. Use the token to authenticate the WebSocket connection in your Node.js application.
+3. Start your Node.js application. It should automatically connect to Home Assistant and begin managing entities.
+
+## Features, Workflows, and Supported Domains
+
+### Seamless Integration
+
+Upon setup, the Node.js application creates a direct, real-time link with Home Assistant, enabling dynamic entity management and event-driven communication with minimal manual intervention.
+
+### Automatic Entity Management
+
+The Synapse module communicates with Home Assistant, announcing available entities and pushing updates or responding to Home Assistant actions via the event bus. This creates a fluid, two-way interaction that doesn't require direct network configurations or persistent credentials.
+
+### Supported Domains
+
+Currently, ZCC Synapse supports managing various entity types within Home Assistant, including:
+
+- **Switches**: Toggleable entities reflecting the state of external devices or services.
+- **Sensors (with attributes)**: Entities providing readings from external data sources, including associated metadata.
+- **Binary Sensors**: Represent binary states (on/off) of external conditions or inputs.
+- **Buttons**: Triggerable entities that execute actions within external services.
+- **Scenes**: Predefined configurations that adjust multiple entities to specific states (implementation by `@zoe-codez/zcc/automation`).
+
+Future enhancements will expand support to additional domains, enhancing the integration's versatility and applicability to a broader range of automation scenarios.
 
 ## Usage
 
-Once ZCC Synapse is installed and configured, it automatically manages the virtual entities based on external events.
+Once enabled, the ZCC Synapse integration automatically coordinates with the connected Node.js application to manage entities. This includes generating unique IDs, tracking history, and ensuring entities appear on dashboards and persist across Home Assistant restarts.
 
-- **Binary Sensors**: Reflect the state of external conditions or sensors.
-- **Buttons**: Trigger actions in external systems or within Home Assistant.
-- **Switches**: Control on/off states of external devices.
-- **Scenes**: Activate predefined configurations of entities within Home Assistant.
+Switches can be manipulated via the Lovelace UI or service domain calls, just like native Home Assistant switches. Sensors follow a push model, with updates sent from the Node.js application to Home Assistant.
 
-## Support
+For more advanced automation and entity grouping, refer to `@zoe-codez/zcc/automation`, which provides tools for creating "rooms" and managing entity states and scene activation.
 
-For issues, questions, or contributions, please refer to the [GitHub repository](https://github.com/zoe-codez/zcc).
+## Documentation and Support
 
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+For more detailed documentation and support, visit the [GitHub repository](https://github.com/zoe-codez/zcc). Please report any issues or feature requests there.

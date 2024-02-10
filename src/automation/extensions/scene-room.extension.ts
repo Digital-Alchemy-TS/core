@@ -1,8 +1,7 @@
 import { eachSeries } from "async";
 
-import { TServiceParams } from "../../boilerplate";
+import { InternalError, TServiceParams } from "../../boilerplate";
 import { PICK_ENTITY } from "../../hass";
-import { InternalServerError } from "../../server";
 import { VirtualSensor } from "../../synapse";
 import { CronExpression, is, VALUE } from "../../utilities";
 import { RoomConfiguration, RoomScene, SceneLightState } from "../helpers";
@@ -144,7 +143,7 @@ export function SceneRoom({
     async function setScene(sceneName: SCENES) {
       // ensure not garbage inputs
       if (!is.string(sceneName) || !is.object(scenes[sceneName])) {
-        throw new InternalServerError(
+        throw new InternalError(
           parentContext,
           "INVALID_SCENE",
           `scene does not exist on room ${name}`,

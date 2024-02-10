@@ -1,7 +1,7 @@
 {
   "name": "@zoe-codez/zcc",
   "repository": "https://github.com/zoe-codez/zcc",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe"
@@ -33,7 +33,6 @@
     ".": "./dist/index.js",
     "./hass": "./dist/hass/index.js",
     "./mqtt": "./dist/mqtt/index.js",
-    "./server": "./dist/server/index.js",
     "./synapse": "./dist/synapse/index.js",
     "./automation": "./dist/automation/index.js"
   },
@@ -48,9 +47,6 @@
   },
   "dependencies": {
     "@faker-js/faker": "^8.4.0",
-    "@fastify/auth": "^4.5.0",
-    "@fastify/basic-auth": "^5.1.1",
-    "@fastify/jwt": "^8.0.0",
     "async": "^3.2.5",
     "bottleneck": "^2.19.5",
     "chalk": "^5.3.0",
@@ -59,7 +55,6 @@
     "dayjs": "^1.11.10",
     "deep-equal": "^2.2.3",
     "eventemitter3": "^5.0.1",
-    "fastify": "^4.26.0",
     "ini": "^4.1.1",
     "js-yaml": "^4.1.0",
     "minimist": "^1.2.8",

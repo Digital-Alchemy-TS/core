@@ -10,9 +10,10 @@ import { is, SINGLE, ZCC_Testing } from "../..";
 
 export const TESTING_APP_NAME = "zcc-unit-tests";
 
-export type RandomFileTestingDataFormat = ReturnType<
-  typeof ZCC_Testing.generateRandomData
->;
+// export type RandomFileTestingDataFormat = ReturnType<
+//   typeof ZCC_Testing.generateRandomData
+// >;
+export type RandomFileTestingDataFormat = object;
 
 export function ConfigurationFiles() {
   const testDataMap = new Map<string, RandomFileTestingDataFormat>();
@@ -54,8 +55,9 @@ export function ConfigurationFiles() {
             ])
           : paths,
       ).forEach(filename => {
-        const data = ZCC_Testing.generateRandomData();
-        writeConfigFile(filename, data);
+        console.log("FIXME: GENERATE RANDOM DATA", filename, writeConfigFile);
+        // const data = ZCC_Testing.generateRandomData();
+        // writeConfigFile(filename, data);
       });
     },
     sort: (filePaths: string[]): string[] => {

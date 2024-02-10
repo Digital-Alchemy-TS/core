@@ -1,4 +1,4 @@
-from homeassistant.components.scene import SceneEntity
+from homeassistant.components.scene import Scene as SceneEntity
 from homeassistant.core import callback
 from .const import DOMAIN
 import logging
@@ -12,32 +12,31 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     async def handle_scene_update(event):
         """Handle updates to scene list or individual scene activations."""
-        if event.event_type == 'zcc_list_scenes':
-            scenes_data = event.data['scenes']
-            existing_ids = set(hass.data[DOMAIN]['zcc_scene_entities'].keys())
-            incoming_ids = {scene['id'] for scene in scenes_data}
+        scenes_data = event.data['scene']
+        existing_ids = set(hass.data[DOMAIN]['zcc_scene_entities'].keys())
+        incoming_ids = {scene['id'] for scene in scenes_data}
 
-            # Remove scenes not in the incoming list
-            scenes_to_remove = existing_ids - incoming_ids
-            for scene_id in scenes_to_remove:
-                entity = hass.data[DOMAIN]['zcc_scene_entities'].pop(scene_id, None)
-                if entity:
-                    await entity.async_remove()
+        # Remove scenes not in the incoming list
+        scenes_to_remove = existing_ids - incoming_ids
+        for scene_id in scenes_to_remove:
+            entity = hass.data[DOMAIN]['zcc_scene_entities'].pop(scene_id, None)
+            if entity:
+                await entity.async_remove()
 
-            # Add or update scenes
-            for scene_info in scenes_data:
-                scene_id = scene_info['id']
-                if scene_id in hass.data[DOMAIN]['zcc_scene_entities']:
-                    # Update existing scene
-                    entity = hass.data[DOMAIN]['zcc_scene_entities'][scene_id]
-                    entity.update_info(scene_info)
-                else:
-                    # Create and add new scene
-                    new_scene = ZccScene(hass, scene_info)
-                    hass.data[DOMAIN]['zcc_scene_entities'][scene_id] = new_scene
-                    async_add_entities([new_scene], True)
+        # Add or update scenes
+        for scene_info in scenes_data:
+            scene_id = scene_info['id']
+            if scene_id in hass.data[DOMAIN]['zcc_scene_entities']:
+                # Update existing scene
+                entity = hass.data[DOMAIN]['zcc_scene_entities'][scene_id]
+                entity.update_info(scene_info)
+            else:
+                # Create and add new scene
+                new_scene = ZccScene(hass, scene_info)
+                hass.data[DOMAIN]['zcc_scene_entities'][scene_id] = new_scene
+                async_add_entities([new_scene], True)
 
-    hass.bus.async_listen('zcc_list_scenes', handle_scene_update)
+    hass.bus.async_listen('zcc_list_scene', handle_scene_update)
 
 class ZccScene(SceneEntity):
     """A class for ZCC scenes."""
@@ -47,6 +46,7 @@ class ZccScene(SceneEntity):
         self.hass = hass
         self._id = scene_info['id']
         self._name = scene_info['name']
+        self._icon = scene_info.get('icon')
 
     @property
     def unique_id(self):
@@ -73,7 +73,9 @@ class ZccScene(SceneEntity):
 
     def update_info(self, scene_info):
         """Update the scene's information."""
-        # Update logic here, e.g., self._name = scene_info.get('name', self._name)
+        self._name = scene_info.get('name', self._name)
+        self._icon = scene_info.get('icon', self._icon)
+        self.async_write_ha_state()
 
     async def async_added_to_hass(self):
         """When entity is added to Home Assistant."""

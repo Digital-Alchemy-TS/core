@@ -1,5 +1,12 @@
 import { CreateLibrary } from "../boilerplate";
-import { BinarySensor, Button, Registry, Sensor, Switch } from "./extensions";
+import {
+  BinarySensor,
+  Button,
+  Registry,
+  Scene,
+  Sensor,
+  Switch,
+} from "./extensions";
 
 export const LIB_SYNAPSE = CreateLibrary({
   configuration: {
@@ -30,6 +37,7 @@ export const LIB_SYNAPSE = CreateLibrary({
     binary_sensor: BinarySensor,
     button: Button,
     registry: Registry,
+    scene: Scene,
     sensor: Sensor,
     switch: Switch,
   },

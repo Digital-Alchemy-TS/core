@@ -17,16 +17,16 @@ async def async_setup(hass: HomeAssistant, config):
         )
     )
 
-    # hass.async_create_task(
-    #     hass.helpers.discovery.async_load_platform("button", DOMAIN, None, config)
-    # )
+    hass.async_create_task(
+        hass.helpers.discovery.async_load_platform("button", DOMAIN, None, config)
+    )
 
-    # hass.async_create_task(
-    #     hass.helpers.discovery.async_load_platform("switch", DOMAIN, None, config)
-    # )
+    hass.async_create_task(
+        hass.helpers.discovery.async_load_platform("switch", DOMAIN, None, config)
+    )
 
-    # hass.async_create_task(
-    #     hass.helpers.discovery.async_load_platform("scene", DOMAIN, None, config)
-    # )
+    hass.async_create_task(
+        hass.helpers.discovery.async_load_platform("scene", DOMAIN, None, config)
+    )
 
     return True

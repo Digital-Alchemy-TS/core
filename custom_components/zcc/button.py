@@ -15,29 +15,28 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     @callback
     def update_buttons(event):
         """Update button entities based on an event from the external system."""
-        if event.event_type == 'zcc_list_buttons':
-            current_entities = hass.data[DOMAIN]['zcc_button_entities']
-            updated_buttons = {button['id']: button for button in event.data['buttons']}
+        current_entities = hass.data[DOMAIN]['zcc_button_entities']
+        updated_buttons = {button['id']: button for button in event.data['button']}
 
-            # Remove entities that are no longer present
-            buttons_to_remove = set(current_entities) - set(updated_buttons)
-            for button_id in buttons_to_remove:
-                entity = current_entities.pop(button_id)
-                hass.async_create_task(entity.async_remove())
+        # Remove entities that are no longer present
+        buttons_to_remove = set(current_entities) - set(updated_buttons)
+        for button_id in buttons_to_remove:
+            entity = current_entities.pop(button_id)
+            hass.async_create_task(entity.async_remove())
 
-            # Update or add entities
-            for button_id, button_info in updated_buttons.items():
-                if button_id in current_entities:
-                    # Update existing entity
-                    entity = current_entities[button_id]
-                    entity.update_info(button_info)
-                else:
-                    # Add new entity
-                    new_button = ZccButton(hass, button_info)
-                    current_entities[button_id] = new_button
-                    async_add_entities([new_button], True)
+        # Update or add entities
+        for button_id, button_info in updated_buttons.items():
+            if button_id in current_entities:
+                # Update existing entity
+                entity = current_entities[button_id]
+                entity.update_info(button_info)
+            else:
+                # Add new entity
+                new_button = ZccButton(hass, button_info)
+                current_entities[button_id] = new_button
+                async_add_entities([new_button], True)
 
-    hass.bus.async_listen('zcc_list_buttons', update_buttons)
+    hass.bus.async_listen('zcc_list_button', update_buttons)
 
 class ZccButton(ButtonEntity):
     """A class for ZCC buttons."""

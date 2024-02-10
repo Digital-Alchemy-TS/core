@@ -9,7 +9,7 @@ type TScene = {
 
 type HassSceneUpdateEvent = {
   event_type: "zcc_scene_activate";
-  data: { button: string };
+  data: { scene: string };
 };
 
 export function Scene({ logger, hass, synapse, context }: TServiceParams) {
@@ -23,13 +23,13 @@ export function Scene({ logger, hass, synapse, context }: TServiceParams) {
     context: context,
     event: "zcc_scene_activate",
     exec({ data }: HassSceneUpdateEvent) {
-      const item = registry.byId(data.button);
+      const item = registry.byId(data.scene);
       if (!item) {
-        logger.warn({ data }, `Received button press for unknown button`);
+        logger.warn({ data }, `Received button press for unknown scene`);
         return;
       }
       const { exec, name } = item;
-      logger.trace({ data, label: name }, `received button press`);
+      logger.trace({ data, label: name }, `received scene activation`);
       setImmediate(async () => {
         await ZCC.safeExec(async () => await exec());
       });

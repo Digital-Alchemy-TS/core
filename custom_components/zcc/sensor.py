@@ -9,7 +9,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     async def handle_list_sensors(event):
         """Handle the complete list of sensors."""
-        sensors_data = event.data['sensors']
+        sensors_data = event.data['sensor']
         # Existing entity unique_ids
         existing_ids = set(hass.data[DOMAIN]['zcc_sensor_entities'].keys())
         incoming_ids = {sensor['id'] for sensor in sensors_data}
@@ -47,7 +47,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                     entity.update_attribute(attr, value)
 
     # Listen for sensor update events
-    hass.bus.async_listen('zcc_list_sensors', handle_list_sensors)
+    hass.bus.async_listen('zcc_list_sensor', handle_list_sensors)
     hass.bus.async_listen('zcc_event_sensor', handle_event_sensor)
 
 

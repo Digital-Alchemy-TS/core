@@ -1,4 +1,3 @@
-import JSON from "comment-json";
 import { existsSync, unlinkSync, writeFileSync } from "fs";
 import { encode as iniEncode } from "ini";
 import { dump as yamlDump } from "js-yaml";

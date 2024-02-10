@@ -23,7 +23,7 @@ setImmediate(async () => {
   await TYPE_WRITER.bootstrap({
     configuration: {
       boilerplate: {
-        LOG_LEVEL: "trace",
+        LOG_LEVEL: "warn",
       },
       hass: {
         CALL_PROXY_AUTO_SCAN: false,

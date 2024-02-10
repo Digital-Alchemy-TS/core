@@ -28,7 +28,7 @@ export function BuildTypes({
       }
       const text = await DoBuild();
       writeFileSync(path, text);
-      logger.info({ path }, `successfully wrote [hass] type definitions file`);
+      logger.warn({ path }, `successfully wrote [hass] type definitions file`);
     } catch (error) {
       logger.fatal({ error }, `failed to write type definitions file`);
     }

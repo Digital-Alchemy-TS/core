@@ -20,7 +20,7 @@ type SynapseSocketOptions<DATA extends object> = {
   details?: (data: DATA) => object;
 };
 
-const HEARTBEAT_INTERVAL = 10;
+const HEARTBEAT_INTERVAL = 5;
 
 export function Registry({
   lifecycle,

@@ -21,7 +21,7 @@ setImmediate(async () => {
   await NEXUS_APP.bootstrap({
     configuration: {
       boilerplate: {
-        LOG_LEVEL: "trace",
+        LOG_LEVEL: "debug",
       },
       hass: {
         CALL_PROXY_AUTO_SCAN: false,

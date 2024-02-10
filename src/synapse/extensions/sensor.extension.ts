@@ -17,7 +17,8 @@ export type VirtualSensor<
   ATTRIBUTES extends object = object,
 > = {
   icon: string;
-  attributes: Readonly<ATTRIBUTES>;
+  attributes: ATTRIBUTES;
+  _rawAttributes?: ATTRIBUTES;
   name: string;
   state: STATE;
 } & SensorDeviceClasses;
@@ -31,7 +32,7 @@ export function Sensor({
   const registry = synapse.registry<VirtualSensor>({
     context,
     details: entity => ({
-      attributes: entity.attributes,
+      attributes: entity._rawAttributes,
       device_class: entity.device_class,
       state: entity.state,
       unit_of_measurement: entity.unit_of_measurement,
@@ -98,9 +99,9 @@ export function Sensor({
     });
 
     // ## Proxy object as return
-    const sensorOut = new Proxy({} as VirtualSensor<STATE>, {
+    const sensorOut = new Proxy({} as VirtualSensor<STATE, ATTRIBUTES>, {
       // ### Getters
-      get(_, property: keyof VirtualSensor<STATE>) {
+      get(_, property: keyof VirtualSensor<STATE, ATTRIBUTES>) {
         if (property === "state") {
           return state;
         }
@@ -109,6 +110,12 @@ export function Sensor({
         }
         if (property === "device_class") {
           return entity.device_class;
+        }
+        if (property === "name") {
+          return entity.name;
+        }
+        if (property === "_rawAttributes") {
+          return attributes;
         }
         if (property === "attributes") {
           return new Proxy({} as ATTRIBUTES, {

@@ -73,7 +73,7 @@ class ZccBinarySensor(BinarySensorEntity):
 
     @property
     def available(self):
-        return self.hass.data[DOMAIN]['health_status']
+        return self.hass.data[DOMAIN].get('health_status', False)
 
     async def async_added_to_hass(self):
         """When entity is added to Home Assistant."""

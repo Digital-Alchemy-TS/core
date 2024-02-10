@@ -1,5 +1,9 @@
 from homeassistant.components.sensor import SensorEntity
 from .const import DOMAIN
+from homeassistant.core import callback
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the ZCC sensor platform."""
@@ -30,35 +34,22 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 entity.update_all(sensor_info['state'], sensor_info.get('attributes', {}))
             else:
                 # Create and add new sensor
-                new_sensor = ZccSensor(hass, hass.data[DOMAIN]['api'], sensor_info)
+                new_sensor = ZccSensor(hass, sensor_info)
                 hass.data[DOMAIN]['zcc_sensor_entities'][sensor_id] = new_sensor
                 async_add_entities([new_sensor])
 
-    async def handle_event_sensor(event):
-        """Handle individual sensor state or attribute updates."""
-        sensor_data = event.data
-        sensor_id = sensor_data['id']
-        if sensor_id in hass.data[DOMAIN]['zcc_sensor_entities']:
-            entity = hass.data[DOMAIN]['zcc_sensor_entities'][sensor_id]
-            if 'state' in sensor_data:
-                entity.update_state(sensor_data['state'])
-            elif 'attributes' in sensor_data:
-                for attr, value in sensor_data['attributes'].items():
-                    entity.update_attribute(attr, value)
-
     # Listen for sensor update events
     hass.bus.async_listen('zcc_list_sensor', handle_list_sensors)
-    hass.bus.async_listen('zcc_event_sensor', handle_event_sensor)
 
 
 class ZccSensor(SensorEntity):
-    def __init__(self, hass, api, sensor_info):
+    def __init__(self, hass, sensor_info):
         self.hass = hass
-        self._api = api
         self._id = sensor_info['id']
         self._name = sensor_info['name']
+        self._icon = sensor_info.get('icon')
         self._state = sensor_info['state']
-        self._unit_of_measurement = sensor_info['unit_of_measurement']
+        self._unit_of_measurement = sensor_info.get('unit_of_measurement')
         self._attributes = sensor_info.get('attributes', {})
         self._device_class = sensor_info.get('device_class', None)
 
@@ -74,6 +65,11 @@ class ZccSensor(SensorEntity):
     @property
     def state(self):
         return self._state
+
+    @property
+    def icon(self):
+        """Return the icon of the sensor."""
+        return self._icon
 
     @property
     def device_class(self):
@@ -109,3 +105,21 @@ class ZccSensor(SensorEntity):
         self.async_on_remove(
             self.hass.bus.async_listen('zcc_health_status_updated', self._handle_health_update)
         )
+        self.async_on_remove(
+            self.hass.bus.async_listen('zcc_event_sensor', self._handle_event_sensor)
+        )
+
+    async def _handle_event_sensor(self, event):
+        """Handle individual sensor state or attribute updates."""
+        if event.data.get('id') == self._id:
+            data = event.data.get('data')
+            if 'state' in data:
+                self.update_state(data['state'])
+            elif 'attributes' in data:
+                for attr, value in data['attributes'].items():
+                    self.update_attribute(attr, value)
+
+    @callback
+    async def _handle_health_update(self, event):
+        """Handle health status update."""
+        self.async_schedule_update_ha_state(True)

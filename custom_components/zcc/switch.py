@@ -12,7 +12,7 @@ class ZccSwitch(SwitchEntity):
         self.hass = hass
         self._id = switch_info['id']
         self._name = switch_info['name']
-        self._icon = switch_info['icon']
+        self._icon = switch_info.get('icon')
         self._state = switch_info['state'] == "on"
 
     @property
@@ -33,7 +33,7 @@ class ZccSwitch(SwitchEntity):
     @property
     def available(self):
         """Return if the switch is available."""
-        return self.hass.data[DOMAIN].get('health_status', True)
+        return self.hass.data[DOMAIN].get('health_status', False)
 
     async def async_turn_on(self):
         """Turn the switch on."""
@@ -52,29 +52,37 @@ class ZccSwitch(SwitchEntity):
                 'data': {'switch': self._id, 'state': new_state}
             })
 
+    def _handle_switch_update_direct(self, switch_info):
+        self._name = switch_info['name']
+        self._icon = switch_info.get('icon')
+        self._state = switch_info['state'] == "on"
+        self.async_write_ha_state()
+
     async def async_added_to_hass(self):
         """When entity is added to Home Assistant."""
         self.async_on_remove(
             self.hass.bus.async_listen('zcc_event_switch', self._handle_switch_update)
         )
+        self.async_on_remove(
+            self.hass.bus.async_listen('zcc_health_status_updated', self._handle_health_update)
+        )
 
     @callback
     def _handle_switch_update(self, event):
         """Handle incoming switch state updates."""
-        if event.data.get('data', {}).get('switch') == self._id:
+        if event.data.get('id') == self._id:
+            # _LOGGER.error(new_state)
             new_state = event.data.get('data', {}).get('state')
+
             # Prevent circular updates by checking if the state actually changed
             if new_state != ("on" if self._state else "off"):
                 self._state = new_state == "on"
                 self.async_write_ha_state()
 
-    def _handle_switch_update_direct(self, switch_info):
-        """Handle direct updates to the switch without emitting events (to avoid loops)."""
-        new_state = switch_info['state']
-        if new_state != ("on" if self._state else "off"):
-            self._state = new_state == "on"
-            self.async_write_ha_state()
-
+    @callback
+    async def _handle_health_update(self, event):
+        """Handle health status update."""
+        self.async_schedule_update_ha_state(True)
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
@@ -84,7 +92,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     async def handle_list_update(event):
         """Handle updates to the list of switches."""
-        updated_switches = event.data['switches']
+        updated_switches = event.data['switch']
         # Track existing switch entities by their unique IDs
         existing_switch_ids = set(hass.data[DOMAIN]['zcc_switch_entities'].keys())
         updated_switch_ids = {switch['id'] for switch in updated_switches}
@@ -107,14 +115,5 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 hass.data[DOMAIN]['zcc_switch_entities'][switch_id] = new_switch
                 async_add_entities([new_switch], True)
 
-    async def handle_switch_event(event):
-        """Handle individual switch state updates."""
-        switch_data = event.data['data']
-        switch_id = switch_data['switch']
-        if switch_id in hass.data[DOMAIN]['zcc_switch_entities']:
-            entity = hass.data[DOMAIN]['zcc_switch_entities'][switch_id]
-            entity._handle_switch_update(event)
-
     # Register event listeners
-    hass.bus.async_listen('zcc_list_switches', handle_list_update)
-    hass.bus.async_listen('zcc_event_switch', handle_switch_event)
+    hass.bus.async_listen('zcc_list_switch', handle_list_update)

@@ -26,6 +26,10 @@ async def async_setup(hass: HomeAssistant, config):
     )
 
     hass.async_create_task(
+        hass.helpers.discovery.async_load_platform("sensor", DOMAIN, None, config)
+    )
+
+    hass.async_create_task(
         hass.helpers.discovery.async_load_platform("scene", DOMAIN, None, config)
     )
 

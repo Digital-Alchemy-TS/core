@@ -63,6 +63,10 @@ class ZccButton(ButtonEntity):
         """Return the icon of the button."""
         return self._icon
 
+    @property
+    def available(self):
+        return self.hass.data[DOMAIN].get('health_status', False)
+
     async def async_press(self):
         """Handle the button press."""
         self.hass.bus.async_fire('zcc_button_press', {'button': self._id})

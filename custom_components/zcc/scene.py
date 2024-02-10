@@ -61,7 +61,7 @@ class ZccScene(SceneEntity):
     @property
     def available(self):
         """Return if the scene is available."""
-        return self.hass.data[DOMAIN].get('health_status', True)
+        return self.hass.data[DOMAIN].get('health_status', False)
 
     async def async_activate(self):
         """Activate the scene."""

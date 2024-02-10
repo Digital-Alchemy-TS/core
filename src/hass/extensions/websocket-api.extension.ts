@@ -242,7 +242,7 @@ export function WebsocketAPI({
     } catch (error) {
       logger.error({ error, url }, `initConnection error`);
       connecting = false;
-      setTimeout(async () => await init(), 5000);
+      setTimeout(async () => await init(), config.hass.RETRY_INTERVAL);
     }
   }
 

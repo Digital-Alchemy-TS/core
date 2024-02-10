@@ -20,7 +20,7 @@ export function EntitiesExtension({
     icon: "sun-angle",
     name: "Test binary sensor",
   });
-  const sensor = synapse.sensor({
+  const sensor = synapse.sensor<string, { number: number }>({
     context,
     defaultAttributes: {
       number: 5000,
@@ -32,6 +32,9 @@ export function EntitiesExtension({
     context,
     exec: () => {
       binary.on = !binary.on;
+      sensor.state = Date.now().toString();
+      sensor.attributes.number = sensor.attributes.number + 1;
+      theSwitch.on = !theSwitch.on;
     },
     interval: 2000,
   });
@@ -41,5 +44,9 @@ export function EntitiesExtension({
       logger.warn("scene activated");
     },
     name: "test scene",
+  });
+  const theSwitch = synapse.switch({
+    context,
+    name: "the switch",
   });
 }

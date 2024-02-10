@@ -8,7 +8,7 @@ import {
   SceneRoom,
   SequenceWatcher,
   SolarCalculator,
-} from ".";
+} from "./extensions";
 
 export const LIB_AUTOMATION = CreateLibrary({
   configuration: {

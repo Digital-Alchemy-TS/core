@@ -1,8 +1,7 @@
 import { each } from "async";
 
-import { TServiceParams } from "../../boilerplate";
+import { CronExpression, is, TServiceParams } from "../..";
 import { domain, ENTITY_STATE, PICK_ENTITY } from "../../hass";
-import { CronExpression, is } from "../../utilities";
 import {
   AGGRESSIVE_SCENES_ADJUSTMENT,
   AggressiveScenesAdjustmentData,

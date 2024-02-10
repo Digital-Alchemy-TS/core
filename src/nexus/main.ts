@@ -1,10 +1,11 @@
 import { CreateApplication } from "..";
+import { LIB_AUTOMATION } from "../automation";
 import { LIB_HASS } from "../hass";
 import { LIB_SYNAPSE } from "../synapse";
 import { EntitiesExtension } from "./entities.extension";
 
 export const NEXUS_APP = CreateApplication({
-  libraries: [LIB_HASS, LIB_SYNAPSE],
+  libraries: [LIB_HASS, LIB_SYNAPSE, LIB_AUTOMATION],
   name: "nexus",
   services: {
     entities: EntitiesExtension,

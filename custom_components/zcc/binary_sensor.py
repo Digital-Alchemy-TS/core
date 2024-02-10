@@ -1,35 +1,56 @@
-from .api import ZccApi
-from .health_sensor import HealthCheckSensor, start_health_check_polling
+from .health_sensor import HealthCheckSensor
 from .const import DOMAIN
+from homeassistant.core import callback
 from homeassistant.components.binary_sensor import BinarySensorEntity
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Setup the ZCC binary sensor platform."""
-    # Ensure API is already set up
     if DOMAIN not in hass.data:
         return False
 
-    api = hass.data[DOMAIN]['api']
+    hass.data[DOMAIN]['binary_sensors'] = {}
+    async_add_entities([HealthCheckSensor(hass)], True)
 
-    # Fetch service data to create a meaningful sensor name
-    service_name = hass.data[DOMAIN]['service_data']['application']
-    sensor_name = f"{service_name}_is_online"
-    sensor = HealthCheckSensor(api, sensor_name)
+    @callback
+    def handle_binary_sensor_update(event):
+        """Handle incoming binary sensor update."""
+        _LOGGER.error("HIT")
+        sensors = event.data['binary_sensor']
+        existing_entities = hass.data[DOMAIN]['binary_sensors']
 
-    async_add_entities([sensor], True)
+        # Update or add new entities
+        for sensor in sensors:
+            if sensor['id'] in existing_entities:
+                # Update existing entity
+                entity = existing_entities[sensor['id']]
+                entity._state = sensor['state'] == "on"
+                entity.async_write_ha_state()
 
-    hass.loop.create_task(start_health_check_polling(api, sensor, hass))
+            else:
+                # Create new entity
+                entity = ZccBinarySensor(hass, sensor)
+                existing_entities[sensor['id']] = entity
+                async_add_entities([entity])
 
-    sensors_data = await api.list_binary_sensors()
-    if sensors_data is None:
-        return
-    sensors = [ZccBinarySensor(hass, api, sensor) for sensor in sensors_data['binary_sensors']]
-    async_add_entities(sensors)
+        # Remove entities not in the update
+        current_ids = set(existing_entities.keys())
+        updated_ids = {sensor['id'] for sensor in sensors}
+        for sensor_id in current_ids - updated_ids:
+            entity = existing_entities.pop(sensor_id)
+            hass.async_create_task(entity.async_remove())
+    _LOGGER.error("LOADED")
+
+    hass.bus.async_listen('zcc_list_binary_sensor', handle_binary_sensor_update)
+
+    return True
+
 
 class ZccBinarySensor(BinarySensorEntity):
-    def __init__(self, hass, api, sensor_info):
+    def __init__(self, hass, sensor_info):
         self.hass = hass
-        self._api = api
         self._id = sensor_info['id']
         self._name = sensor_info['name']
         self._icon = sensor_info['icon']
@@ -54,18 +75,7 @@ class ZccBinarySensor(BinarySensorEntity):
 
     @property
     def available(self):
-        return self.hass.data[DOMAIN].get('health_status', False)
-
-    async def async_turn_on(self):
-        """Turn the switch on."""
-        self._state = True
-        self.async_write_ha_state()
-
-    async def async_turn_off(self):
-        """Turn the switch off."""
-        self._state = False
-        self.async_write_ha_state()
-
+        return self.hass.data[DOMAIN]['health_status']
 
     async def async_added_to_hass(self):
         """When entity is added to Home Assistant."""
@@ -73,8 +83,20 @@ class ZccBinarySensor(BinarySensorEntity):
             self.hass.bus.async_listen('zcc_health_status_updated', self._handle_health_update)
         )
 
+        self.async_on_remove(
+            self.hass.bus.async_listen('zcc_event_binary_sensor', self.handle_binary_sensor_event)
+        )
+
+    @callback
     async def _handle_health_update(self, event):
         """Handle health status update."""
-        # Update the entity's available state based on the event data
-        # Trigger an update of the entity's state if necessary
         self.async_schedule_update_ha_state(True)
+
+    async def handle_binary_sensor_event(self, event):
+        """Handle incoming binary sensor update events."""
+        # Check if the event is for this sensor
+        if event.data.get('id') == self._id:
+            new_state = event.data.get('data', {}).get('state')
+            if new_state:
+                self._state = True if new_state == "on" else False
+                self.async_write_ha_state()

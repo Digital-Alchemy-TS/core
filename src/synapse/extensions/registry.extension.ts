@@ -1,8 +1,7 @@
 import {
-  HALF,
   InternalError,
   is,
-  MINUTE,
+  SECOND,
   TContext,
   TServiceParams,
   ZCC,
@@ -21,6 +20,8 @@ type SynapseSocketOptions<DATA extends object> = {
   details?: (data: DATA) => object;
 };
 
+const HEARTBEAT_INTERVAL = 10;
+
 export function Registry({
   lifecycle,
   logger,
@@ -34,11 +35,11 @@ export function Registry({
     if (!config.synapse.EMIT_HEARTBEAT) {
       return;
     }
-    logger.debug(`Starting heartbeat`);
+    logger.trace(`Starting heartbeat`);
     scheduler.interval({
       context,
       exec: async () => await hass.socket.fireEvent("zcc_heartbeat"),
-      interval: HALF * MINUTE,
+      interval: HEARTBEAT_INTERVAL * SECOND,
     });
   });
 
@@ -61,6 +62,7 @@ export function Registry({
     });
 
     async function SendEntityList() {
+      logger.debug(`send [%s] entity list`, domain);
       await hass.socket.fireEvent(`zcc_list_${domain}`, {
         [domain]: [...registry.entries()].map(([id, item]) => {
           return {
@@ -73,10 +75,11 @@ export function Registry({
       });
     }
 
-    lifecycle.onReady(async () => {
+    hass.socket.onConnect(async () => {
       await SendEntityList();
       initComplete = true;
     });
+
     const CACHE_KEY = (id: string) => `${domain}_cache:${id}`;
 
     return {
@@ -108,10 +111,13 @@ export function Registry({
         return await cache.get(CACHE_KEY(id), defaultValue);
       },
       async send(id: string, data: object) {
-        await hass.socket.fireEvent(`zcc_event_${domain}`, {
-          data,
-          id,
-        });
+        if (!hass.socket.getConnectionActive()) {
+          logger.debug(
+            `socket connection isn't active, not sending update event`,
+          );
+          return;
+        }
+        await hass.socket.fireEvent(`zcc_event_${domain}`, { data, id });
       },
       async setCache(id: string, value: unknown) {
         await cache.set(CACHE_KEY(id), value);

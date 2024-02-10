@@ -29,6 +29,7 @@ let CONNECTION_ACTIVE = false;
 const CLEANUP_INTERVAL = 5;
 const PING_INTERVAL = 10;
 let messageCount = START;
+export const SOCKET_CONNECTED = "SOCKET_CONNECTED";
 
 export function WebsocketAPI({
   context,
@@ -45,6 +46,7 @@ export function WebsocketAPI({
    * Local attachment points for socket events
    */
   const socketEvents = new EventEmitter();
+  let connecting = false;
 
   let MESSAGE_TIMESTAMPS: number[] = [];
   const waitingCallback = new Map<number, (result: unknown) => TBlackHole>();
@@ -118,10 +120,8 @@ export function WebsocketAPI({
   }
 
   async function fireEvent(event_type: string, event_data?: object) {
-    return await sendMessage(
-      { event_data, event_type, type: "fire_event" },
-      false,
-    );
+    // logger.debug({ event_data, event_type, type: "fire_event" });
+    return await sendMessage({ event_data, event_type, type: "fire_event" });
   }
 
   async function sendMessage<RESPONSE_VALUE extends unknown = unknown>(
@@ -139,12 +139,11 @@ export function WebsocketAPI({
     }
     countMessage();
     if (data.type !== HASSIO_WS_COMMAND.auth) {
-      // You want know how annoying this one was to debug?!
+      if (!CONNECTION_ACTIVE) {
+        logger.error({ data }, `Cannot send message, connection is not open`);
+        return undefined;
+      }
       data.id = messageCount;
-    }
-    if (connection?.readyState !== WS.OPEN) {
-      logger.error({ data }, `Cannot send message, connection is not open`);
-      return undefined;
     }
     const json = JSON.stringify(data);
     connection.send(json);
@@ -197,7 +196,11 @@ export function WebsocketAPI({
         `Destroy the current connection before creating a new one`,
       );
     }
-    logger.debug(`CONNECTION_ACTIVE = false`);
+    if (connecting) {
+      return;
+    }
+    connecting = true;
+    logger.debug(`CONNECTION_ACTIVE = {false}`);
     const url = getUrl();
     CONNECTION_ACTIVE = false;
     try {
@@ -224,11 +227,22 @@ export function WebsocketAPI({
           await init();
         }
       });
+      connection.on("close", async () => {
+        logger.warn("connection closed");
+        await teardown();
+        await sleep(config.hass.RETRY_INTERVAL);
+        logger.info("re-init");
+        await init();
+      });
       return await new Promise(done => {
-        connection.once("open", () => done());
+        connection.once("open", () => {
+          done();
+        });
       });
     } catch (error) {
       logger.error({ error, url }, `initConnection error`);
+      connecting = false;
+      setTimeout(async () => await init(), 5000);
     }
   }
 
@@ -259,6 +273,8 @@ export function WebsocketAPI({
         logger.debug(`CONNECTION_ACTIVE = {true}`);
         // * Flag as valid connection
         CONNECTION_ACTIVE = true;
+        connecting = false;
+        event.emit(SOCKET_CONNECTED);
         clearTimeout(AUTH_TIMEOUT);
         logger.debug(`Event Subscriptions starting`);
         await sendMessage({ type: HASSIO_WS_COMMAND.subscribe_events }, false);
@@ -368,6 +384,7 @@ export function WebsocketAPI({
      * Convenient wrapper for sendMessage
      */
     fireEvent,
+
     getConnectionActive: () => CONNECTION_ACTIVE,
     /**
      * Set up a new websocket connection to home assistant
@@ -375,6 +392,12 @@ export function WebsocketAPI({
      * This doesn't normally need to be called by applications, the extension self manages
      */
     init,
+
+    onConnect: (callback: () => TBlackHole) => {
+      event.on(SOCKET_CONNECTED, async () => {
+        await ZCC.safeExec(async () => await callback());
+      });
+    },
     /**
      * Attach to the incoming stream of socket events. Do your own filtering and processing from there
      *

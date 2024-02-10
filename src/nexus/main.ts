@@ -1,11 +1,10 @@
 import { CreateApplication } from "..";
 import { LIB_HASS } from "../hass";
-import { LIB_SERVER } from "../server";
 import { LIB_SYNAPSE } from "../synapse";
 import { EntitiesExtension } from "./entities.extension";
 
 export const NEXUS_APP = CreateApplication({
-  libraries: [LIB_SERVER, LIB_HASS, LIB_SYNAPSE],
+  libraries: [LIB_HASS, LIB_SYNAPSE],
   name: "nexus",
   services: {
     entities: EntitiesExtension,
@@ -26,10 +25,6 @@ setImmediate(async () => {
       },
       hass: {
         CALL_PROXY_AUTO_SCAN: false,
-        SOCKET_AUTO_CONNECT: false,
-      },
-      server: {
-        PORT: 3001,
       },
     },
   });

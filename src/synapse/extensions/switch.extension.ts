@@ -1,5 +1,4 @@
 import { TServiceParams } from "../../boilerplate";
-import { PICK_ENTITY } from "../../hass";
 import { TContext } from "../../utilities";
 
 type TSwitch = {
@@ -21,7 +20,7 @@ export type VirtualSwitch = {
 
 type UpdateSwitchBody = {
   event_type: "zcc_switch_update";
-  data: { switch: PICK_ENTITY<"switch">; state: LocalOnOff };
+  data: { switch: string; state: LocalOnOff };
 };
 
 export function Switch({

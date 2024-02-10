@@ -1,4 +1,4 @@
-import deepEqual from "deep-equal";
+import { deepEqual } from "assert";
 
 import { EMPTY, EVEN, NONE, START, TBlackHole, TContext } from "../helpers";
 
@@ -61,11 +61,14 @@ export class IsIt {
 
   /**
    * ### Deep equality test
-   *
-   * Mostly useful for comparing objects & arrays
    */
   public equal<T extends unknown>(a: T, b: T): boolean {
-    return deepEqual(a, b);
+    try {
+      deepEqual(a, b);
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   public even(test: number): boolean {

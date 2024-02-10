@@ -1,6 +1,6 @@
 /* eslint-disable sonarjs/cognitive-complexity */
-import { CronJob } from "cron";
 import dayjs, { Dayjs } from "dayjs";
+import { schedule } from "node-cron";
 
 import { TBlackHole, ZCC } from "../..";
 import {
@@ -26,14 +26,17 @@ export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
   function cron({
     context,
     exec,
-    schedule,
+    schedule: scheduleList,
     label,
   }: SchedulerOptions & { schedule: Schedule | Schedule[] }) {
     const stopFunctions: (() => TBlackHole)[] = [];
-    [schedule].flat().forEach(schedule => {
-      logger.debug({ context, label, schedule }, `starting schedule`);
-      const cronJob = new CronJob(
-        schedule,
+    [scheduleList].flat().forEach(cronSchedule => {
+      logger.debug(
+        { context, label, schedule: cronSchedule },
+        `starting schedule`,
+      );
+      const cronJob = schedule(
+        cronSchedule,
         async () =>
           await ZCC.safeExec({
             duration: SCHEDULE_EXECUTION_TIME,
@@ -49,7 +52,10 @@ export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
       });
 
       const stopFunction = () => {
-        logger.debug({ context, label, schedule }, `stopping schedule`);
+        logger.debug(
+          { context, label, schedule: cronSchedule },
+          `stopping schedule`,
+        );
         cronJob.stop();
       };
 

@@ -196,6 +196,8 @@ export function ZCC_Fetch({ logger, context: parentContext }: TServiceParams) {
           return await execFetch(fetchWith);
         });
       },
+      setBaseUrl: (url: string) => (baseUrl = url),
+      setHeaders: (headers: Record<string, string>) => (baseHeaders = headers),
     };
   };
   ZCC.createFetcher = createFetcher;
@@ -213,6 +215,8 @@ declare module "../../utilities" {
   export interface ZCCDefinition {
     createFetcher: (options: FetcherOptions) => {
       download: TDownload;
+      setBaseUrl: (url: string) => void;
+      setHeaders: (headers: Record<string, string>) => void;
       fetch: TFetch;
     };
     fetch: TFetch;

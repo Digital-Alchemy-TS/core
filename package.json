@@ -31,6 +31,7 @@
   "exports": {
     ".": "./dist/index.js",
     "./hass": "./dist/hass/index.js",
+    "./gotify": "./dist/gotify/index.js",
     "./synapse": "./dist/synapse/index.js",
     "./automation": "./dist/automation/index.js"
   },

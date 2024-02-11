@@ -1,10 +1,16 @@
 import { eachSeries } from "async";
 
-import { InternalError, TServiceParams } from "../../boilerplate";
+import {
+  CronExpression,
+  InternalError,
+  is,
+  TServiceParams,
+  VALUE,
+  ZCC,
+} from "../..";
 import { PICK_ENTITY } from "../../hass";
 import { VirtualSensor } from "../../synapse";
-import { CronExpression, is, VALUE } from "../../utilities";
-import { RoomConfiguration, RoomScene, SceneLightState } from "../helpers";
+import { RoomConfiguration, RoomScene, SceneLightState } from "..";
 
 type RoomDefinition<SCENES extends string> = {
   scene: SCENES;
@@ -26,11 +32,10 @@ export function SceneRoom({
   // eslint-disable-next-line sonarjs/cognitive-complexity
   return function <SCENES extends string>({
     name,
-    id,
     context,
     scenes,
   }: RoomConfiguration<SCENES>): RoomDefinition<SCENES> {
-    logger.info({ id, name }, `Create room`);
+    logger.info({ name, scenes: Object.keys(scenes) }, `Create room`);
 
     const currentScene = synapse.sensor<SCENES>({
       context,
@@ -161,7 +166,7 @@ export function SceneRoom({
         }
         if (property === "sceneId") {
           return (scene: SCENES) => {
-            return `scene.${id}_${scene}`;
+            return ZCC.toHassId("scene", name, scene);
           };
         }
         if (property === "currentSceneEntity") {

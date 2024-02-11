@@ -1,6 +1,6 @@
 import { Get } from "type-fest";
 
-import { is, TBlackHole } from "../..";
+import { is, TBlackHole, ZCC } from "../..";
 import { ENTITY_SETUP, iCallService } from "../dynamic";
 import { HassEntityContext } from ".";
 
@@ -88,4 +88,20 @@ declare module "../../utilities" {
       domain: DOMAIN,
     ) => entity is PICK_ENTITY<DOMAIN>;
   }
+  export interface ZCCDefinition {
+    /**
+     * Take some strings, and reformat into an entity_id using the same rules as home assistant
+     *
+     * Doesn't account for uniqueness rules that cause _1 / _2 / _3 / etc to be added
+     */
+    toHassId: (domain: ALL_DOMAINS, ...parts: string[]) => string;
+  }
 }
+ZCC.toHassId = (domain: ALL_DOMAINS, ...parts: string[]) => {
+  const name = parts
+    .join(" ")
+    .toLowerCase()
+    .replaceAll(/\s+/g, "_")
+    .replaceAll(/\W/g, "");
+  return `${domain}.${name}`;
+};

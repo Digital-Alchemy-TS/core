@@ -83,10 +83,6 @@ export type RoomConfiguration<SCENES extends string> = {
   name?: string;
 
   /**
-   * Used for construction of entity ids and such
-   */
-  id: string;
-  /**
    * Global scenes are required to be declared within the room
    */
   scenes: Record<SCENES, RoomScene>;

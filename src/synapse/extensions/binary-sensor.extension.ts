@@ -1,5 +1,5 @@
 import { TServiceParams } from "../../boilerplate";
-import { TContext } from "../../utilities";
+import { each, TBlackHole, TContext, ZCC } from "../../utilities";
 import { OnOff } from "..";
 
 type TBinarySensor = {
@@ -13,8 +13,10 @@ export type VirtualBinarySensor = {
   state: OnOff;
   name: string;
   icon: string;
+  onUpdate: (callback: BinarySensorUpdateCallback) => void;
   on: boolean;
 };
+type BinarySensorUpdateCallback = (state: boolean) => TBlackHole;
 
 export function BinarySensor({
   logger,
@@ -22,6 +24,8 @@ export function BinarySensor({
   lifecycle,
   synapse,
 }: TServiceParams) {
+  const callbacks = [] as BinarySensorUpdateCallback[];
+
   const registry = synapse.registry<VirtualBinarySensor>({
     context,
     details: item => ({ state: item.state }),
@@ -48,12 +52,17 @@ export function BinarySensor({
         );
         await registry.setCache(id, state);
         await registry.send(id, { state });
+        await each(
+          callbacks,
+          async callback =>
+            await ZCC.safeExec(async () => await callback(state === "on")),
+        );
       });
     }
 
     // ## Wait until bootstrap to load cache
     lifecycle.onBootstrap(async () => {
-      state = await registry.getCache(id, sensor.defaultState ?? "off");
+      state = await registry.getCache(id, sensor.defaultState || "off");
     });
 
     // ## Proxy object as return
@@ -67,6 +76,10 @@ export function BinarySensor({
         }
         if (property === "icon") {
           return sensor.icon;
+        }
+        if (property === "onUpdate") {
+          return (callback: BinarySensorUpdateCallback) =>
+            callbacks.push(callback);
         }
         if (property === "name") {
           return sensor.name;

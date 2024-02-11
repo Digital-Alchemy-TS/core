@@ -1,5 +1,5 @@
 import { TServiceParams } from "../../boilerplate";
-import { is, TContext } from "../../utilities";
+import { each, is, TBlackHole, TContext, ZCC } from "../../utilities";
 import { SensorDeviceClasses } from "..";
 
 type TSensor<STATE extends SensorValue, ATTRIBUTES extends object = object> = {
@@ -11,6 +11,10 @@ type TSensor<STATE extends SensorValue, ATTRIBUTES extends object = object> = {
 } & SensorDeviceClasses;
 
 type SensorValue = string | number;
+type SwitchUpdateCallback<
+  STATE extends SensorValue = SensorValue,
+  ATTRIBUTES extends object = object,
+> = (options: { state?: STATE; attributes?: ATTRIBUTES }) => TBlackHole;
 
 export type VirtualSensor<
   STATE extends SensorValue = SensorValue,
@@ -20,6 +24,7 @@ export type VirtualSensor<
   attributes: ATTRIBUTES;
   _rawAttributes?: ATTRIBUTES;
   name: string;
+  onUpdate: (callback: SwitchUpdateCallback<STATE, ATTRIBUTES>) => void;
   state: STATE;
 } & SensorDeviceClasses;
 
@@ -29,6 +34,8 @@ export function Sensor({
   lifecycle,
   synapse,
 }: TServiceParams) {
+  const callbacks = [] as SwitchUpdateCallback[];
+
   const registry = synapse.registry<VirtualSensor>({
     context,
     details: entity => ({
@@ -58,6 +65,12 @@ export function Sensor({
         logger.trace({ id, state }, `sending {state} update`);
         await registry.setCache(id, { attributes, state });
         await registry.send(id, { state });
+
+        await each(
+          callbacks,
+          async callback =>
+            await ZCC.safeExec(async () => await callback({ state })),
+        );
       });
     }
 
@@ -70,6 +83,12 @@ export function Sensor({
         logger.trace({ attributes, id }, `update sensor attributes (all)`);
         await registry.setCache(id, { attributes, state });
         await registry.send(id, { attributes });
+
+        await each(
+          callbacks,
+          async callback =>
+            await ZCC.safeExec(async () => await callback({ attributes })),
+        );
       });
     }
 
@@ -85,6 +104,12 @@ export function Sensor({
         logger.trace({ id, key, value }, `update sensor attributes (single)`);
         await registry.setCache(id, { attributes, state });
         await registry.send(id, { attributes });
+
+        await each(
+          callbacks,
+          async callback =>
+            await ZCC.safeExec(async () => await callback({ attributes })),
+        );
       });
     }
 
@@ -113,6 +138,9 @@ export function Sensor({
         }
         if (property === "name") {
           return entity.name;
+        }
+        if (property === "onUpdate") {
+          return (callback: SwitchUpdateCallback) => callbacks.push(callback);
         }
         if (property === "_rawAttributes") {
           return attributes;

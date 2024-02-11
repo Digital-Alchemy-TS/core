@@ -1,5 +1,5 @@
 import { TServiceParams } from "../../boilerplate";
-import { TContext } from "../../utilities";
+import { each, TBlackHole, TContext, ZCC } from "../../utilities";
 
 type TSwitch = {
   context: TContext;
@@ -14,14 +14,16 @@ export type VirtualSwitch = {
   state: LocalOnOff;
   on: boolean;
   icon: string;
-  id: string;
   name: string;
+  onUpdate: (callback: SwitchUpdateCallback) => void;
 };
 
 type UpdateSwitchBody = {
   event_type: "zcc_switch_update";
   data: { switch: string; state: LocalOnOff };
 };
+
+type SwitchUpdateCallback = (state: boolean) => TBlackHole;
 
 export function Switch({
   logger,
@@ -30,6 +32,7 @@ export function Switch({
   hass,
   synapse,
 }: TServiceParams) {
+  const callbacks = [] as SwitchUpdateCallback[];
   const registry = synapse.registry<VirtualSwitch>({
     context,
     details: entity => ({
@@ -81,6 +84,11 @@ export function Switch({
         logger.trace({ id, state }, `switch state updated`);
         await registry.setCache(id, state);
         await registry.send(id, { state });
+        await each(
+          callbacks,
+          async callback =>
+            await ZCC.safeExec(async () => await callback(state === "on")),
+        );
       });
     }
 
@@ -101,6 +109,9 @@ export function Switch({
         }
         if (property === "name") {
           return entity.name;
+        }
+        if (property === "onUpdate") {
+          return (callback: SwitchUpdateCallback) => callbacks.push(callback);
         }
         return undefined;
       },

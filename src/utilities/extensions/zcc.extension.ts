@@ -1,7 +1,27 @@
+import dayjs, { Dayjs } from "dayjs";
 import { EventEmitter } from "events";
+
+import { DAY, HOUR, MINUTE, SECOND } from "..";
 
 const FIRST = 0;
 const EVERYTHING_ELSE = 1;
+type inputFormats = Date | string | number | Dayjs;
+const formatter = new Intl.RelativeTimeFormat("en", {
+  numeric: "auto",
+  style: "short",
+});
+
+const DAYS = 365;
+const MONTHS = 12;
+const YEAR = DAY * DAYS;
+const units = new Map<Intl.RelativeTimeFormatUnit, number>([
+  ["year", YEAR],
+  ["month", YEAR / MONTHS],
+  ["day", DAY],
+  ["hour", HOUR],
+  ["minute", MINUTE],
+  ["second", SECOND],
+]);
 
 export class ZCCDefinition_Utils {
   public TitleCase(input: string): string {
@@ -16,6 +36,28 @@ export class ZCCDefinition_Utils {
           `${word.charAt(FIRST).toUpperCase()}${word.slice(EVERYTHING_ELSE)}`,
       )
       .join(" ");
+  }
+
+  public relativeDate(
+    pastDate: inputFormats,
+    futureDate: inputFormats = new Date().toISOString(),
+  ) {
+    if (!pastDate) {
+      return `NOT A DATE ${pastDate} ${JSON.stringify(pastDate)}`;
+    }
+    const elapsed = dayjs(pastDate).diff(futureDate, "ms");
+    let out = "";
+
+    [...units.keys()].some(unit => {
+      const cutoff = units.get(unit);
+      if (Math.abs(elapsed) > cutoff || unit == "second") {
+        out = formatter.format(Math.round(elapsed / cutoff), unit);
+        return true;
+      }
+      return false;
+    });
+
+    return out;
   }
 }
 

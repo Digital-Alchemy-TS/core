@@ -49,7 +49,7 @@ export function ManagedSwitch({
     schedule = CronExpression.EVERY_10_MINUTES,
     shouldBeOn,
     onEvent = [],
-    onEntityUpdate = [],
+    onUpdate = [],
   }: ManagedSwitchOptions) {
     logger.info({ context, entity_id }, `Setting up managed switch`);
     const entityList = is.array(entity_id) ? entity_id : [entity_id];
@@ -74,14 +74,16 @@ export function ManagedSwitch({
     scheduler.cron({ context, exec: async () => await update(), schedule });
 
     // Update when relevant entities update
-    if (!is.empty(onEntityUpdate)) {
-      [onEntityUpdate]
-        .flat()
-        .forEach(i =>
-          hass.entity
-            .byId(is.object(i) ? i.entity_id : i)
-            .onUpdate(async () => await update()),
-        );
+    if (!is.empty(onUpdate)) {
+      [onUpdate].flat().forEach(i => {
+        if (is.object(i) && "onUpdate" in i) {
+          i.onUpdate(async () => await update());
+          return;
+        }
+        hass.entity
+          .byId(is.object(i) ? i.entity_id : i)
+          .onUpdate(async () => await update());
+      });
     }
 
     // Update on relevant events

@@ -47,7 +47,7 @@ export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
           }),
       );
       lifecycle.onReady(() => {
-        logger.warn("Start cron");
+        logger.debug({ context, schedule: cronSchedule }, "Start cron");
         cronJob.start();
       });
 

@@ -51,8 +51,8 @@ Run a callback on a #cron schedule
 > [!package] NPM [node-cron](https://www.npmjs.com/package/node-cron)
 
 ```typescript
-export function MyService({ schedule, context }: TServiceParams) {
-	schedule({
+export function MyService({ scheduler, context }: TServiceParams) {
+	scheduler.cron({
 		context,
 		label: "backups",
 		cron: CronExpression.EVERY_DAY_AT_2AM,

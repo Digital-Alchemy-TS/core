@@ -1,10 +1,13 @@
 import { PICK_ENTITY } from "../../hass";
-import { CronExpression, TContext } from "../../utilities";
+import { CronExpression, TBlackHole, TContext } from "../../utilities";
 
 export type PickASwitch =
   | PICK_ENTITY<"switch">
   | { entity_id: PICK_ENTITY<"switch"> };
-type EntityUpdate = PICK_ENTITY | { entity_id: PICK_ENTITY };
+type EntityUpdate =
+  | PICK_ENTITY
+  | { entity_id: PICK_ENTITY }
+  | { onUpdate: (callback: () => TBlackHole) => void };
 
 export interface ManagedSwitchOptions {
   /**
@@ -24,7 +27,7 @@ export interface ManagedSwitchOptions {
   /**
    * Check on update of this entity
    */
-  onEntityUpdate?: EntityUpdate | EntityUpdate[];
+  onUpdate?: EntityUpdate | EntityUpdate[];
   /**
    * Receive updates from configured annotations
    */

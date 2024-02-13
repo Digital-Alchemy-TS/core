@@ -53,8 +53,6 @@ This option specifies the URL of the Redis server that will be used for caching.
 
 ## Code Examples
 
-#ZCC-Usage-Example
-
 ```typescript
 export function WeatherForecastService({ logger, cache, lifecycle }: TServiceParams) {
   

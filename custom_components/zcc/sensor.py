@@ -13,38 +13,45 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
     async def handle_list_sensors(event):
         """Handle the complete list of sensors."""
-        sensors_data = event.data['sensor']
+        sensors = event.data['sensor']
+        app = event.data['app']
+        _LOGGER.info(f"{app} sent {len(sensors)} entities")
         # Existing entity unique_ids
         existing_ids = set(hass.data[DOMAIN]['zcc_sensor_entities'].keys())
-        incoming_ids = {sensor['id'] for sensor in sensors_data}
+        incoming_ids = {sensor['id'] for sensor in sensors}
 
         # Remove sensors not in the incoming list
         sensors_to_remove = existing_ids - incoming_ids
         for sensor_id in sensors_to_remove:
             entity = hass.data[DOMAIN]['zcc_sensor_entities'].pop(sensor_id, None)
             if entity:
+                _LOGGER.debug(f"{app} remove {entity._name}")
                 await entity.async_remove()
 
         # Update existing or add new sensors
-        for sensor_info in sensors_data:
+        for sensor_info in sensors:
             sensor_id = sensor_info['id']
             if sensor_id in hass.data[DOMAIN]['zcc_sensor_entities']:
                 # Update existing sensor
                 entity = hass.data[DOMAIN]['zcc_sensor_entities'][sensor_id]
                 entity.update_all(sensor_info['state'], sensor_info.get('attributes', {}))
+                _LOGGER.debug(f"{app} updating {sensor_info['name']}")
+
             else:
                 # Create and add new sensor
-                new_sensor = ZccSensor(hass, sensor_info)
+                new_sensor = ZccSensor(hass, app, sensor_info)
                 hass.data[DOMAIN]['zcc_sensor_entities'][sensor_id] = new_sensor
                 async_add_entities([new_sensor])
+                _LOGGER.debug(f"{app} adding {sensor_info['name']}")
 
     # Listen for sensor update events
     hass.bus.async_listen('zcc_list_sensor', handle_list_sensors)
 
 
 class ZccSensor(SensorEntity):
-    def __init__(self, hass, sensor_info):
+    def __init__(self, hass, app, sensor_info):
         self.hass = hass
+        self._app = app
         self._id = sensor_info['id']
         self._name = sensor_info['name']
         self._icon = sensor_info.get('icon')
@@ -81,11 +88,14 @@ class ZccSensor(SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        return self._attributes
+        return {
+            **self._attributes,
+            "Managed By": self._app
+        }
 
     @property
     def available(self):
-        return self.hass.data[DOMAIN].get('health_status', False)
+        return self.hass.data[DOMAIN]['health_status'].get(self._app, False)
 
     def update_state(self, state):
         self._state = state
@@ -103,7 +113,7 @@ class ZccSensor(SensorEntity):
     async def async_added_to_hass(self):
         """When entity is added to Home Assistant."""
         self.async_on_remove(
-            self.hass.bus.async_listen('zcc_health_status_updated', self._handle_health_update)
+            self.hass.bus.async_listen(f"zcc_{self._app}_health_status_updated", self._handle_health_update)
         )
         self.async_on_remove(
             self.hass.bus.async_listen('zcc_event_sensor', self._handle_event_sensor)
@@ -115,7 +125,7 @@ class ZccSensor(SensorEntity):
             data = event.data.get('data')
             if 'state' in data:
                 self.update_state(data['state'])
-            elif 'attributes' in data:
+            if 'attributes' in data:
                 for attr, value in data['attributes'].items():
                     self.update_attribute(attr, value)
 

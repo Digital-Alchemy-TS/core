@@ -7,9 +7,10 @@ import logging
 _LOGGER = logging.getLogger(__name__)
 
 class ZccSwitch(SwitchEntity):
-    def __init__(self, hass, switch_info):
+    def __init__(self, hass, app, switch_info):
         """Initialize the switch."""
         self.hass = hass
+        self._app = app
         self._id = switch_info['id']
         self._name = switch_info['name']
         self._icon = switch_info.get('icon')
@@ -33,7 +34,7 @@ class ZccSwitch(SwitchEntity):
     @property
     def available(self):
         """Return if the switch is available."""
-        return self.hass.data[DOMAIN].get('health_status', False)
+        return self.hass.data[DOMAIN]['health_status'].get(self._app, False)
 
     async def async_turn_on(self):
         """Turn the switch on."""
@@ -64,14 +65,13 @@ class ZccSwitch(SwitchEntity):
             self.hass.bus.async_listen('zcc_event_switch', self._handle_switch_update)
         )
         self.async_on_remove(
-            self.hass.bus.async_listen('zcc_health_status_updated', self._handle_health_update)
+            self.hass.bus.async_listen(f"zcc_{self._app}_health_status_updated", self._handle_health_update)
         )
 
     @callback
     def _handle_switch_update(self, event):
         """Handle incoming switch state updates."""
         if event.data.get('id') == self._id:
-            # _LOGGER.error(new_state)
             new_state = event.data.get('data', {}).get('state')
 
             # Prevent circular updates by checking if the state actually changed
@@ -93,13 +93,16 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     async def handle_list_update(event):
         """Handle updates to the list of switches."""
         updated_switches = event.data['switch']
+        app = event.data['app']
         # Track existing switch entities by their unique IDs
+        _LOGGER.info(f"{app} sent {len(updated_switches)} entities")
         existing_switch_ids = set(hass.data[DOMAIN]['zcc_switch_entities'].keys())
         updated_switch_ids = {switch['id'] for switch in updated_switches}
 
         # Remove switches that are no longer present
         for switch_id in existing_switch_ids - updated_switch_ids:
             entity = hass.data[DOMAIN]['zcc_switch_entities'].pop(switch_id)
+            _LOGGER.debug(f"remove {entity._name}")
             await entity.async_remove()
 
         # Update existing entities and add new ones
@@ -109,11 +112,13 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
                 # Update existing switch entity
                 entity = hass.data[DOMAIN]['zcc_switch_entities'][switch_id]
                 entity._handle_switch_update_direct(switch_info)  # Direct update without event
+                _LOGGER.debug(f"updating {switch_info['name']}")
             else:
                 # Create a new ZccSwitch entity
-                new_switch = ZccSwitch(hass, switch_info)
+                new_switch = ZccSwitch(hass, app, switch_info)
                 hass.data[DOMAIN]['zcc_switch_entities'][switch_id] = new_switch
                 async_add_entities([new_switch], True)
+                _LOGGER.debug(f"{app} adding {switch_info['name']}")
 
     # Register event listeners
     hass.bus.async_listen('zcc_list_switch', handle_list_update)

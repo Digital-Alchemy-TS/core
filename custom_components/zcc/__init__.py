@@ -1,6 +1,9 @@
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup(hass: HomeAssistant, config):
@@ -32,5 +35,8 @@ async def async_setup(hass: HomeAssistant, config):
     hass.async_create_task(
         hass.helpers.discovery.async_load_platform("scene", DOMAIN, None, config)
     )
+
+    hass.bus.async_fire('zcc_extension_loaded')
+    _LOGGER.info("extension loaded")
 
     return True

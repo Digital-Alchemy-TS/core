@@ -18,7 +18,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         """Handle updates to scene list or individual scene activations."""
         # * Process entities
         scenes_data = event.data.get('domains', {}).get("scene", {})
-        app = event.data["app"]
+        app = event.data.get('app')
         existing_ids = set(hass.data[DOMAIN]["scene"].keys())
         incoming_ids = {scene["id"] for scene in scenes_data}
         _LOGGER.info(f"{app} sent {len(scenes_data)} entities")
@@ -26,15 +26,15 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         scenes_to_remove = existing_ids - incoming_ids
 
         for scene_info in scenes_data:
-            scene_id = scene_info["id"]
+            scene_id = scene_info.get("id")
             if scene_id in hass.data[DOMAIN]["scene"]:
                 # * Update existing entity
                 entity = hass.data[DOMAIN]["scene"][scene_id]
                 entity.update_info(scene_info)
-                _LOGGER.debug(f"updating {scene_info['name']}")
+                _LOGGER.debug(f"updating {scene_info.get('name')}")
             else:
                 # * Create new entity
-                _LOGGER.debug(f"{app} adding {scene_info['name']}")
+                _LOGGER.debug(f"{app} adding {scene_info.get('name')}")
                 new_scene = ZccScene(hass, app, scene_info)
                 hass.data[DOMAIN]["scene"][scene_id] = new_scene
                 async_add_entities([new_scene], True)
@@ -43,6 +43,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         for scene_id in scenes_to_remove:
             entity = hass.data[DOMAIN]["scene"].pop(scene_id, None)
             if entity:
+                _LOGGER.debug(f"{app} remove {entity._name}")
                 await entity.async_remove()
 
     # * Attach update listener
@@ -57,9 +58,9 @@ class ZccScene(SceneEntity):
         """Initialize the scene."""
         self.hass = hass
         self._app = app
-        self._id = scene_info["id"]
-        self._name = scene_info["name"]
-        self._icon = scene_info.get("icon")
+        self._id = scene_info.get("id")
+        self._name = scene_info.get("name")
+        self._icon = scene_info.get("icon", "mdi:lightbulb-night-outline")
 
     @property
     def unique_id(self):

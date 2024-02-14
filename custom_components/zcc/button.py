@@ -21,9 +21,10 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
         # * Process entities
         current_entities = hass.data[DOMAIN]["button"]
+        app = event.data.get('app')
         buttons = event.data.get('domains', {}).get("button", {})
-        updated_buttons = {button["id"]: button for button in buttons}
-        _LOGGER.info(f"received update ({buttons} entities)")
+        updated_buttons = {button.get("id"): button for button in buttons}
+        _LOGGER.info(f"received update ({len(buttons)} entities)")
 
         buttons_to_remove = set(current_entities) - set(updated_buttons)
 
@@ -36,7 +37,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             else:
                 # * Create new entity
                 _LOGGER.debug(f"adding {button_info['name']}")
-                new_button = ZccButton(hass, button_info)
+                new_button = ZccButton(hass, app, button_info)
                 current_entities[button_id] = new_button
                 async_add_entities([new_button], True)
 
@@ -54,11 +55,12 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 class ZccButton(ButtonEntity):
     """A class for ZCC buttons."""
 
-    def __init__(self, hass, button_info):
+    def __init__(self, hass, app, button_info):
         """Initialize the button."""
         self.hass = hass
-        self._id = button_info["id"]
-        self._name = button_info["name"]
+        self._app = app;
+        self._id = button_info.get("id")
+        self._name = button_info.get("name")
         self._icon = button_info.get("icon", "mdi:gesture-tap")
 
     @property

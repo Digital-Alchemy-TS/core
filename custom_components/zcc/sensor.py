@@ -19,30 +19,30 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
         # * Process entities
         sensors = event.data.get('domains', {}).get("sensor", {})
-        app = event.data["app"]
+        app = event.data.get('app')
         _LOGGER.info(f"{app} sent {len(sensors)} entities")
         existing_ids = set(hass.data[DOMAIN]["sensor"].keys())
-        incoming_ids = {sensor["id"] for sensor in sensors}
+        incoming_ids = {sensor.get("id") for sensor in sensors}
 
         # Remove sensors not in the incoming list
         sensors_to_remove = existing_ids - incoming_ids
 
         for sensor_info in sensors:
-            sensor_id = sensor_info["id"]
+            sensor_id = sensor_info.get("id")
             if sensor_id in hass.data[DOMAIN]["sensor"]:
                 # * Update existing entity
                 entity = hass.data[DOMAIN]["sensor"][sensor_id]
                 entity.update_all(
-                    sensor_info["state"], sensor_info.get("attributes", {})
+                    sensor_info.get("state"), sensor_info.get("attributes", {})
                 )
-                _LOGGER.debug(f"{app} updating {sensor_info['name']}")
+                _LOGGER.debug(f"{app} updating {sensor_info.get('name')}")
 
             else:
                 # * Create new entity
                 new_sensor = ZccSensor(hass, app, sensor_info)
                 hass.data[DOMAIN]["sensor"][sensor_id] = new_sensor
                 async_add_entities([new_sensor])
-                _LOGGER.debug(f"{app} adding {sensor_info['name']}")
+                _LOGGER.debug(f"{app} adding {sensor_info.get('name')}")
 
         # * Remove entities not in the update
         for sensor_id in sensors_to_remove:
@@ -60,10 +60,10 @@ class ZccSensor(SensorEntity):
     def __init__(self, hass, app, sensor_info):
         self.hass = hass
         self._app = app
-        self._id = sensor_info["id"]
-        self._name = sensor_info["name"]
-        self._icon = sensor_info.get("icon")
-        self._state = sensor_info["state"]
+        self._id = sensor_info.get("id")
+        self._name = sensor_info.get("name")
+        self._icon = sensor_info.get("icon", "mdi:satellite-uplink")
+        self._state = sensor_info.get("state", "")
         self._unit_of_measurement = sensor_info.get("unit_of_measurement")
         self._attributes = sensor_info.get("attributes", {})
         self._device_class = sensor_info.get("device_class", None)

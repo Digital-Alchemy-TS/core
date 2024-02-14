@@ -19,26 +19,26 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         """Handle updates to the list of switches."""
         # * Process entities
         updated_switches = event.data.get('domains', {}).get("switch", {})
-        app = event.data["app"]
+        app = event.data.get('app')
         _LOGGER.info(f"{app} sent {len(updated_switches)} entities")
         existing_switch_ids = set(hass.data[DOMAIN]["switch"].keys())
-        updated_switch_ids = {switch["id"] for switch in updated_switches}
+        updated_switch_ids = {switch.get("id") for switch in updated_switches}
 
         for switch_info in updated_switches:
-            switch_id = switch_info["id"]
+            switch_id = switch_info.get("id")
             if switch_id in existing_switch_ids:
                 # * Update existing entity
                 entity = hass.data[DOMAIN]["switch"][switch_id]
                 entity._handle_switch_update_direct(
                     switch_info
                 )  # Direct update without event
-                _LOGGER.debug(f"updating {switch_info['name']}")
+                _LOGGER.debug(f"updating {switch_info.get('name')}")
             else:
                 # * Create new entity
+                _LOGGER.debug(f"{app} adding {switch_info}")
                 new_switch = ZccSwitch(hass, app, switch_info)
                 hass.data[DOMAIN]["switch"][switch_id] = new_switch
                 async_add_entities([new_switch], True)
-                _LOGGER.debug(f"{app} adding {switch_info['name']}")
 
         # * Remove entities not in the update
         for switch_id in existing_switch_ids - updated_switch_ids:
@@ -56,10 +56,10 @@ class ZccSwitch(SwitchEntity):
         """Initialize the switch."""
         self.hass = hass
         self._app = app
-        self._id = switch_info["id"]
-        self._name = switch_info["name"]
-        self._icon = switch_info.get("icon")
-        self._state = switch_info["state"] == "on"
+        self._id = switch_info.get("id")
+        self._name = switch_info.get("name")
+        self._icon = switch_info.get("icon", "mdi:electric-switch")
+        self._state = switch_info.get("state", "off") == "on"
 
     @property
     def unique_id(self):

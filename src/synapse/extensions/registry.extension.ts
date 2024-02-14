@@ -61,7 +61,8 @@ export function Registry({
     logger.trace(`Starting heartbeat`);
     scheduler.interval({
       context,
-      exec: async () => await hass.socket.fireEvent("zcc_heartbeat"),
+      exec: async () =>
+        await hass.socket.fireEvent(`zcc_heartbeat_${ZCC.application.name}`),
       interval: HEARTBEAT_INTERVAL * SECOND,
     });
   });

@@ -12,14 +12,15 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     if DOMAIN not in hass.data:
         return False
 
-    if "button" not in hass.data[DOMAIN]:
+    if "health_sensor" not in hass.data[DOMAIN]:
         hass.data[DOMAIN]["health_sensor"] = {}
+    if "binary_sensor" not in hass.data[DOMAIN]:
         hass.data[DOMAIN]["binary_sensor"] = {}
 
     @callback
     def handle_application_upgrade(event):
         """Handle incoming binary sensor update."""
-        app = event.data["app"]
+        app = event.data.get('app')
 
         # * First time seeing this app, create health check sensor
         if app not in hass.data[DOMAIN]["health_sensor"]:
@@ -34,23 +35,24 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         existing_entities = hass.data[DOMAIN]["binary_sensor"]
 
         for sensor in entities:
-            if sensor["id"] in existing_entities:
+            id = sensor.get("id")
+            if id in existing_entities:
                 # * Update existing entity
-                entity = existing_entities[sensor["id"]]
-                entity._state = sensor["state"] == "on"
+                entity = existing_entities[id]
+                entity._state = sensor.get("state", "off") == "on"
                 entity.async_write_ha_state()
                 _LOGGER.debug(f"{app} updating {sensor['name']}")
 
             else:
                 # * Create new entity
                 entity = ZccBinarySensor(hass, app, sensor)
-                existing_entities[sensor["id"]] = entity
+                existing_entities[id] = entity
                 async_add_entities([entity])
                 _LOGGER.debug(f"{app} adding {sensor['name']}")
 
         # * Remove entities not in the update
         current_ids = set(existing_entities.keys())
-        updated_ids = {sensor["id"] for sensor in entities}
+        updated_ids = {sensor.get("id") for sensor in entities}
         for sensor_id in current_ids - updated_ids:
             entity = existing_entities.pop(sensor_id)
             _LOGGER.debug(f"{app} remove {entity._name}")
@@ -65,10 +67,10 @@ class ZccBinarySensor(BinarySensorEntity):
     def __init__(self, hass, app, sensor_info):
         self.hass = hass
         self._app = app
-        self._id = sensor_info["id"]
-        self._name = sensor_info["name"]
-        self._icon = sensor_info["icon"]
-        self._state = sensor_info["state"] == "on"
+        self._id = sensor_info.get("id")
+        self._name = sensor_info.get("name")
+        self._icon = sensor_info.get("icon", "mdi:toggle-switch-variant-off")
+        self._state = sensor_info.get("state", "off") == "on"
 
     @property
     def unique_id(self):

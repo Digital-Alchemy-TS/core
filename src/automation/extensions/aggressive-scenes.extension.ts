@@ -117,7 +117,7 @@ export function AggressiveScenes({
       // nothing to do
       return;
     }
-    if (!scene.definition) {
+    if (!scene?.definition) {
       logger.warn({ context }, `cannot validate room scene`);
       return;
     }

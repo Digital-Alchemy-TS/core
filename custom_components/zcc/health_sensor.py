@@ -5,6 +5,7 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class HealthCheckSensor(BinarySensorEntity):
     """Representation of a Health Check Binary Sensor."""
 
@@ -12,11 +13,11 @@ class HealthCheckSensor(BinarySensorEntity):
         """Initialize the binary sensor."""
         self.hass = hass
 
-        if 'health_status' not in hass.data[DOMAIN]:
-            hass.data[DOMAIN]['health_status'] = {}
+        if "health_status" not in hass.data[DOMAIN]:
+            hass.data[DOMAIN]["health_status"] = {}
 
         self._app = app
-        self.hass.data[DOMAIN]['health_status'][app] = False
+        self.hass.data[DOMAIN]["health_status"][app] = False
         _LOGGER.debug(f"creating health check sensor for {app}")
 
         self._name = f"{app} synapse is connected"
@@ -36,7 +37,7 @@ class HealthCheckSensor(BinarySensorEntity):
     @property
     def is_on(self):
         """Return true if the binary sensor is on (indicating 'alive')."""
-        return self.hass.data[DOMAIN]['health_status'][self._app]
+        return self.hass.data[DOMAIN]["health_status"][self._app]
 
     async def async_added_to_hass(self):
         """Run when this Entity has been added to Home Assistant."""
@@ -49,16 +50,15 @@ class HealthCheckSensor(BinarySensorEntity):
         self.reset_heartbeat_timer()
 
         # Don't announce anything if the state didn't change
-        if self.hass.data[DOMAIN]['health_status'][self._app] == True:
-            return;
+        if self.hass.data[DOMAIN]["health_status"][self._app] == True:
+            return
 
         # Update flags, and send an update event
-        self.hass.data[DOMAIN]['health_status'][self._app] = True
+        self.hass.data[DOMAIN]["health_status"][self._app] = True
         self.async_write_ha_state()
-        self.hass.bus.async_fire(f"zcc_{self._app}_health_status_updated", {
-            'status': True
-        })
-
+        self.hass.bus.async_fire(
+            f"zcc_{self._app}_health_status_updated", {"status": True}
+        )
 
     def reset_heartbeat_timer(self):
         """Reset the heartbeat timer to detect unavailability."""
@@ -69,21 +69,21 @@ class HealthCheckSensor(BinarySensorEntity):
 
     def mark_as_dead(self):
         """Actions to take when the application is considered dead."""
-        if self.hass.data[DOMAIN]['health_status'][self._app] == False:
+        if self.hass.data[DOMAIN]["health_status"][self._app] == False:
             # I'm pretty sure this condition shouldn't happen
             return
 
         _LOGGER.info(f"failed to receive health check for {self._app}")
 
-        self.hass.data[DOMAIN]['health_status'][self._app] = False
+        self.hass.data[DOMAIN]["health_status"][self._app] = False
         self.async_write_ha_state()
-        self.hass.bus.async_fire(f"zcc_{self._app}_health_status_updated", {
-            'status': False
-        })
+        self.hass.bus.async_fire(
+            f"zcc_{self._app}_health_status_updated", {"status": False}
+        )
 
     async def async_will_remove_from_hass(self):
         """Cleanup the timer when entity is removed."""
         if self._heartbeat_timer:
             self._heartbeat_timer.cancel()
-        self.hass.data[DOMAIN]['health_status'].pop(self._app)
+        self.hass.data[DOMAIN]["health_status"].pop(self._app)
         _LOGGER.info(f"removing health check for {self._app}")

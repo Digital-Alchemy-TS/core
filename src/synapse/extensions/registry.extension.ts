@@ -21,6 +21,7 @@ type SynapseSocketOptions<DATA extends object> = {
 };
 
 const HEARTBEAT_INTERVAL = 5;
+const BOOT_TIME = new Date().toISOString();
 
 export function Registry({
   lifecycle,
@@ -43,6 +44,55 @@ export function Registry({
     });
   });
 
+  const LOADERS = new Map<ALL_DOMAINS, () => object[]>();
+  let initComplete = false;
+
+  async function SendEntityList() {
+    logger.debug(`send entity list`);
+    const domains = Object.fromEntries(
+      [...LOADERS.keys()].map(domain => {
+        const data = LOADERS.get(domain)();
+        return [domain, data];
+      }),
+    );
+    const hash = is.hash(JSON.stringify(domains));
+    await hass.socket.fireEvent(`zcc_application_state`, {
+      app: ZCC.application.name,
+      boot: BOOT_TIME,
+      domains,
+      hash,
+    });
+  }
+
+  hass.socket.onConnect(async () => {
+    initComplete = true;
+    if (!config.synapse.ANNOUNCE_AT_BOOT) {
+      return;
+    }
+    logger.info(`socket connect: sending entity list`);
+    await SendEntityList();
+  });
+
+  hass.socket.onEvent({
+    context,
+    event: "zcc_app_reload",
+    exec: async ({ app }: { app: string }) => {
+      if (app !== ZCC.application.name) {
+        return;
+      }
+      logger.info(`zcc.reload(%s)`, app);
+      await SendEntityList();
+    },
+  });
+  hass.socket.onEvent({
+    context,
+    event: "zcc_app_reload_all",
+    exec: async () => {
+      logger.info({ all: true }, `zcc.reload()`);
+      await SendEntityList();
+    },
+  });
+
   return function <DATA extends BaseEntity>({
     domain,
     context,
@@ -50,7 +100,6 @@ export function Registry({
   }: SynapseSocketOptions<DATA>) {
     logger.trace({ name: domain }, `init domain`);
     const registry = new Map<string, DATA>();
-    let initComplete = false;
 
     hass.socket.onEvent({
       context: context,
@@ -61,26 +110,17 @@ export function Registry({
       },
     });
 
-    async function SendEntityList() {
-      logger.debug(`send [%s] entity list`, domain);
-      await hass.socket.fireEvent(`zcc_list_${domain}`, {
-        [domain]: [...registry.entries()].map(([id, item]) => {
-          return {
-            ...(details ? details(item) : {}),
-            icon: is.empty(item.icon) ? undefined : `mdi:${item.icon}`,
-            id,
-            name: item.name,
-          };
-        }),
-      });
-    }
-
-    hass.socket.onConnect(async () => {
-      await SendEntityList();
-      initComplete = true;
-    });
-
     const CACHE_KEY = (id: string) => `${domain}_cache:${id}`;
+    LOADERS.set(domain, () => {
+      return [...registry.entries()].map(([id, item]) => {
+        return {
+          ...(details ? details(item) : {}),
+          icon: is.empty(item.icon) ? undefined : `mdi:${item.icon}`,
+          id,
+          name: item.name,
+        };
+      });
+    });
 
     return {
       add(data: DATA) {
@@ -117,7 +157,7 @@ export function Registry({
           );
           return;
         }
-        await hass.socket.fireEvent(`zcc_event_${domain}`, { data, id });
+        await hass.socket.fireEvent(`zcc_event`, { data, id });
       },
       async setCache(id: string, value: unknown) {
         await cache.set(CACHE_KEY(id), value);

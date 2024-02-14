@@ -54,7 +54,7 @@ export const LIB_AUTOMATION = CreateLibrary({
     circadian: CircadianLighting,
     controller: SceneController,
     light: LightManager,
-    managedSwitch: ManagedSwitch,
+    managed_switch: ManagedSwitch,
     room: SceneRoom,
     sequence: SequenceWatcher,
     solar: SolarCalculator,

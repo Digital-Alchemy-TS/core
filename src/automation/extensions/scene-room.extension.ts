@@ -1,13 +1,6 @@
 import { eachSeries } from "async";
 
-import {
-  CronExpression,
-  InternalError,
-  is,
-  TServiceParams,
-  VALUE,
-  ZCC,
-} from "../..";
+import { InternalError, is, TServiceParams, VALUE, ZCC } from "../..";
 import { PICK_ENTITY } from "../../hass";
 import { VirtualSensor } from "../../synapse";
 import { RoomConfiguration, RoomScene, SceneLightState } from "..";
@@ -23,7 +16,6 @@ interface HasKelvin {
 
 export function SceneRoom({
   logger,
-  scheduler,
   hass,
   synapse,
   automation,
@@ -42,14 +34,14 @@ export function SceneRoom({
       name: `${name} current scene`,
     });
 
-    scheduler.cron({
-      context,
-      exec: async () =>
-        await automation.aggressive.validateRoomScene(
-          scenes[currentScene.state as SCENES],
-        ),
-      schedule: CronExpression.EVERY_30_SECONDS,
-    });
+    // scheduler.cron({
+    //   context,
+    //   exec: async () =>
+    //     await automation.aggressive.validateRoomScene(
+    //       scenes[currentScene.state as SCENES],
+    //     ),
+    //   schedule: CronExpression.EVERY_30_SECONDS,
+    // });
 
     /**
      * Should circadian if:

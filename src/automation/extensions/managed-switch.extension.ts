@@ -37,9 +37,7 @@ export function ManagedSwitch({
       return;
     }
     // * Notify and execute!
-    const entities = entity_id.map(i => `[${i}]`).join(", ");
-    logger.debug({ action, entities });
-
+    logger.debug({ action, entity_id });
     await hass.call.switch[action]({ entity_id });
   }
 

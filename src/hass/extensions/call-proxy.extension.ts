@@ -18,10 +18,6 @@ import {
   PICK_SERVICE_PARAMETERS,
 } from "..";
 
-let services: HassServiceDTO[];
-let domains: string[];
-
-const DEF_NOT_DOMAINS = new Set(["then", "constructor"]);
 const FAILED_LOAD_DELAY = 5;
 const MAX_ATTEMPTS = 50;
 const FAILED = 1;
@@ -33,6 +29,8 @@ export function CallProxy({
   hass,
   config,
 }: TServiceParams) {
+  let domains: string[];
+  let services: HassServiceDTO[];
   /**
    * Describe the current services, and build up a proxy api based on that.
    *
@@ -48,9 +46,6 @@ export function CallProxy({
   });
 
   function getDomain(domain: ALL_DOMAINS) {
-    if (DEF_NOT_DOMAINS.has(domain)) {
-      return undefined;
-    }
     if (!domains || !domains?.includes(domain)) {
       logger.error({ domain }, `unknown domain`);
       return undefined;
@@ -96,11 +91,11 @@ export function CallProxy({
       await loadServiceList(recursion + INCREMENT);
       return;
     }
-    // domains = services.map(i => i.domain);
+    domains = services.map(i => i.domain);
     services.forEach(value => {
       logger.trace(
         { name: value.domain, services: Object.keys(value.services) },
-        `loaded`,
+        `loaded domain`,
         value.domain,
       );
     });

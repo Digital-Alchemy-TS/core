@@ -17,7 +17,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     async def handle_application_upgrade(event):
         """Handle updates to scene list or individual scene activations."""
         # * Process entities
-        scenes_data = event.data.domains.get("scene", {})
+        scenes_data = event.data.get('domains', {}).get("scene", {})
         app = event.data["app"]
         existing_ids = set(hass.data[DOMAIN]["scene"].keys())
         incoming_ids = {scene["id"] for scene in scenes_data}

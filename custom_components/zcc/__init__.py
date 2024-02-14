@@ -12,7 +12,7 @@ async def async_setup(hass: HomeAssistant, config):
     # Initialize the API and store it for shared access
     if DOMAIN not in hass.data:
         hass.data[DOMAIN] = {}
-    hass.data[DOMAIN]["health_status"] = True
+    hass.data[DOMAIN]["health_status"] = {}
 
     hass.async_create_task(
         hass.helpers.discovery.async_load_platform(

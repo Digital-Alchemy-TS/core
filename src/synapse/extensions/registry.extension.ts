@@ -32,18 +32,7 @@ export function Registry({
   context,
   scheduler,
 }: TServiceParams) {
-  lifecycle.onPostConfig(() => {
-    if (!config.synapse.EMIT_HEARTBEAT) {
-      return;
-    }
-    logger.trace(`Starting heartbeat`);
-    scheduler.interval({
-      context,
-      exec: async () => await hass.socket.fireEvent("zcc_heartbeat"),
-      interval: HEARTBEAT_INTERVAL * SECOND,
-    });
-  });
-
+  // # Common
   const LOADERS = new Map<ALL_DOMAINS, () => object[]>();
   let initComplete = false;
 
@@ -64,15 +53,32 @@ export function Registry({
     });
   }
 
+  // ## Heartbeat
+  lifecycle.onPostConfig(() => {
+    if (!config.synapse.EMIT_HEARTBEAT) {
+      return;
+    }
+    logger.trace(`Starting heartbeat`);
+    scheduler.interval({
+      context,
+      exec: async () => await hass.socket.fireEvent("zcc_heartbeat"),
+      interval: HEARTBEAT_INTERVAL * SECOND,
+    });
+  });
+
+  // ## Different opportunities to announce
+  // ### At boot
   hass.socket.onConnect(async () => {
     initComplete = true;
+    logger.error(`socket connect: sending entity list`);
     if (!config.synapse.ANNOUNCE_AT_BOOT) {
       return;
     }
-    logger.info(`socket connect: sending entity list`);
+    logger.warn(`socket connect: sending entity list`);
     await SendEntityList();
   });
 
+  // ### Targeted at this app
   hass.socket.onEvent({
     context,
     event: "zcc_app_reload",
@@ -84,6 +90,8 @@ export function Registry({
       await SendEntityList();
     },
   });
+
+  // ### Targeted at all zcc apps
   hass.socket.onEvent({
     context,
     event: "zcc_app_reload_all",
@@ -93,6 +101,7 @@ export function Registry({
     },
   });
 
+  // # Domain registry
   return function <DATA extends BaseEntity>({
     domain,
     context,
@@ -100,17 +109,9 @@ export function Registry({
   }: SynapseSocketOptions<DATA>) {
     logger.trace({ name: domain }, `init domain`);
     const registry = new Map<string, DATA>();
-
-    hass.socket.onEvent({
-      context: context,
-      event: "zcc_reload_request",
-      async exec() {
-        logger.trace(`received reload request`);
-        await SendEntityList();
-      },
-    });
-
     const CACHE_KEY = (id: string) => `${domain}_cache:${id}`;
+
+    // ## Export the data for hass
     LOADERS.set(domain, () => {
       return [...registry.entries()].map(([id, item]) => {
         return {
@@ -122,7 +123,9 @@ export function Registry({
       });
     });
 
+    // ## Registry interactions
     return {
+      // ### Add
       add(data: DATA) {
         const id = is.empty(data.unique_id)
           ? is.hash(`${ZCC.application.name}:${data.name}`)
@@ -144,12 +147,15 @@ export function Registry({
         logger.debug({ name: data.name }, `register {%s}`, domain);
         return id;
       },
+      // ### byId
       byId(id: string) {
         return registry.get(id);
       },
+      // ### getCache
       async getCache<T>(id: string, defaultValue?: T): Promise<T> {
         return await cache.get(CACHE_KEY(id), defaultValue);
       },
+      // ### send
       async send(id: string, data: object) {
         if (!hass.socket.getConnectionActive()) {
           logger.debug(
@@ -159,6 +165,7 @@ export function Registry({
         }
         await hass.socket.fireEvent(`zcc_event`, { data, id });
       },
+      // ### setCache
       async setCache(id: string, value: unknown) {
         await cache.set(CACHE_KEY(id), value);
       },

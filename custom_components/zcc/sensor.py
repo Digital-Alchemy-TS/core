@@ -18,7 +18,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
         """Handle the complete list of sensors."""
 
         # * Process entities
-        sensors = event.data.domains.get("sensor", {})
+        sensors = event.data.get('domains', {}).get("sensor", {})
         app = event.data["app"]
         _LOGGER.info(f"{app} sent {len(sensors)} entities")
         existing_ids = set(hass.data[DOMAIN]["sensor"].keys())

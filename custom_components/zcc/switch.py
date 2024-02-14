@@ -18,7 +18,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
     async def handle_application_upgrade(event):
         """Handle updates to the list of switches."""
         # * Process entities
-        updated_switches = event.data.domains.get("switch", {})
+        updated_switches = event.data.get('domains', {}).get("switch", {})
         app = event.data["app"]
         _LOGGER.info(f"{app} sent {len(updated_switches)} entities")
         existing_switch_ids = set(hass.data[DOMAIN]["switch"].keys())

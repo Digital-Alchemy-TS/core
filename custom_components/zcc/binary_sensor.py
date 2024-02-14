@@ -29,7 +29,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
             async_add_entities([sensor], True)
 
         # * Process entities
-        entities = event.data.domains.get("binary_sensor", {})
+        entities = event.data.get('domains', {}).get("binary_sensor", {})
         _LOGGER.info(f"{app} sent {len(entities)} entities")
         existing_entities = hass.data[DOMAIN]["binary_sensor"]
 

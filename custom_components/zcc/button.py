@@ -21,7 +21,7 @@ async def async_setup_platform(hass, config, async_add_entities, discovery_info=
 
         # * Process entities
         current_entities = hass.data[DOMAIN]["button"]
-        buttons = event.data.domains.get("button", {})
+        buttons = event.data.get('domains', {}).get("button", {})
         updated_buttons = {button["id"]: button for button in buttons}
         _LOGGER.info(f"received update ({buttons} entities)")
 
@@ -94,7 +94,6 @@ class ZccButton(ButtonEntity):
 
     async def async_added_to_hass(self):
         """When entity is added to Home Assistant."""
-        # Listen for health status updates specifically for this button
         self.async_on_remove(
             self.hass.bus.async_listen(
                 f"zcc_{self._app}_health_status_updated", self._handle_health_update

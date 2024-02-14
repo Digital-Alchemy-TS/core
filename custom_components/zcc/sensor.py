@@ -2,71 +2,23 @@ from homeassistant.components.sensor import SensorEntity
 from .const import DOMAIN
 from homeassistant.core import callback
 import logging
+from .platform import generic_setup
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """Set up the ZCC sensor platform."""
-    if DOMAIN not in hass.data:
-        return False
-
-    if "sensor" not in hass.data[DOMAIN]:
-        hass.data[DOMAIN]["sensor"] = {}
-
-    async def handle_application_upgrade(event):
-        """Handle the complete list of sensors."""
-
-        # * Process entities
-        sensors = event.data.get('domains', {}).get("sensor", {})
-        app = event.data.get('app')
-        _LOGGER.info(f"{app} sent {len(sensors)} entities")
-        existing_ids = set(hass.data[DOMAIN]["sensor"].keys())
-        incoming_ids = {sensor.get("id") for sensor in sensors}
-
-        # Remove sensors not in the incoming list
-        sensors_to_remove = existing_ids - incoming_ids
-
-        for sensor_info in sensors:
-            sensor_id = sensor_info.get("id")
-            if sensor_id in hass.data[DOMAIN]["sensor"]:
-                # * Update existing entity
-                entity = hass.data[DOMAIN]["sensor"][sensor_id]
-                entity.update_all(
-                    sensor_info.get("state"), sensor_info.get("attributes", {})
-                )
-                _LOGGER.debug(f"{app} updating {sensor_info.get('name')}")
-
-            else:
-                # * Create new entity
-                new_sensor = ZccSensor(hass, app, sensor_info)
-                hass.data[DOMAIN]["sensor"][sensor_id] = new_sensor
-                async_add_entities([new_sensor])
-                _LOGGER.debug(f"{app} adding {sensor_info.get('name')}")
-
-        # * Remove entities not in the update
-        for sensor_id in sensors_to_remove:
-            entity = hass.data[DOMAIN]["sensor"].pop(sensor_id, None)
-            if entity:
-                _LOGGER.debug(f"{app} remove {entity._name}")
-                await entity.async_remove()
-
-    # * Attach update listener
-    hass.bus.async_listen("zcc_application_state", handle_application_upgrade)
+    """Setup the router platform."""
+    await generic_setup(hass, "binary_sensor", ZccSensor, async_add_entities)
+    _LOGGER.debug("loaded")
     return True
 
-
 class ZccSensor(SensorEntity):
-    def __init__(self, hass, app, sensor_info):
+    def __init__(self, hass, app, entity):
         self.hass = hass
         self._app = app
-        self._id = sensor_info.get("id")
-        self._name = sensor_info.get("name")
-        self._icon = sensor_info.get("icon", "mdi:satellite-uplink")
-        self._state = sensor_info.get("state", "")
-        self._unit_of_measurement = sensor_info.get("unit_of_measurement")
-        self._attributes = sensor_info.get("attributes", {})
-        self._device_class = sensor_info.get("device_class", None)
+        self._id = entity.get("id")
+        self.set_attributes(entity)
 
     @property
     def unique_id(self):
@@ -98,6 +50,18 @@ class ZccSensor(SensorEntity):
     def extra_state_attributes(self):
         return {**self._attributes, "Managed By": self._app}
 
+    async def receive_update(self, entity):
+        self.set_attributes(entity)
+        self.async_write_ha_state()
+
+    def set_attributes(self, entity):
+        self._name = entity.get("name")
+        self._icon = entity.get("icon", "mdi:satellite-uplink")
+        self._state = entity.get("state", "")
+        self._unit_of_measurement = entity.get("unit_of_measurement")
+        self._attributes = entity.get("attributes", {})
+        self._device_class = entity.get("device_class", None)
+
     @property
     def available(self):
         return self.hass.data[DOMAIN]["health_status"].get(self._app, False)
@@ -119,7 +83,7 @@ class ZccSensor(SensorEntity):
         """When entity is added to Home Assistant."""
         self.async_on_remove(
             self.hass.bus.async_listen(
-                f"zcc_{self._app}_health_status_updated", self._handle_health_update
+                f"zcc_health_{self._app}", self._handle_health_update
             )
         )
         self.async_on_remove(

@@ -28,6 +28,7 @@ export function SceneRoom({
     scenes,
   }: RoomConfiguration<SCENES>): RoomDefinition<SCENES> {
     logger.info({ name, scenes: Object.keys(scenes) }, `Create room`);
+    const SCENE_LIST = Object.keys(scenes) as SCENES[];
 
     const currentScene = synapse.sensor<SCENES>({
       context,
@@ -150,6 +151,19 @@ export function SceneRoom({
       await sceneApply(sceneName);
       currentScene.state = sceneName;
     }
+
+    SCENE_LIST.forEach(scene => {
+      const sceneName = `${name} ${scene}`;
+      logger.debug(`Create scene [%s]`, sceneName);
+      synapse.scene({
+        context,
+        exec: async () => {
+          logger.trace(`Scene activate [%s]`, sceneName);
+          await setScene(scene as SCENES);
+        },
+        name: sceneName,
+      });
+    });
 
     return new Proxy({} as RoomDefinition<SCENES>, {
       get: (_, property: keyof RoomDefinition<SCENES>) => {

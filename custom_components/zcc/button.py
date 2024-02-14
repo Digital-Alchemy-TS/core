@@ -1,67 +1,25 @@
 from homeassistant.components.button import ButtonEntity
 from homeassistant.core import callback
 from .const import DOMAIN
-
 import logging
+from .platform import generic_setup
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """Set up the ZCC button platform."""
-    if DOMAIN not in hass.data:
-        return False
-
-    if "button" not in hass.data[DOMAIN]:
-        hass.data[DOMAIN]["button"] = {}
-
-    @callback
-    def handle_application_upgrade(event):
-        """Update button entities based on an event from the external system."""
-
-        # * Process entities
-        current_entities = hass.data[DOMAIN]["button"]
-        app = event.data.get('app')
-        buttons = event.data.get('domains', {}).get("button", {})
-        updated_buttons = {button.get("id"): button for button in buttons}
-        _LOGGER.info(f"received update ({len(buttons)} entities)")
-
-        buttons_to_remove = set(current_entities) - set(updated_buttons)
-
-        for button_id, button_info in updated_buttons.items():
-            if button_id in current_entities:
-                # * Update existing entity
-                entity = current_entities[button_id]
-                entity.update_info(button_info)
-                _LOGGER.debug(f"updating {button_info['name']}")
-            else:
-                # * Create new entity
-                _LOGGER.debug(f"adding {button_info['name']}")
-                new_button = ZccButton(hass, app, button_info)
-                current_entities[button_id] = new_button
-                async_add_entities([new_button], True)
-
-        # * Remove entities not in the update
-        for button_id in buttons_to_remove:
-            entity = current_entities.pop(button_id)
-            _LOGGER.debug(f"remove {entity._name}")
-            hass.async_create_task(entity.async_remove())
-
-    # * Attach update listener
-    hass.bus.async_listen("zcc_application_state", handle_application_upgrade)
+    """Setup the router platform."""
+    await generic_setup(hass, "binary_sensor", ZccButton, async_add_entities)
+    _LOGGER.debug("loaded")
     return True
 
-
 class ZccButton(ButtonEntity):
-    """A class for ZCC buttons."""
-
-    def __init__(self, hass, app, button_info):
+    def __init__(self, hass, app, entity):
         """Initialize the button."""
         self.hass = hass
         self._app = app;
-        self._id = button_info.get("id")
-        self._name = button_info.get("name")
-        self._icon = button_info.get("icon", "mdi:gesture-tap")
+        self._id = entity.get("id")
+        self.set_attributes(entity)
 
     @property
     def unique_id(self):
@@ -80,25 +38,30 @@ class ZccButton(ButtonEntity):
 
     @property
     def available(self):
-        return self.hass.data[DOMAIN].get("health_status", False)
+        return self.hass.data[DOMAIN]["health_status"].get(self._app, False)
+
+    @property
+    def extra_state_attributes(self):
+        return {"Managed By": self._app}
+
+    def set_attributes(self, entity):
+        self._name = entity.get("name")
+        self._icon = entity.get("icon", "mdi:gesture-tap")
+
+    async def receive_update(self, entity):
+        self.set_attributes(entity)
+        self.async_write_ha_state()
 
     async def async_press(self):
         """Handle the button press."""
         _LOGGER.debug(f"emit zcc_button_press for {self._name} ({self._id})")
-        self.hass.bus.async_fire("zcc_button_press", {"button": self._id})
-
-    def update_info(self, button_info):
-        """Update the button's information."""
-        self._name = button_info.get("name", self._name)
-        self._icon = button_info.get("icon", self._icon)
-        _LOGGER.debug(f"receiving update {self._name}")
-        self.async_write_ha_state()
+        self.hass.bus.async_fire("zcc_activate", {"id": self._id})
 
     async def async_added_to_hass(self):
         """When entity is added to Home Assistant."""
         self.async_on_remove(
             self.hass.bus.async_listen(
-                f"zcc_{self._app}_health_status_updated", self._handle_health_update
+                f"zcc_health_{self._app}", self._handle_health_update
             )
         )
 

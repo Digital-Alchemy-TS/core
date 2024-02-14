@@ -1,65 +1,25 @@
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import callback
 from .const import DOMAIN
-
 import logging
+from .platform import generic_setup
 
 _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
-    """Set up the ZCC switch platform."""
-    if DOMAIN not in hass.data:
-        return False
-
-    if "switch" not in hass.data[DOMAIN]:
-        hass.data[DOMAIN]["switch"] = {}
-
-    async def handle_application_upgrade(event):
-        """Handle updates to the list of switches."""
-        # * Process entities
-        updated_switches = event.data.get('domains', {}).get("switch", {})
-        app = event.data.get('app')
-        _LOGGER.info(f"{app} sent {len(updated_switches)} entities")
-        existing_switch_ids = set(hass.data[DOMAIN]["switch"].keys())
-        updated_switch_ids = {switch.get("id") for switch in updated_switches}
-
-        for switch_info in updated_switches:
-            switch_id = switch_info.get("id")
-            if switch_id in existing_switch_ids:
-                # * Update existing entity
-                entity = hass.data[DOMAIN]["switch"][switch_id]
-                entity._handle_switch_update_direct(
-                    switch_info
-                )  # Direct update without event
-                _LOGGER.debug(f"updating {switch_info.get('name')}")
-            else:
-                # * Create new entity
-                _LOGGER.debug(f"{app} adding {switch_info}")
-                new_switch = ZccSwitch(hass, app, switch_info)
-                hass.data[DOMAIN]["switch"][switch_id] = new_switch
-                async_add_entities([new_switch], True)
-
-        # * Remove entities not in the update
-        for switch_id in existing_switch_ids - updated_switch_ids:
-            entity = hass.data[DOMAIN]["switch"].pop(switch_id)
-            _LOGGER.debug(f"remove {entity._name}")
-            await entity.async_remove()
-
-    # * Attach update listener
-    hass.bus.async_listen("zcc_application_state", handle_application_upgrade)
+    """Setup the router platform."""
+    await generic_setup(hass, "binary_sensor", ZccSwitch, async_add_entities)
+    _LOGGER.debug("loaded")
     return True
 
-
 class ZccSwitch(SwitchEntity):
-    def __init__(self, hass, app, switch_info):
+    def __init__(self, hass, app, entity):
         """Initialize the switch."""
         self.hass = hass
         self._app = app
-        self._id = switch_info.get("id")
-        self._name = switch_info.get("name")
-        self._icon = switch_info.get("icon", "mdi:electric-switch")
-        self._state = switch_info.get("state", "off") == "on"
+        self._id = entity.get("id")
+        self.set_attributes(entity)
 
     @property
     def unique_id(self):
@@ -77,9 +37,22 @@ class ZccSwitch(SwitchEntity):
         return self._state
 
     @property
+    def extra_state_attributes(self):
+        return {"Managed By": self._app}
+
+    @property
     def available(self):
         """Return if the switch is available."""
         return self.hass.data[DOMAIN]["health_status"].get(self._app, False)
+
+    async def receive_update(self, entity):
+        self.set_attributes(entity)
+        self.async_write_ha_state()
+
+    def set_attributes(self, entity):
+        self._name = entity.get("name")
+        self._icon = entity.get("icon", "mdi:electric-switch")
+        self._state = entity.get("state", "off") == "on"
 
     async def async_turn_on(self):
         """Turn the switch on."""
@@ -98,10 +71,10 @@ class ZccSwitch(SwitchEntity):
                 "zcc_switch_update", {"data": {"switch": self._id, "state": new_state}}
             )
 
-    def _handle_switch_update_direct(self, switch_info):
-        self._name = switch_info["name"]
-        self._icon = switch_info.get("icon")
-        self._state = switch_info["state"] == "on"
+    def _handle_switch_update_direct(self, entity):
+        self._name = entity["name"]
+        self._icon = entity.get("icon")
+        self._state = entity["state"] == "on"
         self.async_write_ha_state()
 
     async def async_added_to_hass(self):
@@ -111,7 +84,7 @@ class ZccSwitch(SwitchEntity):
         )
         self.async_on_remove(
             self.hass.bus.async_listen(
-                f"zcc_{self._app}_health_status_updated", self._handle_health_update
+                f"zcc_health_{self._app}", self._handle_health_update
             )
         )
 

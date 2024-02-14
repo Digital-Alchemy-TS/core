@@ -20,7 +20,7 @@ class HealthCheckSensor(BinarySensorEntity):
         self.hass.data[DOMAIN]["health_status"][app] = False
         _LOGGER.debug(f"creating health check sensor for {app}")
 
-        self._name = f"{app} synapse is connected"
+        self._name = f"{app} synapse online"
         self._id = f"zcc_{app}_synapse_online"
         self._heartbeat_timer = None
 
@@ -45,20 +45,18 @@ class HealthCheckSensor(BinarySensorEntity):
         self.reset_heartbeat_timer()
 
     @callback
-    def handle_heartbeat(self, event):
+    def handle_heartbeat(self):
         """Handle heartbeat events."""
         self.reset_heartbeat_timer()
 
-        # Don't announce anything if the state didn't change
+        # ? Don't announce anything if the state didn't change
         if self.hass.data[DOMAIN]["health_status"][self._app] == True:
             return
 
-        # Update flags, and send an update event
+        # ? Update flags, and send an update event
         self.hass.data[DOMAIN]["health_status"][self._app] = True
         self.async_write_ha_state()
-        self.hass.bus.async_fire(
-            f"zcc_{self._app}_health_status_updated", {"status": True}
-        )
+        self.hass.bus.async_fire(f"zcc_health_{self._app}")
 
     def reset_heartbeat_timer(self):
         """Reset the heartbeat timer to detect unavailability."""
@@ -70,20 +68,17 @@ class HealthCheckSensor(BinarySensorEntity):
     def mark_as_dead(self):
         """Actions to take when the application is considered dead."""
         if self.hass.data[DOMAIN]["health_status"][self._app] == False:
-            # I'm pretty sure this condition shouldn't happen
+            # ? I'm pretty sure this condition shouldn't happen
             return
 
         _LOGGER.info(f"failed to receive health check for {self._app}")
-
         self.hass.data[DOMAIN]["health_status"][self._app] = False
         self.async_write_ha_state()
-        self.hass.bus.async_fire(
-            f"zcc_{self._app}_health_status_updated", {"status": False}
-        )
+        self.hass.bus.async_fire(f"zcc_health_{self._app}")
 
     async def async_will_remove_from_hass(self):
         """Cleanup the timer when entity is removed."""
+        _LOGGER.info(f"removing health check for {self._app}")
         if self._heartbeat_timer:
             self._heartbeat_timer.cancel()
         self.hass.data[DOMAIN]["health_status"].pop(self._app)
-        _LOGGER.info(f"removing health check for {self._app}")

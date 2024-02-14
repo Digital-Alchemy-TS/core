@@ -4,7 +4,6 @@ import {
   CircadianLighting,
   LightManager,
   ManagedSwitch,
-  SceneController,
   SceneRoom,
   SequenceWatcher,
   SolarCalculator,
@@ -52,7 +51,6 @@ export const LIB_AUTOMATION = CreateLibrary({
   services: {
     aggressive: AggressiveScenes,
     circadian: CircadianLighting,
-    controller: SceneController,
     light: LightManager,
     managed_switch: ManagedSwitch,
     room: SceneRoom,

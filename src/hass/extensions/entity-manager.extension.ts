@@ -50,7 +50,7 @@ const FAILED_LOAD_DELAY = 5;
 const UNLIMITED = 0;
 const BOTTLENECK_UPDATES = 20;
 
-export function EntityManager({ logger, hass }: TServiceParams) {
+export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
   /**
    * MASTER_STATE.switch.desk_light = {entity_id,state,attributes,...}
    */
@@ -74,9 +74,10 @@ export function EntityManager({ logger, hass }: TServiceParams) {
       property.startsWith(i),
     );
     if (!valid) {
+      logger.error({ entity, property }, `invalid property lookup`);
       return undefined;
     }
-    const current = byId<ENTITY>(entity);
+    const current = getCurrentState(entity);
     const defaultValue = (property === "state" ? undefined : {}) as Get<
       ENTITY_STATE<ENTITY>,
       PROPERTY
@@ -255,6 +256,11 @@ export function EntityManager({ logger, hass }: TServiceParams) {
     set(MASTER_STATE, entity_id, new_state);
     event.emit(entity_id, new_state, old_state);
   }
+
+  lifecycle.onPostConfig(async () => {
+    logger.debug(`Pre populate MASTER_STATE`);
+    await refresh();
+  });
 
   return {
     /**

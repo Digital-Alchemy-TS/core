@@ -32,16 +32,16 @@ export function ZCC_Cache({
     return `${config.boilerplate.CACHE_PREFIX}${key}`;
   }
 
-  lifecycle.onPostConfig(() => {
+  lifecycle.onPostConfig(async () => {
     if (client) {
       return;
     }
     logger.trace({ provider: config.boilerplate.CACHE_PROVIDER }, `Init cache`);
     if (config.boilerplate.CACHE_PROVIDER === "redis") {
-      client = createRedisDriver({ config, logger });
+      client = await createRedisDriver({ config, logger });
       return;
     }
-    client = createMemoryDriver({ config, logger });
+    client = await createMemoryDriver({ config, logger });
   });
 
   const cache = {

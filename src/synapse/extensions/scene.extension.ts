@@ -25,7 +25,6 @@ export function Scene({ logger, hass, synapse, context }: TServiceParams) {
     exec({ data }: HassSceneUpdateEvent) {
       const item = registry.byId(data.id);
       if (!item) {
-        logger.warn({ data }, `Received button press for unknown scene`);
         return;
       }
       const { exec, name } = item;

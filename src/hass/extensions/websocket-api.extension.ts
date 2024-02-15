@@ -28,6 +28,7 @@ const CONNECTION_OPEN = 1;
 let CONNECTION_ACTIVE = false;
 const CLEANUP_INTERVAL = 5;
 const PING_INTERVAL = 10;
+const UNLIMITED = 0;
 let messageCount = START;
 export const SOCKET_CONNECTED = "SOCKET_CONNECTED";
 
@@ -46,6 +47,7 @@ export function WebsocketAPI({
    * Local attachment points for socket events
    */
   const socketEvents = new EventEmitter();
+  event.setMaxListeners(UNLIMITED);
   let connecting = false;
 
   let MESSAGE_TIMESTAMPS: number[] = [];
@@ -90,7 +92,6 @@ export function WebsocketAPI({
       return;
     }
     try {
-      logger.trace(`ping`);
       const pong = await sendMessage({ type: HASSIO_WS_COMMAND.ping });
       if (pong) {
         return;

@@ -165,7 +165,7 @@ function CreateBoilerplate() {
         description: "Redis is preferred if available",
         enum: ["redis", "memory"],
         type: "string",
-      } as StringConfig<CacheProviders>,
+      } as StringConfig<`${CacheProviders}`>,
       CACHE_TTL: {
         default: 86_400,
         description: "Configuration property for cache provider, in seconds",

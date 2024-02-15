@@ -39,6 +39,7 @@ const degreesBelowHorizon = {
   sunriseEnd: 0.3,
   twilight: 6,
 };
+const UNLIMITED = 0;
 
 /**
  * Benefits from a persistent cache, like Redis
@@ -53,6 +54,7 @@ export function SolarCalculator({
 }: TServiceParams) {
   let config: HassConfig;
   const event = new EventEmitter();
+  event.setMaxListeners(UNLIMITED);
   let lastEventAttachment: string;
 
   lifecycle.onBootstrap(async () => {

@@ -47,6 +47,7 @@ type ByIdProxy<ENTITY_ID extends PICK_ENTITY> = ENTITY_STATE<ENTITY_ID> & {
 
 const MAX_ATTEMPTS = 50;
 const FAILED_LOAD_DELAY = 5;
+const UNLIMITED = 0;
 const BOTTLENECK_UPDATES = 20;
 
 export function EntityManager({ logger, hass }: TServiceParams) {
@@ -58,6 +59,7 @@ export function EntityManager({ logger, hass }: TServiceParams) {
   >;
 
   const event = new EventEmitter();
+  event.setMaxListeners(UNLIMITED);
 
   let init = false;
 

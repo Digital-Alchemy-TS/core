@@ -11,14 +11,15 @@ import { TServiceParams } from "./wiring.helper";
 /**
  * url & name properties automatically generated from config
  */
-export function createRedisDriver(
+export async function createRedisDriver(
   { logger, config }: Pick<TServiceParams, "logger" | "config">,
   options?: Parameters<typeof createClient>[0],
-): ICacheDriver {
+): Promise<ICacheDriver> {
   const client = createClient({
     url: config.boilerplate.REDIS_URL,
     ...options,
   });
+  await client.connect();
 
   return {
     async del(key: string) {

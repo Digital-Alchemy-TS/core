@@ -31,7 +31,6 @@ export function Button({ logger, hass, context, synapse }: TServiceParams) {
     exec({ data }: HassButtonUpdateEvent) {
       const item = registry.byId(data.id);
       if (!item) {
-        logger.warn({ data }, `Received button press for unknown button`);
         return;
       }
       const { exec, context, label, name } = item;

@@ -9,7 +9,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Setup the router platform."""
-    await generic_setup(hass, "binary_sensor", ZccButton, async_add_entities)
+    await generic_setup(hass, "button", ZccButton, async_add_entities)
     _LOGGER.debug("loaded")
     return True
 
@@ -18,7 +18,6 @@ class ZccButton(ButtonEntity):
         """Initialize the button."""
         self.hass = hass
         self._app = app;
-        self._id = entity.get("id")
         self.set_attributes(entity)
 
     @property
@@ -45,6 +44,7 @@ class ZccButton(ButtonEntity):
         return {"Managed By": self._app}
 
     def set_attributes(self, entity):
+        self._id = entity.get("id")
         self._name = entity.get("name")
         self._icon = entity.get("icon", "mdi:gesture-tap")
 

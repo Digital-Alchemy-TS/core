@@ -8,8 +8,8 @@ type TScene = {
 };
 
 type HassSceneUpdateEvent = {
-  event_type: "zcc_scene_activate";
-  data: { scene: string };
+  event_type: "zcc_activate";
+  data: { id: string };
 };
 
 export function Scene({ logger, hass, synapse, context }: TServiceParams) {
@@ -21,9 +21,9 @@ export function Scene({ logger, hass, synapse, context }: TServiceParams) {
   // ### Listen for socket events
   hass.socket.onEvent({
     context: context,
-    event: "zcc_scene_activate",
+    event: "zcc_activate",
     exec({ data }: HassSceneUpdateEvent) {
-      const item = registry.byId(data.scene);
+      const item = registry.byId(data.id);
       if (!item) {
         logger.warn({ data }, `Received button press for unknown scene`);
         return;

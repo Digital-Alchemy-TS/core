@@ -9,7 +9,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Setup the router platform."""
-    await generic_setup(hass, "binary_sensor", ZccSensor, async_add_entities)
+    await generic_setup(hass, "sensor", ZccSensor, async_add_entities)
     _LOGGER.debug("loaded")
     return True
 
@@ -17,7 +17,6 @@ class ZccSensor(SensorEntity):
     def __init__(self, hass, app, entity):
         self.hass = hass
         self._app = app
-        self._id = entity.get("id")
         self.set_attributes(entity)
 
     @property
@@ -55,6 +54,7 @@ class ZccSensor(SensorEntity):
         self.async_write_ha_state()
 
     def set_attributes(self, entity):
+        self._id = entity.get("id")
         self._name = entity.get("name")
         self._icon = entity.get("icon", "mdi:satellite-uplink")
         self._state = entity.get("state", "")

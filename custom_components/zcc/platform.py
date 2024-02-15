@@ -1,7 +1,6 @@
 from homeassistant.core import HomeAssistant, callback
 
 from .const import DOMAIN
-from .health_sensor import HealthCheckSensor
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -9,19 +8,9 @@ _LOGGER = logging.getLogger(__name__)
 async def generic_setup(hass: HomeAssistant, service, ctor, async_add_entities):
     hass.data[DOMAIN][service] = {}
 
-    if "health_status" not in hass.data:
-      hass.data[DOMAIN]["health_status"] = {}
-
     @callback
-    def handle_application_upgrade(event):
+    async def handle_application_upgrade(event):
         app = event.data.get("app")
-
-        # * First time seeing this app, create health check sensor
-        if app not in hass.data[DOMAIN]["health_sensor"]:
-            _LOGGER.info(f"creating health check sensor for {app}")
-            incoming = HealthCheckSensor(hass, app)
-            hass.data[DOMAIN]["health_sensor"][app] = incoming
-            async_add_entities([incoming], True)
 
         # * Process entities
         incoming_list = event.data.get("domains", {}).get(service, {})
@@ -35,8 +24,7 @@ async def generic_setup(hass: HomeAssistant, service, ctor, async_add_entities):
             if id in existing:
                 # * Update existing entity
                 _LOGGER.debug(f"{app}:{service} update {incoming.get("name")}")
-                existing[id].receive_update(incoming)
-
+                hass.async_create_task(existing[id].receive_update(incoming))
             else:
                 # * Create new entity
                 _LOGGER.debug(f"{app}:{service} adding {incoming.get("name")}")

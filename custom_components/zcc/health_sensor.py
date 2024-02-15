@@ -18,10 +18,10 @@ class HealthCheckSensor(BinarySensorEntity):
 
         self._app = app
         self.hass.data[DOMAIN]["health_status"][app] = False
-        _LOGGER.debug(f"creating health check sensor for {app}")
+        _LOGGER.info(f"creating health check sensor for {app}")
 
-        self._name = f"{app} synapse online"
-        self._id = f"zcc_{app}_synapse_online"
+        self._name = f"{app} online"
+        self._id = f"{app}_is_online"
         self._heartbeat_timer = None
 
     @property
@@ -45,7 +45,7 @@ class HealthCheckSensor(BinarySensorEntity):
         self.reset_heartbeat_timer()
 
     @callback
-    def handle_heartbeat(self):
+    def handle_heartbeat(self, event):
         """Handle heartbeat events."""
         self.reset_heartbeat_timer()
 

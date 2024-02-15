@@ -2,6 +2,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.discovery import async_load_platform
 
 from .const import DOMAIN
+import logging
+
 
 
 async def async_setup(hass: HomeAssistant, config):
@@ -9,13 +11,13 @@ async def async_setup(hass: HomeAssistant, config):
     if DOMAIN not in hass.data:
         hass.data[DOMAIN] = {}
 
-    if "health_status" not in hass.data:
+    if "health_status" not in hass.data[DOMAIN]:
       hass.data[DOMAIN]["health_status"] = {}
 
     if DOMAIN not in hass.data:
         hass.data[DOMAIN] = {}
 
-    if "health_status" not in hass.data:
+    if "health_status" not in hass.data[DOMAIN]:
       hass.data[DOMAIN]["health_status"] = {}
 
 
@@ -24,7 +26,7 @@ async def async_setup(hass: HomeAssistant, config):
     )
 
     hass.async_create_task(
-        async_load_platform(hass, "sensor", DOMAIN, {}, config)
+        async_load_platform(hass, "button", DOMAIN, {}, config)
     )
 
     hass.async_create_task(

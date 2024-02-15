@@ -9,7 +9,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Setup the router platform."""
-    await generic_setup(hass, "binary_sensor", ZccScene, async_add_entities)
+    await generic_setup(hass, "scene", ZccScene, async_add_entities)
     _LOGGER.debug("loaded")
     return True
 
@@ -18,7 +18,6 @@ class ZccScene(SceneEntity):
         """Initialize the scene."""
         self.hass = hass
         self._app = app
-        self._id = entity.get("id")
         self.set_attributes(entity)
 
     @property
@@ -45,6 +44,7 @@ class ZccScene(SceneEntity):
         self.async_write_ha_state()
 
     def set_attributes(self, entity):
+        self._id = entity.get("id")
         self._name = entity.get("name")
         self._icon = entity.get("icon", "mdi:lightbulb-night-outline")
 

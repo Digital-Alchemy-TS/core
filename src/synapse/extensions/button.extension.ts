@@ -14,8 +14,8 @@ type TButton = {
 };
 
 type HassButtonUpdateEvent = {
-  event_type: "zcc_button_press";
-  data: { button: string };
+  event_type: "zcc_activate";
+  data: { id: string };
 };
 
 export function Button({ logger, hass, context, synapse }: TServiceParams) {
@@ -27,9 +27,9 @@ export function Button({ logger, hass, context, synapse }: TServiceParams) {
   // ### Listen for socket events
   hass.socket.onEvent({
     context: context,
-    event: "zcc_button_press",
+    event: "zcc_activate",
     exec({ data }: HassButtonUpdateEvent) {
-      const item = registry.byId(data.button);
+      const item = registry.byId(data.id);
       if (!item) {
         logger.warn({ data }, `Received button press for unknown button`);
         return;

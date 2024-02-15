@@ -9,7 +9,7 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Setup the router platform."""
-    await generic_setup(hass, "binary_sensor", ZccSwitch, async_add_entities)
+    await generic_setup(hass, "switch", ZccSwitch, async_add_entities)
     _LOGGER.debug("loaded")
     return True
 
@@ -18,7 +18,6 @@ class ZccSwitch(SwitchEntity):
         """Initialize the switch."""
         self.hass = hass
         self._app = app
-        self._id = entity.get("id")
         self.set_attributes(entity)
 
     @property
@@ -50,6 +49,7 @@ class ZccSwitch(SwitchEntity):
         self.async_write_ha_state()
 
     def set_attributes(self, entity):
+        self._id = entity.get("id")
         self._name = entity.get("name")
         self._icon = entity.get("icon", "mdi:electric-switch")
         self._state = entity.get("state", "off") == "on"
@@ -70,12 +70,6 @@ class ZccSwitch(SwitchEntity):
             self.hass.bus.async_fire(
                 "zcc_switch_update", {"data": {"switch": self._id, "state": new_state}}
             )
-
-    def _handle_switch_update_direct(self, entity):
-        self._name = entity["name"]
-        self._icon = entity.get("icon")
-        self._state = entity["state"] == "on"
-        self.async_write_ha_state()
 
     async def async_added_to_hass(self):
         """When entity is added to Home Assistant."""

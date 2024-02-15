@@ -10,7 +10,7 @@ import {
 
 export const LIB_SYNAPSE = CreateLibrary({
   configuration: {
-    ANNOUNCE_AT_BOOT: {
+    ANNOUNCE_AT_CONNECT: {
       default: false,
       description: [
         "Emit the entity list update every time this application is booted",

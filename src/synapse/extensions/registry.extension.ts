@@ -71,11 +71,10 @@ export function Registry({
   // ### At boot
   hass.socket.onConnect(async () => {
     initComplete = true;
-    logger.error(`socket connect: sending entity list`);
-    if (!config.synapse.ANNOUNCE_AT_BOOT) {
+    if (!config.synapse.ANNOUNCE_AT_CONNECT) {
       return;
     }
-    logger.warn(`socket connect: sending entity list`);
+    logger.debug(`socket connect: sending entity list`);
     await SendEntityList();
   });
 

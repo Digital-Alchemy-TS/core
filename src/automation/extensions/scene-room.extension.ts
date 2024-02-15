@@ -148,8 +148,8 @@ export function SceneRoom({
         );
       }
       logger.info({ name, scene: sceneName }, `set scene`);
-      await sceneApply(sceneName);
       currentScene.state = sceneName;
+      await sceneApply(sceneName);
     }
 
     SCENE_LIST.forEach(scene => {

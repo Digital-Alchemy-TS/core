@@ -21,6 +21,7 @@ import {
 const FAILED_LOAD_DELAY = 5;
 const MAX_ATTEMPTS = 50;
 const FAILED = 1;
+const NOT_A_DOMAIN = new Set(["then"]);
 
 export function CallProxy({
   logger,
@@ -47,7 +48,9 @@ export function CallProxy({
 
   function getDomain(domain: ALL_DOMAINS) {
     if (!domains || !domains?.includes(domain)) {
-      logger.error({ domain }, `unknown domain`);
+      if (!NOT_A_DOMAIN.has(domain)) {
+        logger.error({ domain }, `unknown domain`);
+      }
       return undefined;
     }
     const domainItem: HassServiceDTO = services.find(i => i.domain === domain);
@@ -94,8 +97,8 @@ export function CallProxy({
     domains = services.map(i => i.domain);
     services.forEach(value => {
       logger.trace(
-        { name: value.domain, services: Object.keys(value.services) },
-        `loaded domain`,
+        { services: Object.keys(value.services) },
+        `loaded domain [%s]`,
         value.domain,
       );
     });

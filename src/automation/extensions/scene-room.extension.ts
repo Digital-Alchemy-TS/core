@@ -1,6 +1,13 @@
 import { eachSeries } from "async";
 
-import { InternalError, is, TServiceParams, VALUE, ZCC } from "../..";
+import {
+  CronExpression,
+  InternalError,
+  is,
+  TServiceParams,
+  VALUE,
+  ZCC,
+} from "../..";
 import { PICK_ENTITY } from "../../hass";
 import { VirtualSensor } from "../../synapse";
 import { RoomConfiguration, RoomScene, SceneLightState } from "..";
@@ -18,6 +25,7 @@ export function SceneRoom({
   logger,
   hass,
   synapse,
+  scheduler,
   automation,
   context: parentContext,
 }: TServiceParams) {
@@ -35,14 +43,14 @@ export function SceneRoom({
       name: `${name} current scene`,
     });
 
-    // scheduler.cron({
-    //   context,
-    //   exec: async () =>
-    //     await automation.aggressive.validateRoomScene(
-    //       scenes[currentScene.state as SCENES],
-    //     ),
-    //   schedule: CronExpression.EVERY_30_SECONDS,
-    // });
+    scheduler.cron({
+      context,
+      exec: async () =>
+        await automation.aggressive.validateRoomScene(
+          scenes[currentScene.state as SCENES],
+        ),
+      schedule: CronExpression.EVERY_30_SECONDS,
+    });
 
     /**
      * Should circadian if:
@@ -182,7 +190,13 @@ export function SceneRoom({
       },
       set: (_, property: keyof RoomDefinition<SCENES>, value) => {
         if (property === "scene") {
-          setImmediate(async () => await setScene(value as SCENES));
+          setImmediate(
+            async () =>
+              // ? This way adds a network hop, allows hass to create a logbook entry for the call
+              await hass.call.scene.turn_on({
+                entity_id: ZCC.toHassId("scene", name, value),
+              }),
+          );
           return true;
         }
         logger.error({ property }, `cannot set property on room`);

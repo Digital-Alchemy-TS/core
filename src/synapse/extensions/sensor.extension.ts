@@ -62,7 +62,6 @@ export function Sensor({
       logger.trace({ name: entity.name, newState }, `update sensor state`);
       state = newState;
       setImmediate(async () => {
-        logger.trace({ id, state }, `sending {state} update`);
         await registry.setCache(id, { attributes, state });
         await registry.send(id, { state });
 

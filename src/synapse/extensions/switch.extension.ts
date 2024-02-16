@@ -48,7 +48,7 @@ export function Switch({
     exec({ data }: UpdateSwitchBody) {
       const item = registry.byId(data.switch);
       if (!item) {
-        logger.warn({ data }, `Received switch update for unknown switch`);
+        logger.warn({ data }, `received switch update for unknown switch`);
         return;
       }
       const state = data.state;

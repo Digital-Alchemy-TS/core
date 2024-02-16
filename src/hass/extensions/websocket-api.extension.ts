@@ -56,14 +56,14 @@ export function WebsocketAPI({
   // Start the socket
   lifecycle.onBootstrap(async () => {
     if (config.hass.SOCKET_AUTO_CONNECT) {
-      logger.debug(`Auto starting connection`);
+      logger.debug(`auto starting connection`);
       await init();
       attachScheduledFunctions();
     }
   });
 
   function attachScheduledFunctions() {
-    logger.trace(`Attaching interval schedules`);
+    logger.trace(`attaching interval schedules`);
     // Set up intervals
     scheduler.interval({
       context,
@@ -267,7 +267,7 @@ export function WebsocketAPI({
     const id = Number(message.id);
     switch (message.type as HassSocketMessageTypes) {
       case HassSocketMessageTypes.auth_required:
-        logger.debug(`Sending authentication`);
+        logger.debug(`sending authentication`);
         return await sendAuth();
 
       case HassSocketMessageTypes.auth_ok:
@@ -277,7 +277,7 @@ export function WebsocketAPI({
         connecting = false;
         event.emit(SOCKET_CONNECTED);
         clearTimeout(AUTH_TIMEOUT);
-        logger.debug(`Event Subscriptions starting`);
+        logger.debug(`event Subscriptions starting`);
         await sendMessage({ type: HASSIO_WS_COMMAND.subscribe_events }, false);
         event.emit(ON_SOCKET_AUTH);
         return;
@@ -305,7 +305,7 @@ export function WebsocketAPI({
 
       default:
         // Code error probably
-        logger.error(`Unknown websocket message type: ${message.type}`);
+        logger.error(`unknown websocket message type: ${message.type}`);
     }
   }
 
@@ -322,7 +322,7 @@ export function WebsocketAPI({
         // FIXME: probably removal / rename?
         // It's an edge case for sure, and not positive this code should handle it
         // If you have thoughts, chime in somewhere and we can do more sane things
-        logger.debug(`No new state for entity, what caused this?`);
+        logger.debug(`no new state for entity, what caused this?`);
         return;
       }
     }
@@ -348,7 +348,7 @@ export function WebsocketAPI({
 
   async function sendAuth(): Promise<void> {
     AUTH_TIMEOUT = setTimeout(() => {
-      logger.error(`Did not receive an auth response, retrying`);
+      logger.error(`did not receive an auth response, retrying`);
       sendAuth();
     }, config.hass.RETRY_INTERVAL);
     await sendMessage({
@@ -363,7 +363,7 @@ export function WebsocketAPI({
     event,
     exec,
   }: OnHassEventOptions<DATA>) {
-    logger.debug({ context, event }, `Attaching socket event listener`);
+    logger.debug({ context, event }, `attaching socket event listener`);
     const callback = async (data: EntityUpdateEvent) => {
       await ZCC.safeExec({
         duration: SOCKET_EVENT_EXECUTION_TIME,
@@ -375,7 +375,7 @@ export function WebsocketAPI({
     };
     socketEvents.on(event, callback);
     return () => {
-      logger.debug({ context, event }, `Removing socket event listener`);
+      logger.debug({ context, event }, `removing socket event listener`);
       socketEvents.removeListener(event, callback);
     };
   }

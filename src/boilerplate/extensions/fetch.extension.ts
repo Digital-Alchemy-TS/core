@@ -42,7 +42,7 @@ export function ZCC_Fetch({ logger, context: parentContext }: TServiceParams) {
       limiter = new Bottleneck(bottleneck);
     }
     if (!is.empty(capabilities)) {
-      logger.trace({ capabilities, ...extras }, `Initialized fetcher`);
+      logger.trace({ capabilities, ...extras }, `initialized fetcher`);
     }
 
     function checkForHttpErrors<T extends unknown = unknown>(

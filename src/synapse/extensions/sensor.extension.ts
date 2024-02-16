@@ -1,5 +1,12 @@
 import { TServiceParams } from "../../boilerplate";
-import { each, is, TBlackHole, TContext, ZCC } from "../../utilities";
+import {
+  each,
+  is,
+  NOT_FOUND,
+  TBlackHole,
+  TContext,
+  ZCC,
+} from "../../utilities";
 import { SensorDeviceClasses } from "..";
 
 type TSensor<STATE extends SensorValue, ATTRIBUTES extends object = object> = {
@@ -139,7 +146,15 @@ export function Sensor({
           return entity.name;
         }
         if (property === "onUpdate") {
-          return (callback: SwitchUpdateCallback) => callbacks.push(callback);
+          return (callback: SwitchUpdateCallback) => {
+            callbacks.push(callback);
+            return () => {
+              const index = callbacks.indexOf(callback);
+              if (index !== NOT_FOUND) {
+                callbacks.splice(callbacks.indexOf(callback));
+              }
+            };
+          };
         }
         if (property === "_rawAttributes") {
           return attributes;

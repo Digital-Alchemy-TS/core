@@ -36,7 +36,7 @@ export function ZCC_Cache({
     if (client) {
       return;
     }
-    logger.trace({ provider: config.boilerplate.CACHE_PROVIDER }, `Init cache`);
+    logger.trace({ provider: config.boilerplate.CACHE_PROVIDER }, `init cache`);
     if (config.boilerplate.CACHE_PROVIDER === "redis") {
       client = await createRedisDriver({ config, logger });
       return;
@@ -56,7 +56,7 @@ export function ZCC_Cache({
         });
       } catch (error) {
         CACHE_DRIVER_ERROR_COUNT.labels("del").inc();
-        logger.error({ error }, `Cache delete error`);
+        logger.error({ error }, `cache delete error`);
       }
     },
     get: async <T>(key: string, defaultValue?: T): Promise<T> => {
@@ -70,7 +70,7 @@ export function ZCC_Cache({
         });
         return is.undefined(result) ? defaultValue : (result as T);
       } catch (error) {
-        logger.warn({ defaultValue, error, key }, `Cache lookup error`);
+        logger.warn({ defaultValue, error, key }, `cache lookup error`);
         CACHE_DRIVER_ERROR_COUNT.labels("get").inc();
         return defaultValue;
       }
@@ -84,7 +84,7 @@ export function ZCC_Cache({
         );
       } catch (error) {
         CACHE_DRIVER_ERROR_COUNT.labels("keys").inc();
-        logger.warn({ error }, `Cache keys error`);
+        logger.warn({ error }, `cache keys error`);
         return [];
       }
     },
@@ -102,11 +102,11 @@ export function ZCC_Cache({
         });
       } catch (error) {
         CACHE_DRIVER_ERROR_COUNT.labels("set").inc();
-        logger.error({ error }, `Cache set error`);
+        logger.error({ error }, `cache set error`);
       }
     },
     setClient: newClient => {
-      logger.debug(`Using new cache driver`);
+      logger.debug(`using new cache driver`);
       client = newClient;
     },
   } as TCache;

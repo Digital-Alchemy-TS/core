@@ -108,7 +108,7 @@ export function FetchAPI({
   }
 
   async function checkConfig(): Promise<CheckConfigResult> {
-    logger.trace(`Check config`);
+    logger.trace(`check config`);
     return await fetcher({
       method: `post`,
       url: `/api/config/core/check_config`,
@@ -160,7 +160,7 @@ export function FetchAPI({
       url: `/api/history/period/${from.toISOString()}`,
     });
     if (!Array.isArray(result)) {
-      logger.error({ result }, `Unexpected return result`);
+      logger.error({ result }, `unexpected return result`);
       return [];
     }
     const [out] = result;
@@ -179,22 +179,22 @@ export function FetchAPI({
       url: `/api/events/${event}`,
     });
     if (response?.message !== `Event ${event} fired.`) {
-      logger.debug({ response }, `Unexpected response from firing event`);
+      logger.debug({ response }, `unexpected response from firing event`);
     }
   }
 
   async function getAllEntities(): Promise<ENTITY_STATE<PICK_ENTITY>[]> {
-    logger.trace(`Get all entities`);
+    logger.trace(`get all entities`);
     return await fetcher<ENTITY_STATE<PICK_ENTITY>[]>({ url: `/api/states` });
   }
 
   async function getHassConfig(): Promise<HassConfig> {
-    logger.trace(`Get config`);
+    logger.trace(`get config`);
     return await fetcher({ url: `/api/config` });
   }
 
   async function getLogs(): Promise<HomeAssistantServerLogItem[]> {
-    logger.trace(`Get logs`);
+    logger.trace(`get logs`);
     const results = await fetcher<HomeAssistantServerLogItem[]>({
       url: `/api/error/all`,
     });
@@ -206,12 +206,12 @@ export function FetchAPI({
   }
 
   async function getRawLogs(): Promise<string> {
-    logger.trace(`Get raw logs`);
+    logger.trace(`get raw logs`);
     return await fetcher<string>({ process: "text", url: `/api/error_log` });
   }
 
   async function listServices(): Promise<HassServiceDTO[]> {
-    logger.trace(`List services`);
+    logger.trace(`list services`);
     return await fetcher<HassServiceDTO[]>({ url: `/api/services` });
   }
 
@@ -229,12 +229,12 @@ export function FetchAPI({
     if (!is.empty(attributes)) {
       body.attributes = attributes;
     }
-    logger.trace({ ...body, name: entity_id }, `Set entity state`);
+    logger.trace({ ...body, name: entity_id }, `set entity state`);
     await fetcher({ body, method: "post", url: `/api/states/${entity_id}` });
   }
 
   async function webhook(name: string, data: object = {}): Promise<void> {
-    logger.trace({ ...data, name }, `Webhook`);
+    logger.trace({ ...data, name }, `webhook`);
     await fetcher({
       body: data,
       method: "post",

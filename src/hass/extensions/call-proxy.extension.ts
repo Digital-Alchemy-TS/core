@@ -39,10 +39,10 @@ export function CallProxy({
    */
   lifecycle.onBootstrap(async () => {
     if (!config.hass.CALL_PROXY_AUTO_SCAN) {
-      logger.debug(`Skip service populate`);
+      logger.debug(`skip service populate`);
       return;
     }
-    logger.debug(`Runtime populate service interfaces`);
+    logger.debug(`runtime populate service interfaces`);
     await loadServiceList();
   });
 
@@ -76,7 +76,7 @@ export function CallProxy({
   }
 
   async function loadServiceList(recursion = START): Promise<void> {
-    logger.info(`Fetching service list`);
+    logger.info(`fetching service list`);
     services = await hass.fetch.listServices();
     if (is.empty(services)) {
       if (recursion > MAX_ATTEMPTS) {
@@ -86,7 +86,7 @@ export function CallProxy({
         exit(FAILED);
       }
       logger.warn(
-        "Failed to retrieve {service} list. Retrying {%s}/[%s]",
+        "failed to retrieve {service} list. Retrying {%s}/[%s]",
         recursion,
         MAX_ATTEMPTS,
       );

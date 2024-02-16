@@ -197,6 +197,8 @@ function CreateBoilerplate() {
       },
     },
     name: "boilerplate",
+    // everything depends config
+    // same with logger 🐔 🥚
     priorityInit: ["configuration", "logger"],
     services: {
       cache: ZCC_Cache,
@@ -340,7 +342,7 @@ async function WireService(
   const loaded = LOADED_MODULES.get(project) ?? {};
   LOADED_MODULES.set(project, loaded);
   try {
-    logger?.trace(`Initializing`);
+    logger?.trace(`initializing`);
     const config = CfgManager()?.[INJECTED_DEFINITIONS]();
     const inject = Object.fromEntries(
       [...LOADED_MODULES.keys()].map(project => [
@@ -439,7 +441,7 @@ async function Bootstrap<
     // * Wire in various shutdown events
     processEvents.forEach((callback, event) => {
       process.on(event, callback);
-      logger.trace({ event }, "Shutdown event");
+      logger.trace({ event }, "shutdown event");
     });
 
     // * Add in libraries
@@ -462,7 +464,7 @@ async function Bootstrap<
     logger.debug(`[PreInit] running lifecycle callbacks`);
     await RunStageCallbacks("PreInit");
     // - Pull in user configurations
-    logger.debug("Loading configuration");
+    logger.debug("loading configuration");
     await CfgManager()[INITIALIZE](application);
     // - Run through other events in order
     logger.debug(`[PostConfig] running lifecycle callbacks`);
@@ -476,7 +478,7 @@ async function Bootstrap<
     logger.info(`🪄 [%s] application bootstrapped`, application.name);
     ACTIVE_APPLICATION = application;
   } catch (error) {
-    logger?.fatal({ application, error }, "Bootstrap failed");
+    logger?.fatal({ application, error }, "bootstrap failed");
     ZCC_Testing.FailFast();
   }
 }

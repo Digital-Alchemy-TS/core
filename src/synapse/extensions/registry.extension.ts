@@ -35,6 +35,7 @@ export function Registry({
   // # Common
   const LOADERS = new Map<ALL_DOMAINS, () => object[]>();
   let initComplete = false;
+  const HEARTBEAT = `zcc_heartbeat_${ZCC.application.name}`;
 
   async function SendEntityList() {
     logger.debug(`send entity list`);
@@ -54,15 +55,14 @@ export function Registry({
   }
 
   // ## Heartbeat
-  lifecycle.onPostConfig(() => {
+  lifecycle.onPostConfig(async () => {
     if (!config.synapse.EMIT_HEARTBEAT) {
       return;
     }
-    logger.trace(`Starting heartbeat`);
+    logger.trace(`starting heartbeat`);
     scheduler.interval({
       context,
-      exec: async () =>
-        await hass.socket.fireEvent(`zcc_heartbeat_${ZCC.application.name}`),
+      exec: async () => await hass.socket.fireEvent(HEARTBEAT),
       interval: HEARTBEAT_INTERVAL * SECOND,
     });
   });
@@ -71,10 +71,11 @@ export function Registry({
   // ### At boot
   hass.socket.onConnect(async () => {
     initComplete = true;
+    await hass.socket.fireEvent(HEARTBEAT);
     if (!config.synapse.ANNOUNCE_AT_CONNECT) {
       return;
     }
-    logger.debug(`socket connect: sending entity list`);
+    logger.debug(`[socket connect] sending entity list`);
     await SendEntityList();
   });
 

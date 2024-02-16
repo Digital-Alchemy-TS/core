@@ -28,7 +28,7 @@ export function Scene({ logger, hass, synapse, context }: TServiceParams) {
         return;
       }
       const { exec, name } = item;
-      logger.trace({ data, label: name }, `received scene activation`);
+      logger.trace({ name }, `scene activate service call`);
       setImmediate(async () => {
         await ZCC.safeExec(async () => await exec());
       });

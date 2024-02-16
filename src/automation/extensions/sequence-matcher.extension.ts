@@ -29,7 +29,7 @@ export function SequenceWatcher({ logger, hass, config }: TServiceParams) {
       return;
     }
     if (!is.object(reset)) {
-      logger.error({ reset: data.reset }, `Bad reset type`);
+      logger.error({ reset: data.reset }, `bad reset type`);
       return;
     }
     const labels = new Set([reset.label].flat().filter(i => !is.empty(i)));
@@ -88,14 +88,14 @@ export function SequenceWatcher({ logger, hass, config }: TServiceParams) {
     MATCH extends string = string,
   >(data: SequenceWatchOptions<DATA, MATCH>) {
     const { exec, event_type, match, context, label, path, filter } = data;
-    logger.debug({ context }, `Setting up sequence watcher`);
+    logger.debug({ context }, `setting up sequence watcher`);
     const id = v4();
 
     // If this is the first watcher for this event, set up a listener
     let watcher = WATCHED_EVENTS.get(event_type);
     if (!watcher) {
       watcher = [];
-      logger.debug({ event_type }, `Listening for socket event`);
+      logger.debug({ event_type }, `listening for socket event`);
       const remover = hass.socket.onEvent({
         context,
         event: event_type,
@@ -112,7 +112,7 @@ export function SequenceWatcher({ logger, hass, config }: TServiceParams) {
         context,
         event_type,
         exec: () => {
-          logger.trace({ context, label, match }, `Sequence match trigger`);
+          logger.trace({ context, label, match }, `sequence match trigger`);
           setImmediate(
             async () =>
               await ZCC.safeExec({
@@ -140,7 +140,7 @@ export function SequenceWatcher({ logger, hass, config }: TServiceParams) {
       if (is.empty(watcher)) {
         logger.debug(
           { event_type },
-          `Last watcher for event removed, cleaning up socket event listener`,
+          `last watcher for event removed, cleaning up socket event listener`,
         );
         WATCHED_EVENTS.delete(event_type);
         EVENT_REMOVAL.get(event_type)();

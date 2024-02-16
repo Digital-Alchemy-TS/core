@@ -47,7 +47,7 @@ export function ZCC_Configuration() {
         );
       }
       if (is.empty(configLoaders)) {
-        ZCC.systemLogger.debug(`No config loaders defined, adding default`);
+        ZCC.systemLogger.debug(`no config loaders defined, adding default`);
         defaultLoaders();
       }
       await eachSeries(

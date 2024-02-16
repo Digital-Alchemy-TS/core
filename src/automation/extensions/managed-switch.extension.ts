@@ -41,6 +41,7 @@ export function ManagedSwitch({
     await hass.call.switch[action]({ entity_id });
   }
 
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   function ManageSwitch({
     context,
     entity_id,
@@ -49,14 +50,14 @@ export function ManagedSwitch({
     onEvent = [],
     onUpdate = [],
   }: ManagedSwitchOptions) {
-    logger.info({ context, entity_id }, `Setting up managed switch`);
+    logger.info({ context, entity_id }, `setting up managed switch`);
     const entityList = is.array(entity_id) ? entity_id : [entity_id];
 
-    // Check if there should be a change
+    // * Check if there should be a change
     const update = async () => {
       const expected = shouldBeOn();
       if (!is.boolean(expected)) {
-        if (!is.undefined(expect)) {
+        if (!is.undefined(expected)) {
           logger.error(
             { context, entity_id, expected },
             `Invalid value from switch manage function`,
@@ -68,8 +69,19 @@ export function ManagedSwitch({
       await updateEntities(expected, entityList, context);
     };
 
-    // Always run on a schedule
+    // * Always run on a schedule
     scheduler.cron({ context, exec: async () => await update(), schedule });
+
+    // * For instances with o declared deps / is just relying on schedule
+    // Do a quick re-evaluation of the state to bring it back to current
+    // ? connect chosen in case there are parts of the logic that might be dependant on the connection anyways
+    hass.socket.onConnect(async () => {
+      if (!is.empty(onUpdate)) {
+        return;
+      }
+      logger.debug({ context, name: entity_id }, `{onConnect} recheck state`);
+      await update();
+    });
 
     // Update when relevant entities update
     if (!is.empty(onUpdate)) {

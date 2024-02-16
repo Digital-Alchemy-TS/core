@@ -25,25 +25,26 @@ import {
 } from "..";
 
 type EntityHistoryItem = { a: object; s: unknown; lu: number };
-type ByIdProxy<ENTITY_ID extends PICK_ENTITY> = ENTITY_STATE<ENTITY_ID> & {
-  entity_id: ENTITY_ID;
-  /**
-   * Run callback
-   */
-  onUpdate: (
-    callback: (state: NonNullable<ENTITY_STATE<ENTITY_ID>>) => TBlackHole,
-  ) => void;
-  /**
-   * Run callback once, for next update
-   */
-  once: (
-    callback: (state: NonNullable<ENTITY_STATE<ENTITY_ID>>) => TBlackHole,
-  ) => void;
-  /**
-   * Will resolve with the next state of the next value. No time limit
-   */
-  nextState: () => Promise<ENTITY_STATE<ENTITY_ID>>;
-};
+export type ByIdProxy<ENTITY_ID extends PICK_ENTITY> =
+  ENTITY_STATE<ENTITY_ID> & {
+    entity_id: ENTITY_ID;
+    /**
+     * Run callback
+     */
+    onUpdate: (
+      callback: (state: NonNullable<ENTITY_STATE<ENTITY_ID>>) => TBlackHole,
+    ) => void;
+    /**
+     * Run callback once, for next update
+     */
+    once: (
+      callback: (state: NonNullable<ENTITY_STATE<ENTITY_ID>>) => TBlackHole,
+    ) => void;
+    /**
+     * Will resolve with the next state of the next value. No time limit
+     */
+    nextState: () => Promise<ENTITY_STATE<ENTITY_ID>>;
+  };
 
 const MAX_ATTEMPTS = 50;
 const FAILED_LOAD_DELAY = 5;
@@ -188,12 +189,12 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
     if (is.empty(states)) {
       if (recursion > MAX_ATTEMPTS) {
         logger.fatal(
-          `Failed to load service list from Home Assistant. Validate configuration`,
+          `failed to load service list from Home Assistant. Validate configuration`,
         );
         ZCC_Testing.FailFast();
       }
       logger.warn(
-        "Failed to retrieve entity list. Retrying {%s}/[%s]",
+        "failed to retrieve entity list. Retrying {%s}/[%s]",
         recursion,
         MAX_ATTEMPTS,
       );
@@ -258,7 +259,7 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
   }
 
   lifecycle.onPostConfig(async () => {
-    logger.debug(`Pre populate MASTER_STATE`);
+    logger.debug(`pre populate MASTER_STATE`);
     await refresh();
   });
 

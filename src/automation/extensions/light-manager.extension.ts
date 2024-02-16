@@ -1,23 +1,54 @@
-import { each } from "async";
+import { each, eachLimit } from "async";
+import {} from "timers/promises";
 
 import { TServiceParams } from "../../boilerplate";
-import { ENTITY_STATE, PICK_ENTITY } from "../../hass";
-import { is, NONE } from "../../utilities";
+import {
+  ByIdProxy,
+  ENTITY_STATE,
+  GenericEntityDTO,
+  PICK_ENTITY,
+} from "../../hass";
+import { CronExpression, DOWN, is, NONE, sleep, UP } from "../../utilities";
+import { RoomDefinition } from "..";
 import {
   AggressiveScenesAdjustmentTypes,
   SceneDefinition,
   SceneLightState,
   SceneLightStateOn,
 } from "../helpers";
-import { ColorLight } from "./circadian.extension";
 
-const MAX_DIFFERENCE = 100;
+type ColorModes = "color_temp" | "xy" | "brightness";
+export type ColorLight = GenericEntityDTO<{
+  brightness: number;
+  color_mode: ColorModes;
+  color_temp: number;
+  color_temp_kelvin: number;
+  entity_id?: PICK_ENTITY<"light">[];
+  hs_color: [h: number, s: number];
+  max_color_temp_kelvin: number;
+  max_mireds: number;
+  min_color_temp_kelvin: number;
+  min_mireds: number;
+  rgb_color: [number, number, number];
+  supported_color_modes: ColorModes[];
+  supported_features: number;
+  xy_color: [x: number, y: number];
+}>;
+// const MAX_DIFFERENCE = 100;
+
+type DiffList = {
+  light: PICK_ENTITY<"light">;
+  diff: number;
+};
 
 export function LightManager({
   logger,
   hass,
+  scheduler,
+  lifecycle,
   automation,
   config,
+  context,
 }: TServiceParams) {
   /**
    * Lights fall into one of the following:
@@ -60,6 +91,7 @@ export function LightManager({
     }
     if ("entity_id" in entity.attributes) {
       const list = entity.attributes.entity_id as PICK_ENTITY<"light">[];
+
       if (is.array(list) && !is.empty(list)) {
         await each(list, async child_id => {
           const child = hass.entity.byId(child_id);
@@ -77,9 +109,11 @@ export function LightManager({
     }
   }
 
-  function lightInRange({ attributes }: ColorLight) {
+  function getCurrentDiff({
+    attributes,
+  }: ColorLight | ByIdProxy<PICK_ENTITY<"light">>) {
     if (!attributes.supported_color_modes.includes("color_temp")) {
-      return true;
+      return NONE;
     }
     const min = Math.max(
       config.automation.CIRCADIAN_MIN_TEMP,
@@ -94,58 +128,52 @@ export function LightManager({
       max,
       Math.max(automation.circadian.getKelvin(), min),
     );
-    const difference = Math.abs(kelvin - target);
-
-    return difference <= MAX_DIFFERENCE;
+    return Math.abs(kelvin - target);
   }
 
-  async function manageLightCircadian(
-    entity: ColorLight,
-    state: SceneLightStateOn,
-  ): Promise<boolean> {
-    const stateTests = {
-      brightness: entity.attributes.brightness === state.brightness,
-      state: entity.state === state.state,
-      temperature: lightInRange(entity),
-    };
-    // ? Find things that don't currently match expectations
-    const reasons = Object.keys(stateTests).filter(
-      key => !stateTests[key as keyof typeof stateTests],
-    );
+  // async function manageLightCircadian(
+  //   entity: ColorLight,
+  //   state: SceneLightStateOn,
+  // ): Promise<boolean> {
+  //   const stateTests = {
+  //     brightness: entity.attributes.brightness === state.brightness,
+  //     state: entity.state === state.state,
+  //     temperature: getCurrentDiff(entity) <= MAX_DIFFERENCE,
+  //   };
+  //   // ? Find things that don't currently match expectations
+  //   const reasons = Object.keys(stateTests).filter(
+  //     key => !stateTests[key as keyof typeof stateTests],
+  //   );
 
-    let type: AggressiveScenesAdjustmentTypes;
-    if (!stateTests.state) {
-      type = "light_on_off";
-    } else if (!stateTests.brightness) {
-      type = "light_brightness";
-      // eslint-disable-next-line unicorn/no-negated-condition
-    } else if (!stateTests.temperature) {
-      type = "light_temperature";
-    } else {
-      return false;
-    }
-    logger.debug(
-      {
-        from: entity.attributes.color_temp_kelvin,
-        name: entity.entity_id,
-        reasons,
-        state,
-        to: automation.circadian.getKelvin(),
-        type,
-      },
-      `setting light {temperature}`,
-    );
-    // event.emit(AGGRESSIVE_SCENES_ADJUSTMENT, {
-    //   entity_id: entity.entity_id,
-    //   type,
-    // } as AggressiveScenesAdjustmentData);
-    await hass.call.light.turn_on({
-      brightness: state.brightness,
-      entity_id: entity.entity_id,
-      kelvin: automation.circadian.getKelvin(),
-    });
-    return true;
-  }
+  //   let type: AggressiveScenesAdjustmentTypes;
+  //   if (!stateTests.state) {
+  //     type = "light_on_off";
+  //   } else if (!stateTests.brightness) {
+  //     type = "light_brightness";
+  //     // eslint-disable-next-line unicorn/no-negated-condition
+  //   } else if (!stateTests.temperature) {
+  //     type = "light_temperature";
+  //   } else {
+  //     return false;
+  //   }
+  //   logger.debug(
+  //     {
+  //       from: entity.attributes.color_temp_kelvin,
+  //       name: entity.entity_id,
+  //       reasons,
+  //       state,
+  //       to: automation.circadian.getKelvin(),
+  //       type,
+  //     },
+  //     `setting light {temperature}`,
+  //   );
+  //   await hass.call.light.turn_on({
+  //     brightness: state.brightness,
+  //     entity_id: entity.entity_id,
+  //     kelvin: automation.circadian.getKelvin(),
+  //   });
+  //   return true;
+  // }
 
   /**
    * Take in the expected color state of a light, and compare against actual
@@ -180,10 +208,6 @@ export function LightManager({
     } else {
       return false;
     }
-    // event.emit(AGGRESSIVE_SCENES_ADJUSTMENT, {
-    //   entity_id: entity.entity_id,
-    //   type,
-    // } as AggressiveScenesAdjustmentData);
     logger.debug(
       {
         entity_id: entity.entity_id,
@@ -214,10 +238,6 @@ export function LightManager({
     if (expected.state === "off") {
       if (entity.state === "on") {
         logger.debug({ entity_id }, `on => off`);
-        // event.emit(AGGRESSIVE_SCENES_ADJUSTMENT, {
-        //   entity_id,
-        //   type: "light_on_off",
-        // } as AggressiveScenesAdjustmentData);
         await hass.call.light.turn_off({ entity_id });
         return true;
       }
@@ -226,13 +246,102 @@ export function LightManager({
     if ("rgb_color" in expected) {
       return await manageLightColor(entity as unknown as ColorLight, expected);
     }
-    return await manageLightCircadian(
-      entity as unknown as ColorLight,
-      expected,
-    );
+    return true;
+    // // TODO this technically overlaps with the big cron below, needs attention
+    // // Something should be done about the inefficiency of 2 overlapping processes like this
+    // // It could end up with multiple service calls in flight unnecessarily
+    // // Each of these processes individually throttles itself fine, but when a change of scene happens
+    // // it can end up with the light rapidly changing and sticking in the wrong spot until one of these
+    // // schedules runs again.
+    // return await manageLightCircadian(
+    //   entity as unknown as ColorLight,
+    //   expected,
+    // );
   }
+
+  const rooms = new Set<RoomDefinition<string>>();
+
+  function buildLightList(): DiffList[] {
+    // * Produce a list of lights that are supposed to be turned on
+    // > Source from the active scene in each loaded room
+    const lightsToCheck = is.unique(
+      [...rooms.values()].flatMap(room =>
+        Object.keys(room.currentSceneDefinition.definition).filter(key => {
+          if (!is.domain(key, "light")) {
+            return false;
+          }
+          // TODO: Introduce additional checks for items like rgb color
+          return room.currentSceneDefinition.definition[key].state !== "off";
+        }),
+      ),
+    ) as PICK_ENTITY<"light">[];
+
+    // * Calculate how off the light is, omit ones that within tolerance, sort list by difference
+    return lightsToCheck
+      .map(light => ({
+        diff: getCurrentDiff(hass.entity.byId(light)),
+        light,
+      }))
+      .filter(({ diff }) => diff >= config.automation.CIRCADIAN_DIFF_THRESHOLD)
+      .sort((a, b) => (a.diff > b.diff ? UP : DOWN));
+  }
+
+  // # Light temperature adjustments
+  // - seek out all lights that are turned on / tracking light temp
+  // - sort by how off target they are
+  // - adjust them at a relatively constant rate until all have been called
+  // - start over every 30 s
+  //   ~ if a new iteration starts before the previous one finishes:
+  //   ~ the previous is halted and a warning is emitted
+  //
+  // Could be too many lights, or long response times. Depends on individual setup
+  lifecycle.onPostConfig(() => {
+    if (!config.automation.CIRCADIAN_ENABLED) {
+      return;
+    }
+    logger.debug(`setting up light adjustment cron`);
+    let earlyStop: () => void;
+    scheduler.cron({
+      context,
+      exec: async () => {
+        let stopped = false;
+        if (earlyStop) {
+          earlyStop();
+        }
+        const list = buildLightList();
+        let complete = NONE;
+        earlyStop = () => {
+          logger.warn(
+            { complete, total: list.length },
+            `light temperature adjustment not complete yet`,
+          );
+          stopped = true;
+          earlyStop = undefined;
+        };
+        await eachLimit(
+          list,
+          config.automation.CIRCADIAN_RATE,
+          async ({ light, diff }) => {
+            if (stopped) {
+              return;
+            }
+            logger.trace({ diff, name: light }, `adjusting light temperature`);
+            await hass.call.light.turn_on({
+              entity_id: light,
+              kelvin: automation.circadian.getKelvin(),
+            });
+            complete++;
+            await sleep(config.automation.CIRCADIAN_THROTTLE);
+          },
+        );
+        earlyStop = undefined;
+      },
+      schedule: CronExpression.EVERY_30_SECONDS,
+    });
+  });
 
   return {
     manageLight,
+    registerRoom: (room: RoomDefinition) => rooms.add(room),
   };
 }

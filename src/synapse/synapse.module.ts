@@ -32,6 +32,7 @@ export const LIB_SYNAPSE = CreateLibrary({
     },
   },
   name: "synapse",
+  // everything depends registry
   priorityInit: ["registry"],
   services: {
     binary_sensor: BinarySensor,

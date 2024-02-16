@@ -47,7 +47,7 @@ export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
           }),
       );
       lifecycle.onReady(() => {
-        logger.debug({ context, schedule: cronSchedule }, "Start cron");
+        logger.debug({ context, schedule: cronSchedule }, "start cron");
         cronJob.start();
       });
 
@@ -76,7 +76,7 @@ export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
   }: SchedulerOptions & { interval: number }) {
     let runningInterval: ReturnType<typeof setInterval>;
     lifecycle.onReady(() => {
-      logger.warn({ context }, "start interval");
+      logger.debug({ context }, "start interval");
 
       runningInterval = setInterval(
         async () =>

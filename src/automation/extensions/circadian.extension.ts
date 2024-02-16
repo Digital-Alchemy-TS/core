@@ -1,27 +1,9 @@
 import dayjs from "dayjs";
 
 import { TServiceParams } from "../../boilerplate";
-import { GenericEntityDTO, PICK_ENTITY } from "../../hass";
-import { MINUTE } from "../../utilities";
+import { CronExpression } from "../../utilities";
 import { LOCATION_UPDATED } from "../helpers";
 
-type ColorModes = "color_temp" | "xy" | "brightness";
-export type ColorLight = GenericEntityDTO<{
-  brightness: number;
-  color_mode: ColorModes;
-  color_temp: number;
-  color_temp_kelvin: number;
-  entity_id: PICK_ENTITY<"light">[];
-  hs_color: [h: number, s: number];
-  max_color_temp_kelvin: number;
-  max_mireds: number;
-  min_color_temp_kelvin: number;
-  min_mireds: number;
-  rgb_color: [number, number, number];
-  supported_color_modes: ColorModes[];
-  supported_features: number;
-  xy_color: [x: number, y: number];
-}>;
 const MIN = 0;
 const MAX = 1;
 // const MIRED_CONVERSION = 1_000_000;
@@ -50,11 +32,12 @@ export function CircadianLighting({
       name: config.automation.CIRCADIAN_SENSOR_NAME,
       unit_of_measurement: "K",
     });
+    out.circadianEntity = circadianEntity;
 
-    scheduler.interval({
+    scheduler.cron({
       context,
       exec: () => updateKelvin(),
-      interval: MINUTE,
+      schedule: CronExpression.EVERY_30_SECONDS,
     });
   });
 
@@ -111,8 +94,10 @@ export function CircadianLighting({
     return MIN;
   }
 
-  return {
+  const out = {
+    circadianEntity,
     getKelvin: () => circadianEntity?.state,
     updateKelvin,
   };
+  return out;
 }

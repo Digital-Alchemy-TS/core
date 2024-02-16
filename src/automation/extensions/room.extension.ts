@@ -12,8 +12,9 @@ import { PICK_ENTITY } from "../../hass";
 import { VirtualSensor } from "../../synapse";
 import { RoomConfiguration, RoomScene, SceneLightState } from "..";
 
-type RoomDefinition<SCENES extends string> = {
+export type RoomDefinition<SCENES extends string = string> = {
   scene: SCENES;
+  currentSceneDefinition: RoomScene;
   currentSceneEntity: VirtualSensor<SCENES>;
   sceneId: (scene: SCENES) => PICK_ENTITY<"scene">;
 };
@@ -21,7 +22,7 @@ interface HasKelvin {
   kelvin: number;
 }
 
-export function SceneRoom({
+export function Room({
   logger,
   hass,
   synapse,
@@ -35,7 +36,7 @@ export function SceneRoom({
     context,
     scenes,
   }: RoomConfiguration<SCENES>): RoomDefinition<SCENES> {
-    logger.info({ name, scenes: Object.keys(scenes) }, `Create room`);
+    logger.info({ name, scenes: Object.keys(scenes) }, `create room`);
     const SCENE_LIST = Object.keys(scenes) as SCENES[];
 
     const currentScene = synapse.sensor<SCENES>({
@@ -155,25 +156,25 @@ export function SceneRoom({
           `scene does not exist on room ${name}`,
         );
       }
-      logger.info({ name, scene: sceneName }, `set scene`);
+      logger.info({ name }, `set scene {%s}`, sceneName);
       currentScene.state = sceneName;
       await sceneApply(sceneName);
     }
 
     SCENE_LIST.forEach(scene => {
       const sceneName = `${name} ${scene}`;
-      logger.debug(`Create scene [%s]`, sceneName);
+      logger.debug(`create scene [%s]`, sceneName);
       synapse.scene({
         context,
         exec: async () => {
-          logger.trace(`Scene activate [%s]`, sceneName);
+          logger.trace({ name: sceneName }, `scene activate`);
           await setScene(scene as SCENES);
         },
         name: sceneName,
       });
     });
 
-    return new Proxy({} as RoomDefinition<SCENES>, {
+    const out = new Proxy({} as RoomDefinition<SCENES>, {
       get: (_, property: keyof RoomDefinition<SCENES>) => {
         if (property === "scene") {
           return currentScene.state;
@@ -185,6 +186,9 @@ export function SceneRoom({
         }
         if (property === "currentSceneEntity") {
           return currentScene;
+        }
+        if (property === "currentSceneDefinition") {
+          return scenes[currentScene.state];
         }
         return undefined;
       },
@@ -203,5 +207,11 @@ export function SceneRoom({
         return false;
       },
     });
+
+    // FIXME: This casting shouldn't be needed, why is string not assignable to string?
+    // No idea, but I spent 30 minutes trying to figure it out, and I'm really mad at it
+    automation.light.registerRoom(out as unknown as RoomDefinition);
+
+    return out;
   };
 }

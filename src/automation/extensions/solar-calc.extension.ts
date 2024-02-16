@@ -61,7 +61,7 @@ export function SolarCalculator({
     config = await cache.get(CACHE_KEY);
     if (!config) {
       // Hold up bootstrapping for it
-      logger.info(`No lat/long on hand, fetching from Home Assistant`);
+      logger.info(`no lat/long on hand, fetching from Home Assistant`);
       await updateLocation();
       return;
     }

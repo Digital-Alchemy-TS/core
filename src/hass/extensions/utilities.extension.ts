@@ -7,10 +7,10 @@ export function Utilities({ logger, hass }: TServiceParams) {
     // const originalLength = current.backups.length;
     if (current.backing_up) {
       logger.warn(
-        `A backup is currently in progress. Waiting for that to complete instead.`,
+        `a backup is currently in progress. Waiting for that to complete instead.`,
       );
     } else {
-      logger.info("Initiating new backup");
+      logger.info("initiating new backup");
       hass.socket.sendMessage({
         type: HASSIO_WS_COMMAND.generate_backup,
       });
@@ -25,7 +25,7 @@ export function Utilities({ logger, hass }: TServiceParams) {
       await sleep(HALF * SECOND);
       current = await list();
     }
-    logger.info(`Backup complete`);
+    logger.info(`backup complete`);
     return current.backups.pop();
   }
 

@@ -70,16 +70,7 @@ export function ManagedSwitch({ logger, hass, scheduler }: TServiceParams) {
     // * Always run on a schedule
     scheduler.cron({ context, exec: async () => await update(), schedule });
 
-    // * Little extra insurance that the current state is good
-    hass.socket.onConnect(async () => {
-      if (!is.empty(onUpdate)) {
-        return;
-      }
-      logger.trace({ context, name: entity_id }, `{onConnect} recheck state`);
-      await update();
-    });
-
-    // Update when relevant entities update
+    // * Update when relevant things update
     if (!is.empty(onUpdate)) {
       [onUpdate].flat().forEach(i => {
         if (is.object(i) && !("entity_id" in i)) {

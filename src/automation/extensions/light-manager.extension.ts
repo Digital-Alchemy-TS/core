@@ -265,15 +265,23 @@ export function LightManager({
     // * Produce a list of lights that are supposed to be turned on
     // > Source from the active scene in each loaded room
     const lightsToCheck = is.unique(
-      [...rooms.values()].flatMap(room =>
-        Object.keys(room.currentSceneDefinition.definition).filter(key => {
-          if (!is.domain(key, "light")) {
-            return false;
-          }
-          // TODO: Introduce additional checks for items like rgb color
-          return room.currentSceneDefinition.definition[key].state !== "off";
-        }),
-      ),
+      [...rooms.values()].flatMap(room => {
+        const current = room.currentSceneDefinition?.definition;
+        if (!current) {
+          // ? Room set to invalid scene
+          // Notice already being emitted from room extension
+          return [];
+        }
+        return Object.keys(room.currentSceneDefinition.definition).filter(
+          key => {
+            if (!is.domain(key, "light")) {
+              return false;
+            }
+            // TODO: Introduce additional checks for items like rgb color
+            return room.currentSceneDefinition.definition[key].state !== "off";
+          },
+        );
+      }),
     ) as PICK_ENTITY<"light">[];
 
     // * Calculate how off the light is, omit ones that within tolerance, sort list by difference

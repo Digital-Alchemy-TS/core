@@ -25,6 +25,7 @@ import {
 } from "..";
 
 type EntityHistoryItem = { a: object; s: unknown; lu: number };
+export const ENTITY_UPDATE_RECEIVER = Symbol.for("entityUpdateReceiver");
 export type ByIdProxy<ENTITY_ID extends PICK_ENTITY> =
   ENTITY_STATE<ENTITY_ID> & {
     entity_id: ENTITY_ID;
@@ -252,7 +253,7 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
         emitUpdates,
         BOTTLENECK_UPDATES,
         async entity =>
-          await entityUpdateReceiver(
+          await EntityUpdateReceiver(
             entity.entity_id,
             entity as ENTITY_STATE<PICK_ENTITY>,
             get(oldState, entity.entity_id),
@@ -268,7 +269,7 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
     is.undefined(get(MASTER_STATE, entityId));
 
   // ## Receiver function for incoming entity updates
-  function entityUpdateReceiver<ENTITY extends PICK_ENTITY = PICK_ENTITY>(
+  function EntityUpdateReceiver<ENTITY extends PICK_ENTITY = PICK_ENTITY>(
     entity_id: PICK_ENTITY,
     new_state: ENTITY_STATE<ENTITY>,
     old_state: ENTITY_STATE<ENTITY>,
@@ -294,7 +295,7 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
     /**
      * Internal library use only
      */
-    [Symbol.for("entityUpdateReceiver")]: entityUpdateReceiver,
+    [ENTITY_UPDATE_RECEIVER]: EntityUpdateReceiver,
     /**
      * Retrieves a proxy object for a specified entity. This proxy object
      * provides current values and event hooks for the entity.

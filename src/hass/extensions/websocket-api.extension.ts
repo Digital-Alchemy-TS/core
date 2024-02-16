@@ -4,6 +4,7 @@ import WS from "ws";
 
 import {
   InternalError,
+  is,
   SECOND,
   sleep,
   START,
@@ -12,6 +13,7 @@ import {
   ZCC,
 } from "../..";
 import {
+  ENTITY_UPDATE_RECEIVER,
   EntityUpdateEvent,
   HASSIO_WS_COMMAND,
   HassSocketMessageTypes,
@@ -312,13 +314,18 @@ export function WebsocketAPI({
   function onMessageEvent(id: number, message: SocketMessageDTO) {
     if (message.event.event_type === "state_changed") {
       const { new_state, old_state } = message.event.data;
-      // ? null = deleted entity
-      if (new_state || new_state === null) {
-        hass.entity[Symbol.for("entityUpdateReceiver")](
-          new_state.entity_id,
-          new_state,
-          old_state,
+      const id = new_state?.entity_id || old_state.entity_id;
+      if (is.empty(id)) {
+        throw new InternalError(
+          context,
+          "NO_ID",
+          "Received state change, but could not identify an entity_id",
         );
+      }
+      // ? null = deleted entity
+      // TODO: handle renames properly
+      if (new_state || new_state === null) {
+        hass.entity[ENTITY_UPDATE_RECEIVER](id, new_state, old_state);
       } else {
         // FIXME: probably removal / rename?
         // It's an edge case for sure, and not positive this code should handle it

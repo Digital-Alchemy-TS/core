@@ -136,9 +136,13 @@ export function ZCC_Fetch({ logger, context: parentContext }: TServiceParams) {
       ...fetchWith
     }: Partial<FetchArguments<BODY>>) {
       const out = await MeasureRequest(label, context, async () => {
+        const contentType = is.object(body)
+          ? { "Content-Type": "application/json" }
+          : {};
         const result = await fetch(fetchCreateUrl(fetchWith), {
           body: is.object(body) ? JSON.stringify(body) : body,
           headers: {
+            ...contentType,
             ...baseHeaders,
             ...headers,
           },

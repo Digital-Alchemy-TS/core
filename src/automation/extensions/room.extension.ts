@@ -46,10 +46,22 @@ export function Room({
 
     scheduler.cron({
       context,
-      exec: async () =>
-        await automation.aggressive.validateRoomScene(
-          scenes[currentScene.state as SCENES],
-        ),
+      exec: async () => {
+        const current = currentScene.state;
+        if (!SCENE_LIST.includes(current)) {
+          logger.warn(
+            { name, scene: current || "(empty string)" },
+            `room is set to an invalid scene`,
+          );
+          return;
+        }
+        await automation.aggressive.validateRoomScene({
+          context,
+          name: current,
+          room: name,
+          scene: scenes[current],
+        });
+      },
       schedule: CronExpression.EVERY_30_SECONDS,
     });
 

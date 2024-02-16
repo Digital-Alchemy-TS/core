@@ -1,6 +1,6 @@
 import { each } from "async";
 
-import { CronExpression, is, TServiceParams } from "../..";
+import { is, TContext, TServiceParams } from "../..";
 import { domain, ENTITY_STATE, PICK_ENTITY } from "../../hass";
 import {
   AGGRESSIVE_SCENES_ADJUSTMENT,
@@ -10,29 +10,20 @@ import {
   SceneSwitchState,
 } from "../helpers";
 
+type TValidateOptions = {
+  context: TContext;
+  room: string;
+  name: string;
+  scene: RoomScene;
+};
+
 export function AggressiveScenes({
   logger,
   config,
   hass,
-  scheduler,
   event,
   automation,
-  context,
 }: TServiceParams) {
-  scheduler.cron({
-    context,
-    exec: async () => {
-      try {
-        // await each([...SceneRoomService.loaded.keys()], async name => {
-        //   await validateRoomScene(name);
-        // });
-      } catch (error) {
-        logger.error({ error });
-      }
-    },
-    schedule: CronExpression.EVERY_30_SECONDS,
-  });
-
   // eslint-disable-next-line sonarjs/cognitive-complexity
   async function manageSwitch(
     entity: ENTITY_STATE<PICK_ENTITY<"switch">>,
@@ -109,7 +100,12 @@ export function AggressiveScenes({
    * - warnings
    * - state changes
    */
-  async function validateRoomScene(scene: RoomScene): Promise<void> {
+  async function validateRoomScene({
+    scene,
+    room,
+    name,
+    context,
+  }: TValidateOptions): Promise<void> {
     if (
       config.automation.AGGRESSIVE_SCENES === false ||
       scene?.aggressive === false
@@ -118,7 +114,7 @@ export function AggressiveScenes({
       return;
     }
     if (!scene?.definition) {
-      logger.warn({ context }, `cannot validate room scene`);
+      logger.warn({ context, name, room, scene }, `cannot validate room scene`);
       return;
     }
     if (!is.object(scene.definition) || is.empty(scene.definition)) {

@@ -1,7 +1,7 @@
 import { eachLimit } from "async";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { EventEmitter } from "node-cache";
-import { get, set } from "object-path";
+import { del, get, set } from "object-path";
 import { Get } from "type-fest";
 
 import {
@@ -49,21 +49,36 @@ export type ByIdProxy<ENTITY_ID extends PICK_ENTITY> =
 const MAX_ATTEMPTS = 50;
 const FAILED_LOAD_DELAY = 5;
 const UNLIMITED = 0;
+const RECENT = 5;
 const BOTTLENECK_UPDATES = 20;
 
 export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
+  // # Local vars
   /**
    * MASTER_STATE.switch.desk_light = {entity_id,state,attributes,...}
    */
   let MASTER_STATE = {} as Partial<
     Record<ALL_DOMAINS, Record<string, ENTITY_STATE<PICK_ENTITY>>>
   >;
+  const ENTITY_PROXIES = new Map<PICK_ENTITY, ByIdProxy<PICK_ENTITY>>();
+  let lastRefresh: Dayjs;
 
+  // * Local event emitter for coordination of socket events
+  // Other libraries will internally take advantage of this eventemitter
   const event = new EventEmitter();
   event.setMaxListeners(UNLIMITED);
-
   let init = false;
 
+  // # Methods
+  // ## Retrieve raw state object for entity
+  function getCurrentState<ENTITY_ID extends PICK_ENTITY>(
+    entity_id: ENTITY_ID,
+    // 🖕 TS
+  ): NonNullable<ENTITY_STATE<ENTITY_ID>> {
+    return get(MASTER_STATE, entity_id);
+  }
+
+  // ## Proxy version of the logic
   function proxyGetLogic<
     ENTITY extends PICK_ENTITY = PICK_ENTITY,
     PROPERTY extends string = string,
@@ -92,8 +107,7 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
     return get(current, property, defaultValue);
   }
 
-  const ENTITY_PROXIES = new Map<PICK_ENTITY, ByIdProxy<PICK_ENTITY>>();
-
+  // ## Retrieve a proxy by id
   function byId<ENTITY_ID extends PICK_ENTITY>(
     entity_id: ENTITY_ID,
   ): ByIdProxy<ENTITY_ID> {
@@ -129,17 +143,11 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
     return ENTITY_PROXIES.get(entity_id) as ByIdProxy<ENTITY_ID>;
   }
 
-  function getCurrentState<ENTITY_ID extends PICK_ENTITY>(
-    entity_id: ENTITY_ID,
-    // 🖕 TS
-  ): NonNullable<ENTITY_STATE<ENTITY_ID>> {
-    return get(MASTER_STATE, entity_id);
-  }
-
+  // ## Retrieve entity history (via socket)
   async function history<ENTITES extends PICK_ENTITY[]>(
     payload: Omit<EntityHistoryDTO<ENTITES>, "type">,
   ) {
-    logger.trace(`Finding stuff`);
+    logger.trace({ payload }, `looking up entity history`);
     const result = (await hass.socket.sendMessage({
       ...payload,
       end_time: dayjs(payload.end_time).toISOString(),
@@ -164,6 +172,7 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
     );
   }
 
+  // ## Build a string array of all known entity ids
   function listEntities(): PICK_ENTITY[] {
     return Object.keys(MASTER_STATE).flatMap(domain =>
       Object.keys(MASTER_STATE[domain as ALL_DOMAINS]).map(
@@ -172,20 +181,26 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
     );
   }
 
+  // ## Gather all entity proxies for a domain
   function findByDomain<DOMAIN extends ALL_DOMAINS>(domain: DOMAIN) {
     return Object.keys(MASTER_STATE[domain] ?? {}).map(i =>
       byId(`${domain}.${i}` as PICK_ENTITY),
     );
   }
 
-  function getEntities<
-    T extends ENTITY_STATE<PICK_ENTITY> = ENTITY_STATE<PICK_ENTITY>,
-  >(entityId: PICK_ENTITY[]): T[] {
-    return entityId.map(id => getCurrentState(id) as T);
-  }
-
+  // ## Load all entity state information from hass
   async function refresh(recursion = START): Promise<void> {
+    const now = dayjs();
+    if (lastRefresh) {
+      const diff = lastRefresh.diff(now, "ms");
+      if (diff >= RECENT * SECOND) {
+        logger.warn({ diff }, `multiple refreshes in close time`);
+      }
+    }
+    lastRefresh = now;
+    // - Fetch list of entities
     const states = await hass.fetch.getAllEntities();
+    // - Keep retrying until max failures reached
     if (is.empty(states)) {
       if (recursion > MAX_ATTEMPTS) {
         logger.fatal(
@@ -202,10 +217,14 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
       await refresh(recursion + INCREMENT);
       return;
     }
+
+    // - Preserve old state for comparison
     const oldState = MASTER_STATE;
     MASTER_STATE = {};
     const emitUpdates: ENTITY_STATE<PICK_ENTITY>[] = [];
 
+    // - Go through all entities, setting the state
+    // ~ If this is a refresh (not an initial boot), track what changed so events can be emitted
     states.forEach(entity => {
       // ? Set first, ensure data is populated
       // `nextTick` will fire AFTER loop finishes
@@ -226,6 +245,8 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
       emitUpdates.push(entity);
     });
 
+    // Attempt to not blow up the system?
+    // TODO: does this gain anything? is a debounce needed somewhere else instead?
     setImmediate(async () => {
       await eachLimit(
         emitUpdates,
@@ -241,25 +262,31 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
     init = true;
   }
 
+  // ## is.entity definition
+  // Actually tie the type casting to real state
   is.entity = (entityId: PICK_ENTITY): entityId is PICK_ENTITY =>
     is.undefined(get(MASTER_STATE, entityId));
 
-  /**
-   * Receiver function for incoming entity updates
-   *
-   * Internal use only, unless you like to watch the world burn
-   */
+  // ## Receiver function for incoming entity updates
   function entityUpdateReceiver<ENTITY extends PICK_ENTITY = PICK_ENTITY>(
     entity_id: PICK_ENTITY,
     new_state: ENTITY_STATE<ENTITY>,
     old_state: ENTITY_STATE<ENTITY>,
   ) {
+    if (new_state === null) {
+      logger.warn(
+        { name: entity_id },
+        `removing deleted entity from {MASTER_STATE}`,
+      );
+      del(MASTER_STATE, entity_id);
+      return;
+    }
     set(MASTER_STATE, entity_id, new_state);
     event.emit(entity_id, new_state, old_state);
   }
 
   lifecycle.onPostConfig(async () => {
-    logger.debug(`pre populate MASTER_STATE`);
+    logger.debug(`pre populate {MASTER_STATE}`);
     await refresh();
   });
 
@@ -285,12 +312,6 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
      * raw data, offering a direct view of the entity's state at a given moment.
      */
     getCurrentState,
-
-    /**
-     * Fetches the state of multiple entities based on their IDs. This is
-     * beneficial for bulk operations or comparisons across different entities.
-     */
-    getEntities,
 
     /**
      * Retrieves the historical state data of entities over a specified time

@@ -1,95 +1,152 @@
 import { eachSeries } from "async";
 import { get, set } from "object-path";
 
-import { deepExtend, DOWN, is, TContext, UP, ZCC } from "../..";
+import { deepExtend, DOWN, is, UP, ZCC } from "../..";
 import {
   BootstrapException,
   CodeConfigDefinition,
   ConfigLoader,
   ConfigLoaderEnvironment,
   ConfigLoaderFile,
+  ConfigLoaderMethod,
   KnownConfigs,
   OptionalModuleConfiguration,
   PartialConfiguration,
   ServiceMap,
   TInjectedConfig,
+  TServiceParams,
   ZCCApplicationDefinition,
 } from "../helpers";
 
-const ENVIRONMENT_LOAD_PRIORITY = 1;
-const FILE_LOAD_PRIORITY = 2;
+// # Symbols
 export const INITIALIZE = Symbol.for("initialize");
 export const LOAD_PROJECT = Symbol.for("load-project");
+export const EVENT_CONFIGURATION_UPDATED = "event_configuration_updated";
 export const INJECTED_DEFINITIONS = Symbol.for("injected-config");
 
-export function ZCC_Configuration() {
+export function ZCC_Configuration({
+  context,
+  event,
+  lifecycle,
+  // ! THIS DOES NOT EXIST BEFORE PRE INIT
+  logger,
+}: TServiceParams) {
+  // 🙊 but that's illegal!
+  lifecycle.onPreInit(() => (logger = ZCC.logger.context(context)));
+
+  // # Locals
   const configLoaders = new Set<ConfigLoader>();
   const configuration: PartialConfiguration = {};
   const configDefinitions: KnownConfigs = new Map();
+  const DEFAULT_LOADERS = [
+    ConfigLoaderEnvironment,
+    ConfigLoaderFile,
+  ] as ConfigLoaderMethod[];
 
-  function defaultLoaders() {
-    configLoaders.add([ConfigLoaderEnvironment, ENVIRONMENT_LOAD_PRIORITY]);
-    configLoaders.add([ConfigLoaderFile, FILE_LOAD_PRIORITY]);
+  // # Methods
+  // ## Load the config for an app
+  async function Initialize<
+    S extends ServiceMap,
+    C extends OptionalModuleConfiguration,
+  >(application: ZCCApplicationDefinition<S, C>) {
+    // * sanity check
+    if (!application) {
+      throw new BootstrapException(
+        context,
+        "NO_APPLICATION",
+        "Cannot load configuration without having defined an application",
+      );
+    }
+
+    // * if a new standalone loader hasn't been defined, use provided
+    if (is.empty(configLoaders)) {
+      logger.debug(`no config loaders defined, adding default`);
+      DEFAULT_LOADERS.forEach((i, index) => configLoaders.add([i, index]));
+    }
+
+    // * load!
+    await eachSeries(
+      [...configLoaders.values()].sort(([, a], [, b]) => (a > b ? UP : DOWN)),
+      async ([loader]) => {
+        const merge = await loader({
+          application,
+          configs: configDefinitions,
+        });
+        deepExtend(configuration, merge);
+      },
+    );
+
+    // * validate
+    // - ensure all required properties have been defined
+    configDefinitions.forEach((definitions, project) => {
+      Object.keys(definitions).forEach(key => {
+        const config = [project, key].join(".");
+        if (
+          definitions[key].required &&
+          is.undefined(get(configuration, config))
+        ) {
+          // ruh roh
+          throw new BootstrapException(
+            context,
+            "REQUIRED_CONFIGURATION_MISSING",
+            `Configuration property ${config} is not defined`,
+          );
+        }
+      });
+    });
   }
 
+  // ## Value that gets injected into services
+  function InjectedDefinitions() {
+    return new Proxy({} as TInjectedConfig, {
+      get(_, project: keyof TInjectedConfig) {
+        return get(configuration, project) ?? {};
+      },
+    });
+  }
+
+  // ## Set a configuration value at runtime
+  function SetConfig<
+    Project extends keyof TInjectedConfig,
+    Property extends keyof TInjectedConfig[Project],
+  >(
+    project: Project,
+    property: Property,
+    value: TInjectedConfig[Project][Property],
+  ): void {
+    set(configuration, [project, property].join("."), value);
+    // in case anyone needs a hook
+    event.emit(EVENT_CONFIGURATION_UPDATED);
+  }
+
+  // ## Provide new values for some config values
+  function Merge(merge: Partial<PartialConfiguration>) {
+    return deepExtend(configuration, merge);
+  }
+
+  // ## Add a library, and it's associated definitions
+  function LoadProject(library: string, definitions: CodeConfigDefinition) {
+    set(configuration, library, {});
+    Object.keys(definitions).forEach(key => {
+      set(configuration, [library, key].join("."), definitions[key].default);
+    });
+    return configDefinitions.set(library, definitions);
+  }
+
+  // ## Return object
   const out: ConfigManager = {
-    [INITIALIZE]: async <
-      S extends ServiceMap,
-      C extends OptionalModuleConfiguration,
-    >(
-      application: ZCCApplicationDefinition<S, C>,
-    ) => {
-      if (!application) {
-        throw new BootstrapException(
-          "configuration" as TContext,
-          "NO_APPLICATION",
-          "Cannot load configuration without having defined an application",
-        );
-      }
-      if (is.empty(configLoaders)) {
-        ZCC.systemLogger.debug(`no config loaders defined, adding default`);
-        defaultLoaders();
-      }
-      await eachSeries(
-        [...configLoaders.values()].sort(([, a], [, b]) => (a > b ? UP : DOWN)),
-        async ([loader]) => {
-          const merge = await loader(application, configDefinitions);
-          deepExtend(configuration, merge);
-        },
-      );
-    },
-    [INJECTED_DEFINITIONS]: () =>
-      // this ended up being the most sane way to fulfill
-      new Proxy({} as TInjectedConfig, {
-        get(_, project: keyof TInjectedConfig) {
-          return get(configuration, project) ?? {};
-        },
-      }),
-    [LOAD_PROJECT]: (library: string, definitions: CodeConfigDefinition) => {
-      set(configuration, library, {});
-      Object.keys(definitions).forEach(key => {
-        set(configuration, [library, key].join("."), definitions[key].default);
-      });
-      return configDefinitions.set(library, definitions);
-    },
+    [INITIALIZE]: Initialize,
+    [INJECTED_DEFINITIONS]: InjectedDefinitions,
+    [LOAD_PROJECT]: LoadProject,
     addConfigLoader: (loader: ConfigLoader) => configLoaders.add(loader),
-    merge: (merge: Partial<PartialConfiguration>) =>
-      deepExtend(configuration, merge),
-    set<
-      Project extends keyof TInjectedConfig,
-      Property extends keyof TInjectedConfig[Project],
-    >(
-      project: Project,
-      property: Property,
-      value: TInjectedConfig[Project][Property],
-    ): void {
-      set(configuration, [project, property].join("."), value);
-    },
+    merge: Merge,
+    set: SetConfig,
   };
   ZCC.config = out;
   return out;
 }
 
+// # Type definitions
 export type ConfigManager = {
   addConfigLoader: (loader: ConfigLoader) => Set<ConfigLoader>;
   [INJECTED_DEFINITIONS]: () => TInjectedConfig;
@@ -113,6 +170,8 @@ export type ConfigManager = {
   ): void;
 };
 
+// ? Using symbols to provide methods to the bootstrapping process
+// The values don't have a use elsewhere, so they get excluded from the public interface
 type ExcludeSymbolKeys<T> = {
   [Key in keyof T as Key extends symbol ? never : Key]: T[Key];
 };

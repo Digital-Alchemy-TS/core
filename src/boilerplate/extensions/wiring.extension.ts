@@ -197,8 +197,8 @@ function CreateBoilerplate() {
       },
     },
     name: "boilerplate",
-    // everything depends config
-    // same with logger 🐔 🥚
+    // > 🐔 🥚 dependencies
+    // config system internally resolves this via lifecycle events
     priorityInit: ["configuration", "logger"],
     services: {
       cache: ZCC_Cache,

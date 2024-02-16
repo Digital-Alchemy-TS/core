@@ -27,13 +27,13 @@ export interface BaseConfig {
    */
   description?: string | string[];
   /**
-   * Refuse to boot if user provided value is not present.
+   * Refuse to boot if user provided value is still undefined by `onPostConfig` lifecycle event
    */
   required?: boolean;
 
   type: ZccConfigTypes;
 }
-export type KnownConfigs = Map<string | symbol, CodeConfigDefinition>;
+export type KnownConfigs = Map<string, CodeConfigDefinition>;
 export interface StringConfig<STRING extends string> extends BaseConfig {
   default?: STRING;
   /**
@@ -112,13 +112,22 @@ export interface ConfigTypeDTO<METADATA extends AnyConfig = AnyConfig> {
 export interface AbstractConfig {}
 export type ConfigLoaderReturn = Promise<Partial<AbstractConfig>>;
 
-export type ConfigLoader = [
-  loader: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
-    application: ZCCApplicationDefinition<S, C>,
-    definedConfigurations: KnownConfigs,
-  ) => ConfigLoaderReturn,
-  priority: number,
-];
+export type ConfigLoaderParams<
+  S extends ServiceMap = ServiceMap,
+  C extends OptionalModuleConfiguration = OptionalModuleConfiguration,
+> = {
+  application: ZCCApplicationDefinition<S, C>;
+  configs: KnownConfigs;
+};
+
+export type ConfigLoaderMethod = <
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+>(
+  params: ConfigLoaderParams<S, C>,
+) => ConfigLoaderReturn;
+
+export type ConfigLoader = [loader: ConfigLoaderMethod, priority: number];
 
 export function cast<T = unknown>(data: string | string[], type: string): T {
   switch (type) {

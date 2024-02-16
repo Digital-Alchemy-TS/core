@@ -55,7 +55,7 @@ export function WebsocketAPI({
 
   // Start the socket
   lifecycle.onBootstrap(async () => {
-    if (config.hass.SOCKET_AUTO_CONNECT) {
+    if (config.hass.AUTO_CONNECT_SOCKET) {
       logger.debug(`auto starting connection`);
       await init();
       attachScheduledFunctions();
@@ -167,13 +167,13 @@ export function WebsocketAPI({
     const now = Date.now();
     MESSAGE_TIMESTAMPS.push(now);
     const count = MESSAGE_TIMESTAMPS.filter(time => time > now - SECOND).length;
-    if (count > config.hass.CRASH_REQUESTS_PER_SEC) {
+    if (count > config.hass.SOCKET_CRASH_REQUESTS_PER_SEC) {
       logger.fatal(`FATAL ERROR: Exceeded {CRASH_REQUESTS_PER_MIN} threshold.`);
       exit();
     }
-    if (count > config.hass.WARN_REQUESTS_PER_SEC) {
+    if (count > config.hass.SOCKET_WARN_REQUESTS_PER_SEC) {
       logger.warn(
-        `Message traffic ${config.hass.CRASH_REQUESTS_PER_SEC}>${count}>${config.hass.WARN_REQUESTS_PER_SEC}`,
+        `Message traffic ${config.hass.SOCKET_CRASH_REQUESTS_PER_SEC}>${count}>${config.hass.SOCKET_WARN_REQUESTS_PER_SEC}`,
       );
     }
   }
@@ -277,7 +277,7 @@ export function WebsocketAPI({
         connecting = false;
         event.emit(SOCKET_CONNECTED);
         clearTimeout(AUTH_TIMEOUT);
-        logger.debug(`event Subscriptions starting`);
+        logger.debug(`event subscriptions starting`);
         await sendMessage({ type: HASSIO_WS_COMMAND.subscribe_events }, false);
         event.emit(ON_SOCKET_AUTH);
         return;
@@ -312,7 +312,8 @@ export function WebsocketAPI({
   function onMessageEvent(id: number, message: SocketMessageDTO) {
     if (message.event.event_type === "state_changed") {
       const { new_state, old_state } = message.event.data;
-      if (new_state) {
+      // ? null = deleted entity
+      if (new_state || new_state === null) {
         hass.entity[Symbol.for("entityUpdateReceiver")](
           new_state.entity_id,
           new_state,
@@ -322,7 +323,7 @@ export function WebsocketAPI({
         // FIXME: probably removal / rename?
         // It's an edge case for sure, and not positive this code should handle it
         // If you have thoughts, chime in somewhere and we can do more sane things
-        logger.debug(`no new state for entity, what caused this?`);
+        logger.debug({ message }, `no new state for entity, what caused this?`);
         return;
       }
     }

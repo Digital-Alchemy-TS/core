@@ -41,8 +41,6 @@ export function Sensor({
   lifecycle,
   synapse,
 }: TServiceParams) {
-  const callbacks = [] as SwitchUpdateCallback[];
-
   const registry = synapse.registry<VirtualSensor>({
     context,
     details: entity => ({
@@ -59,6 +57,7 @@ export function Sensor({
     STATE extends SensorValue = SensorValue,
     ATTRIBUTES extends object = object,
   >(entity: TSensor<STATE, ATTRIBUTES>) {
+    const callbacks = [] as SwitchUpdateCallback[];
     let state: STATE;
     let attributes: ATTRIBUTES;
 
@@ -184,6 +183,16 @@ export function Sensor({
           return entity.icon;
         }
         return undefined;
+      },
+      ownKeys: () => {
+        return [
+          "state",
+          "unit_of_measurement",
+          "device_class",
+          "name",
+          "onUpdate",
+          "attributes",
+        ];
       },
       // ### Setters
       set(_, property: string, value: unknown) {

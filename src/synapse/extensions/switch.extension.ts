@@ -20,7 +20,7 @@ export type VirtualSwitch = {
 
 type UpdateSwitchBody = {
   event_type: "zcc_switch_update";
-  data: { switch: string; state: LocalOnOff };
+  data: { data: { switch: string; state: LocalOnOff } };
 };
 
 type SwitchUpdateCallback = (state: boolean) => TBlackHole;
@@ -45,14 +45,17 @@ export function Switch({
   hass.socket.onEvent({
     context: context,
     event: "zcc_switch_update",
-    exec({ data }: UpdateSwitchBody) {
+    exec({ data: { data } }: UpdateSwitchBody) {
       const item = registry.byId(data.switch);
       if (!item) {
-        logger.warn({ data }, `received switch update for unknown switch`);
+        logger.warn(
+          { data, id: data.switch },
+          `received switch update for unknown switch`,
+        );
         return;
       }
       const state = data.state;
-      if (["on", "off"].includes(state)) {
+      if (!["on", "off"].includes(state)) {
         logger.warn({ state }, `received bad value for state update`);
         return;
       }

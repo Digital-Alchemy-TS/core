@@ -7,7 +7,11 @@ export type PickASwitch =
 type EntityUpdate =
   | PICK_ENTITY
   | { entity_id: PICK_ENTITY }
-  | { onUpdate: (callback: () => TBlackHole) => void };
+  | {
+      onUpdate: (callback: () => TBlackHole) => void;
+      state: unknown;
+      name: string;
+    };
 
 export interface ManagedSwitchOptions {
   /**
@@ -28,10 +32,6 @@ export interface ManagedSwitchOptions {
    * Check on update of this entity
    */
   onUpdate?: EntityUpdate | EntityUpdate[];
-  /**
-   * Receive updates from configured annotations
-   */
-  onEvent?: string | string[];
   /**
    * - return true for on
    * - return false for off

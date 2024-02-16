@@ -25,7 +25,7 @@ setImmediate(async () => {
         LOG_LEVEL: "debug",
       },
       hass: {
-        CALL_PROXY_AUTO_SCAN: false,
+        AUTO_SCAN_CALL_PROXY: false,
       },
     },
   });

@@ -9,61 +9,43 @@ import {
 
 export const LIB_HASS = CreateLibrary({
   configuration: {
-    BASE_URL: {
-      default: "http://localhost:8123",
-      description: "Url to reach Home Assistant at",
-      type: "string",
+    AUTO_CONNECT_SOCKET: {
+      default: true,
+      description: "Websocket must be manually initialized if set to false",
+      type: "boolean",
     },
-    CALL_PROXY_AUTO_SCAN: {
+    AUTO_SCAN_CALL_PROXY: {
       default: true,
       description:
         "Should the call proxy request a service listing at bootstrap?",
       type: "boolean",
     },
-    CRASH_REQUESTS_PER_SEC: {
-      default: 500,
-      description:
-        "Socket service will commit sudoku if more than this many outgoing messages are sent to Home Assistant in a second. Usually indicates runaway code.",
-      type: "number",
-    },
-    RENDER_TIMEOUT: {
-      default: 3,
-      description:
-        "Max time to wait for template rendering via Home Assistant. This value is used by HA, not the controller.",
-      type: "number",
+    BASE_URL: {
+      default: "http://localhost:8123",
+      description: "Url to reach Home Assistant at",
+      type: "string",
     },
     RETRY_INTERVAL: {
       default: 5000,
       description: "How often to retry connecting on connection failure (ms).",
       type: "number",
     },
-    SOCKET_AUTO_CONNECT: {
-      default: true,
-      description: "Websocket must be manually initialized if set to false",
-      type: "boolean",
-    },
-    TALK_BACK_BASE_URL: {
-      default: "http://192.168.1.1:7000",
-      description: "Base url to use with callbacks in home assistant",
-      type: "string",
-    },
-    TOKEN: {
-      // Not absolutely required, if the app does not intend to open a connection
-      // Should probably use the other module though
-      description: "Long lived access token to Home Assistant.",
-      type: "string",
-    },
-    VERIFICATION_FILE: {
-      default: "zcc_configuration",
+    SOCKET_CRASH_REQUESTS_PER_SEC: {
+      default: 500,
       description:
-        "Target file for storing app configurations within the package folder.",
-      type: "string",
+        "Socket service will commit sudoku if more than this many outgoing messages are sent to Home Assistant in a second. Usually indicates runaway code.",
+      type: "number",
     },
-    WARN_REQUESTS_PER_SEC: {
+    SOCKET_WARN_REQUESTS_PER_SEC: {
       default: 300,
       description:
         "Emit warnings if the home controller attempts to send more than X messages to Home Assistant inside of a second.",
       type: "number",
+    },
+    TOKEN: {
+      description: "Long lived access token to Home Assistant.",
+      required: true,
+      type: "string",
     },
     WEBSOCKET_URL: {
       description: `Override calculated value if it's breaking or you want something custom. Make sure to use "ws[s]://" scheme.`,

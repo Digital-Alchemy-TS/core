@@ -38,7 +38,7 @@ export function CallProxy({
    * This API matches the api at the time the this function is run, which may be different from any generated typescript definitions from the past.
    */
   lifecycle.onBootstrap(async () => {
-    if (!config.hass.CALL_PROXY_AUTO_SCAN) {
+    if (!config.hass.AUTO_SCAN_CALL_PROXY) {
       logger.debug(`skip service populate`);
       return;
     }

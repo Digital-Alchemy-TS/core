@@ -8,10 +8,9 @@ import { cwd, platform } from "process";
 import { deepExtend, INVERT_VALUE, is, START } from "../..";
 import {
   AbstractConfig,
+  ConfigLoaderParams,
   ConfigLoaderReturn,
-  OptionalModuleConfiguration,
 } from "./config.helper";
-import { ServiceMap, ZCCApplicationDefinition } from "./wiring.helper";
 
 const isWindows = platform === "win32";
 
@@ -45,12 +44,9 @@ export function configFilePaths(name = "zcc"): string[] {
   return out;
 }
 
-export async function ConfigLoaderFile(
-  application: ZCCApplicationDefinition<
-    ServiceMap,
-    OptionalModuleConfiguration
-  >,
-): ConfigLoaderReturn {
+export async function ConfigLoaderFile({
+  application,
+}: ConfigLoaderParams): ConfigLoaderReturn {
   const files = configFilePaths(application.name);
   const out: Partial<AbstractConfig> = {};
   files.forEach(file => loadConfigFromFile(out, file));
@@ -59,7 +55,7 @@ export async function ConfigLoaderFile(
 
 function loadConfigFromFile(out: Partial<AbstractConfig>, filePath: string) {
   if (!existsSync(filePath) || !statSync(filePath).isFile()) {
-    return out;
+    return;
   }
 
   const fileContent = readFileSync(filePath, "utf8").trim();
@@ -84,24 +80,23 @@ function loadConfigFromFile(out: Partial<AbstractConfig>, filePath: string) {
     return false;
   });
   if (hasExtension) {
-    return undefined;
+    return;
   }
   // Guessing JSON
   if (fileContent[START] === "{") {
     deepExtend(out, JSON.parse(fileContent) as unknown as AbstractConfig);
-    return true;
+    return;
   }
   // Guessing yaml
   try {
     const content = load(fileContent);
     if (is.object(content)) {
       deepExtend(out, content as unknown as AbstractConfig);
-      return true;
+      return;
     }
   } catch {
     // Is not a yaml file
   }
   // Final fallback: INI
   deepExtend(out, decode(fileContent) as unknown as AbstractConfig);
-  return true;
 }

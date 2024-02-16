@@ -1,13 +1,8 @@
 import { TServiceParams } from "../../boilerplate";
-import { CronExpression, is, TContext } from "../../utilities";
+import { CronExpression, is, SINGLE, TContext } from "../../utilities";
 import { ManagedSwitchOptions, PickASwitch } from "../helpers";
 
-export function ManagedSwitch({
-  logger,
-  event,
-  hass,
-  scheduler,
-}: TServiceParams) {
+export function ManagedSwitch({ logger, hass, scheduler }: TServiceParams) {
   /**
    * Logic runner for the state enforcer
    */
@@ -37,7 +32,11 @@ export function ManagedSwitch({
       return;
     }
     // * Notify and execute!
-    logger.debug({ action, entity_id });
+    if (entity_id.length === SINGLE) {
+      logger.debug({ name: entity_id }, action);
+    } else {
+      logger.debug({ action, entity_id });
+    }
     await hass.call.switch[action]({ entity_id });
   }
 
@@ -45,9 +44,8 @@ export function ManagedSwitch({
   function ManageSwitch({
     context,
     entity_id,
-    schedule = CronExpression.EVERY_10_MINUTES,
+    schedule = CronExpression.EVERY_MINUTE,
     shouldBeOn,
-    onEvent = [],
     onUpdate = [],
   }: ManagedSwitchOptions) {
     logger.info({ context, entity_id }, `setting up managed switch`);
@@ -72,22 +70,26 @@ export function ManagedSwitch({
     // * Always run on a schedule
     scheduler.cron({ context, exec: async () => await update(), schedule });
 
-    // * For instances with o declared deps / is just relying on schedule
-    // Do a quick re-evaluation of the state to bring it back to current
-    // ? connect chosen in case there are parts of the logic that might be dependant on the connection anyways
+    // * Little extra insurance that the current state is good
     hass.socket.onConnect(async () => {
       if (!is.empty(onUpdate)) {
         return;
       }
-      logger.debug({ context, name: entity_id }, `{onConnect} recheck state`);
+      logger.trace({ context, name: entity_id }, `{onConnect} recheck state`);
       await update();
     });
 
     // Update when relevant entities update
     if (!is.empty(onUpdate)) {
       [onUpdate].flat().forEach(i => {
-        if (is.object(i) && "onUpdate" in i) {
-          i.onUpdate(async () => await update());
+        if (is.object(i) && !("entity_id" in i)) {
+          const onUpdate = i.onUpdate;
+          if (!is.function(onUpdate)) {
+            return;
+          }
+          i.onUpdate(async () => {
+            await update();
+          });
           return;
         }
         hass.entity
@@ -95,11 +97,6 @@ export function ManagedSwitch({
           .onUpdate(async () => await update());
       });
     }
-
-    // Update on relevant events
-    [onEvent].flat().forEach(eventName => {
-      event.on(eventName, async () => await update());
-    });
   }
   return ManageSwitch;
 }

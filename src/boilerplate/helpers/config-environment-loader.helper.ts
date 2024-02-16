@@ -4,38 +4,25 @@ import { set } from "object-path";
 import { is } from "../..";
 import {
   AbstractConfig,
+  ConfigLoaderParams,
   ConfigLoaderReturn,
-  KnownConfigs,
-  OptionalModuleConfiguration,
 } from "./config.helper";
-import { ServiceMap, ZCCApplicationDefinition } from "./wiring.helper";
 
-export async function ConfigLoaderEnvironment(
-  application: ZCCApplicationDefinition<
-    ServiceMap,
-    OptionalModuleConfiguration
-  >,
-  configs: KnownConfigs,
-): ConfigLoaderReturn {
+export async function ConfigLoaderEnvironment({
+  configs,
+}: ConfigLoaderParams): ConfigLoaderReturn {
   const environmentKeys = Object.keys(process.env);
   const CLI_SWITCHES = minimist(process.argv);
   const switchKeys = Object.keys(CLI_SWITCHES);
 
   const out: Partial<AbstractConfig> = {};
   configs.forEach((configuration, project) => {
-    const isApplication = !is.string(project);
-    const cleanedProject =
-      (isApplication ? application.name : project)?.replaceAll("-", "_") ||
-      "unknown";
-    const environmentPrefix = isApplication
-      ? "application"
-      : `libs_${cleanedProject}`;
-    const configPrefix = isApplication ? "application" : `libs.${project}`;
+    const cleanedProject = project.replaceAll("-", "_");
 
     Object.keys(configuration).forEach(key => {
-      const noAppPath = `${environmentPrefix}_${key}`;
+      const noAppPath = `${cleanedProject}_${key}`;
       const search = [noAppPath, key];
-      const configPath = `${configPrefix}.${key}`;
+      const configPath = `${project}.${key}`;
 
       // Find an applicable switch
       const flag =

@@ -24,13 +24,13 @@ export function configFilePaths(name = "zcc"): string[] {
   if (!isWindows) {
     out.push(
       ...withExtensions(join(`/etc`, name, "config")),
-      ...withExtensions(join(`/etc`, `${name}rc`)),
+      ...withExtensions(join(`/etc`, `${name}`)),
     );
   }
   let current = cwd();
   let next: string;
   while (!is.empty(current)) {
-    out.push(join(current, `.${name}rc`), ...withExtensions(current));
+    out.push(join(current, `.${name}`), ...withExtensions(current));
     next = join(current, "..");
     if (next === current) {
       break;

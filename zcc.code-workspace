@@ -12,14 +12,10 @@
       "aaron-bond.better-comments",
       // ~ material icon theme
       "pkief.material-icon-theme",
-      // ~ nx console (optional)
-      "nrwl.angular-console",
 
       // * linting
       // ~ eslint
       "dbaeumer.vscode-eslint",
-      // ~ dockerfile linting
-      "exiasr.hadolint",
       // ~ shell file linting
       "timonwong.shellcheck",
 

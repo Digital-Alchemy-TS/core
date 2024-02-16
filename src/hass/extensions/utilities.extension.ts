@@ -42,5 +42,5 @@ export function Utilities({ logger, hass }: TServiceParams) {
     );
   }
 
-  return { generate, list, remove };
+  return { backup: { generate, list, remove } };
 }

@@ -1,3 +1,4 @@
+import dayjs, { Dayjs } from "dayjs";
 import { EventEmitter } from "node-cache";
 import { exit } from "process";
 import WS from "ws";
@@ -50,7 +51,7 @@ export function WebsocketAPI({
    */
   const socketEvents = new EventEmitter();
   event.setMaxListeners(UNLIMITED);
-  let connecting = false;
+  let connecting: Dayjs;
 
   let MESSAGE_TIMESTAMPS: number[] = [];
   const waitingCallback = new Map<number, (result: unknown) => TBlackHole>();
@@ -84,7 +85,7 @@ export function WebsocketAPI({
     });
   }
 
-  lifecycle.onShutdownStart(async () => {
+  lifecycle.onShutdownComplete(async () => {
     logger.debug(`shutdown - tearing down connection`);
     await teardown();
   });
@@ -100,13 +101,13 @@ export function WebsocketAPI({
       }
       // Tends to happen when HA resets
       // Resolution is to re-connect when it's up again
-      logger.error(`Failed to pong!`);
+      logger.error(`failed to pong!`);
     } catch (error) {
       logger.error({ error }, `ping error`);
     }
     logger.debug(`ping teardown`);
     await teardown();
-    logger.debug(`ping re-init`);
+    logger.info(`♻️ ping re-init`);
     await init();
   }
 
@@ -115,7 +116,7 @@ export function WebsocketAPI({
       return;
     }
     if (connection.readyState === CONNECTION_OPEN) {
-      logger.debug(`Closing current connection`);
+      logger.debug(`closing current connection`);
       CONNECTION_ACTIVE = false;
       connection.close();
     }
@@ -137,13 +138,13 @@ export function WebsocketAPI({
     subscription?: () => void,
   ): Promise<RESPONSE_VALUE> {
     if (!connection) {
-      logger.error("Cannot send messages before socket is initialized");
+      logger.error("cannot send messages before socket is initialized");
       return undefined;
     }
     countMessage();
     if (data.type !== HASSIO_WS_COMMAND.auth) {
       if (!CONNECTION_ACTIVE) {
-        logger.error({ data }, `Cannot send message, connection is not open`);
+        logger.error({ data }, `cannot send message, connection is not open`);
         return undefined;
       }
       data.id = messageCount;
@@ -192,6 +193,14 @@ export function WebsocketAPI({
   }
 
   async function init(): Promise<void> {
+    const now = dayjs();
+    if (connecting) {
+      if (connecting.add(config.hass.RETRY_INTERVAL, "second").isAfter(now)) {
+        logger.debug("stopped, already connecting");
+        return;
+      }
+      connection = undefined;
+    }
     if (connection) {
       throw new InternalError(
         context,
@@ -199,10 +208,7 @@ export function WebsocketAPI({
         `Destroy the current connection before creating a new one`,
       );
     }
-    if (connecting) {
-      return;
-    }
-    connecting = true;
+    connecting = now;
     logger.debug(`CONNECTION_ACTIVE = {false}`);
     const url = getUrl();
     CONNECTION_ACTIVE = false;
@@ -218,7 +224,7 @@ export function WebsocketAPI({
           // If this error happens, something weird is happening
           logger.error(
             { error },
-            `Error bubbled up from websocket message event handler. This should not happen`,
+            `💣 error bubbled up from websocket message event handler`,
           );
         }
       });
@@ -227,6 +233,8 @@ export function WebsocketAPI({
         if (!CONNECTION_ACTIVE) {
           await sleep(config.hass.RETRY_INTERVAL);
           await teardown();
+          logger.info("♻️ on error re-init");
+          await sleep(SECOND);
           await init();
         }
       });
@@ -234,18 +242,22 @@ export function WebsocketAPI({
         logger.warn("connection closed");
         await teardown();
         await sleep(config.hass.RETRY_INTERVAL);
-        logger.info("re-init");
+        logger.info("♻️ on close re-init");
         await init();
       });
       return await new Promise(done => {
         connection.once("open", () => {
+          connecting = undefined;
           done();
         });
       });
     } catch (error) {
       logger.error({ error, url }, `initConnection error`);
-      connecting = false;
-      setTimeout(async () => await init(), config.hass.RETRY_INTERVAL);
+      connecting = undefined;
+      setTimeout(async () => {
+        logger.debug(`♻️ retry re-init`);
+        await init();
+      }, config.hass.RETRY_INTERVAL);
     }
   }
 
@@ -276,7 +288,7 @@ export function WebsocketAPI({
         logger.debug(`CONNECTION_ACTIVE = {true}`);
         // * Flag as valid connection
         CONNECTION_ACTIVE = true;
-        connecting = false;
+        connecting = undefined;
         event.emit(SOCKET_CONNECTED);
         clearTimeout(AUTH_TIMEOUT);
         logger.debug(`event subscriptions starting`);
@@ -371,7 +383,7 @@ export function WebsocketAPI({
     event,
     exec,
   }: OnHassEventOptions<DATA>) {
-    logger.debug({ context, event }, `attaching socket event listener`);
+    logger.trace({ context, event }, `attaching socket event listener`);
     const callback = async (data: EntityUpdateEvent) => {
       await ZCC.safeExec({
         duration: SOCKET_EVENT_EXECUTION_TIME,
@@ -383,7 +395,7 @@ export function WebsocketAPI({
     };
     socketEvents.on(event, callback);
     return () => {
-      logger.debug({ context, event }, `removing socket event listener`);
+      logger.trace({ context, event }, `removing socket event listener`);
       socketEvents.removeListener(event, callback);
     };
   }

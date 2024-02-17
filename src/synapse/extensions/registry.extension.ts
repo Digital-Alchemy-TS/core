@@ -67,6 +67,13 @@ export function Registry({
     });
   });
 
+  lifecycle.onShutdownStart(async () => {
+    logger.debug(`notifying synapse extension of shutdown`);
+    await hass.socket.fireEvent(
+      `zcc_application_shutdown_${ZCC.application.name}`,
+    );
+  });
+
   // ## Different opportunities to announce
   // ### At boot
   hass.socket.onConnect(async () => {

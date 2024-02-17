@@ -32,7 +32,7 @@ export interface ILogger {
 
 let logger = pino(
   {
-    level: "trace",
+    level: "debug",
     transport: {
       options: {
         colorize: true,
@@ -195,7 +195,7 @@ export async function ZCC_Logger({ lifecycle, config }: TServiceParams) {
   inspect.defaultOptions.compact = false;
   inspect.defaultOptions.colors = true;
 
-  let logLevel: pino.Level = "trace";
+  let logLevel: pino.Level = "debug";
   const shouldLog = (level: pino.Level) =>
     LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[logLevel];
 

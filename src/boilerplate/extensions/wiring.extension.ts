@@ -105,6 +105,7 @@ const processEvents = new Map([
   [
     "SIGTERM",
     async () => {
+      logger.warn(`received [SIGTERM]`);
       await Teardown();
       await ZCC_Testing.FailFast();
     },
@@ -112,6 +113,7 @@ const processEvents = new Map([
   [
     "SIGINT",
     async () => {
+      logger.warn(`received [SIGINT]`);
       await Teardown();
       await ZCC_Testing.FailFast();
     },
@@ -403,6 +405,8 @@ async function RunStageCallbacks(stage: LifecycleStages) {
   });
 }
 
+let startup: Date;
+
 // # Lifecycle runners
 // ## Bootstrap
 async function Bootstrap<
@@ -416,6 +420,7 @@ async function Bootstrap<
       "Another application is already active, please terminate",
     );
   }
+  startup = new Date();
   try {
     // * Recreate base eventemitter
     ZCC.event = new EventEmitter();
@@ -488,10 +493,19 @@ async function Teardown() {
   if (!ACTIVE_APPLICATION) {
     return;
   }
+  logger.info(`tearing down application`);
+  logger.debug(`[ShutdownStart] running lifecycle callbacks`);
+  await RunStageCallbacks("ShutdownStart");
+  logger.debug(`[ShutdownComplete] running lifecycle callbacks`);
+  await RunStageCallbacks("ShutdownComplete");
   ACTIVE_APPLICATION = undefined;
   completedLifecycleCallbacks = new Set<string>();
   processEvents.forEach((callback, event) =>
     process.removeListener(event, callback),
+  );
+  logger.info(
+    { started_at: ZCC.utils.relativeDate(startup) },
+    `application terminated`,
   );
 }
 

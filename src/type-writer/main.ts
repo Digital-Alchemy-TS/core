@@ -26,8 +26,8 @@ setImmediate(async () => {
         LOG_LEVEL: "warn",
       },
       hass: {
-        AUTO_SCAN_CALL_PROXY: false,
         AUTO_CONNECT_SOCKET: false,
+        AUTO_SCAN_CALL_PROXY: false,
       },
     },
   });

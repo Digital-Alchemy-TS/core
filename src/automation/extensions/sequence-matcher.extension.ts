@@ -88,14 +88,14 @@ export function SequenceWatcher({ logger, hass, config }: TServiceParams) {
     MATCH extends string = string,
   >(data: SequenceWatchOptions<DATA, MATCH>) {
     const { exec, event_type, match, context, label, path, filter } = data;
-    logger.debug({ context }, `setting up sequence watcher`);
+    logger.trace({ context }, `setting up sequence watcher`);
     const id = v4();
 
     // If this is the first watcher for this event, set up a listener
     let watcher = WATCHED_EVENTS.get(event_type);
     if (!watcher) {
       watcher = [];
-      logger.debug({ event_type }, `listening for socket event`);
+      logger.trace({ event_type }, `listening for socket event`);
       const remover = hass.socket.onEvent({
         context,
         event: event_type,

@@ -14,15 +14,6 @@ const formatter = new Intl.RelativeTimeFormat("en", {
 const DAYS = 365;
 const MONTHS = 12;
 const YEAR = DAY * DAYS;
-const units = new Map<Intl.RelativeTimeFormatUnit, number>([
-  ["year", YEAR],
-  ["month", YEAR / MONTHS],
-  ["day", DAY],
-  ["hour", HOUR],
-  ["minute", MINUTE],
-  ["second", SECOND],
-]);
-
 export class ZCCDefinition_Utils {
   public TitleCase(input: string): string {
     const matches = input.match(new RegExp("[a-z][A-Z]", "g"));
@@ -42,14 +33,23 @@ export class ZCCDefinition_Utils {
     pastDate: inputFormats,
     futureDate: inputFormats = new Date().toISOString(),
   ) {
+    const UNITS = new Map<Intl.RelativeTimeFormatUnit, number>([
+      ["year", YEAR],
+      ["month", YEAR / MONTHS],
+      ["day", DAY],
+      ["hour", HOUR],
+      ["minute", MINUTE],
+      ["second", SECOND],
+    ]);
+
     if (!pastDate) {
       return `NOT A DATE ${pastDate} ${JSON.stringify(pastDate)}`;
     }
     const elapsed = dayjs(pastDate).diff(futureDate, "ms");
     let out = "";
 
-    [...units.keys()].some(unit => {
-      const cutoff = units.get(unit);
+    [...UNITS.keys()].some(unit => {
+      const cutoff = UNITS.get(unit);
       if (Math.abs(elapsed) > cutoff || unit == "second") {
         out = formatter.format(Math.round(elapsed / cutoff), unit);
         return true;

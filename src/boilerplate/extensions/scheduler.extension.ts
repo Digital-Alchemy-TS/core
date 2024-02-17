@@ -31,9 +31,9 @@ export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
   }: SchedulerOptions & { schedule: Schedule | Schedule[] }) {
     const stopFunctions: (() => TBlackHole)[] = [];
     [scheduleList].flat().forEach(cronSchedule => {
-      logger.debug(
+      logger.trace(
         { context, label, schedule: cronSchedule },
-        `starting schedule`,
+        `start schedule`,
       );
       const cronJob = schedule(
         cronSchedule,
@@ -47,14 +47,14 @@ export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
           }),
       );
       lifecycle.onReady(() => {
-        logger.debug({ context, schedule: cronSchedule }, "start cron");
+        logger.trace({ context, schedule: cronSchedule }, "start cron");
         cronJob.start();
       });
 
       const stopFunction = () => {
-        logger.debug(
+        logger.trace(
           { context, label, schedule: cronSchedule },
-          `stopping schedule`,
+          `stop schedule`,
         );
         cronJob.stop();
       };
@@ -76,7 +76,7 @@ export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
   }: SchedulerOptions & { interval: number }) {
     let runningInterval: ReturnType<typeof setInterval>;
     lifecycle.onReady(() => {
-      logger.debug({ context }, "start interval");
+      logger.trace({ context }, "start interval");
 
       runningInterval = setInterval(
         async () =>

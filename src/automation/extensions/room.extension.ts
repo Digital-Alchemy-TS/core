@@ -36,7 +36,7 @@ export function Room({
     context,
     scenes,
   }: RoomConfiguration<SCENES>): RoomDefinition<SCENES> {
-    logger.info({ name, scenes: Object.keys(scenes) }, `create room`);
+    logger.info({ name }, `create room`);
     const SCENE_LIST = Object.keys(scenes) as SCENES[];
 
     const currentScene = synapse.sensor<SCENES>({
@@ -113,7 +113,6 @@ export function Room({
           if (!shouldCircadian(name, value?.state)) {
             return [name, value];
           }
-          logger.debug({ name }, `circadian`);
           return [name, { kelvin, ...value }];
         })
         .filter(i => !is.undefined(i));
@@ -175,7 +174,6 @@ export function Room({
 
     SCENE_LIST.forEach(scene => {
       const sceneName = `${name} ${scene}`;
-      logger.debug(`create scene [%s]`, sceneName);
       synapse.scene({
         context,
         exec: async () => {

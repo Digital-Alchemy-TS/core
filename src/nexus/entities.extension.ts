@@ -1,4 +1,4 @@
-import { TServiceParams } from "..";
+import { INCREMENT, TServiceParams } from "..";
 
 export function EntitiesExtension({
   synapse,
@@ -33,7 +33,7 @@ export function EntitiesExtension({
     exec: () => {
       binary.on = !binary.on;
       sensor.state = Date.now().toString();
-      sensor.attributes.number = sensor.attributes.number + 1;
+      sensor.attributes.number = sensor.attributes.number + INCREMENT;
       theSwitch.on = !theSwitch.on;
     },
     interval: 2000,

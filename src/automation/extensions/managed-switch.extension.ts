@@ -48,7 +48,7 @@ export function ManagedSwitch({ logger, hass, scheduler }: TServiceParams) {
     shouldBeOn,
     onUpdate = [],
   }: ManagedSwitchOptions) {
-    logger.info({ context, entity_id }, `setting up managed switch`);
+    logger.trace({ context, entity_id }, `setting up managed switch`);
     const entityList = is.array(entity_id) ? entity_id : [entity_id];
 
     // * Check if there should be a change

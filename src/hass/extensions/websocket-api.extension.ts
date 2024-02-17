@@ -107,7 +107,7 @@ export function WebsocketAPI({
     }
     logger.debug(`ping teardown`);
     await teardown();
-    logger.info(`♻️ ping re-init`);
+    logger.info(`🪃 ping re-init`);
     await init();
   }
 
@@ -139,6 +139,8 @@ export function WebsocketAPI({
   ): Promise<RESPONSE_VALUE> {
     if (!connection) {
       logger.error("cannot send messages before socket is initialized");
+      logger.info("🪃 on error re-init");
+      await init();
       return undefined;
     }
     countMessage();
@@ -176,7 +178,7 @@ export function WebsocketAPI({
     }
     if (count > config.hass.SOCKET_WARN_REQUESTS_PER_SEC) {
       logger.warn(
-        `Message traffic ${config.hass.SOCKET_CRASH_REQUESTS_PER_SEC}>${count}>${config.hass.SOCKET_WARN_REQUESTS_PER_SEC}`,
+        `message traffic ${config.hass.SOCKET_CRASH_REQUESTS_PER_SEC}>${count}>${config.hass.SOCKET_WARN_REQUESTS_PER_SEC}`,
       );
     }
   }
@@ -228,23 +230,26 @@ export function WebsocketAPI({
           );
         }
       });
+
       connection.on("error", async error => {
         logger.error({ error: error.message || error }, "Socket error");
         if (!CONNECTION_ACTIVE) {
           await sleep(config.hass.RETRY_INTERVAL);
           await teardown();
-          logger.info("♻️ on error re-init");
+          logger.info("🪃 on error re-init");
           await sleep(SECOND);
           await init();
         }
       });
+
       connection.on("close", async () => {
         logger.warn("connection closed");
         await teardown();
         await sleep(config.hass.RETRY_INTERVAL);
-        logger.info("♻️ on close re-init");
+        logger.info("🪃 on close re-init");
         await init();
       });
+
       return await new Promise(done => {
         connection.once("open", () => {
           connecting = undefined;
@@ -255,7 +260,7 @@ export function WebsocketAPI({
       logger.error({ error, url }, `initConnection error`);
       connecting = undefined;
       setTimeout(async () => {
-        logger.debug(`♻️ retry re-init`);
+        logger.debug(`🪃 retry re-init`);
         await init();
       }, config.hass.RETRY_INTERVAL);
     }

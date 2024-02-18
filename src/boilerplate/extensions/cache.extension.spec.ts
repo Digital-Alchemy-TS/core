@@ -7,7 +7,6 @@ import {
   OptionalModuleConfiguration,
   ServiceMap,
   ZCCApplicationDefinition,
-  ZCCLibraryDefinition,
 } from "..";
 import { CreateApplication, TCache } from ".";
 

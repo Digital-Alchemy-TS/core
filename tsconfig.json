@@ -26,5 +26,5 @@
     "allowSyntheticDefaultImports": true
   },
   "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "tmp", "dist","src/**/*.spec.ts"]
+  "exclude": ["node_modules", "tmp", "dist"]
 }

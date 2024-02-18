@@ -267,6 +267,7 @@ export type ZCCApplicationDefinition<
   C extends OptionalModuleConfiguration,
 > = ApplicationConfigurationOptions<S, C> &
   Wire & {
+    booted: boolean;
     bootstrap: (options?: BootstrapOptions) => Promise<void>;
     lifecycle: TChildLifecycle;
     onError: (callback: onErrorCallback) => void;

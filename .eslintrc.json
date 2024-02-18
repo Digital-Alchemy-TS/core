@@ -90,9 +90,15 @@
       }
     },
     {
-      "files": ["*.spec.ts"],
+      "files": ["src/**/*.spec.ts"],
       "env": {
         "jest": true
+      },
+      "parser": "@typescript-eslint/parser",
+      "parserOptions": {
+        "project": [
+          "tsconfig.spec.json"
+        ]
       },
       "rules": {
         "@typescript-eslint/unbound-method": "off",

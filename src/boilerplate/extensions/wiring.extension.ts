@@ -305,7 +305,18 @@ export function CreateApplication<
       );
       return lifecycle;
     },
-    bootstrap: async options => await Bootstrap(application, options),
+    booted: false,
+    bootstrap: async options => {
+      if (application.booted) {
+        throw new BootstrapException(
+          WIRING_CONTEXT,
+          "DOUBLE_BOOT",
+          "Application is already booted! Cannot bootstrap again",
+        );
+      }
+      await Bootstrap(application, options);
+      application.booted = true;
+    },
     configuration,
     libraries,
     lifecycle,
@@ -313,7 +324,14 @@ export function CreateApplication<
     onError: callback => ZCC.event.on(ZCC_APPLICATION_ERROR, callback),
     priorityInit,
     services,
-    teardown: async () => await Teardown(),
+    teardown: async () => {
+      if (!application.booted) {
+        logger.error(`application is not booted, cannot teardown`);
+        return;
+      }
+      await Teardown();
+      application.booted = false;
+    },
   } as ZCCApplicationDefinition<S, C>;
   return application;
 }
@@ -373,6 +391,7 @@ async function WireService(
     // Doubling up on errors to be extra noisy for now, might back off to single later
     logger?.fatal({ error, name: context }, `Initialization error`);
     // eslint-disable-next-line no-console
+    console.log(error);
     ZCC_Testing.FailFast();
     return undefined;
   }

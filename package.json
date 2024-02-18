@@ -15,7 +15,7 @@
     "prepublishOnly": "npm run build",
     "dev:type-writer": "tsx watch src/type-writer/main.ts",
     "dev:nexus": "tsx watch src/nexus/main.ts",
-    "test": "echo 'Error: no test specified' && exit 1"
+    "test": "./scripts/test.sh"
   },
   "exports": {
     ".": "./dist/index.js",
@@ -88,5 +88,15 @@
     "tslib": "^2.6.2",
     "tsx": "^4.7.0",
     "type-fest": "^4.10.2"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "moduleFileExtensions": ["ts", "js", "json", "node"],
+    "testMatch": ["**/?(*.)+(spec|test).ts"],
+    "transform": {
+      "^.+\\.ts$": ["ts-jest", { "tsconfig": "tsconfig.spec.json" }]
+    }
   }
+
 }

@@ -27,6 +27,7 @@ export function ZCC_Cache({
   config,
 }: TServiceParams): TCache {
   let client: ICacheDriver;
+  const prefix = () => config.boilerplate.CACHE_PREFIX || ZCC.application.name;
 
   function fullKeyName(key: string): string {
     return `${config.boilerplate.CACHE_PREFIX}${key}`;
@@ -52,7 +53,7 @@ export function ZCC_Cache({
         await client.del(fullKey);
         CACHE_DELETE_OPERATIONS_TOTAL.inc({
           key: fullKey,
-          prefix: config.boilerplate.CACHE_PREFIX,
+          prefix: prefix(),
         });
       } catch (error) {
         CACHE_DRIVER_ERROR_COUNT.labels("del").inc();
@@ -66,7 +67,7 @@ export function ZCC_Cache({
         CACHE_GET_OPERATIONS_TOTAL.inc({
           hit_miss: is.undefined(result) ? "miss" : "hit",
           key: fullKey,
-          prefix: config.boilerplate.CACHE_PREFIX,
+          prefix: prefix(),
         });
         return is.undefined(result) ? defaultValue : (result as T);
       } catch (error) {
@@ -79,9 +80,7 @@ export function ZCC_Cache({
       try {
         const fullPattern = fullKeyName(pattern);
         const keys = await client.keys(fullPattern);
-        return keys.map(key =>
-          key.slice(Math.max(NONE, config.boilerplate.CACHE_PREFIX.length)),
-        );
+        return keys.map(key => key.slice(Math.max(NONE, prefix().length)));
       } catch (error) {
         CACHE_DRIVER_ERROR_COUNT.labels("keys").inc();
         logger.warn({ error }, `cache keys error`);

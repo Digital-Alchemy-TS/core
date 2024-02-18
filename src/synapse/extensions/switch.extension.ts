@@ -32,7 +32,6 @@ export function Switch({
   hass,
   synapse,
 }: TServiceParams) {
-  const callbacks = [] as SwitchUpdateCallback[];
   const registry = synapse.registry<VirtualSwitch>({
     context,
     details: entity => ({
@@ -76,6 +75,7 @@ export function Switch({
    * Can be interacted with via return object, or standard home assistant switch services
    */
   function create(entity: TSwitch) {
+    const callbacks = [] as SwitchUpdateCallback[];
     let state: LocalOnOff;
 
     function setState(newState: LocalOnOff) {

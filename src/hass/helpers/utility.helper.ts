@@ -94,14 +94,20 @@ declare module "../../utilities" {
      *
      * Doesn't account for uniqueness rules that cause _1 / _2 / _3 / etc to be added
      */
-    toHassId: (domain: ALL_DOMAINS, ...parts: string[]) => string;
+    toHassId: <DOMAIN extends ALL_DOMAINS>(
+      domain: DOMAIN,
+      ...parts: string[]
+    ) => PICK_ENTITY<DOMAIN>;
   }
 }
-ZCC.toHassId = (domain: ALL_DOMAINS, ...parts: string[]) => {
+ZCC.toHassId = <DOMAIN extends ALL_DOMAINS>(
+  domain: DOMAIN,
+  ...parts: string[]
+) => {
   const name = parts
     .join(" ")
     .toLowerCase()
     .replaceAll(/\s+/g, "_")
     .replaceAll(/\W/g, "");
-  return `${domain}.${name}`;
+  return `${domain}.${name}` as PICK_ENTITY<DOMAIN>;
 };

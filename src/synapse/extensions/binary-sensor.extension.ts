@@ -1,5 +1,5 @@
 import { TServiceParams } from "../../boilerplate";
-import { each, TBlackHole, TContext, ZCC } from "../../utilities";
+import { each, is, TBlackHole, TContext, ZCC } from "../../utilities";
 import { OnOff } from "..";
 
 type TBinarySensor = {
@@ -33,7 +33,7 @@ export function BinarySensor({
   });
 
   // # Binary sensor entity creation function
-  function create(sensor: TBinarySensor) {
+  function create(entity: TBinarySensor) {
     let state: OnOff;
 
     // ## Handle state updates. Ignore non-updates
@@ -45,8 +45,8 @@ export function BinarySensor({
       setImmediate(async () => {
         logger.trace(
           {
-            name: sensor.context,
-            sensor: sensor.name,
+            name: entity.context,
+            sensor: entity.name,
           },
           `syncing state`,
         );
@@ -62,7 +62,18 @@ export function BinarySensor({
 
     // ## Wait until bootstrap to load cache
     lifecycle.onBootstrap(async () => {
-      state = await registry.getCache(id, sensor.defaultState || "off");
+      state = await registry.getCache(id);
+      if (is.undefined(state)) {
+        state = entity.defaultState || "off";
+        registry.loadFromHass<{ state: OnOff }>(id, data => {
+          if (is.empty(data)) {
+            // wat
+            return;
+          }
+          logger.debug({ data, id, name: entity.name }, `received value`);
+          state = data.state;
+        });
+      }
     });
 
     // ## Proxy object as return
@@ -75,14 +86,14 @@ export function BinarySensor({
           return state === "on";
         }
         if (property === "icon") {
-          return sensor.icon;
+          return entity.icon;
         }
         if (property === "onUpdate") {
           return (callback: BinarySensorUpdateCallback) =>
             callbacks.push(callback);
         }
         if (property === "name") {
-          return sensor.name;
+          return entity.name;
         }
         return undefined;
       },

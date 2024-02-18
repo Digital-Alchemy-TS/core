@@ -57,6 +57,11 @@ export function Sensor({
     STATE extends SensorValue = SensorValue,
     ATTRIBUTES extends object = object,
   >(entity: TSensor<STATE, ATTRIBUTES>) {
+    type CacheValue = {
+      attributes: ATTRIBUTES;
+      state: STATE;
+    };
+
     const callbacks = [] as SwitchUpdateCallback[];
     let state: STATE;
     let attributes: ATTRIBUTES;
@@ -120,10 +125,22 @@ export function Sensor({
 
     // ## Wait until bootstrap to load cache
     lifecycle.onBootstrap(async () => {
-      const data = await registry.getCache(id, {
-        attributes: entity.defaultAttributes,
-        state: entity.defaultState,
-      });
+      let data = await registry.getCache<CacheValue>(id);
+      if (!data) {
+        data = {
+          attributes: entity.defaultAttributes,
+          state: entity.defaultState,
+        };
+        registry.loadFromHass<CacheValue>(id, data => {
+          if (is.empty(data)) {
+            // wat
+            return;
+          }
+          logger.debug({ data, id, name: entity.name }, `received value`);
+          state = data.state;
+          attributes = data.attributes;
+        });
+      }
       state = data.state;
       attributes = data.attributes;
     });

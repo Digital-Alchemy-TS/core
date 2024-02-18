@@ -386,6 +386,7 @@ export function WebsocketAPI({
     context,
     label,
     event,
+    once,
     exec,
   }: OnHassEventOptions<DATA>) {
     logger.trace({ context, event }, `attaching socket event listener`);
@@ -398,7 +399,11 @@ export function WebsocketAPI({
         labels: { context, event, label },
       });
     };
-    socketEvents.on(event, callback);
+    if (once) {
+      socketEvents.once(event, callback);
+    } else {
+      socketEvents.on(event, callback);
+    }
     return () => {
       logger.trace({ context, event }, `removing socket event listener`);
       socketEvents.removeListener(event, callback);

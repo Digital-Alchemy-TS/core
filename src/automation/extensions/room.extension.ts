@@ -39,21 +39,37 @@ export function Room({
     logger.info({ name }, `create room`);
     const SCENE_LIST = Object.keys(scenes) as SCENES[];
 
+    const sensorName = `${name} current scene`;
     const currentScene = synapse.sensor<SCENES>({
       context,
-      name: `${name} current scene`,
+      name: sensorName,
     });
+
+    function restoreFromEntity() {
+      const importedValue = hass.entity.byId(ZCC.toHassId("sensor", sensorName))
+        .state as SCENES;
+      const current = currentScene.state;
+      if (is.empty(current) && !SCENE_LIST.includes(importedValue)) {
+        return undefined;
+      }
+      currentScene.state = importedValue;
+      return importedValue;
+    }
 
     scheduler.cron({
       context,
       exec: async () => {
-        const current = currentScene.state;
+        let current = currentScene.state;
         if (!SCENE_LIST.includes(current)) {
-          logger.warn(
-            { name, scene: current || "(empty string)" },
-            `room is set to an invalid scene`,
-          );
-          return;
+          current = restoreFromEntity();
+          if (!SCENE_LIST.includes(current)) {
+            logger.warn(
+              { name, scene: current || "(empty string)" },
+              `room is set to an invalid scene`,
+            );
+            return;
+          }
+          logger.debug({ current, name: sensorName }, `imported value restore`);
         }
         await automation.aggressive.validateRoomScene({
           context,

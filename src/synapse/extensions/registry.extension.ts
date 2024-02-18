@@ -2,6 +2,8 @@ import {
   InternalError,
   is,
   SECOND,
+  sleep,
+  TBlackHole,
   TContext,
   TServiceParams,
   ZCC,
@@ -118,6 +120,12 @@ export function Registry({
     logger.trace({ name: domain }, `init domain`);
     const registry = new Map<string, DATA>();
     const CACHE_KEY = (id: string) => `${domain}_cache:${id}`;
+    type TCallback = (argument: unknown) => TBlackHole;
+    let LOAD_ME = new Set<{
+      id: string;
+      callback: TCallback;
+    }>();
+    let LOADED_SYNAPSE_DATA: Record<string, unknown>;
 
     // ## Export the data for hass
     LOADERS.set(domain, () => {
@@ -129,6 +137,83 @@ export function Registry({
           name: item.name,
         };
       });
+    });
+
+    // ## Value restoration
+    function loadFromHass<T extends object>(
+      id: string,
+      callback: (argument: T) => void,
+    ) {
+      // ? loading already occurred, acts as a flag and minor garbage collection
+      if (!LOAD_ME) {
+        if (LOADED_SYNAPSE_DATA && LOADED_SYNAPSE_DATA[id]) {
+          // load from the snapshot
+          //
+          // > thoughts on data desync
+          //
+          // it's not clear why this entity is being loaded later, or even how much later this is
+          //   however, if it existed in the past, and came from this app, then it's value
+          //   should be in the snapshot
+          //
+          // i don't believe there is a way for the data to update inside synapse if all the assumptions hold true
+          // snapshot should contain last known value, even if we're generating the entity 2 days after boot for some reason
+          //
+          callback(LOADED_SYNAPSE_DATA[id] as T);
+          return;
+        }
+        // not so lucky
+        logger.debug({ id }, `value restoration failed`);
+        return;
+      }
+      logger.trace({ id, name: domain }, `adding lookup for entity`);
+      LOAD_ME.add({ callback: callback as TCallback, id });
+    }
+
+    // What is visible on the dashboard is considered the second source of truth
+    // If an entity wants a state, but it wasn't able to load it from cache, it will come here
+    // Will do a quick lookup of what the extension thinks the value is, and use that to set
+    // > Rebooting hass could be done to clear out the values if needed
+    // > Need to go through synapse based side channels to avoid retrieving an "unavailable" state
+    hass.socket.onConnect(async () => {
+      if (is.empty(LOAD_ME)) {
+        return;
+      }
+      logger.debug({ name: domain }, `retrieving state from synapse`);
+      let loaded = false;
+      // listen for reply
+      const remove = hass.socket.onEvent({
+        context,
+        event: `zcc_respond_state_${domain}`,
+        exec: ({ data }: { data: Record<string, unknown> }) => {
+          loaded = true;
+          LOADED_SYNAPSE_DATA = data;
+          LOAD_ME.forEach(({ id, callback }) => callback(data[id] as object));
+          LOAD_ME = undefined;
+        },
+        once: true,
+      });
+      // send request for data
+      await hass.socket.fireEvent(`zcc_retrieve_state_${domain}`, {
+        app: ZCC.application.name,
+      });
+      // wait 1 second
+      await sleep(SECOND);
+      if (loaded) {
+        return;
+      }
+      //
+      // give up
+      //
+      // This can occur when the extension has not seen this app yet.
+      // Maybe this app was brought offline with no persistent cache, and hass was reset?
+      //
+      // It can call zcc.reload() to register this app to properly fulfill this request
+      // But it still wouldn't cause that data to be revived.
+      // Hopefully sane logic for value defaulting was put in
+      //
+      logger.warn({ name: domain }, `could not retrieve current data synapse`);
+      LOAD_ME = undefined;
+      remove();
     });
 
     // ## Registry interactions
@@ -159,10 +244,15 @@ export function Registry({
       byId(id: string) {
         return registry.get(id);
       },
+
       // ### getCache
       async getCache<T>(id: string, defaultValue?: T): Promise<T> {
         return await cache.get(CACHE_KEY(id), defaultValue);
       },
+
+      // ### loadFromHass
+      loadFromHass,
+
       // ### send
       async send(id: string, data: object) {
         if (!hass.socket.getConnectionActive()) {

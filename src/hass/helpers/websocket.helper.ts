@@ -165,4 +165,5 @@ export type OnHassEventOptions<T = object> = {
   label?: string;
   exec: OnHassEventCallback<T>;
   event: string;
+  once?: boolean;
 };

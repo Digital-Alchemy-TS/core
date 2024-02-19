@@ -7,12 +7,16 @@ import { Counter, Summary } from "prom-client";
 import { DOWN, is, TBlackHole, TContext, UP, ZCC, ZCC_Testing } from "../..";
 import {
   ApplicationConfigurationOptions,
+  ApplicationDefinition,
   BootstrapException,
   BootstrapOptions,
   CallbackList,
   ConfigurationFiles,
+  DIGITAL_ALCHEMY_APPLICATION_ERROR,
+  DIGITAL_ALCHEMY_LIBRARY_ERROR,
   GetApisResult,
   LibraryConfigurationOptions,
+  LibraryDefinition,
   LIFECYCLE_STAGES,
   LifecycleCallback,
   LifecycleStages,
@@ -29,22 +33,18 @@ import {
   TServiceParams,
   TServiceReturn,
   WIRE_PROJECT,
-  ZCC_APPLICATION_ERROR,
-  ZCC_LIBRARY_ERROR,
-  ZCCApplicationDefinition,
-  ZCCLibraryDefinition,
 } from "../helpers";
-import { CacheProviders, ZCC_Cache } from "./cache.extension";
+import { Cache, CacheProviders } from "./cache.extension";
 import {
   ConfigManager,
+  Configuration,
   INITIALIZE,
   INJECTED_DEFINITIONS,
   LOAD_PROJECT,
-  ZCC_Configuration,
 } from "./configuration.extension";
-import { ZCC_Fetch } from "./fetch.extension";
-import { ILogger, ZCC_Logger } from "./logger.extension";
-import { ZCC_Scheduler } from "./scheduler.extension";
+import { Fetch } from "./fetch.extension";
+import { ILogger, Logger } from "./logger.extension";
+import { Scheduler } from "./scheduler.extension";
 
 // @doc obsidian://open?vault=obsidian&file=01%20Libraries%2F01.04%20Boilerplate%2FExtensions%2FWiring
 
@@ -81,7 +81,7 @@ let LOADED_LIFECYCLES = new Map<string, TLoadableChildLifecycle>();
 /**
  * Details relating to the application that is actively running
  */
-let ACTIVE_APPLICATION: ZCCApplicationDefinition<
+let ACTIVE_APPLICATION: ApplicationDefinition<
   ServiceMap,
   OptionalModuleConfiguration
 > = undefined;
@@ -203,11 +203,11 @@ function CreateBoilerplate() {
     // config system internally resolves this via lifecycle events
     priorityInit: ["configuration", "logger"],
     services: {
-      cache: ZCC_Cache,
-      configuration: ZCC_Configuration,
-      fetch: ZCC_Fetch,
-      logger: ZCC_Logger,
-      scheduler: ZCC_Scheduler,
+      cache: Cache,
+      configuration: Configuration,
+      fetch: Fetch,
+      logger: Logger,
+      scheduler: Scheduler,
     },
   });
 }
@@ -239,7 +239,7 @@ export function CreateLibrary<
   configuration,
   priorityInit,
   services,
-}: LibraryConfigurationOptions<S, C>): ZCCLibraryDefinition<S, C> {
+}: LibraryConfigurationOptions<S, C>): LibraryDefinition<S, C> {
   ValidateLibrary(libraryName, services);
 
   const lifecycle = CreateChildLifecycle();
@@ -274,10 +274,11 @@ export function CreateLibrary<
     configuration,
     lifecycle,
     name: libraryName,
-    onError: callback => ZCC.event.on(ZCC_LIBRARY_ERROR(libraryName), callback),
+    onError: callback =>
+      ZCC.event.on(DIGITAL_ALCHEMY_LIBRARY_ERROR(libraryName), callback),
     priorityInit,
     services,
-  } as ZCCLibraryDefinition<S, C>;
+  } as LibraryDefinition<S, C>;
   return library;
 }
 
@@ -321,7 +322,8 @@ export function CreateApplication<
     libraries,
     lifecycle,
     name,
-    onError: callback => ZCC.event.on(ZCC_APPLICATION_ERROR, callback),
+    onError: callback =>
+      ZCC.event.on(DIGITAL_ALCHEMY_APPLICATION_ERROR, callback),
     priorityInit,
     services,
     teardown: async () => {
@@ -332,7 +334,7 @@ export function CreateApplication<
       await Teardown();
       application.booted = false;
     },
-  } as ZCCApplicationDefinition<S, C>;
+  } as ApplicationDefinition<S, C>;
   return application;
 }
 
@@ -431,7 +433,7 @@ let startup: Date;
 async function Bootstrap<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
->(application: ZCCApplicationDefinition<S, C>, options: BootstrapOptions) {
+>(application: ApplicationDefinition<S, C>, options: BootstrapOptions) {
   if (ACTIVE_APPLICATION) {
     throw new BootstrapException(
       COERCE_CONTEXT("wiring.extension"),
@@ -653,10 +655,7 @@ declare module "../../utilities" {
      *
      * Abnormal operation
      */
-    application: ZCCApplicationDefinition<
-      ServiceMap,
-      OptionalModuleConfiguration
-    >;
+    application: ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
     safeExec: <LABELS extends BaseLabels>(
       options: (() => TBlackHole) | SafeExecOptions<LABELS>,
     ) => Promise<void>;

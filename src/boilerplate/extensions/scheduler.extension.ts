@@ -12,7 +12,7 @@ import {
   TServiceParams,
 } from "../helpers";
 
-export function ZCC_Scheduler({ logger, lifecycle }: TServiceParams) {
+export function Scheduler({ logger, lifecycle }: TServiceParams) {
   const stop = new Set<() => TBlackHole>();
 
   lifecycle.onShutdownStart(() => {

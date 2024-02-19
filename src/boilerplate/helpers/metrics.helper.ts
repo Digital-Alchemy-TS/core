@@ -7,7 +7,7 @@ import { Counter, Gauge, Histogram, Summary } from "prom-client";
 export const CACHE_DELETE_OPERATIONS_TOTAL = new Counter({
   help: "Total number of cache delete operations",
   labelNames: ["prefix", "key"] as const,
-  name: "zcc_boilerplate_cache_delete_operations_total",
+  name: "digital_alchemy_boilerplate_cache_delete_operations_total",
 });
 
 /**
@@ -16,7 +16,7 @@ export const CACHE_DELETE_OPERATIONS_TOTAL = new Counter({
 export const CACHE_GET_OPERATIONS_TOTAL = new Counter({
   help: "Total number of cache get operations",
   labelNames: ["prefix", "key", "hit_miss"] as const,
-  name: "zcc_boilerplate_cache_get_operations_total",
+  name: "digital_alchemy_boilerplate_cache_get_operations_total",
 });
 
 /**
@@ -28,7 +28,7 @@ export const CACHE_GET_OPERATIONS_TOTAL = new Counter({
 export const SCHEDULE_EXECUTION_COUNT = new Counter({
   help: "Counts the number of times a scheduled task has been executed",
   labelNames: ["context", "label"] as const,
-  name: "zcc_boilerplate_schedule_execution_count",
+  name: "digital_alchemy_boilerplate_schedule_execution_count",
 });
 
 /**
@@ -40,7 +40,7 @@ export const SCHEDULE_EXECUTION_COUNT = new Counter({
 export const SCHEDULE_ERRORS = new Counter({
   help: "Counts the number of errors during scheduled task executions",
   labelNames: ["context", "label"] as const,
-  name: "zcc_boilerplate_schedule_errors",
+  name: "digital_alchemy_boilerplate_schedule_errors",
 });
 
 /**
@@ -49,7 +49,7 @@ export const SCHEDULE_ERRORS = new Counter({
 export const SCHEDULE_EXECUTION_TIME = new Summary({
   help: "Measures the duration of each cron job or interval execution",
   labelNames: ["context", "label"] as const,
-  name: "zcc_boilerplate_schedule_execution_time",
+  name: "digital_alchemy_boilerplate_schedule_execution_time",
   // These percentiles are just examples; adjust them based on what's relevant for your analysis
   percentiles: [0.5, 0.9, 0.99],
 });
@@ -60,7 +60,7 @@ export const SCHEDULE_EXECUTION_TIME = new Summary({
 export const CACHE_DRIVER_ERROR_COUNT = new Counter({
   help: "Counts the number of errors caught in the cache driver",
   labelNames: ["methodName"] as const,
-  name: "zcc_boilerplate_cache_driver_error_count",
+  name: "digital_alchemy_boilerplate_cache_driver_error_count",
 });
 
 /**
@@ -69,7 +69,7 @@ export const CACHE_DRIVER_ERROR_COUNT = new Counter({
 export const CACHE_SET_OPERATIONS_TOTAL = new Counter({
   help: "Total number of cache set operations",
   labelNames: ["prefix", "key"] as const,
-  name: "zcc_boilerplate_cache_set_operations_total",
+  name: "digital_alchemy_boilerplate_cache_set_operations_total",
 });
 
 /**
@@ -77,7 +77,7 @@ export const CACHE_SET_OPERATIONS_TOTAL = new Counter({
  */
 export const FETCH_REQUESTS_INITIATED = new Counter({
   help: "Total number of fetch requests that have been initiated",
-  name: "zcc_boilerplate_fetch_requests_initiated_total",
+  name: "digital_alchemy_boilerplate_fetch_requests_initiated_total",
 });
 
 /**
@@ -86,7 +86,7 @@ export const FETCH_REQUESTS_INITIATED = new Counter({
 export const FETCH_REQUESTS_SUCCESSFUL = new Counter({
   help: "Total number of fetch requests that have been successfully completed",
   labelNames: ["context", "label"] as const,
-  name: "zcc_boilerplate_fetch_requests_successful_total",
+  name: "digital_alchemy_boilerplate_fetch_requests_successful_total",
 });
 
 /**
@@ -95,7 +95,7 @@ export const FETCH_REQUESTS_SUCCESSFUL = new Counter({
 export const FETCH_DOWNLOAD_REQUESTS_SUCCESSFUL = new Counter({
   help: "Total number of fetch download requests that have been successfully completed",
   labelNames: ["context", "label"] as const,
-  name: "zcc_boilerplate_fetch_download_requests_successful_total",
+  name: "digital_alchemy_boilerplate_fetch_download_requests_successful_total",
 });
 
 /**
@@ -104,7 +104,7 @@ export const FETCH_DOWNLOAD_REQUESTS_SUCCESSFUL = new Counter({
 export const FETCH_REQUESTS_FAILED = new Counter({
   help: "Total number of fetch requests that have failed",
   labelNames: ["context", "label"] as const,
-  name: "zcc_boilerplate_fetch_requests_failed_total",
+  name: "digital_alchemy_boilerplate_fetch_requests_failed_total",
 });
 
 /**
@@ -113,7 +113,7 @@ export const FETCH_REQUESTS_FAILED = new Counter({
 export const FETCH_REQUEST_BOTTLENECK_DELAY = new Summary({
   help: "Delay in milliseconds experienced by requests due to bottleneck rate limiting",
   labelNames: ["context", "label"] as const,
-  name: "zcc_boilerplate_fetch_request_bottleneck_delay_milliseconds",
+  name: "digital_alchemy_boilerplate_fetch_request_bottleneck_delay_milliseconds",
   percentiles: [0.5, 0.9, 0.99],
 });
 
@@ -122,7 +122,7 @@ export const FETCH_REQUEST_BOTTLENECK_DELAY = new Summary({
  */
 export const REDIS_ERROR_COUNT = new Gauge({
   help: "Counts the number of errors encountered in Redis operations",
-  name: "zcc_boilerplate_redis_error_count",
+  name: "digital_alchemy_boilerplate_redis_error_count",
 });
 
 /**
@@ -132,7 +132,7 @@ export const REDIS_ERROR_COUNT = new Gauge({
 export const REDIS_OPERATION_LATENCY_MS = new Histogram({
   buckets: [0.1, 0.5, 1, 5, 10, 20, 50, 100, 200, 500, 1000],
   help: "Histogram for tracking the latency of Redis operations in milliseconds",
-  name: "zcc_boilerplate_redis_operation_latency_ms",
+  name: "digital_alchemy_boilerplate_redis_operation_latency_ms",
 });
 
 /**
@@ -140,7 +140,7 @@ export const REDIS_OPERATION_LATENCY_MS = new Histogram({
  */
 export const MEMORY_CACHE_ERROR_COUNT = new Counter({
   help: "Counts the number of errors encountered in memory cache operations",
-  name: "zcc_boilerplate_memory_cache_error_count",
+  name: "digital_alchemy_boilerplate_memory_cache_error_count",
 });
 
 /**
@@ -149,5 +149,5 @@ export const MEMORY_CACHE_ERROR_COUNT = new Counter({
  */
 export const LOGGER_CONTEXT_ENTRIES_COUNT = new Gauge({
   help: "Number of unique context entries in the logger context cache",
-  name: "zcc_boilerplate_logger_context_entries_count",
+  name: "digital_alchemy_boilerplate_logger_context_entries_count",
 });

@@ -1,5 +1,5 @@
 import { is } from "../..";
-import { ServiceMap, ZCCApplicationDefinition } from "./wiring.helper";
+import { ApplicationDefinition, ServiceMap } from "./wiring.helper";
 
 export type CodeConfigDefinition = Record<string, AnyConfig>;
 export type ZccConfigTypes =
@@ -116,7 +116,7 @@ export type ConfigLoaderParams<
   S extends ServiceMap = ServiceMap,
   C extends OptionalModuleConfiguration = OptionalModuleConfiguration,
 > = {
-  application: ZCCApplicationDefinition<S, C>;
+  application: ApplicationDefinition<S, C>;
   configs: KnownConfigs;
 };
 

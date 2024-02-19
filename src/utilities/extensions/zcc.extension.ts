@@ -63,7 +63,7 @@ export class ZCCDefinition_Utils {
 
 export class ZCCDefinition {
   /**
-   * The global eventemitter. All of `@zcc` will be wired through this
+   * The global eventemitter. All of `@digital-alchemy` will be wired through this
    *
    * **NOTE:** bootstrapping process will initialize this at boot, and cleanup at teardown.
    * Making listener changes should only be done from within the context of service functions

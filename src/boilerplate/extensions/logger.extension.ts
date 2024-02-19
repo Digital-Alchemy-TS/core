@@ -104,7 +104,7 @@ export type CONTEXT_COLORS =
 const MAX_CUTOFF = 2000;
 const frontDash = " - ";
 
-export async function ZCC_Logger({ lifecycle, config }: TServiceParams) {
+export async function Logger({ lifecycle, config }: TServiceParams) {
   const chalk = (await import("chalk")).default;
 
   function log(
@@ -251,14 +251,14 @@ export async function ZCC_Logger({ lifecycle, config }: TServiceParams) {
     },
   };
   ZCC.logger = out;
-  ZCC.systemLogger = ZCC.logger.context("ZCC:system");
+  ZCC.systemLogger = ZCC.logger.context("digital-alchemy:system");
 
   return out;
 }
 
 declare module "../../utilities" {
   export interface ZCCDefinition {
-    logger: Awaited<ReturnType<typeof ZCC_Logger>>;
+    logger: Awaited<ReturnType<typeof Logger>>;
     systemLogger: ILogger;
   }
 }

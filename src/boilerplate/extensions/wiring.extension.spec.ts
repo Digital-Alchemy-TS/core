@@ -1,17 +1,17 @@
 import { ZCC_Testing } from "../..";
 import {
+  ApplicationDefinition,
   BootstrapException,
+  LibraryDefinition,
   ModuleConfiguration,
   OptionalModuleConfiguration,
   ServiceMap,
   WIRE_PROJECT,
-  ZCCApplicationDefinition,
-  ZCCLibraryDefinition,
 } from "..";
 import { CreateApplication, CreateLibrary } from ".";
 
 describe("Wiring", () => {
-  let application: ZCCApplicationDefinition<
+  let application: ApplicationDefinition<
     ServiceMap,
     OptionalModuleConfiguration
   >;
@@ -277,8 +277,8 @@ describe("Wiring", () => {
 
 declare module ".." {
   export interface LoadedModules {
-    testing_app: ZCCApplicationDefinition<ServiceMap, ModuleConfiguration>;
-    testing: ZCCLibraryDefinition<ServiceMap, ModuleConfiguration>;
-    testing_second: ZCCLibraryDefinition<ServiceMap, ModuleConfiguration>;
+    testing_app: ApplicationDefinition<ServiceMap, ModuleConfiguration>;
+    testing: LibraryDefinition<ServiceMap, ModuleConfiguration>;
+    testing_second: LibraryDefinition<ServiceMap, ModuleConfiguration>;
   }
 }

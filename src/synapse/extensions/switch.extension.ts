@@ -19,7 +19,7 @@ export type VirtualSwitch = {
 };
 
 type UpdateSwitchBody = {
-  event_type: "zcc_switch_update";
+  event_type: "digital_alchemy_switch_update";
   data: { data: { switch: string; state: LocalOnOff } };
 };
 
@@ -43,7 +43,7 @@ export function Switch({
   // ### Listen for socket events
   hass.socket.onEvent({
     context: context,
-    event: "zcc_switch_update",
+    event: "digital_alchemy_switch_update",
     exec({ data: { data } }: UpdateSwitchBody) {
       const item = registry.byId(data.switch);
       if (!item) {

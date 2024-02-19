@@ -7,7 +7,7 @@ import { cwd } from "process";
 
 import { is, SINGLE, ZCC_Testing } from "../..";
 
-export const TESTING_APP_NAME = "zcc-unit-tests";
+export const TESTING_APP_NAME = "digital-alchemy-unit-tests";
 
 // export type RandomFileTestingDataFormat = ReturnType<
 //   typeof ZCC_Testing.generateRandomData

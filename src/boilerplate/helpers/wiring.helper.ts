@@ -26,7 +26,7 @@ export type ApplicationConfigurationOptions<
 > = {
   name: keyof LoadedModules;
   services: S;
-  libraries?: ZCCLibraryDefinition<ServiceMap, OptionalModuleConfiguration>[];
+  libraries?: LibraryDefinition<ServiceMap, OptionalModuleConfiguration>[];
   configuration?: C;
   /**
    * Define which services should be initialized first. Any remaining services are done at the end in no set order
@@ -37,7 +37,7 @@ export type ApplicationConfigurationOptions<
 export type TConfigurable<
   S extends ServiceMap = ServiceMap,
   C extends OptionalModuleConfiguration = OptionalModuleConfiguration,
-> = ZCCLibraryDefinition<S, C> | ZCCApplicationDefinition<S, C>;
+> = LibraryDefinition<S, C> | ApplicationDefinition<S, C>;
 
 export type TGetConfig<PARENT extends TConfigurable = TConfigurable> = <
   K extends keyof ExtractConfig<PARENT>,
@@ -52,9 +52,9 @@ export type GetApisResult<S extends ServiceMap> = {
 };
 
 type ExtractConfig<T> =
-  T extends ZCCLibraryDefinition<ServiceMap, infer C>
+  T extends LibraryDefinition<ServiceMap, infer C>
     ? C
-    : T extends ZCCApplicationDefinition<ServiceMap, infer C>
+    : T extends ApplicationDefinition<ServiceMap, infer C>
       ? C
       : never;
 
@@ -147,15 +147,12 @@ export type TServiceParams = {
 };
 
 type ModuleConfigs = {
-  [K in keyof LoadedModules]: LoadedModules[K] extends ZCCLibraryDefinition<
+  [K in keyof LoadedModules]: LoadedModules[K] extends LibraryDefinition<
     ServiceMap,
     infer Config
   >
     ? Config
-    : LoadedModules[K] extends ZCCApplicationDefinition<
-          ServiceMap,
-          infer Config
-        >
+    : LoadedModules[K] extends ApplicationDefinition<ServiceMap, infer Config>
       ? Config
       : never;
 };
@@ -168,9 +165,9 @@ type ConfigTypes<Config> = {
 };
 
 export type GetApis<T> =
-  T extends ZCCLibraryDefinition<infer S, OptionalModuleConfiguration>
+  T extends LibraryDefinition<infer S, OptionalModuleConfiguration>
     ? GetApisResult<S>
-    : T extends ZCCApplicationDefinition<infer S, OptionalModuleConfiguration>
+    : T extends ApplicationDefinition<infer S, OptionalModuleConfiguration>
       ? GetApisResult<S>
       : never;
 
@@ -253,7 +250,7 @@ type Wire = {
   [WIRE_PROJECT]: () => Promise<TChildLifecycle>;
 };
 
-export type ZCCLibraryDefinition<
+export type LibraryDefinition<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
 > = LibraryConfigurationOptions<S, C> &
@@ -262,7 +259,7 @@ export type ZCCLibraryDefinition<
     onError: (callback: onErrorCallback) => void;
   };
 
-export type ZCCApplicationDefinition<
+export type ApplicationDefinition<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
 > = ApplicationConfigurationOptions<S, C> &

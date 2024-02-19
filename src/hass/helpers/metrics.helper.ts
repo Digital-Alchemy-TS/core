@@ -6,7 +6,7 @@ import { Counter, Summary } from "prom-client";
 export const SOCKET_EVENT_EXECUTION_COUNT = new Counter({
   help: "Counts the number of times a socket event callback has been executed",
   labelNames: ["context", "label", "event"] as const,
-  name: "zcc_home_assistant_socket_event_callback_execution_count",
+  name: "digital_alchemy_home_assistant_socket_event_callback_execution_count",
 });
 
 /**
@@ -15,7 +15,7 @@ export const SOCKET_EVENT_EXECUTION_COUNT = new Counter({
 export const SOCKET_EVENT_ERRORS = new Counter({
   help: "Counts the number of errors during socket event callback executions",
   labelNames: ["context", "label", "event"] as const,
-  name: "zcc_home_assistant_socket_event_callback_errors",
+  name: "digital_alchemy_home_assistant_socket_event_callback_errors",
 });
 
 /**
@@ -24,6 +24,6 @@ export const SOCKET_EVENT_ERRORS = new Counter({
 export const SOCKET_EVENT_EXECUTION_TIME = new Summary({
   help: "Measures the duration of each socket event callback execution",
   labelNames: ["context", "label", "event"] as const,
-  name: "zcc_home_assistant_socket_event_callback_execution_time",
+  name: "digital_alchemy_home_assistant_socket_event_callback_execution_time",
   percentiles: [0.5, 0.9, 0.99],
 });

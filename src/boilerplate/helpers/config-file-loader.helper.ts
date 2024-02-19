@@ -19,7 +19,7 @@ function withExtensions(path: string): string[] {
   return [path, ...SUPPORTED_CONFIG_EXTENSIONS.map(i => `${path}.${i}`)];
 }
 
-export function configFilePaths(name = "zcc"): string[] {
+export function configFilePaths(name = "digital-alchemy"): string[] {
   const out: string[] = [];
   if (!isWindows) {
     out.push(

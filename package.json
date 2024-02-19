@@ -1,13 +1,12 @@
 {
-  "name": "@zoe-codez/zcc",
-  "repository": "https://github.com/zoe-codez/zcc",
+  "name": "@digital-alchemy/core",
+  "repository": {
+    "url": "git+https://github.com/zoe-codez/digital-alchemy.git"
+  },
   "version": "0.1.0",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe"
-  },
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com/"
   },
   "scripts": {
     "build": "tsc -p tsconfig.lib.json",

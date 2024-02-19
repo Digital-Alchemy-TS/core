@@ -8,7 +8,7 @@ type TScene = {
 };
 
 type HassSceneUpdateEvent = {
-  event_type: "zcc_activate";
+  event_type: "digital_alchemy_activate";
   data: { id: string };
 };
 
@@ -21,7 +21,7 @@ export function Scene({ logger, hass, synapse, context }: TServiceParams) {
   // ### Listen for socket events
   hass.socket.onEvent({
     context: context,
-    event: "zcc_activate",
+    event: "digital_alchemy_activate",
     exec({ data }: HassSceneUpdateEvent) {
       const item = registry.byId(data.id);
       if (!item) {

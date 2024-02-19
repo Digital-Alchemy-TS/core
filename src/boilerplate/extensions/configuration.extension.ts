@@ -3,6 +3,7 @@ import { get, set } from "object-path";
 
 import { deepExtend, DOWN, is, UP, ZCC } from "../..";
 import {
+  ApplicationDefinition,
   BootstrapException,
   CodeConfigDefinition,
   ConfigLoader,
@@ -15,7 +16,6 @@ import {
   ServiceMap,
   TInjectedConfig,
   TServiceParams,
-  ZCCApplicationDefinition,
 } from "../helpers";
 
 // # Symbols
@@ -24,7 +24,7 @@ export const LOAD_PROJECT = Symbol.for("load-project");
 export const EVENT_CONFIGURATION_UPDATED = "event_configuration_updated";
 export const INJECTED_DEFINITIONS = Symbol.for("injected-config");
 
-export function ZCC_Configuration({
+export function Configuration({
   context,
   event,
   lifecycle,
@@ -48,7 +48,7 @@ export function ZCC_Configuration({
   async function Initialize<
     S extends ServiceMap,
     C extends OptionalModuleConfiguration,
-  >(application: ZCCApplicationDefinition<S, C>) {
+  >(application: ApplicationDefinition<S, C>) {
     // * sanity check
     if (!application) {
       throw new BootstrapException(
@@ -155,7 +155,7 @@ export type ConfigManager = {
     definitions: CodeConfigDefinition,
   ) => KnownConfigs;
   [INITIALIZE]: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
-    application: ZCCApplicationDefinition<S, C>,
+    application: ApplicationDefinition<S, C>,
   ) => Promise<void>;
   merge: (
     merge: Partial<PartialConfiguration>,

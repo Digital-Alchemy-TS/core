@@ -23,7 +23,7 @@ import {
 
 const streamPipeline = promisify(pipeline);
 
-export function ZCC_Fetch({ logger, context: parentContext }: TServiceParams) {
+export function Fetch({ logger, context: parentContext }: TServiceParams) {
   const createFetcher = ({
     bottleneck,
     headers: baseHeaders,

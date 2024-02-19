@@ -6,7 +6,7 @@ import { Counter, Summary } from "prom-client";
 export const BUTTON_EXECUTION_COUNT = new Counter({
   help: "Counts the number of times a button callback has been executed",
   labelNames: ["context", "label"] as const,
-  name: "zcc_virtual_entity_button_callback_execution_count",
+  name: "digital_alchemy_virtual_entity_button_callback_execution_count",
 });
 
 /**
@@ -15,7 +15,7 @@ export const BUTTON_EXECUTION_COUNT = new Counter({
 export const BUTTON_ERRORS = new Counter({
   help: "Counts the number of errors during button callback executions",
   labelNames: ["context", "label"] as const,
-  name: "zcc_virtual_entity_button_callback_errors",
+  name: "digital_alchemy_virtual_entity_button_callback_errors",
 });
 
 /**
@@ -24,6 +24,6 @@ export const BUTTON_ERRORS = new Counter({
 export const BUTTON_EXECUTION_TIME = new Summary({
   help: "Measures the duration of button press callback execution",
   labelNames: ["context", "label"] as const,
-  name: "zcc_virtual_entity_button_callback_execution_time",
+  name: "digital_alchemy_virtual_entity_button_callback_execution_time",
   percentiles: [0.5, 0.9, 0.99],
 });

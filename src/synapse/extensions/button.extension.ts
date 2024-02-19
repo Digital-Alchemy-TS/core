@@ -14,7 +14,7 @@ type TButton = {
 };
 
 type HassButtonUpdateEvent = {
-  event_type: "zcc_activate";
+  event_type: "digital_alchemy_activate";
   data: { id: string };
 };
 
@@ -27,7 +27,7 @@ export function Button({ logger, hass, context, synapse }: TServiceParams) {
   // ### Listen for socket events
   hass.socket.onEvent({
     context: context,
-    event: "zcc_activate",
+    event: "digital_alchemy_activate",
     exec({ data }: HassButtonUpdateEvent) {
       const item = registry.byId(data.id);
       if (!item) {

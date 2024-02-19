@@ -1,20 +1,20 @@
-# zcc core 🌟
+# Digital Alchemy core 🌟
 
 ## Introduction
 
-`@zoe-codez/zcc`: A TypeScript framework designed for Home Assistant, enabling dynamic entity management, service calls, and automation with minimal dependencies.
+`@digital-alchemy`: A TypeScript framework designed for Home Assistant, enabling dynamic entity management, service calls, and automation with minimal dependencies.
 
 ## 📦 Major Exports
 
-`@zoe-codez/zcc` framework is built on key exports, each offering unique features that complement one another:
+`@digital-alchemy` framework is built on key exports, each offering unique features that complement one another:
 
-- **@zoe-codez/zcc (Base Framework):** Provides caching, logging, configuration, lifecycle events, and utility types.
+- **@digital-alchemy/core (Base Framework):** Provides caching, logging, configuration, lifecycle events, and utility types.
 
-- **@zoe-codez/zcc/hass:** Facilitates base interactions with Home Assistant, including websocket connection management, entity reference checking, and a service call interface.
+- **@digital-alchemy/core/hass:** Facilitates base interactions with Home Assistant, including websocket connection management, entity reference checking, and a service call interface.
 
-- **@zoe-codez/zcc/synapse:** Enables the generation of new entities in Home Assistant, such as buttons, sensors, and switches. Requires a socket connection and a custom component installation.
+- **@digital-alchemy/core/synapse:** Enables the generation of new entities in Home Assistant, such as buttons, sensors, and switches. Requires a socket connection and a custom component installation.
 
-- **@zoe-codez/zcc/automation:** Focuses on home automation logic, offering room-based scene coordination, active state management for switches, circadian lighting, and more.
+- **@digital-alchemy/core/automation:** Focuses on home automation logic, offering room-based scene coordination, active state management for switches, circadian lighting, and more.
 
 - **type-writer (CLI Tool):** A helper script that customizes internal type definitions by connecting to your Home Assistant instance and generating accurate service & entity validations.
 
@@ -24,21 +24,13 @@
 
 The Synapse component is essential for creating and managing entities within Home Assistant. Visit the [Synapse Repo](https://github.com/zoe-codez/synapse) for installation instructions and to understand its importance in your setup.
 
-### npmrc Setup for GitHub Packages
-
-This library is distributed via GitHub packages. To install, add the following to `.npmrc` in your project's root:
-
-```npmrc
-@zoe-codez:registry=https://npm.pkg.github.com
-```
-
 ## 📚 External Libraries and Examples
 
-Explore the full potential of `@zoe-codez/zcc` with our extensions library and illustrative examples. These resources are designed to expand the framework's functionality and provide inspiration for your projects:
+Explore the full potential of `@digital-alchemy/core` with our extensions library and illustrative examples. These resources are designed to expand the framework's functionality and provide inspiration for your projects:
 
 ### 📚 Extensions Library
 
-Enhance your home automation capabilities with the [ZCC Extensions Library](https://github.com/zoe-codez/zcc-extensions), which includes:
+Enhance your home automation capabilities with the [Digital Alchemy Extensions Library](https://github.com/digital-alchemy-extensions), which includes:
 
 - **MQTT Bindings:** Seamlessly integrate MQTT protocols for broader IoT connectivity.
 - **Fastify Bindings:** Leverage Fastify to add efficient HTTP server functionality to your automation projects.
@@ -52,4 +44,4 @@ Kickstart your development with these practical applications:
 
 ## 🤝 Contribution
 
-We warmly welcome contributions. Whether you're enhancing the framework, sharing examples, or enriching documentation, your efforts significantly benefit the zcc community.
+We warmly welcome contributions. Whether you're enhancing the framework, sharing examples, or enriching documentation, your efforts significantly benefit the community.

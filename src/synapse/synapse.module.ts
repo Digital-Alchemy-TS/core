@@ -14,7 +14,7 @@ export const LIB_SYNAPSE = CreateLibrary({
       default: false,
       description: [
         "Emit the entity list update every time this application is booted",
-        "zcc.reload() service available for manual reload",
+        "digital-alchemy.reload() service available for manual reload",
       ],
       type: "boolean",
     },

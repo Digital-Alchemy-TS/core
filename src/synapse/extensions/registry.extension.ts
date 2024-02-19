@@ -37,7 +37,7 @@ export function Registry({
   // # Common
   const LOADERS = new Map<ALL_DOMAINS, () => object[]>();
   let initComplete = false;
-  const HEARTBEAT = `zcc_heartbeat_${ZCC.application.name}`;
+  const HEARTBEAT = `digital_alchemy_heartbeat_${ZCC.application.name}`;
 
   async function SendEntityList() {
     logger.debug(`send entity list`);
@@ -48,7 +48,7 @@ export function Registry({
       }),
     );
     const hash = is.hash(JSON.stringify(domains));
-    await hass.socket.fireEvent(`zcc_application_state`, {
+    await hass.socket.fireEvent(`digital_alchemy_application_state`, {
       app: ZCC.application.name,
       boot: BOOT_TIME,
       domains,
@@ -72,7 +72,7 @@ export function Registry({
   lifecycle.onShutdownStart(async () => {
     logger.debug(`notifying synapse extension of shutdown`);
     await hass.socket.fireEvent(
-      `zcc_application_shutdown_${ZCC.application.name}`,
+      `digital_alchemy_application_shutdown_${ZCC.application.name}`,
     );
   });
 
@@ -91,22 +91,22 @@ export function Registry({
   // ### Targeted at this app
   hass.socket.onEvent({
     context,
-    event: "zcc_app_reload",
+    event: "digital_alchemy_app_reload",
     exec: async ({ app }: { app: string }) => {
       if (app !== ZCC.application.name) {
         return;
       }
-      logger.info(`zcc.reload(%s)`, app);
+      logger.info(`digital-alchemy.reload(%s)`, app);
       await SendEntityList();
     },
   });
 
-  // ### Targeted at all zcc apps
+  // ### Targeted at all digital-alchemy apps
   hass.socket.onEvent({
     context,
-    event: "zcc_app_reload_all",
+    event: "digital_alchemy_app_reload_all",
     exec: async () => {
-      logger.info({ all: true }, `zcc.reload()`);
+      logger.info({ all: true }, `digital-alchemy.reload()`);
       await SendEntityList();
     },
   });
@@ -183,7 +183,7 @@ export function Registry({
       // listen for reply
       const remove = hass.socket.onEvent({
         context,
-        event: `zcc_respond_state_${domain}`,
+        event: `digital_alchemy_respond_state_${domain}`,
         exec: ({ data }: { data: Record<string, unknown> }) => {
           loaded = true;
           LOADED_SYNAPSE_DATA = data;
@@ -193,7 +193,7 @@ export function Registry({
         once: true,
       });
       // send request for data
-      await hass.socket.fireEvent(`zcc_retrieve_state_${domain}`, {
+      await hass.socket.fireEvent(`digital_alchemy_retrieve_state_${domain}`, {
         app: ZCC.application.name,
       });
       // wait 1 second
@@ -207,7 +207,7 @@ export function Registry({
       // This can occur when the extension has not seen this app yet.
       // Maybe this app was brought offline with no persistent cache, and hass was reset?
       //
-      // It can call zcc.reload() to register this app to properly fulfill this request
+      // It can call digital-alchemy.reload() to register this app to properly fulfill this request
       // But it still wouldn't cause that data to be revived.
       // Hopefully sane logic for value defaulting was put in
       //
@@ -261,7 +261,7 @@ export function Registry({
           );
           return;
         }
-        await hass.socket.fireEvent(`zcc_event`, { data, id });
+        await hass.socket.fireEvent(`digital_alchemy_event`, { data, id });
       },
       // ### setCache
       async setCache(id: string, value: unknown) {

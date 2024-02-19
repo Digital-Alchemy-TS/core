@@ -2,8 +2,8 @@ import {
   bootTestingModule,
   LIB_BOILERPLATE,
   ZCCApplicationDefinition,
-} from "@zcc/boilerplate";
-import { ZCC } from "@zcc/utilities";
+} from "@digital-alchemy/boilerplate";
+import { ZCC } from "@digital-alchemy/utilities";
 
 import { LIB_GOTIFY } from "../gotify.module.mjs";
 import {
@@ -16,7 +16,7 @@ import { BASE_URL, TOKEN } from "../helpers/config.constants.mjs";
 import { GotifyFetch } from "./fetch.extension.mjs";
 
 // Mock the necessary modules and functions
-jest.mock("@zcc/utilities");
+jest.mock("@digital-alchemy/utilities");
 
 describe("GotifyFetch", () => {
   let gotifyFetch: ReturnType<typeof GotifyFetch>;

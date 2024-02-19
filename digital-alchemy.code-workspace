@@ -78,7 +78,7 @@
       "common": "shared",
       ".nx": "next",
       "custom_components": "python",
-      "zcc": "python",
+      "digital-": "python",
       "services": "server",
       "helpers": "helper",
       "extensions": "plugin",
@@ -92,7 +92,7 @@
       "project.json": "jest.config.js, .babelrc",
       "package.json": ".npmrc, yarn.lock, package-lock.json",
       ".eslintrc.json": ".editorconfig, jest.preset.js, jest.config.ts, babel.config.json, .prettierrc, .prettierignore, .pino-prettyrc, .gitignore, .eslintignore, .dockerignore",
-      "zcc.code-workspace": "LICENSE, nx.json, .auto-config-testrc, .entity-creationrc, .scene-managerrc, terminalizer.yml, cspell.config.yaml, .zipignore, project.json",
+      "digital-alchemy.code-workspace": "LICENSE, nx.json, .auto-config-testrc, .entity-creationrc, .scene-managerrc, terminalizer.yml, cspell.config.yaml, .zipignore, project.json",
       "*.ts": "${basename}.*"
     },
     "files.watcherExclude": {

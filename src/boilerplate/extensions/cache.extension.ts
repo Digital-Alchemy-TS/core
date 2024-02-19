@@ -21,11 +21,7 @@ export enum CacheProviders {
   memory = "memory",
 }
 
-export function ZCC_Cache({
-  logger,
-  lifecycle,
-  config,
-}: TServiceParams): TCache {
+export function Cache({ logger, lifecycle, config }: TServiceParams): TCache {
   let client: ICacheDriver;
   const prefix = () => config.boilerplate.CACHE_PREFIX || ZCC.application.name;
 

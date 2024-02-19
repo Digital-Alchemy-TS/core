@@ -1,17 +1,17 @@
 import { ZCC, ZCC_Testing } from "../..";
 import {
+  ApplicationDefinition,
   CACHE_DELETE_OPERATIONS_TOTAL,
   CACHE_GET_OPERATIONS_TOTAL,
   CACHE_SET_OPERATIONS_TOTAL,
   ModuleConfiguration,
   OptionalModuleConfiguration,
   ServiceMap,
-  ZCCApplicationDefinition,
 } from "..";
 import { CreateApplication, TCache } from ".";
 
 describe("Cache", () => {
-  let application: ZCCApplicationDefinition<
+  let application: ApplicationDefinition<
     ServiceMap,
     OptionalModuleConfiguration
   >;
@@ -268,6 +268,6 @@ describe("Cache", () => {
 
 declare module ".." {
   export interface LoadedModules {
-    testing_app: ZCCApplicationDefinition<ServiceMap, ModuleConfiguration>;
+    testing_app: ApplicationDefinition<ServiceMap, ModuleConfiguration>;
   }
 }

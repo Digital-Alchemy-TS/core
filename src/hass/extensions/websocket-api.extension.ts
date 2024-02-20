@@ -69,12 +69,10 @@ export function WebsocketAPI({
     logger.trace(`attaching interval schedules`);
     // Set up intervals
     scheduler.interval({
-      context,
       exec: async () => await ping(),
       interval: PING_INTERVAL * SECOND,
     });
     scheduler.interval({
-      context,
       exec: () => {
         const now = Date.now();
         MESSAGE_TIMESTAMPS = MESSAGE_TIMESTAMPS.filter(

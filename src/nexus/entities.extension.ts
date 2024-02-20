@@ -29,7 +29,6 @@ export function EntitiesExtension({
     name: "Demo sensor",
   });
   scheduler.interval({
-    context,
     exec: () => {
       binary.on = !binary.on;
       sensor.state = Date.now().toString();

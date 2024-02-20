@@ -39,7 +39,6 @@ export function CircadianLighting({
     out.circadianEntity = circadianEntity;
 
     scheduler.cron({
-      context,
       exec: () => updateKelvin(),
       schedule: CronExpression.EVERY_30_SECONDS,
     });

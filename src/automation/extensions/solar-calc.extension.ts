@@ -48,7 +48,6 @@ export function SolarCalculator({
   logger,
   cache,
   scheduler,
-  context,
   hass,
   lifecycle,
 }: TServiceParams) {
@@ -73,7 +72,6 @@ export function SolarCalculator({
   // Rebuild references hourly
   //
   scheduler.cron({
-    context,
     exec: () => PopulateReferences(),
     schedule: CronExpression.EVERY_HOUR,
   });

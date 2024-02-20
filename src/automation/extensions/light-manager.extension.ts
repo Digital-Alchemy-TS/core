@@ -48,7 +48,6 @@ export function LightManager({
   lifecycle,
   automation,
   config,
-  context,
 }: TServiceParams) {
   /**
    * Lights fall into one of the following:
@@ -310,7 +309,6 @@ export function LightManager({
     logger.debug(`setting up light adjustment cron`);
     let earlyStop: () => void;
     scheduler.cron({
-      context,
       exec: async () => {
         let stopped = false;
         if (earlyStop) {

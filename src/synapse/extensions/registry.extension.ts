@@ -63,7 +63,6 @@ export function Registry({
     }
     logger.trace(`starting heartbeat`);
     scheduler.interval({
-      context,
       exec: async () => await hass.socket.fireEvent(HEARTBEAT),
       interval: HEARTBEAT_INTERVAL * SECOND,
     });

@@ -87,7 +87,7 @@ let ACTIVE_APPLICATION: ApplicationDefinition<
 > = undefined;
 
 // heisenberg's variables. it's probably here, but maybe not
-let scheduler: TScheduler;
+let scheduler: (context: TContext) => TScheduler;
 let logger: ILogger;
 const COERCE_CONTEXT = (context: string): TContext => context as TContext;
 const WIRING_CONTEXT = COERCE_CONTEXT("boilerplate:wiring");
@@ -380,7 +380,7 @@ async function WireService(
       event: ZCC.event,
       lifecycle,
       logger,
-      scheduler,
+      scheduler: scheduler && scheduler(context),
     };
 
     const resolved = (await definition(
@@ -459,8 +459,9 @@ async function Bootstrap<
       LIB_BOILERPLATE.configuration,
     );
     // ~ scheduler (for injecting into other modules)
-    scheduler = LOADED_MODULES.get(LIB_BOILERPLATE.name)
-      .scheduler as TScheduler;
+    scheduler = LOADED_MODULES.get(LIB_BOILERPLATE.name).scheduler as (
+      context: TContext,
+    ) => TScheduler;
     logger = ZCC.logger.context(WIRING_CONTEXT);
     logger.info(`[boilerplate] wiring complete`);
 

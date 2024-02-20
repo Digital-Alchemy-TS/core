@@ -64,7 +64,6 @@ export type ScheduleItem = {
   stop: () => void;
 };
 export type SchedulerOptions = {
-  context: TContext;
   exec: () => TBlackHole;
   /**
    * if provided, specific metrics will be kept and labelled with provided label

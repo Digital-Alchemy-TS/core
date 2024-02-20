@@ -68,7 +68,7 @@ export function ManagedSwitch({ logger, hass, scheduler }: TServiceParams) {
     };
 
     // * Always run on a schedule
-    scheduler.cron({ context, exec: async () => await update(), schedule });
+    scheduler.cron({ exec: async () => await update(), schedule });
 
     // * Update when relevant things update
     if (!is.empty(onUpdate)) {

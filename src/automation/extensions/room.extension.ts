@@ -57,7 +57,6 @@ export function Room({
     }
 
     scheduler.cron({
-      context,
       exec: async () => {
         let current = currentScene.state;
         if (!SCENE_LIST.includes(current)) {

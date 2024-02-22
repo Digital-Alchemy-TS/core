@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-magic-numbers */
-import { pino } from "pino";
-import { inspect } from "util";
+import dayjs from "dayjs";
+import { format, inspect } from "util";
 
-import { is, TContext, ZCC } from "../..";
+import { FIRST, is, START, TContext, ZCC } from "../..";
 import { TServiceParams } from "..";
 
 export type TLoggerFunction =
@@ -30,31 +29,6 @@ export interface ILogger {
   warn(object: object, message?: string, ...arguments_: unknown[]): void;
 }
 
-let logger = pino(
-  {
-    level: "debug",
-    transport: {
-      options: {
-        colorize: true,
-        crlf: false,
-        customPrettifiers: {},
-        errorLikeObjectKeys: ["err", "error"],
-        errorProps: "",
-        hideObject: false,
-        ignore: "pid,hostname,level",
-        levelFirst: false,
-        levelKey: "level",
-        messageKey: "msg",
-        singleLine: false,
-        timestampKey: "time",
-        translateTime: "SYS:ddd hh:MM:ss.l",
-      },
-      target: "pino-pretty",
-    },
-  },
-  pino.destination({ sync: true }),
-) as ILogger;
-
 const LOG_LEVEL_PRIORITY = {
   debug: 20,
   error: 50,
@@ -64,7 +38,7 @@ const LOG_LEVEL_PRIORITY = {
   warn: 40,
 };
 
-export const METHOD_COLORS = new Map<pino.Level, CONTEXT_COLORS>([
+export const METHOD_COLORS = new Map<keyof ILogger, CONTEXT_COLORS>([
   ["trace", "grey"],
   ["debug", "blue"],
   ["warn", "yellow"],
@@ -73,26 +47,10 @@ export const METHOD_COLORS = new Map<pino.Level, CONTEXT_COLORS>([
   ["fatal", "magenta"],
 ]);
 
-// function standardLogger(
-//   method: pino.Level,
-//   context: string,
-//   ...parameters: Parameters<TLoggerFunction>
-// ) {
-//   const data = is.object(parameters[0])
-//     ? (parameters.shift() as Record<string, unknown>)
-//     : {};
-//   const message = is.string(parameters[0])
-//     ? (parameters.shift() as string)
-//     : ``;
-//   logger[method](
-//     {
-//       context,
-//       ...data,
-//     },
-//     message,
-//     ...parameters,
-//   );
-// }
+let logger = {} as Record<
+  keyof ILogger,
+  (context: TContext, ...data: Parameters<TLoggerFunction>) => void
+>;
 
 export type CONTEXT_COLORS =
   | "grey"
@@ -103,22 +61,13 @@ export type CONTEXT_COLORS =
   | "magenta";
 const MAX_CUTOFF = 2000;
 const frontDash = " - ";
+const SYMBOL_START = 1;
+const SYMBOL_END = -1;
 
 export async function Logger({ lifecycle, config }: TServiceParams) {
   const chalk = (await import("chalk")).default;
 
-  function log(
-    method: pino.Level,
-    context: TContext,
-    ...parameters: Parameters<TLoggerFunction>
-  ): void {
-    // standardLogger(method, context, ...parameters);
-    prettyLogger(method, context, ...parameters);
-  }
-
   const YELLOW_DASH = chalk.yellowBright(frontDash);
-  const highlightContext = (context: TContext, level: CONTEXT_COLORS): string =>
-    chalk.bold[level](`[${context}]`);
 
   const prettyFormatMessage = (message: string): string => {
     if (!message) {
@@ -134,118 +83,96 @@ export async function Logger({ lifecycle, config }: TServiceParams) {
       .replaceAll("] > [", chalk`] {blue >} [`)
       // ? [Text] - strip brackets, highlight magenta
       .replaceAll(new RegExp("(\\[[^\\]\\[]+\\])", "g"), i =>
-        chalk.bold.magenta(i.slice(1, -1)),
+        chalk.bold.magenta(i.slice(SYMBOL_START, SYMBOL_END)),
       )
       // ? {Text} - strip braces, highlight gray
       .replaceAll(new RegExp("(\\{[^\\]}]+\\})", "g"), i =>
-        chalk.bold.gray(i.slice(1, -1)),
+        chalk.bold.gray(i.slice(SYMBOL_START, SYMBOL_END)),
       );
     // ? " - Text" (line prefix with dash) - highlight dash
-    if (message.slice(0, frontDash.length) === frontDash) {
+    if (message.slice(START, frontDash.length) === frontDash) {
       message = `${YELLOW_DASH}${message.slice(frontDash.length)}`;
     }
     return message;
   };
 
-  function prettyLogger(
-    method: pino.Level,
-    context: TContext,
-    ...parameters: Parameters<TLoggerFunction>
-  ) {
-    // * If providing an object as the 1st arg
-    if (is.object(parameters[0])) {
-      const data = parameters.shift() as {
-        context?: TContext;
-        error?: Error | string;
-        stack?: string | string[];
-      };
+  [...METHOD_COLORS.keys()].forEach(key => {
+    logger[key] = (
+      context: TContext,
+      ...parameters: Parameters<TLoggerFunction>
+    ) => {
+      const data = is.object(parameters[FIRST])
+        ? (parameters.shift() as {
+            context?: TContext;
+            error?: Error | string;
+            name?: string;
+            stack?: string | string[];
+          })
+        : {};
+      const highlighted = chalk.bold[METHOD_COLORS.get(key)](
+        `[${data.context || context}]`,
+      );
+      const name = data.name;
+      delete data.context;
+      delete data.name;
 
-      // Extract the context property, and use it in place of generated
-      if (is.string(data.context) && !is.empty(data.context)) {
-        context = data.context;
-        delete data.context;
-      }
-      const message = [
-        highlightContext(context, METHOD_COLORS.get(method)),
-        prettyFormatMessage(parameters.shift() as string),
-      ].join(" ");
-
-      if ("error" in data && data.error instanceof Error) {
-        // pino is doing something weird, not sure why it won't print useful stuff about the error
-        // this keeps the stack attach
-        data.stack = data.error.stack.trim().split("\n");
+      const timestamp = chalk.white(`[${dayjs().format("ddd hh:mm:ss.SSS")}]`);
+      let logMessage: string;
+      if (!is.empty(parameters)) {
+        logMessage = prettyFormatMessage(format(...parameters));
       }
 
-      logger[method](data, message, ...parameters);
-      return;
-    }
+      let message = `${timestamp} ${highlighted}`;
+      if (!is.empty(name)) {
+        message += chalk.blue(` (${name})`);
+      }
+      if (!is.empty(logMessage)) {
+        message += `: ${chalk.cyan(logMessage)}`;
+      }
+      if (!is.empty(data)) {
+        message +=
+          "\n" +
+          inspect(data, {
+            colors: true,
+            compact: false,
+            depth: 10,
+            numericSeparator: true,
+          })
+            .split("\n")
+            .slice(SYMBOL_START, SYMBOL_END)
+            .join("\n");
+      }
+      // eslint-disable-next-line no-console
+      console.log(message);
+    };
+  });
 
-    // * Text only log
-    const message = [
-      highlightContext(context, METHOD_COLORS.get(method)),
-      prettyFormatMessage(parameters.shift() as string),
-    ].join(" ");
-    logger[method](message, ...parameters);
-  }
-
-  // tuned to be most useful in debugging this
-  inspect.defaultOptions.colors = true;
-  inspect.defaultOptions.depth = 10;
-  inspect.defaultOptions.numericSeparator = true;
-  inspect.defaultOptions.compact = false;
-  inspect.defaultOptions.colors = true;
-
-  let logLevel: pino.Level = "debug";
-  const shouldLog = (level: pino.Level) =>
+  let logLevel: keyof ILogger = (config.boilerplate.LOG_LEVEL = "trace");
+  const shouldLog = (level: keyof ILogger) =>
     LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[logLevel];
 
-  function createBaseLogger() {
-    logger = pino(
-      {
-        level: config.boilerplate.LOG_LEVEL,
-        transport: {
-          options: {
-            colorize: true,
-            crlf: false,
-            customPrettifiers: {},
-            errorLikeObjectKeys: ["err", "error"],
-            errorProps: "error",
-            hideObject: false,
-            ignore: "pid,hostname,level",
-            levelFirst: false,
-            levelKey: "level",
-            messageKey: "msg",
-            singleLine: false,
-            timestampKey: "time",
-            translateTime: "SYS:ddd hh:MM:ss.l",
-          },
-          target: "pino-pretty",
-        },
-      },
-      pino.destination({ sync: true }),
-    ) as ILogger;
-  }
-  lifecycle.onPostConfig(() => createBaseLogger());
+  lifecycle.onPostConfig(() => (logLevel = config.boilerplate.LOG_LEVEL));
+
   const out = {
     context: (context: string | TContext) =>
       ({
         debug: (...params: Parameters<TLoggerFunction>) =>
-          shouldLog("debug") && log("debug", context as TContext, ...params),
+          shouldLog("debug") && logger.debug(context as TContext, ...params),
         error: (...params: Parameters<TLoggerFunction>) =>
-          shouldLog("error") && log("error", context as TContext, ...params),
+          shouldLog("error") && logger.error(context as TContext, ...params),
         fatal: (...params: Parameters<TLoggerFunction>) =>
-          shouldLog("fatal") && log("fatal", context as TContext, ...params),
+          shouldLog("fatal") && logger.fatal(context as TContext, ...params),
         info: (...params: Parameters<TLoggerFunction>) =>
-          shouldLog("info") && log("info", context as TContext, ...params),
+          shouldLog("info") && logger.info(context as TContext, ...params),
         trace: (...params: Parameters<TLoggerFunction>) =>
-          shouldLog("trace") && log("trace", context as TContext, ...params),
+          shouldLog("trace") && logger.trace(context as TContext, ...params),
         warn: (...params: Parameters<TLoggerFunction>) =>
-          shouldLog("warn") && log("warn", context as TContext, ...params),
+          shouldLog("warn") && logger.warn(context as TContext, ...params),
       }) as ILogger,
     getBaseLogger: () => logger,
     getLogLevel: () => logLevel,
     setBaseLogger: (base: ILogger) => (logger = base),
-    setLogLevel: (level: pino.Level) => {
+    setLogLevel: (level: keyof ILogger) => {
       logLevel = level;
       ZCC.config.set("boilerplate", "LOG_LEVEL", level);
     },

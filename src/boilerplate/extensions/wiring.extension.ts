@@ -1,5 +1,4 @@
 import { EventEmitter } from "events";
-import { Level } from "pino";
 import { exit } from "process";
 import { Counter, Summary } from "prom-client";
 
@@ -193,7 +192,7 @@ function CreateBoilerplate() {
         description: "Minimum log level to process",
         enum: ["silent", "trace", "info", "warn", "debug", "error"],
         type: "string",
-      } as StringConfig<Level>,
+      } as StringConfig<keyof ILogger>,
       LOG_METRICS: {
         default: true,
         type: "boolean",
@@ -399,8 +398,6 @@ async function WireService(
     // Init errors at this level are considered blocking.
     // Doubling up on errors to be extra noisy for now, might back off to single later
     logger?.fatal({ error, name: context }, `Initialization error`);
-    // eslint-disable-next-line no-console
-    console.log(error);
     ZCC_Testing.FailFast();
     return undefined;
   }

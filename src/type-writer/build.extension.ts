@@ -10,6 +10,7 @@ export function BuildTypes({
   type_writer,
   config,
 }: TServiceParams) {
+  throw new Error("TEST");
   // ? join(__dirname, "..", "home-assistant", "src", "dynamic.d.ts")
   lifecycle.onReady(async () => {
     try {

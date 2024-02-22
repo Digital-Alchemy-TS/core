@@ -1,6 +1,5 @@
 import { Dayjs } from "dayjs";
 import { EventEmitter } from "events";
-import { Logger } from "pino";
 
 import { CronExpression, TBlackHole, TContext } from "../..";
 import { ILogger, LIB_BOILERPLATE, TCache } from "..";
@@ -230,7 +229,7 @@ export type BootstrapOptions = {
   /**
    * use this logger, instead of the baked in one. Maybe you want some custom transports or something? Put your customized thing here
    */
-  customLogger?: Logger;
+  customLogger?: ILogger;
   /**
    * application level flags
    */

@@ -1,6 +1,4 @@
-import { each } from "async";
-
-import { is, TContext, TServiceParams } from "../..";
+import { each, is, TContext, TServiceParams } from "../..";
 import { domain, ENTITY_STATE, PICK_ENTITY } from "../../hass";
 import {
   AGGRESSIVE_SCENES_ADJUSTMENT,

@@ -1,7 +1,8 @@
 import dayjs, { Dayjs } from "dayjs";
 import { EventEmitter } from "events";
+import { Get } from "type-fest";
 
-import { DAY, HOUR, MINUTE, SECOND } from "..";
+import { ARRAY_OFFSET, DAY, HOUR, is, MINUTE, SECOND, START } from "..";
 
 const FIRST = 0;
 const EVERYTHING_ELSE = 1;
@@ -59,6 +60,92 @@ export class ZCCDefinition_Utils {
 
     return out;
   }
+
+  public object = {
+    del<T>(object: T, path: string): void {
+      const keys = path.split(".");
+      let current = object as unknown; // Starting with the object as an unknown type
+
+      for (let i = START; i < keys.length; i++) {
+        const key = keys[i];
+
+        // Check if current is an object and not null
+        if (typeof current !== "object" || current === null) {
+          // Path does not exist; exit function silently
+          return;
+        }
+
+        const safeCurrent = current as Record<string, unknown>;
+
+        // If we're at the last key, attempt to delete the property
+        if (i === keys.length - ARRAY_OFFSET) {
+          delete safeCurrent[key]; // Delete without checking; non-existent keys are a no-op
+        } else {
+          // For non-last keys, if the next level doesn't exist or isn't an object, stop processing
+          if (
+            typeof safeCurrent[key] !== "object" ||
+            safeCurrent[key] === null
+          ) {
+            return;
+          }
+          // Move to the next level in the path
+          current = safeCurrent[key];
+        }
+      }
+    },
+    get<T, P extends string>(object: T, path: P): Get<T, P> {
+      const keys = path.split(".");
+      let current: unknown = object;
+
+      for (const key of keys) {
+        if (!is.object(current) || current === null || !(key in current)) {
+          return undefined;
+        }
+        current = (current as Record<string, unknown>)[key];
+      }
+
+      return current as Get<T, P>;
+    },
+    set<T>(
+      object: T,
+      path: string,
+      value: unknown,
+      doNotReplace: boolean = false,
+    ): void {
+      const keys = path.split(".");
+      let current = object as unknown; // Starting with the object as an unknown type
+
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i];
+
+        // Ensure current can be used as a record in the following operations
+        if (typeof current !== "object" || current === null) {
+          throw new Error("Attempting to set a value on a non-object.");
+        }
+
+        // Safely cast current to Record<string, unknown> after the type guard
+        const safeCurrent = current as Record<string, unknown>;
+
+        // For the last key, attempt to set the value
+        if (i === keys.length - ARRAY_OFFSET) {
+          if (!doNotReplace || !(key in safeCurrent)) {
+            safeCurrent[key] = value;
+          }
+        } else {
+          // If the current key does not exist or is not an object, create an object for it
+          if (
+            safeCurrent[key] === undefined ||
+            typeof safeCurrent[key] !== "object" ||
+            safeCurrent[key] === null
+          ) {
+            safeCurrent[key] = {};
+          }
+          // Move to the next level in the path
+          current = safeCurrent[key];
+        }
+      }
+    },
+  };
 }
 
 export class ZCCDefinition {

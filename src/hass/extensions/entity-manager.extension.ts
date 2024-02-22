@@ -1,10 +1,9 @@
-import { eachLimit } from "async";
 import dayjs, { Dayjs } from "dayjs";
 import { EventEmitter } from "node-cache";
-import { del, get, set } from "object-path";
 import { Get } from "type-fest";
 
 import {
+  each,
   INCREMENT,
   is,
   SECOND,
@@ -13,6 +12,7 @@ import {
   TAnyFunction,
   TBlackHole,
   TServiceParams,
+  ZCC,
   ZCC_Testing,
 } from "../..";
 import {
@@ -51,7 +51,6 @@ const MAX_ATTEMPTS = 50;
 const FAILED_LOAD_DELAY = 5;
 const UNLIMITED = 0;
 const RECENT = 5;
-const BOTTLENECK_UPDATES = 20;
 
 export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
   // # Local vars
@@ -76,7 +75,10 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
     entity_id: ENTITY_ID,
     // 🖕 TS
   ): NonNullable<ENTITY_STATE<ENTITY_ID>> {
-    return get(MASTER_STATE, entity_id);
+    return ZCC.utils.object.get(
+      MASTER_STATE,
+      entity_id,
+    ) as ENTITY_STATE<ENTITY_ID>;
   }
 
   // ## Proxy version of the logic
@@ -105,7 +107,7 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
         `proxyGetLogic cannot find entity`,
       );
     }
-    return get(current, property, defaultValue);
+    return ZCC.utils.object.get(current, property) || defaultValue;
   }
 
   // ## Retrieve a proxy by id
@@ -229,16 +231,16 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
     states.forEach(entity => {
       // ? Set first, ensure data is populated
       // `nextTick` will fire AFTER loop finishes
-      set(
+      ZCC.utils.object.set(
         MASTER_STATE,
         entity.entity_id,
         entity,
-        get(oldState, entity.entity_id),
+        is.undefined(ZCC.utils.object.get(oldState, entity.entity_id)),
       );
       if (!init) {
         return;
       }
-      const old = get(oldState, entity.entity_id);
+      const old = ZCC.utils.object.get(oldState, entity.entity_id);
       if (is.equal(old, entity)) {
         logger.trace({ name: entity.entity_id }, `no change on refresh`);
         return;
@@ -249,14 +251,13 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
     // Attempt to not blow up the system?
     // TODO: does this gain anything? is a debounce needed somewhere else instead?
     setImmediate(async () => {
-      await eachLimit(
+      await each(
         emitUpdates,
-        BOTTLENECK_UPDATES,
         async entity =>
           await EntityUpdateReceiver(
             entity.entity_id,
             entity as ENTITY_STATE<PICK_ENTITY>,
-            get(oldState, entity.entity_id),
+            ZCC.utils.object.get(oldState, entity.entity_id),
           ),
       );
     });
@@ -266,7 +267,7 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
   // ## is.entity definition
   // Actually tie the type casting to real state
   is.entity = (entityId: PICK_ENTITY): entityId is PICK_ENTITY =>
-    is.undefined(get(MASTER_STATE, entityId));
+    is.undefined(ZCC.utils.object.get(MASTER_STATE, entityId));
 
   // ## Receiver function for incoming entity updates
   function EntityUpdateReceiver<ENTITY extends PICK_ENTITY = PICK_ENTITY>(
@@ -279,10 +280,10 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
         { name: entity_id },
         `removing deleted entity from {MASTER_STATE}`,
       );
-      del(MASTER_STATE, entity_id);
+      ZCC.utils.object.del(MASTER_STATE, entity_id);
       return;
     }
-    set(MASTER_STATE, entity_id, new_state);
+    ZCC.utils.object.set(MASTER_STATE, entity_id, new_state);
     event.emit(entity_id, new_state, old_state);
   }
 

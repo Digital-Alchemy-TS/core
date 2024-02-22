@@ -1,7 +1,4 @@
-import { eachSeries } from "async";
-import { get, set } from "object-path";
-
-import { deepExtend, DOWN, is, UP, ZCC } from "../..";
+import { deepExtend, DOWN, eachSeries, is, UP, ZCC } from "../..";
 import {
   ApplicationDefinition,
   BootstrapException,
@@ -83,7 +80,7 @@ export function Configuration({
         const config = [project, key].join(".");
         if (
           definitions[key].required &&
-          is.undefined(get(configuration, config))
+          is.undefined(ZCC.utils.object.get(configuration, config))
         ) {
           // ruh roh
           throw new BootstrapException(
@@ -100,7 +97,7 @@ export function Configuration({
   function InjectedDefinitions() {
     return new Proxy({} as TInjectedConfig, {
       get(_, project: keyof TInjectedConfig) {
-        return get(configuration, project) ?? {};
+        return ZCC.utils.object.get(configuration, project) ?? {};
       },
     });
   }
@@ -114,7 +111,7 @@ export function Configuration({
     property: Property,
     value: TInjectedConfig[Project][Property],
   ): void {
-    set(configuration, [project, property].join("."), value);
+    ZCC.utils.object.set(configuration, [project, property].join("."), value);
     // in case anyone needs a hook
     event.emit(EVENT_CONFIGURATION_UPDATED);
   }
@@ -126,9 +123,13 @@ export function Configuration({
 
   // ## Add a library, and it's associated definitions
   function LoadProject(library: string, definitions: CodeConfigDefinition) {
-    set(configuration, library, {});
+    ZCC.utils.object.set(configuration, library, {});
     Object.keys(definitions).forEach(key => {
-      set(configuration, [library, key].join("."), definitions[key].default);
+      ZCC.utils.object.set(
+        configuration,
+        [library, key].join("."),
+        definitions[key].default,
+      );
     });
     return configDefinitions.set(library, definitions);
   }

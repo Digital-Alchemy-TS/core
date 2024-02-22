@@ -1,7 +1,6 @@
 import minimist from "minimist";
-import { set } from "object-path";
 
-import { is } from "../..";
+import { is, ZCC } from "../..";
 import {
   AbstractConfig,
   ConfigLoaderParams,
@@ -48,7 +47,7 @@ export async function ConfigLoaderEnvironment({
           ),
         );
         if (is.string(formattedFlag)) {
-          set(out, configPath, CLI_SWITCHES[formattedFlag]);
+          ZCC.utils.object.set(out, configPath, CLI_SWITCHES[formattedFlag]);
         }
         return;
       }
@@ -78,7 +77,7 @@ export async function ConfigLoaderEnvironment({
         ),
       );
       if (is.string(environmentName)) {
-        set(out, configPath, process.env[environmentName]);
+        ZCC.utils.object.set(out, configPath, process.env[environmentName]);
       }
     });
   });

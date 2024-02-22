@@ -1,7 +1,6 @@
-import { eachSeries } from "async";
-
 import {
   CronExpression,
+  eachSeries,
   InternalError,
   is,
   TServiceParams,

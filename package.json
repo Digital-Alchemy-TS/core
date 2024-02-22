@@ -3,7 +3,7 @@
   "repository": {
     "url": "git+https://github.com/zoe-codez/digital-alchemy.git"
   },
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe"
@@ -33,7 +33,6 @@
     "node": ">=20"
   },
   "dependencies": {
-    "async": "^3.2.5",
     "bottleneck": "^2.19.5",
     "chalk": "^5.3.0",
     "dayjs": "^1.11.10",
@@ -42,33 +41,31 @@
     "minimist": "^1.2.8",
     "node-cache": "^5.1.2",
     "node-cron": "^3.0.3",
-    "object-path": "^0.11.8",
     "pino": "^8.18.0",
     "pino-pretty": "^10.3.1",
     "prom-client": "^15.1.0",
     "redis": "^4.6.13",
-    "typescript": "^5.3.3",
     "uuid": "^9.0.1",
     "ws": "^8.16.0"
+  },
+  "optionalDependencies": {
+    "typescript": "^5.3.3"
   },
   "devDependencies": {
     "@cspell/eslint-plugin": "^8.3.2",
     "@faker-js/faker": "^8.4.0",
-    "@types/async": "^3.2.24",
     "@types/ini": "^4.1.0",
     "@types/jest": "^29.5.12",
     "@types/js-yaml": "^4.0.9",
     "@types/minimist": "^1.2.5",
-    "@types/node": "^20.11.16",
     "@types/node-cron": "^3.0.11",
-    "@types/object-path": "^0.11.4",
+    "@types/node": "^20.11.16",
     "@types/semver": "^7.5.6",
     "@types/sinonjs__fake-timers": "^8.1.5",
     "@types/uuid": "^9.0.8",
     "@types/ws": "^8.5.10",
     "@typescript-eslint/eslint-plugin": "6.21.0",
     "@typescript-eslint/parser": "6.21.0",
-    "eslint": "8.56.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-jsonc": "^2.13.0",
@@ -79,8 +76,9 @@
     "eslint-plugin-sonarjs": "^0.23.0",
     "eslint-plugin-sort-keys-fix": "^1.1.2",
     "eslint-plugin-unicorn": "^51.0.0",
-    "jest": "^29.7.0",
+    "eslint": "8.56.0",
     "jest-environment-node": "^29.7.0",
+    "jest": "^29.7.0",
     "npm-check-updates": "^16.14.14",
     "prettier": "^3.2.5",
     "ts-jest": "^29.1.2",
@@ -91,11 +89,22 @@
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "moduleFileExtensions": ["ts", "js", "json", "node"],
-    "testMatch": ["**/?(*.)+(spec|test).ts"],
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json",
+      "node"
+    ],
+    "testMatch": [
+      "**/?(*.)+(spec|test).ts"
+    ],
     "transform": {
-      "^.+\\.ts$": ["ts-jest", { "tsconfig": "tsconfig.spec.json" }]
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": "tsconfig.spec.json"
+        }
+      ]
     }
   }
-
 }

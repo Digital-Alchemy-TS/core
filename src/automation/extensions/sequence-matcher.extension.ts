@@ -1,4 +1,3 @@
-import Obj from "object-path";
 import { v4 } from "uuid";
 
 import { TServiceParams } from "../../boilerplate";
@@ -12,9 +11,6 @@ import {
   SequenceWatchOptions,
   TrackedOptions,
 } from "..";
-
-// eslint-disable-next-line @typescript-eslint/unbound-method
-const { get } = Obj;
 
 export function SequenceWatcher({ logger, hass, config }: TServiceParams) {
   const ACTIVE = new Map<object, ActiveWatcher>();
@@ -60,7 +56,7 @@ export function SequenceWatcher({ logger, hass, config }: TServiceParams) {
       }
 
       // * Grab the new value from the event, and add it on the list
-      const value = get(event_data, data.path);
+      const value = ZCC.utils.object.get(event_data, data.path) as string;
       match.push(value);
 
       // * If the sequence matches, fire the callback

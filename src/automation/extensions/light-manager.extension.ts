@@ -1,6 +1,3 @@
-import { each, eachLimit } from "async";
-import {} from "timers/promises";
-
 import { TServiceParams } from "../../boilerplate";
 import {
   ByIdProxy,
@@ -8,7 +5,16 @@ import {
   GenericEntityDTO,
   PICK_ENTITY,
 } from "../../hass";
-import { CronExpression, DOWN, is, NONE, sleep, UP } from "../../utilities";
+import {
+  CronExpression,
+  DOWN,
+  each,
+  eachLimit,
+  is,
+  NONE,
+  sleep,
+  UP,
+} from "../../utilities";
 import { RoomDefinition } from "..";
 import {
   AggressiveScenesAdjustmentTypes,

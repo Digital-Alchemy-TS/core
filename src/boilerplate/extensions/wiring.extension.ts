@@ -1,10 +1,19 @@
-import { each, eachSeries } from "async";
 import { EventEmitter } from "events";
 import { Level } from "pino";
 import { exit } from "process";
 import { Counter, Summary } from "prom-client";
 
-import { DOWN, is, TBlackHole, TContext, UP, ZCC, ZCC_Testing } from "../..";
+import {
+  DOWN,
+  each,
+  eachSeries,
+  is,
+  TBlackHole,
+  TContext,
+  UP,
+  ZCC,
+  ZCC_Testing,
+} from "../..";
 import {
   ApplicationConfigurationOptions,
   ApplicationDefinition,
@@ -45,8 +54,6 @@ import {
 import { Fetch } from "./fetch.extension";
 import { ILogger, Logger } from "./logger.extension";
 import { Scheduler } from "./scheduler.extension";
-
-// @doc obsidian://open?vault=obsidian&file=01%20Libraries%2F01.04%20Boilerplate%2FExtensions%2FWiring
 
 // # "Semi-local variables"
 // These are resettable variables, which are scoped to outside the function on purpose

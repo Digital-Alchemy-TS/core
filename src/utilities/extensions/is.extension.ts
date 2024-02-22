@@ -1,4 +1,4 @@
-import { deepEqual } from "assert";
+import { isDeepStrictEqual, types } from "util";
 
 import { EMPTY, EVEN, NONE, START, TBlackHole, TContext } from "../helpers";
 
@@ -34,7 +34,7 @@ export class IsIt {
   }
 
   public date(test: unknown): test is Date {
-    return test instanceof Date;
+    return types.isDate(test);
   }
 
   public empty(test: MaybeEmptyTypes): boolean {
@@ -44,7 +44,7 @@ export class IsIt {
     if (typeof test === "string" || Array.isArray(test)) {
       return test.length === EMPTY;
     }
-    if (test instanceof Map || test instanceof Set) {
+    if (types.isMap(test) || types.isSet(test)) {
       return test.size === EMPTY;
     }
     if (typeof test === "object") {
@@ -63,12 +63,7 @@ export class IsIt {
    * ### Deep equality test
    */
   public equal<T extends unknown>(a: T, b: T): boolean {
-    try {
-      deepEqual(a, b);
-      return true;
-    } catch {
-      return false;
-    }
+    return isDeepStrictEqual(a, b);
   }
 
   public even(test: number): boolean {
@@ -77,22 +72,6 @@ export class IsIt {
 
   public function<T extends MaybeFunction>(test: unknown): test is T {
     return typeof test === "function";
-  }
-
-  /**
-   * Generates a hash code for a string, based on the Java String hash function.
-   * It iterates through the characters of the string, combining the ASCII values
-   * with a prime multiplier to create a unique hash value.
-   * This method can be useful for creating a simple, consistent hash code.
-   */
-  public hash(text: string): string {
-    let hash = START;
-    for (let i = START; i < text.length; i++) {
-      hash =
-        (hash << HASH_PRIME_MULTIPLIER) - hash + (text.codePointAt(i) || NONE);
-      hash = Math.trunc(hash);
-    }
-    return hash.toString();
   }
 
   public number(test: unknown): test is number {

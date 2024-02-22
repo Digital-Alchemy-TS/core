@@ -447,6 +447,7 @@ async function Bootstrap<
     );
   }
   ZCC.bootOptions = options;
+  process.title = application.name;
   startup = new Date();
   try {
     const STATS = {} as Record<string, unknown>;

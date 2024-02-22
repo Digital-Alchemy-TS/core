@@ -1,3 +1,5 @@
+import { createHash } from "crypto";
+
 import {
   InternalError,
   is,
@@ -27,6 +29,12 @@ const HEARTBEAT_INTERVAL = 5;
 const BOOT_TIME = new Date().toISOString();
 const RETRY = 3;
 
+function generateHash(input: string) {
+  const hash = createHash("sha256");
+  hash.update(input);
+  return hash.digest("hex");
+}
+
 export function Registry({
   lifecycle,
   logger,
@@ -49,7 +57,7 @@ export function Registry({
         return [domain, data];
       }),
     );
-    const hash = is.hash(JSON.stringify(domains));
+    const hash = generateHash(JSON.stringify(domains));
     await hass.socket.fireEvent(`digital_alchemy_application_state`, {
       app: ZCC.application.name,
       boot: BOOT_TIME,
@@ -244,7 +252,7 @@ export function Registry({
       // ### Add
       add(data: DATA) {
         const id = is.empty(data.unique_id)
-          ? is.hash(`${ZCC.application.name}:${data.name}`)
+          ? generateHash(`${ZCC.application.name}:${data.name}`)
           : data.unique_id;
         if (registry.has(id)) {
           throw new InternalError(

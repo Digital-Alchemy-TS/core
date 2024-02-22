@@ -142,6 +142,11 @@ export async function Logger({ lifecycle, config }: TServiceParams) {
             .slice(SYMBOL_START, SYMBOL_END)
             .join("\n");
       }
+      if (["warn", "error", "log"].includes(key)) {
+        // eslint-disable-next-line no-console
+        console.error(message);
+        return;
+      }
       // eslint-disable-next-line no-console
       console.log(message);
     };

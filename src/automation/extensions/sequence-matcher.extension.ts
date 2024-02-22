@@ -1,7 +1,5 @@
-import { v4 } from "uuid";
-
 import { TServiceParams } from "../../boilerplate";
-import { is, sleep, ZCC } from "../../utilities";
+import { is, sleep, START, ZCC } from "../../utilities";
 import {
   ActiveWatcher,
   GenericFilter,
@@ -16,6 +14,7 @@ export function SequenceWatcher({ logger, hass, config }: TServiceParams) {
   const ACTIVE = new Map<object, ActiveWatcher>();
   const WATCHED_EVENTS = new Map<string, TrackedOptions[]>();
   const EVENT_REMOVAL = new Map<string, () => void>();
+  let counter = START;
 
   async function onMatch(data: SequenceWatchOptions) {
     await data.exec();
@@ -85,7 +84,8 @@ export function SequenceWatcher({ logger, hass, config }: TServiceParams) {
   >(data: SequenceWatchOptions<DATA, MATCH>) {
     const { exec, event_type, match, context, label, path, filter } = data;
     logger.trace({ context }, `setting up sequence watcher`);
-    const id = v4();
+    const id = counter.toString();
+    counter++;
 
     // If this is the first watcher for this event, set up a listener
     let watcher = WATCHED_EVENTS.get(event_type);

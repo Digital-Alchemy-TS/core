@@ -108,16 +108,6 @@ export const FETCH_REQUESTS_FAILED = new Counter({
 });
 
 /**
- * Measures the delay (in milliseconds) experienced by requests due to bottleneck rate limiting.
- */
-export const FETCH_REQUEST_BOTTLENECK_DELAY = new Summary({
-  help: "Delay in milliseconds experienced by requests due to bottleneck rate limiting",
-  labelNames: ["context", "label"] as const,
-  name: "digital_alchemy_boilerplate_fetch_request_bottleneck_delay_milliseconds",
-  percentiles: [0.5, 0.9, 0.99],
-});
-
-/**
  * Gauge to count the number of errors encountered in Redis operations.
  */
 export const REDIS_ERROR_COUNT = new Gauge({

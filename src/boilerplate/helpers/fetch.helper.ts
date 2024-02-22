@@ -1,4 +1,3 @@
-import Bottleneck from "bottleneck";
 import { MergeExclusive } from "type-fest";
 
 import { is, TContext } from "../..";
@@ -307,10 +306,6 @@ export type FetcherOptions = {
    * typically domain names with scheme, added to the front of urls if the individual request doesn't override
    */
   baseUrl?: string;
-  /**
-   * if provided, then requests will be rate limited via the bottleneck library
-   */
-  bottleneck?: Bottleneck.ConstructorOptions;
   /**
    * merged into every request
    */

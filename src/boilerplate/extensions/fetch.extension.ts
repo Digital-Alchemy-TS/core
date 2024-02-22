@@ -1,4 +1,3 @@
-import Bottleneck from "bottleneck";
 import { createWriteStream } from "fs";
 import { pipeline } from "stream";
 import { promisify } from "util";
@@ -8,7 +7,6 @@ import {
   buildFilterString,
   DownloadOptions,
   FETCH_DOWNLOAD_REQUESTS_SUCCESSFUL,
-  FETCH_REQUEST_BOTTLENECK_DELAY,
   FETCH_REQUESTS_FAILED,
   FETCH_REQUESTS_SUCCESSFUL,
   FetchArguments,
@@ -25,7 +23,6 @@ const streamPipeline = promisify(pipeline);
 
 export function Fetch({ logger, context: parentContext }: TServiceParams) {
   const createFetcher = ({
-    bottleneck,
     headers: baseHeaders,
     baseUrl,
     context: logContext,
@@ -35,12 +32,8 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
     if (!is.empty(logContext)) {
       extras["context"] = logContext;
     }
-    let limiter: Bottleneck;
     const capabilities: string[] = [];
-    if (bottleneck) {
-      capabilities.push("bottleneck");
-      limiter = new Bottleneck(bottleneck);
-    }
+
     if (!is.empty(capabilities)) {
       logger.trace({ capabilities, ...extras }, `initialized fetcher`);
     }
@@ -182,24 +175,7 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
       },
       fetch: async <T, BODY extends TFetchBody = undefined>(
         fetchWith: Partial<FetchArguments<BODY>>,
-      ): Promise<T | undefined> => {
-        if (!limiter) {
-          return await execFetch(fetchWith);
-        }
-        let end: ReturnType<typeof FETCH_REQUEST_BOTTLENECK_DELAY.startTimer>;
-        if (!is.empty(fetchWith.label)) {
-          end = FETCH_REQUEST_BOTTLENECK_DELAY.startTimer();
-        }
-        return limiter.schedule(async () => {
-          if (end) {
-            end({
-              context: fetchWith.context || parentContext,
-              label: fetchWith.label,
-            });
-          }
-          return await execFetch(fetchWith);
-        });
-      },
+      ): Promise<T | undefined> => await execFetch(fetchWith),
       setBaseUrl: (url: string) => (baseUrl = url),
       setHeaders: (headers: Record<string, string>) => (baseHeaders = headers),
     };

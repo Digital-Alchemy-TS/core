@@ -147,7 +147,10 @@ export async function Logger({ lifecycle, config }: TServiceParams) {
     };
   });
 
-  let logLevel: keyof ILogger = (config.boilerplate.LOG_LEVEL = "trace");
+  // if bootstrap hard coded something specific, then start there
+  // otherwise, be noisy until config loads a user preference
+  let logLevel: keyof ILogger =
+    ZCC.bootOptions?.configuration?.boilerplate?.LOG_LEVEL || "trace";
   const shouldLog = (level: keyof ILogger) =>
     LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[logLevel];
 

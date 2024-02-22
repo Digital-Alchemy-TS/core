@@ -445,6 +445,7 @@ async function Bootstrap<
       "Another application is already active, please terminate",
     );
   }
+  ZCC.bootOptions = options;
   startup = new Date();
   try {
     // * Recreate base eventemitter
@@ -661,6 +662,7 @@ declare module "../../utilities" {
      * Abnormal operation
      */
     application: ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
+    bootOptions: BootstrapOptions;
     safeExec: <LABELS extends BaseLabels>(
       options: (() => TBlackHole) | SafeExecOptions<LABELS>,
     ) => Promise<void>;

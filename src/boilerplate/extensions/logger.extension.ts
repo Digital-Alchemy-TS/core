@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { format, inspect } from "util";
 
-import { FIRST, is, SINGLE, START, TContext, ZCC } from "../..";
+import { FIRST, is, START, TContext, ZCC } from "../..";
 import { TServiceParams } from "..";
 
 export type TLoggerFunction =

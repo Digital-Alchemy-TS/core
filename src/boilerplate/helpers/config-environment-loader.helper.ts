@@ -9,6 +9,7 @@ import {
 
 export async function ConfigLoaderEnvironment({
   configs,
+  logger,
 }: ConfigLoaderParams): ConfigLoaderReturn {
   const environmentKeys = Object.keys(process.env);
   const CLI_SWITCHES = minimist(process.argv);
@@ -48,6 +49,10 @@ export async function ConfigLoaderEnvironment({
         );
         if (is.string(formattedFlag)) {
           ZCC.utils.object.set(out, configPath, CLI_SWITCHES[formattedFlag]);
+          logger.trace(
+            { flag: formattedFlag, path: configPath },
+            `load config from [cli switch]`,
+          );
         }
         return;
       }
@@ -78,6 +83,10 @@ export async function ConfigLoaderEnvironment({
       );
       if (is.string(environmentName)) {
         ZCC.utils.object.set(out, configPath, process.env[environmentName]);
+        logger.trace(
+          { path: configPath, var: environmentName },
+          `load config from [env]`,
+        );
       }
     });
   });

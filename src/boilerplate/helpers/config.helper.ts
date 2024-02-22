@@ -1,4 +1,4 @@
-import { is } from "../..";
+import { ILogger, is } from "../..";
 import { ApplicationDefinition, ServiceMap } from "./wiring.helper";
 
 export type CodeConfigDefinition = Record<string, AnyConfig>;
@@ -118,6 +118,7 @@ export type ConfigLoaderParams<
 > = {
   application: ApplicationDefinition<S, C>;
   configs: KnownConfigs;
+  logger: ILogger;
 };
 
 export type ConfigLoaderMethod = <

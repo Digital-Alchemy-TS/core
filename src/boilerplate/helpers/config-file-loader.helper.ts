@@ -41,23 +41,26 @@ export function configFilePaths(name = "digital-alchemy"): string[] {
     ...withExtensions(join(homedir(), ".config", name)),
     ...withExtensions(join(homedir(), ".config", name, "config")),
   );
-  return out;
+  return out.filter(
+    filePath => existsSync(filePath) && statSync(filePath).isFile(),
+  );
 }
 
 export async function ConfigLoaderFile({
   application,
+  logger,
 }: ConfigLoaderParams): ConfigLoaderReturn {
   const files = configFilePaths(application.name);
+  if (is.empty(files)) {
+    return {};
+  }
   const out: Partial<AbstractConfig> = {};
+  logger.trace({ files }, `loading configuration files`);
   files.forEach(file => loadConfigFromFile(out, file));
   return out;
 }
 
 function loadConfigFromFile(out: Partial<AbstractConfig>, filePath: string) {
-  if (!existsSync(filePath) || !statSync(filePath).isFile()) {
-    return;
-  }
-
   const fileContent = readFileSync(filePath, "utf8").trim();
   const hasExtension = SUPPORTED_CONFIG_EXTENSIONS.some(extension => {
     if (

@@ -3,6 +3,7 @@ import {
   is,
   SECOND,
   sleep,
+  START,
   TBlackHole,
   TContext,
   TServiceParams,
@@ -24,6 +25,7 @@ type SynapseSocketOptions<DATA extends object> = {
 
 const HEARTBEAT_INTERVAL = 5;
 const BOOT_TIME = new Date().toISOString();
+const RETRY = 3;
 
 export function Registry({
   lifecycle,
@@ -124,6 +126,8 @@ export function Registry({
       id: string;
       callback: TCallback;
     }>();
+    const missingEntities = () =>
+      [...LOAD_ME.values()].map(({ id }) => registry.get(id).name);
     let LOADED_SYNAPSE_DATA: Record<string, unknown>;
 
     // ## Export the data for hass
@@ -186,19 +190,35 @@ export function Registry({
         exec: ({ data }: { data: Record<string, unknown> }) => {
           loaded = true;
           LOADED_SYNAPSE_DATA = data;
-          LOAD_ME.forEach(({ id, callback }) => callback(data[id] as object));
+          LOAD_ME.forEach(item => {
+            const { id, callback } = item;
+            callback(data[id] as object);
+            LOAD_ME.delete(item);
+          });
           LOAD_ME = undefined;
         },
         once: true,
       });
-      // send request for data
-      await hass.socket.fireEvent(`digital_alchemy_retrieve_state_${domain}`, {
-        app: ZCC.application.name,
-      });
-      // wait 1 second
-      await sleep(SECOND);
-      if (loaded) {
-        return;
+
+      for (let i = START; i <= RETRY; i++) {
+        if (i > START) {
+          logger.warn(
+            { domain, missing: missingEntities() },
+            `retrying state retrieval...`,
+          );
+        }
+        // send request for data
+        await hass.socket.fireEvent(
+          `digital_alchemy_retrieve_state_${domain}`,
+          {
+            app: ZCC.application.name,
+          },
+        );
+        // wait 1 second
+        await sleep(SECOND);
+        if (loaded) {
+          return;
+        }
       }
       //
       // give up
@@ -210,7 +230,11 @@ export function Registry({
       // But it still wouldn't cause that data to be revived.
       // Hopefully sane logic for value defaulting was put in
       //
-      logger.warn({ name: domain }, `could not retrieve current data synapse`);
+
+      logger.warn(
+        { attempts: RETRY, missing: missingEntities(), name: domain },
+        `could not retrieve current data from synapse`,
+      );
       LOAD_ME = undefined;
       remove();
     });

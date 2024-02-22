@@ -69,6 +69,7 @@ export function Configuration({
         const merge = await loader({
           application,
           configs: configDefinitions,
+          logger,
         });
         deepExtend(configuration, merge);
       },

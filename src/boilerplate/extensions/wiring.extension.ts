@@ -404,9 +404,9 @@ async function WireService(
 }
 
 // ## Run Callbacks
-async function RunStageCallbacks(stage: LifecycleStages) {
+async function RunStageCallbacks(stage: LifecycleStages): Promise<string> {
+  const start = Date.now();
   completedLifecycleCallbacks.add(`on${stage}`);
-
   const list = [
     // boilerplate priority
     LOADED_LIFECYCLES.get("boilerplate").getCallbacks(stage),
@@ -428,6 +428,7 @@ async function RunStageCallbacks(stage: LifecycleStages) {
     );
     await each(quick, async ([callback]) => await callback());
   });
+  return `${Date.now() - start}ms`;
 }
 
 let startup: Date;
@@ -448,6 +449,9 @@ async function Bootstrap<
   ZCC.bootOptions = options;
   startup = new Date();
   try {
+    const STATS = {} as Record<string, unknown>;
+    const CONSTRUCT = {} as Record<string, unknown>;
+    STATS.Construct = CONSTRUCT;
     // * Recreate base eventemitter
     ZCC.event = new EventEmitter();
     // ? Some libraries need to be aware of
@@ -457,7 +461,9 @@ async function Bootstrap<
     LIB_BOILERPLATE = CreateBoilerplate();
 
     // * Wire it
+    let start = Date.now();
     await LIB_BOILERPLATE[WIRE_PROJECT]();
+    CONSTRUCT.boilerplate = `${Date.now() - start}ms`;
     // ~ configuration
     CfgManager()[LOAD_PROJECT](
       LIB_BOILERPLATE.name,
@@ -479,13 +485,17 @@ async function Bootstrap<
     // * Add in libraries
     application.libraries ??= [];
     await eachSeries(application.libraries, async i => {
+      start = Date.now();
       logger.info(`[%s] init project`, i.name);
       await i[WIRE_PROJECT]();
+      CONSTRUCT[i.name] = `${Date.now() - start}ms`;
     });
 
     logger.info(`init application`);
     // * Finally the application
+    start = Date.now();
     await application[WIRE_PROJECT]();
+    CONSTRUCT[application.name] = `${Date.now() - start}ms`;
 
     // ? Configuration values provided bootstrap take priority over module level
     if (!is.empty(options?.configuration)) {
@@ -494,20 +504,25 @@ async function Bootstrap<
 
     // - Kick off lifecycle
     logger.debug(`[PreInit] running lifecycle callbacks`);
-    await RunStageCallbacks("PreInit");
+    STATS.PreInit = await RunStageCallbacks("PreInit");
     // - Pull in user configurations
     logger.debug("loading configuration");
-    await CfgManager()[INITIALIZE](application);
+    STATS.Configure = await CfgManager()[INITIALIZE](application);
     // - Run through other events in order
     logger.debug(`[PostConfig] running lifecycle callbacks`);
-    await RunStageCallbacks("PostConfig");
+    STATS.PostConfig = await RunStageCallbacks("PostConfig");
     logger.debug(`[Bootstrap] running lifecycle callbacks`);
-    await RunStageCallbacks("Bootstrap");
+    STATS.Bootstrap = await RunStageCallbacks("Bootstrap");
     logger.debug(`[Ready] running lifecycle callbacks`);
-    await RunStageCallbacks("Ready");
+    STATS.Ready = await RunStageCallbacks("Ready");
 
+    STATS.Total = `${Date.now() - startup.getTime()}ms`;
     // * App is ready!
-    logger.info(`🪄 [%s] application bootstrapped`, application.name);
+    logger.info(
+      options.showExtraBootStats ? STATS : { Total: STATS.Total },
+      `🪄 [%s] application bootstrapped`,
+      application.name,
+    );
     ACTIVE_APPLICATION = application;
   } catch (error) {
     logger?.fatal({ application, error }, "bootstrap failed");

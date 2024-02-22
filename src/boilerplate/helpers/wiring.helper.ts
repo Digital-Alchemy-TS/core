@@ -231,9 +231,9 @@ export type BootstrapOptions = {
    */
   customLogger?: ILogger;
   /**
-   * application level flags
+   * Show detailed boot time statistics
    */
-  flags?: Record<string, boolean | number | string>;
+  showExtraBootStats?: boolean;
 };
 
 export const WIRE_PROJECT = Symbol.for("wire-project");

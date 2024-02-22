@@ -46,6 +46,7 @@ export function Configuration({
     S extends ServiceMap,
     C extends OptionalModuleConfiguration,
   >(application: ApplicationDefinition<S, C>) {
+    const start = Date.now();
     // * sanity check
     if (!application) {
       throw new BootstrapException(
@@ -91,6 +92,7 @@ export function Configuration({
         }
       });
     });
+    return `${Date.now() - start}ms`;
   }
 
   // ## Value that gets injected into services
@@ -157,7 +159,7 @@ export type ConfigManager = {
   ) => KnownConfigs;
   [INITIALIZE]: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
     application: ApplicationDefinition<S, C>,
-  ) => Promise<void>;
+  ) => Promise<string>;
   merge: (
     merge: Partial<PartialConfiguration>,
   ) => PartialConfiguration & Partial<PartialConfiguration>;

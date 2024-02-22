@@ -1,6 +1,6 @@
 import { isDeepStrictEqual, types } from "util";
 
-import { EMPTY, EVEN, NONE, START, TBlackHole, TContext } from "../helpers";
+import { EMPTY, EVEN, TBlackHole, TContext } from "../helpers";
 
 type MaybeEmptyTypes =
   | string
@@ -11,8 +11,6 @@ type MaybeEmptyTypes =
   | object;
 
 type MaybeFunction = (...parameters: unknown[]) => TBlackHole;
-
-const HASH_PRIME_MULTIPLIER = 31;
 
 /**
  * type testing and basic conversion tools

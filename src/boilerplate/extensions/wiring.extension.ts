@@ -526,7 +526,7 @@ async function Bootstrap<
     );
     ACTIVE_APPLICATION = application;
   } catch (error) {
-    logger?.fatal({ application, error }, "bootstrap failed");
+    logger?.fatal({ error }, "bootstrap failed");
     ZCC_Testing.FailFast();
   }
 }

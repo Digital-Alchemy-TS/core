@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { format, inspect } from "util";
 
-import { FIRST, is, START, TContext, ZCC } from "../..";
+import { FIRST, is, SINGLE, START, TContext, ZCC } from "../..";
 import { TServiceParams } from "..";
 
 export type TLoggerFunction =
@@ -119,7 +119,8 @@ export async function Logger({ lifecycle, config }: TServiceParams) {
       const timestamp = chalk.white(`[${dayjs().format("ddd hh:mm:ss.SSS")}]`);
       let logMessage: string;
       if (!is.empty(parameters)) {
-        logMessage = prettyFormatMessage(format(...parameters));
+        const text = parameters.shift() as string;
+        logMessage = format(prettyFormatMessage(text), ...parameters);
       }
 
       let message = `${timestamp} ${highlighted}`;
@@ -137,6 +138,7 @@ export async function Logger({ lifecycle, config }: TServiceParams) {
             compact: false,
             depth: 10,
             numericSeparator: true,
+            sorted: true,
           })
             .split("\n")
             .slice(SYMBOL_START, SYMBOL_END)

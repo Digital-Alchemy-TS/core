@@ -3,7 +3,7 @@
   "repository": {
     "url": "git+https://github.com/zoe-codez/digital-alchemy.git"
   },
-  "version": "0.1.5",
+  "version": "0.1.6",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe"
@@ -14,6 +14,7 @@
     "prepublishOnly": "npm run build",
     "dev:type-writer": "tsx watch src/type-writer/main.ts",
     "dev:nexus": "tsx watch src/nexus/main.ts",
+    "dev:purge": "tsx watch src/purge/main.ts",
     "test": "./scripts/test.sh"
   },
   "exports": {
@@ -24,6 +25,7 @@
     "./automation": "./dist/automation/index.js"
   },
   "bin": {
+    "synapse-purge": "./dist/purge/main.js",
     "type-writer": "./dist/type-writer/main.js"
   },
   "files": [

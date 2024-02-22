@@ -53,6 +53,7 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
         // Throw a FetchRequestError
         // throw new FetchRequestError(maybeError);
         throw new FetchRequestError(
+          logContext || parentContext,
           maybeError.statusCode,
           maybeError.error,
           maybeError.message,

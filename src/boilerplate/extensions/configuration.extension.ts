@@ -143,6 +143,7 @@ export function Configuration({
     [INJECTED_DEFINITIONS]: InjectedDefinitions,
     [LOAD_PROJECT]: LoadProject,
     addConfigLoader: (loader: ConfigLoader) => configLoaders.add(loader),
+    getDefinitions: () => configDefinitions,
     merge: Merge,
     set: SetConfig,
   };
@@ -161,6 +162,7 @@ export type ConfigManager = {
   [INITIALIZE]: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
     application: ApplicationDefinition<S, C>,
   ) => Promise<string>;
+  getDefinitions: () => KnownConfigs;
   merge: (
     merge: Partial<PartialConfiguration>,
   ) => PartialConfiguration & Partial<PartialConfiguration>;

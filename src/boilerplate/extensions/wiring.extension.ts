@@ -12,6 +12,7 @@ import {
   UP,
   ZCC,
   ZCC_Testing,
+  ZCCDefinition,
 } from "../..";
 import {
   ApplicationConfigurationOptions,
@@ -253,15 +254,13 @@ export function CreateLibrary<
   const generated = {} as GetApisResult<ServiceMap>;
 
   const library = {
-    [WIRE_PROJECT]: async () => {
+    [WIRE_PROJECT]: async (ZCC: ZCCDefinition) => {
       // This one hasn't been loaded yet, generate an object with all the correct properties
       LOADED_LIFECYCLES.set(libraryName, lifecycle);
       // not defined for boilerplate (chicken & egg)
       // manually added inside the bootstrap process
-      CfgManager()?.[LOAD_PROJECT](
-        libraryName as keyof LoadedModules,
-        configuration,
-      );
+      const config = ZCC?.config as ConfigManager;
+      config?.[LOAD_PROJECT](libraryName as keyof LoadedModules, configuration);
       await eachSeries(
         WireOrder(priorityInit, Object.keys(services)),
         async (service) => {
@@ -270,6 +269,7 @@ export function CreateLibrary<
             service,
             services[service],
             lifecycle,
+            ZCC,
           );
         },
       );
@@ -301,13 +301,13 @@ export function CreateApplication<
 }: ApplicationConfigurationOptions<S, C>) {
   const lifecycle = CreateChildLifecycle();
   const application = {
-    [WIRE_PROJECT]: async () => {
+    [WIRE_PROJECT]: async (ZCC: ZCCDefinition) => {
       LOADED_LIFECYCLES.set(name, lifecycle);
       CfgManager()[LOAD_PROJECT](name as keyof LoadedModules, configuration);
       await eachSeries(
         WireOrder(priorityInit, Object.keys(services)),
         async (service) => {
-          await WireService(name, service, services[service], lifecycle);
+          await WireService(name, service, services[service], lifecycle, ZCC);
         },
       );
       return lifecycle;
@@ -351,6 +351,7 @@ async function WireService(
   service: string,
   definition: ServiceFunction,
   lifecycle: TLifecycleBase,
+  ZCC: ZCCDefinition,
 ) {
   const mappings = MODULE_MAPPINGS.get(project) ?? {};
   if (!is.undefined(mappings[service])) {
@@ -463,7 +464,7 @@ async function Bootstrap<
 
     // * Wire it
     let start = Date.now();
-    await LIB_BOILERPLATE[WIRE_PROJECT]();
+    await LIB_BOILERPLATE[WIRE_PROJECT](ZCC);
     CONSTRUCT.boilerplate = `${Date.now() - start}ms`;
     // ~ configuration
     CfgManager()[LOAD_PROJECT](
@@ -488,14 +489,14 @@ async function Bootstrap<
     await eachSeries(application.libraries, async (i) => {
       start = Date.now();
       logger.info(`[%s] init project`, i.name);
-      await i[WIRE_PROJECT]();
+      await i[WIRE_PROJECT](ZCC);
       CONSTRUCT[i.name] = `${Date.now() - start}ms`;
     });
 
     logger.info(`init application`);
     // * Finally the application
     start = Date.now();
-    await application[WIRE_PROJECT]();
+    await application[WIRE_PROJECT](ZCC);
     CONSTRUCT[application.name] = `${Date.now() - start}ms`;
 
     // ? Configuration values provided bootstrap take priority over module level

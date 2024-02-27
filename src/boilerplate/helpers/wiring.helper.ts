@@ -1,7 +1,7 @@
 import { Dayjs } from "dayjs";
 import { EventEmitter } from "events";
 
-import { CronExpression, TBlackHole, TContext } from "../..";
+import { CronExpression, TBlackHole, TContext, ZCCDefinition } from "../..";
 import { ILogger, LIB_BOILERPLATE, TCache } from "..";
 import {
   AnyConfig,
@@ -245,7 +245,7 @@ type Wire = {
    * - initializes lifecycle
    * - attaches event emitters
    */
-  [WIRE_PROJECT]: () => Promise<TChildLifecycle>;
+  [WIRE_PROJECT]: (ZCC: ZCCDefinition) => Promise<TChildLifecycle>;
 };
 
 export type LibraryDefinition<

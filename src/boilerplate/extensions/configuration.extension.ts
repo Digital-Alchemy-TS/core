@@ -78,7 +78,7 @@ export function Configuration({
     // * validate
     // - ensure all required properties have been defined
     configDefinitions.forEach((definitions, project) => {
-      Object.keys(definitions).forEach(key => {
+      Object.keys(definitions).forEach((key) => {
         const config = [project, key].join(".");
         if (
           definitions[key].required &&
@@ -127,7 +127,7 @@ export function Configuration({
   // ## Add a library, and it's associated definitions
   function LoadProject(library: string, definitions: CodeConfigDefinition) {
     ZCC.utils.object.set(configuration, library, {});
-    Object.keys(definitions).forEach(key => {
+    Object.keys(definitions).forEach((key) => {
       ZCC.utils.object.set(
         configuration,
         [library, key].join("."),

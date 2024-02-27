@@ -34,7 +34,7 @@ export function Switch({
 }: TServiceParams) {
   const registry = synapse.registry<VirtualSwitch>({
     context,
-    details: entity => ({
+    details: (entity) => ({
       state: entity.state,
     }),
     domain: "switch",
@@ -89,7 +89,7 @@ export function Switch({
         await registry.send(id, { state });
         await each(
           callbacks,
-          async callback =>
+          async (callback) =>
             await ZCC.safeExec(async () => await callback(state === "on")),
         );
       });

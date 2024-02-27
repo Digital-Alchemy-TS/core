@@ -46,14 +46,14 @@ export function ConfigurationFiles() {
     link: (paths?: string[]) => {
       is.unique(
         is.empty(paths)
-          ? [cwd(), join(homedir(), ".config")].flatMap(base => [
+          ? [cwd(), join(homedir(), ".config")].flatMap((base) => [
               join(base, TESTING_APP_NAME),
               join(base, `${TESTING_APP_NAME}.json`),
               join(base, `${TESTING_APP_NAME}.ini`),
               join(base, `${TESTING_APP_NAME}.yaml`),
             ])
           : paths,
-      ).forEach(filename => {
+      ).forEach((filename) => {
         console.log("FIXME: GENERATE RANDOM DATA", filename, writeConfigFile);
         // const data = ZCC_Testing.generateRandomData();
         // writeConfigFile(filename, data);
@@ -84,7 +84,7 @@ export function ConfigurationFiles() {
       ].reverse();
 
       return filePaths
-        .filter(path => dirOrder.includes(path))
+        .filter((path) => dirOrder.includes(path))
         .sort((a, b) => dirOrder.indexOf(a) - dirOrder.indexOf(b));
     },
     unlink: (path?: string) => {

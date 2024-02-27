@@ -10,7 +10,7 @@ export async function each<T = unknown>(
   item: T[] = [],
   callback: (item: T) => Promise<void | unknown>,
 ): Promise<void> {
-  await Promise.all(item.map(async i => await callback(i)));
+  await Promise.all(item.map(async (i) => await callback(i)));
 }
 
 export async function eachSeries<T = void>(
@@ -48,7 +48,7 @@ export async function eachLimit<T = unknown>(
   }
 
   // Add initial tasks up to the limit
-  const initialTasks = items.slice(SINGLE, limit).map(item => addTask(item));
+  const initialTasks = items.slice(SINGLE, limit).map((item) => addTask(item));
 
   // Wait for the initial set of tasks to start processing
   await Promise.all(initialTasks);

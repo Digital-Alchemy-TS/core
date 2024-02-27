@@ -75,7 +75,7 @@ export async function TypeWriter({ hass, logger }: TServiceParams) {
                               undefined,
                               factory.createIdentifier("service_data"),
                               // ? If all the parameters are optional, then don't require the data at all
-                              Object.values(value.fields).some(i =>
+                              Object.values(value.fields).some((i) =>
                                 is.boolean(i.required) ? !i.required : true,
                               )
                                 ? factory.createToken(SyntaxKind.QuestionToken)
@@ -96,7 +96,7 @@ export async function TypeWriter({ hass, logger }: TServiceParams) {
                                     value.target as ServiceListServiceTarget,
                                   ),
                                 ].filter(
-                                  i => !is.undefined(i),
+                                  (i) => !is.undefined(i),
                                 ) as TypeElement[],
                               ),
                             ),
@@ -115,9 +115,11 @@ export async function TypeWriter({ hass, logger }: TServiceParams) {
                           [
                             `### ${value.name || key}`,
                             "",
-                            ...value.description.split("\n").map(i => `> ${i}`),
+                            ...value.description
+                              .split("\n")
+                              .map((i) => `> ${i}`),
                           ]
-                            .map(i => ` * ${i}`)
+                            .map((i) => ` * ${i}`)
                             .join(`\n`) +
                           "\n ",
                         true,
@@ -146,7 +148,7 @@ export async function TypeWriter({ hass, logger }: TServiceParams) {
           property,
           SyntaxKind.MultiLineCommentTrivia,
           "*\n" +
-            ["Assisted definition"].map(i => ` * ${i}`).join(`\n`) +
+            ["Assisted definition"].map((i) => ` * ${i}`).join(`\n`) +
             "\n ",
           true,
         );
@@ -171,7 +173,7 @@ export async function TypeWriter({ hass, logger }: TServiceParams) {
      */
     function generateEntityList(target: ServiceListServiceTarget) {
       const isEmpty =
-        is.empty(target.entity) || target.entity.every(i => is.empty(i));
+        is.empty(target.entity) || target.entity.every((i) => is.empty(i));
       if (isEmpty) {
         return factory.createParenthesizedType(
           factory.createUnionTypeNode([
@@ -188,7 +190,7 @@ export async function TypeWriter({ hass, logger }: TServiceParams) {
           ]),
         );
       }
-      const domain = target.entity.find(i => !is.empty(i.domain))?.domain;
+      const domain = target.entity.find((i) => !is.empty(i.domain))?.domain;
       const domainReference = domain.shift();
       return factory.createParenthesizedType(
         factory.createUnionTypeNode([
@@ -382,7 +384,7 @@ export async function TypeWriter({ hass, logger }: TServiceParams) {
           dump(selector).trim(),
           "```",
         ]
-          .map(i => ` * ${i}`)
+          .map((i) => ` * ${i}`)
           .join(`\n`);
       out = out + "`\n ";
       return out;

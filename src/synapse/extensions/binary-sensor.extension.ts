@@ -28,7 +28,7 @@ export function BinarySensor({
 
   const registry = synapse.registry<VirtualBinarySensor>({
     context,
-    details: item => ({ state: item.state }),
+    details: (item) => ({ state: item.state }),
     domain: "binary_sensor",
   });
 
@@ -54,7 +54,7 @@ export function BinarySensor({
         await registry.send(id, { state });
         await each(
           callbacks,
-          async callback =>
+          async (callback) =>
             await ZCC.safeExec(async () => await callback(state === "on")),
         );
       });
@@ -65,7 +65,7 @@ export function BinarySensor({
       state = await registry.getCache(id);
       if (is.undefined(state)) {
         state = entity.defaultState || "off";
-        registry.loadFromHass<{ state: OnOff }>(id, data => {
+        registry.loadFromHass<{ state: OnOff }>(id, (data) => {
           if (is.empty(data)) {
             // wat
             return;

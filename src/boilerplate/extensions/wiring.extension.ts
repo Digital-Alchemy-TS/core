@@ -231,7 +231,7 @@ function WireOrder<T extends string>(priority: T[], list: T[]): T[] {
       );
     }
   }
-  return [...out, ...list.filter(i => !out.includes(i))];
+  return [...out, ...list.filter((i) => !out.includes(i))];
 }
 
 const CfgManager = () => ZCC?.config as ConfigManager;
@@ -264,7 +264,7 @@ export function CreateLibrary<
       );
       await eachSeries(
         WireOrder(priorityInit, Object.keys(services)),
-        async service => {
+        async (service) => {
           generated[service] = await WireService(
             libraryName,
             service,
@@ -280,7 +280,7 @@ export function CreateLibrary<
     configuration,
     lifecycle,
     name: libraryName,
-    onError: callback =>
+    onError: (callback) =>
       ZCC.event.on(DIGITAL_ALCHEMY_LIBRARY_ERROR(libraryName), callback),
     priorityInit,
     services,
@@ -306,14 +306,14 @@ export function CreateApplication<
       CfgManager()[LOAD_PROJECT](name as keyof LoadedModules, configuration);
       await eachSeries(
         WireOrder(priorityInit, Object.keys(services)),
-        async service => {
+        async (service) => {
           await WireService(name, service, services[service], lifecycle);
         },
       );
       return lifecycle;
     },
     booted: false,
-    bootstrap: async options => {
+    bootstrap: async (options) => {
       if (application.booted) {
         throw new BootstrapException(
           WIRING_CONTEXT,
@@ -328,7 +328,7 @@ export function CreateApplication<
     libraries,
     lifecycle,
     name,
-    onError: callback =>
+    onError: (callback) =>
       ZCC.event.on(DIGITAL_ALCHEMY_APPLICATION_ERROR, callback),
     priorityInit,
     services,
@@ -373,7 +373,7 @@ async function WireService(
     logger?.trace(`initializing`);
     const config = CfgManager()?.[INJECTED_DEFINITIONS]();
     const inject = Object.fromEntries(
-      [...LOADED_MODULES.keys()].map(project => [
+      [...LOADED_MODULES.keys()].map((project) => [
         project as keyof TServiceParams,
         LOADED_MODULES.get(project),
       ]),
@@ -416,7 +416,7 @@ async function RunStageCallbacks(stage: LifecycleStages): Promise<string> {
       .filter(([name]) => !["boilerplate", "application"].includes(name))
       .map(([, thing]) => thing.getCallbacks(stage)),
   ];
-  await eachSeries(list, async callbacks => {
+  await eachSeries(list, async (callbacks) => {
     if (is.empty(callbacks)) {
       return;
     }
@@ -485,7 +485,7 @@ async function Bootstrap<
 
     // * Add in libraries
     application.libraries ??= [];
-    await eachSeries(application.libraries, async i => {
+    await eachSeries(application.libraries, async (i) => {
       start = Date.now();
       logger.info(`[%s] init project`, i.name);
       await i[WIRE_PROJECT]();
@@ -555,10 +555,9 @@ async function Teardown() {
 // # Lifecycle
 function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
   const stages = [...LIFECYCLE_STAGES];
-  const childCallbacks = Object.fromEntries(stages.map(i => [i, []])) as Record<
-    LifecycleStages,
-    CallbackList
-  >;
+  const childCallbacks = Object.fromEntries(
+    stages.map((i) => [i, []]),
+  ) as Record<LifecycleStages, CallbackList>;
 
   const [
     onPreInit,
@@ -568,7 +567,7 @@ function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
     onShutdownStart,
     onShutdownComplete,
   ] = LIFECYCLE_STAGES.map(
-    stage =>
+    (stage) =>
       (callback: LifecycleCallback, priority = NONE) => {
         if (completedLifecycleCallbacks.has(`on${stage}`)) {
           // this is makes "earliest run time" logic way easier to implement

@@ -30,14 +30,14 @@ export function Purge({ hass, logger, config }: TServiceParams) {
 
     const filtered = data
       .filter(
-        i =>
+        (i) =>
           i.platform === config.purge.PLATFORM &&
           !config.purge.EXCLUDE_ENTITIES.includes(i.entity_id),
       )
       .map(({ entity_id }) => entity_id);
 
     const currentlyExists = filtered.filter(
-      i => hass.entity.byId(i).state !== "unavailable",
+      (i) => hass.entity.byId(i).state !== "unavailable",
     );
     if (!is.empty(currentlyExists)) {
       logger.error(
@@ -59,7 +59,7 @@ export function Purge({ hass, logger, config }: TServiceParams) {
       await sleep(SECOND);
     }
 
-    await eachLimit(filtered, config.purge.PURGE_RATE, async entity_id => {
+    await eachLimit(filtered, config.purge.PURGE_RATE, async (entity_id) => {
       await hass.socket.sendMessage({
         entity_id,
         type: "config/entity_registry/remove",

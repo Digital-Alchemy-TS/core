@@ -19,7 +19,7 @@ export class ZCCDefinition_Utils {
   public TitleCase(input: string): string {
     const matches = input.match(new RegExp("[a-z][A-Z]", "g"));
     if (matches) {
-      matches.forEach(i => (input = input.replace(i, [...i].join(" "))));
+      matches.forEach((i) => (input = input.replace(i, [...i].join(" "))));
     }
     return input
       .split(new RegExp("[ _-]"))
@@ -49,7 +49,7 @@ export class ZCCDefinition_Utils {
     const elapsed = dayjs(pastDate).diff(futureDate, "ms");
     let out = "";
 
-    [...UNITS.keys()].some(unit => {
+    [...UNITS.keys()].some((unit) => {
       const cutoff = UNITS.get(unit);
       if (Math.abs(elapsed) > cutoff || unit == "second") {
         out = formatter.format(Math.round(elapsed / cutoff), unit);

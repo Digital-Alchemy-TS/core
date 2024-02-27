@@ -16,7 +16,7 @@ const isWindows = platform === "win32";
 
 export const SUPPORTED_CONFIG_EXTENSIONS = ["json", "ini", "yaml", "yml"];
 function withExtensions(path: string): string[] {
-  return [path, ...SUPPORTED_CONFIG_EXTENSIONS.map(i => `${path}.${i}`)];
+  return [path, ...SUPPORTED_CONFIG_EXTENSIONS.map((i) => `${path}.${i}`)];
 }
 
 export function configFilePaths(name = "digital-alchemy"): string[] {
@@ -42,7 +42,7 @@ export function configFilePaths(name = "digital-alchemy"): string[] {
     ...withExtensions(join(homedir(), ".config", name, "config")),
   );
   return out.filter(
-    filePath => existsSync(filePath) && statSync(filePath).isFile(),
+    (filePath) => existsSync(filePath) && statSync(filePath).isFile(),
   );
 }
 
@@ -56,13 +56,13 @@ export async function ConfigLoaderFile({
   }
   const out: Partial<AbstractConfig> = {};
   logger.trace({ files }, `loading configuration files`);
-  files.forEach(file => loadConfigFromFile(out, file));
+  files.forEach((file) => loadConfigFromFile(out, file));
   return out;
 }
 
 function loadConfigFromFile(out: Partial<AbstractConfig>, filePath: string) {
   const fileContent = readFileSync(filePath, "utf8").trim();
-  const hasExtension = SUPPORTED_CONFIG_EXTENSIONS.some(extension => {
+  const hasExtension = SUPPORTED_CONFIG_EXTENSIONS.some((extension) => {
     if (
       filePath.slice(extension.length * INVERT_VALUE).toLowerCase() ===
       extension

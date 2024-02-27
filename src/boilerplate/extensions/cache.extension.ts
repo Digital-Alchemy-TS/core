@@ -76,7 +76,7 @@ export function Cache({ logger, lifecycle, config }: TServiceParams): TCache {
       try {
         const fullPattern = fullKeyName(pattern);
         const keys = await client.keys(fullPattern);
-        return keys.map(key => key.slice(Math.max(NONE, prefix().length)));
+        return keys.map((key) => key.slice(Math.max(NONE, prefix().length)));
       } catch (error) {
         CACHE_DRIVER_ERROR_COUNT.labels("keys").inc();
         logger.warn({ error }, `cache keys error`);
@@ -100,7 +100,7 @@ export function Cache({ logger, lifecycle, config }: TServiceParams): TCache {
         logger.error({ error }, `cache set error`);
       }
     },
-    setClient: newClient => {
+    setClient: (newClient) => {
       logger.debug(`using new cache driver`);
       client = newClient;
     },

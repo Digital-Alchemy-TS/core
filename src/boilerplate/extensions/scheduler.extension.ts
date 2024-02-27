@@ -16,7 +16,7 @@ export function Scheduler({ logger, lifecycle }: TServiceParams) {
   const stop = new Set<() => TBlackHole>();
 
   lifecycle.onShutdownStart(() => {
-    stop.forEach(stopFunctions => {
+    stop.forEach((stopFunctions) => {
       stopFunctions();
       stop.delete(stopFunctions);
     });
@@ -30,7 +30,7 @@ export function Scheduler({ logger, lifecycle }: TServiceParams) {
       label,
     }: SchedulerOptions & { schedule: Schedule | Schedule[] }) {
       const stopFunctions: (() => TBlackHole)[] = [];
-      [scheduleList].flat().forEach(cronSchedule => {
+      [scheduleList].flat().forEach((cronSchedule) => {
         logger.trace(
           { context, label, schedule: cronSchedule },
           `start schedule`,
@@ -64,7 +64,7 @@ export function Scheduler({ logger, lifecycle }: TServiceParams) {
         return stopFunction;
       });
 
-      return () => stopFunctions.forEach(stop => stop());
+      return () => stopFunctions.forEach((stop) => stop());
     }
 
     // setInterval

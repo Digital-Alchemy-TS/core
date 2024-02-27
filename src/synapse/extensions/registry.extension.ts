@@ -52,7 +52,7 @@ export function Registry({
   async function SendEntityList() {
     logger.debug(`send entity list`);
     const domains = Object.fromEntries(
-      [...LOADERS.keys()].map(domain => {
+      [...LOADERS.keys()].map((domain) => {
         const data = LOADERS.get(domain)();
         return [domain, data];
       }),
@@ -198,7 +198,7 @@ export function Registry({
         exec: ({ data }: { data: Record<string, unknown> }) => {
           loaded = true;
           LOADED_SYNAPSE_DATA = data;
-          LOAD_ME.forEach(item => {
+          LOAD_ME.forEach((item) => {
             const { id, callback } = item;
             callback(data[id] as object);
             LOAD_ME.delete(item);

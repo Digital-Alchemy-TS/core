@@ -196,7 +196,7 @@ export function controlToQuery(
   if (value?.select) {
     out.set("select", value.select.join(","));
   }
-  value?.filters?.forEach(f => {
+  value?.filters?.forEach((f) => {
     let field = f.field;
     if (f.operation && f.operation !== FILTER_OPERATIONS.eq) {
       field = `${field}__${f.operation}`;
@@ -322,7 +322,7 @@ export type DownloadOptions<BODY extends TFetchBody = undefined> = Partial<
 
 export function fetchCast(item: FetchParameterTypes): string {
   if (is.array(item)) {
-    return item.map(i => fetchCast(i)).join(",");
+    return item.map((i) => fetchCast(i)).join(",");
   }
   if (item instanceof Date) {
     return item.toISOString();

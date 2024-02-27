@@ -78,15 +78,15 @@ export async function Logger({ lifecycle, config }: TServiceParams) {
     }
     message = message
       // ? partA#partB - highlight it all in yellow
-      .replaceAll(new RegExp("([^ ]+#[^ ]+)", "g"), i => chalk.yellow(i))
+      .replaceAll(new RegExp("([^ ]+#[^ ]+)", "g"), (i) => chalk.yellow(i))
       // ? [A] > [B] > [C] - highlight the >'s in blue
       .replaceAll("] > [", chalk`] {blue >} [`)
       // ? [Text] - strip brackets, highlight magenta
-      .replaceAll(new RegExp("(\\[[^\\]\\[]+\\])", "g"), i =>
+      .replaceAll(new RegExp("(\\[[^\\]\\[]+\\])", "g"), (i) =>
         chalk.bold.magenta(i.slice(SYMBOL_START, SYMBOL_END)),
       )
       // ? {Text} - strip braces, highlight gray
-      .replaceAll(new RegExp("(\\{[^\\]}]+\\})", "g"), i =>
+      .replaceAll(new RegExp("(\\{[^\\]}]+\\})", "g"), (i) =>
         chalk.bold.gray(i.slice(SYMBOL_START, SYMBOL_END)),
       );
     // ? " - Text" (line prefix with dash) - highlight dash
@@ -96,7 +96,7 @@ export async function Logger({ lifecycle, config }: TServiceParams) {
     return message;
   };
 
-  [...METHOD_COLORS.keys()].forEach(key => {
+  [...METHOD_COLORS.keys()].forEach((key) => {
     logger[key] = (
       context: TContext,
       ...parameters: Parameters<TLoggerFunction>

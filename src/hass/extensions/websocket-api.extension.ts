@@ -76,7 +76,7 @@ export function WebsocketAPI({
       exec: () => {
         const now = Date.now();
         MESSAGE_TIMESTAMPS = MESSAGE_TIMESTAMPS.filter(
-          time => time > now - SECOND,
+          (time) => time > now - SECOND,
         );
       },
       interval: CLEANUP_INTERVAL * SECOND,
@@ -157,7 +157,7 @@ export function WebsocketAPI({
     if (!waitForResponse) {
       return undefined;
     }
-    return new Promise<RESPONSE_VALUE>(done =>
+    return new Promise<RESPONSE_VALUE>((done) =>
       waitingCallback.set(
         messageCount,
         done as (result: unknown) => TBlackHole,
@@ -169,7 +169,9 @@ export function WebsocketAPI({
     messageCount++;
     const now = Date.now();
     MESSAGE_TIMESTAMPS.push(now);
-    const count = MESSAGE_TIMESTAMPS.filter(time => time > now - SECOND).length;
+    const count = MESSAGE_TIMESTAMPS.filter(
+      (time) => time > now - SECOND,
+    ).length;
     if (count > config.hass.SOCKET_CRASH_REQUESTS_PER_SEC) {
       logger.fatal(`FATAL ERROR: Exceeded {CRASH_REQUESTS_PER_MIN} threshold.`);
       exit();
@@ -215,7 +217,7 @@ export function WebsocketAPI({
     try {
       messageCount = START;
       connection = new WS(url);
-      connection.on("message", async message => {
+      connection.on("message", async (message) => {
         try {
           await onMessage(JSON.parse(message.toString()));
         } catch (error) {
@@ -229,7 +231,7 @@ export function WebsocketAPI({
         }
       });
 
-      connection.on("error", async error => {
+      connection.on("error", async (error) => {
         logger.error({ error: error.message || error }, "Socket error");
         if (!CONNECTION_ACTIVE) {
           await sleep(config.hass.RETRY_INTERVAL);
@@ -248,7 +250,7 @@ export function WebsocketAPI({
         await init();
       });
 
-      return await new Promise(done => {
+      return await new Promise((done) => {
         connection.once("open", () => {
           connecting = undefined;
           done();

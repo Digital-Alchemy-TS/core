@@ -4,7 +4,7 @@ import { NONE, START, ZCC } from "../../utilities";
 
 export function refTimes(times: TimeString[]): Dayjs[] {
   const today = dayjs().format("YYYY-MM-DD");
-  return times.map(i => dayjs(`${today} ${i}`).millisecond(NONE));
+  return times.map((i) => dayjs(`${today} ${i}`).millisecond(NONE));
 }
 
 type Digit = `${number}`;
@@ -90,7 +90,7 @@ ZCC.refTime = refTimes;
 ZCC.shortTime = function (times: ShortTime[]): Dayjs[] {
   const now = dayjs();
   const today = now.format("YYYY-MM-DD");
-  return times.map(i => {
+  return times.map((i) => {
     if (i === "NOW") {
       return now;
     }

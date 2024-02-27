@@ -53,7 +53,9 @@ export function CallProxy({
       }
       return undefined;
     }
-    const domainItem: HassServiceDTO = services.find(i => i.domain === domain);
+    const domainItem: HassServiceDTO = services.find(
+      (i) => i.domain === domain,
+    );
     if (!domainItem) {
       throw new InternalError(
         context,
@@ -94,8 +96,8 @@ export function CallProxy({
       await loadServiceList(recursion + INCREMENT);
       return;
     }
-    domains = services.map(i => i.domain);
-    services.forEach(value => {
+    domains = services.map((i) => i.domain);
+    services.forEach((value) => {
       logger.trace(
         { services: Object.keys(value.services) },
         `loaded domain [%s]`,

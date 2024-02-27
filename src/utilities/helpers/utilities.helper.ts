@@ -76,7 +76,7 @@ export function sleep(target: number | Date = SECOND): SleepReturn {
 
   // Take a normal promise, add a `.kill` to it
   // You can await as normal, or call the function
-  const out = new Promise<void>(i => (done = i)) as SleepReturn;
+  const out = new Promise<void>((i) => (done = i)) as SleepReturn;
   out.kill = (execute = "stop") => {
     if (execute === "continue") {
       done && done();

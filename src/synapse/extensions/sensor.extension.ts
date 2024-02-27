@@ -43,7 +43,7 @@ export function Sensor({
 }: TServiceParams) {
   const registry = synapse.registry<VirtualSensor>({
     context,
-    details: entity => ({
+    details: (entity) => ({
       attributes: entity._rawAttributes,
       device_class: entity.device_class,
       state: entity.state,
@@ -78,7 +78,7 @@ export function Sensor({
 
         await each(
           callbacks,
-          async callback =>
+          async (callback) =>
             await ZCC.safeExec(async () => await callback({ state })),
         );
       });
@@ -96,7 +96,7 @@ export function Sensor({
 
         await each(
           callbacks,
-          async callback =>
+          async (callback) =>
             await ZCC.safeExec(async () => await callback({ attributes })),
         );
       });
@@ -117,7 +117,7 @@ export function Sensor({
 
         await each(
           callbacks,
-          async callback =>
+          async (callback) =>
             await ZCC.safeExec(async () => await callback({ attributes })),
         );
       });
@@ -131,7 +131,7 @@ export function Sensor({
           attributes: entity.defaultAttributes,
           state: entity.defaultState,
         };
-        registry.loadFromHass<CacheValue>(id, data => {
+        registry.loadFromHass<CacheValue>(id, (data) => {
           if (is.empty(data)) {
             // wat
             return;

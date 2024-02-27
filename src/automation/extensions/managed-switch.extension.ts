@@ -23,10 +23,11 @@ export function ManagedSwitch({ logger, hass, scheduler }: TServiceParams) {
     const action = current ? "turn_on" : "turn_off";
     const entity_id = [switches]
       .flat()
-      .map(i => (is.string(i) ? i : i.entity_id));
+      .map((i) => (is.string(i) ? i : i.entity_id));
 
     const shouldExecute = entity_id.some(
-      id => !action.includes(hass.entity.byId(id)?.state?.toLocaleLowerCase()),
+      (id) =>
+        !action.includes(hass.entity.byId(id)?.state?.toLocaleLowerCase()),
     );
     if (!shouldExecute) {
       return;
@@ -72,7 +73,7 @@ export function ManagedSwitch({ logger, hass, scheduler }: TServiceParams) {
 
     // * Update when relevant things update
     if (!is.empty(onUpdate)) {
-      [onUpdate].flat().forEach(i => {
+      [onUpdate].flat().forEach((i) => {
         if (is.object(i) && !("entity_id" in i)) {
           const onUpdate = i.onUpdate;
           if (!is.function(onUpdate)) {

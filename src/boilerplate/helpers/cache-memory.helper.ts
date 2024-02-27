@@ -43,7 +43,7 @@ export function createMemoryDriver(
       try {
         const allKeys = client.keys();
         return pattern
-          ? allKeys.filter(key => new RegExp(pattern).test(key))
+          ? allKeys.filter((key) => new RegExp(pattern).test(key))
           : allKeys;
       } catch (error) {
         logger.error({ err: error }, "Error in Memory Cache keys operation");

@@ -79,7 +79,7 @@ describe("Cache", () => {
       const ttl = 1; // Time-to-live in seconds
       await cache.set(key, value, ttl);
       // Wait for the TTL to expire
-      await new Promise(resolve => setTimeout(resolve, 1100));
+      await new Promise((resolve) => setTimeout(resolve, 1100));
       const result = await cache.get(key);
       expect(result).toBeUndefined();
     });

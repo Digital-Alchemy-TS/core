@@ -27,8 +27,8 @@ export function SequenceWatcher({ logger, hass, config }: TServiceParams) {
       logger.error({ reset: data.reset }, `bad reset type`);
       return;
     }
-    const labels = new Set([reset.label].flat().filter(i => !is.empty(i)));
-    [...ACTIVE.keys()].forEach(key => {
+    const labels = new Set([reset.label].flat().filter((i) => !is.empty(i)));
+    [...ACTIVE.keys()].forEach((key) => {
       const item = ACTIVE.get(key);
       if (labels.has(item.label)) {
         item.interrupt.kill("stop");
@@ -38,7 +38,7 @@ export function SequenceWatcher({ logger, hass, config }: TServiceParams) {
   }
 
   function trigger(type: string, event_data: object): void {
-    WATCHED_EVENTS.get(type).forEach(async data => {
+    WATCHED_EVENTS.get(type).forEach(async (data) => {
       const allowed = data.filter(event_data);
       if (!allowed) {
         return;
@@ -95,7 +95,7 @@ export function SequenceWatcher({ logger, hass, config }: TServiceParams) {
       const remover = hass.socket.onEvent({
         context,
         event: event_type,
-        exec: eventData => trigger(event_type, eventData),
+        exec: (eventData) => trigger(event_type, eventData),
         label,
       });
       EVENT_REMOVAL.set(event_type, remover);
@@ -131,7 +131,7 @@ export function SequenceWatcher({ logger, hass, config }: TServiceParams) {
     // Return a removal function
     return () => {
       const watcher = WATCHED_EVENTS.get(event_type).filter(
-        item => item.id !== id,
+        (item) => item.id !== id,
       );
       if (is.empty(watcher)) {
         logger.debug(

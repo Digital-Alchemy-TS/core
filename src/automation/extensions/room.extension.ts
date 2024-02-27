@@ -99,7 +99,7 @@ export function Room({
       const definition = current.definition;
       if (entity_id in definition) {
         const state = definition[entity_id] as SceneLightState;
-        return Object.keys(state).every(i =>
+        return Object.keys(state).every((i) =>
           ["state", "brightness"].includes(i),
         );
       }
@@ -115,7 +115,7 @@ export function Room({
       const entities = Object.keys(item.definition) as PICK_ENTITY<"light">[];
       const kelvin = automation.circadian.getKelvin();
       const list = entities
-        .map(name => {
+        .map((name) => {
           const value = definition[name] as SceneLightState;
 
           if (is.domain(name, "switch")) {
@@ -129,13 +129,13 @@ export function Room({
           }
           return [name, { kelvin, ...value }];
         })
-        .filter(i => !is.undefined(i));
+        .filter((i) => !is.undefined(i));
       return {
         lights: Object.fromEntries(
-          list.filter(i => !is.undefined((i[VALUE] as HasKelvin).kelvin)),
+          list.filter((i) => !is.undefined((i[VALUE] as HasKelvin).kelvin)),
         ),
         scene: Object.fromEntries(
-          list.filter(i => is.undefined((i[VALUE] as HasKelvin).kelvin)),
+          list.filter((i) => is.undefined((i[VALUE] as HasKelvin).kelvin)),
         ),
       };
     }
@@ -146,7 +146,7 @@ export function Room({
       // Send requests to set lights to a specific temperature through the `light.turn_on` call
       await Promise.all([
         // Normal scene set
-        new Promise<void>(async done => {
+        new Promise<void>(async (done) => {
           if (!is.empty(scene)) {
             await hass.call.scene.apply({
               entities: scene,
@@ -155,7 +155,7 @@ export function Room({
           done();
         }),
         // Set lights to current color temp
-        new Promise<void>(async done => {
+        new Promise<void>(async (done) => {
           await eachSeries(
             Object.keys(lights) as PICK_ENTITY<"light">[],
             async (entity_id: PICK_ENTITY<"light">) => {
@@ -186,7 +186,7 @@ export function Room({
       await sceneApply(sceneName);
     }
 
-    SCENE_LIST.forEach(scene => {
+    SCENE_LIST.forEach((scene) => {
       const sceneName = `${name} ${scene}`;
       synapse.scene({
         context,

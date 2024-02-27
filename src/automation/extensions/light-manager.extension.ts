@@ -98,7 +98,7 @@ export function LightManager({
       const list = entity.attributes.entity_id as PICK_ENTITY<"light">[];
 
       if (is.array(list) && !is.empty(list)) {
-        await each(list, async child_id => {
+        await each(list, async (child_id) => {
           const child = hass.entity.byId(child_id);
           if (!child) {
             logger.warn(
@@ -200,7 +200,7 @@ export function LightManager({
     };
     // ? Find things that don't currently match expectations
     const reasons = Object.keys(stateTests).filter(
-      key => !stateTests[key as keyof typeof stateTests],
+      (key) => !stateTests[key as keyof typeof stateTests],
     );
     let type: AggressiveScenesAdjustmentTypes;
     if (stateTests.state) {
@@ -270,7 +270,7 @@ export function LightManager({
     // * Produce a list of lights that are supposed to be turned on
     // > Source from the active scene in each loaded room
     const lightsToCheck = is.unique(
-      [...rooms.values()].flatMap(room => {
+      [...rooms.values()].flatMap((room) => {
         const current = room.currentSceneDefinition?.definition;
         if (!current) {
           // ? Room set to invalid scene
@@ -278,7 +278,7 @@ export function LightManager({
           return [];
         }
         return Object.keys(room.currentSceneDefinition.definition).filter(
-          key => {
+          (key) => {
             if (!is.domain(key, "light")) {
               return false;
             }
@@ -291,7 +291,7 @@ export function LightManager({
 
     // * Calculate how off the light is, omit ones that within tolerance, sort list by difference
     return lightsToCheck
-      .map(light => ({
+      .map((light) => ({
         diff: getCurrentDiff(hass.entity.byId(light)),
         light,
       }))

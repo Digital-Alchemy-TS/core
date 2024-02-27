@@ -89,7 +89,7 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
     if (!init) {
       return undefined;
     }
-    const valid = ["state", "attributes", "last"].some(i =>
+    const valid = ["state", "attributes", "last"].some((i) =>
       property.startsWith(i),
     );
     if (!valid) {
@@ -132,7 +132,7 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
               return entity_id;
             }
             if (property === "nextState") {
-              return new Promise<ENTITY_STATE<ENTITY_ID>>(done => {
+              return new Promise<ENTITY_STATE<ENTITY_ID>>((done) => {
                 event.once(entity_id, (entity: ENTITY_STATE<ENTITY_ID>) =>
                   done(entity as ENTITY_STATE<ENTITY_ID>),
                 );
@@ -163,7 +163,7 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
       entities.map((entity_id: PICK_ENTITY) => {
         const key = entity_id;
         const states = result[entity_id];
-        const value = states.map(data => {
+        const value = states.map((data) => {
           return {
             attributes: data.a,
             date: new Date(data.lu * SECOND),
@@ -177,16 +177,16 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
 
   // ## Build a string array of all known entity ids
   function listEntities(): PICK_ENTITY[] {
-    return Object.keys(MASTER_STATE).flatMap(domain =>
+    return Object.keys(MASTER_STATE).flatMap((domain) =>
       Object.keys(MASTER_STATE[domain as ALL_DOMAINS]).map(
-        id => `${domain}.${id}` as PICK_ENTITY,
+        (id) => `${domain}.${id}` as PICK_ENTITY,
       ),
     );
   }
 
   // ## Gather all entity proxies for a domain
   function findByDomain<DOMAIN extends ALL_DOMAINS>(domain: DOMAIN) {
-    return Object.keys(MASTER_STATE[domain] ?? {}).map(i =>
+    return Object.keys(MASTER_STATE[domain] ?? {}).map((i) =>
       byId(`${domain}.${i}` as PICK_ENTITY),
     );
   }
@@ -228,7 +228,7 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
 
     // - Go through all entities, setting the state
     // ~ If this is a refresh (not an initial boot), track what changed so events can be emitted
-    states.forEach(entity => {
+    states.forEach((entity) => {
       // ? Set first, ensure data is populated
       // `nextTick` will fire AFTER loop finishes
       ZCC.utils.object.set(
@@ -253,7 +253,7 @@ export function EntityManager({ logger, hass, lifecycle }: TServiceParams) {
     setImmediate(async () => {
       await each(
         emitUpdates,
-        async entity =>
+        async (entity) =>
           await EntityUpdateReceiver(
             entity.entity_id,
             entity as ENTITY_STATE<PICK_ENTITY>,

@@ -19,7 +19,7 @@ export async function ConfigLoaderEnvironment({
   configs.forEach((configuration, project) => {
     const cleanedProject = project.replaceAll("-", "_");
 
-    Object.keys(configuration).forEach(key => {
+    Object.keys(configuration).forEach((key) => {
       const noAppPath = `${cleanedProject}_${key}`;
       const search = [noAppPath, key];
       const configPath = `${project}.${key}`;
@@ -27,18 +27,18 @@ export async function ConfigLoaderEnvironment({
       // Find an applicable switch
       const flag =
         // Find an exact match (if available) first
-        search.find(line => switchKeys.includes(line)) ||
+        search.find((line) => switchKeys.includes(line)) ||
         // Do case insensitive searches
-        search.find(line => {
+        search.find((line) => {
           const match = new RegExp(
             `^${line.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
             "gi",
           );
-          return switchKeys.some(item => item.match(match));
+          return switchKeys.some((item) => item.match(match));
         });
       if (flag) {
-        const formattedFlag = switchKeys.find(key =>
-          search.some(line =>
+        const formattedFlag = switchKeys.find((key) =>
+          search.some((line) =>
             key.match(
               new RegExp(
                 `^${line.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
@@ -59,20 +59,20 @@ export async function ConfigLoaderEnvironment({
       // Find an environment variable
       const environment =
         // Find an exact match (if available) first
-        search.find(line => environmentKeys.includes(line)) ||
+        search.find((line) => environmentKeys.includes(line)) ||
         // Do case insensitive searches
-        search.find(line => {
+        search.find((line) => {
           const match = new RegExp(
             `^${line.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
             "gi",
           );
-          return environmentKeys.some(item => item.match(match));
+          return environmentKeys.some((item) => item.match(match));
         });
       if (is.empty(environment)) {
         return;
       }
-      const environmentName = environmentKeys.find(key =>
-        search.some(line =>
+      const environmentName = environmentKeys.find((key) =>
+        search.some((line) =>
           key.match(
             new RegExp(
               `^${line.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,

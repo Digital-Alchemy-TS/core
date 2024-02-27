@@ -24,6 +24,7 @@ import {
   PICK_ENTITY,
   PICK_SERVICE,
   PICK_SERVICE_PARAMETERS,
+  PostConfigPriorities,
   RawCalendarEvent,
 } from "..";
 
@@ -53,7 +54,7 @@ export function FetchAPI({
     });
     fetcher = fetch.fetch;
     downloader = fetch.download;
-  });
+  }, PostConfigPriorities.FETCH);
 
   async function calendarSearch({
     calendar,
@@ -63,7 +64,7 @@ export function FetchAPI({
     if (Array.isArray(calendar)) {
       const list = await Promise.all(
         calendar.map(
-          async cal => await calendarSearch({ calendar: cal, end, start }),
+          async (cal) => await calendarSearch({ calendar: cal, end, start }),
         ),
       );
       return list
@@ -198,7 +199,7 @@ export function FetchAPI({
     const results = await fetcher<HomeAssistantServerLogItem[]>({
       url: `/api/error/all`,
     });
-    return results.map(i => {
+    return results.map((i) => {
       i.timestamp = Math.floor(i.timestamp * SECOND);
       i.first_occurred = Math.floor(i.first_occurred * SECOND);
       return i;
@@ -243,10 +244,18 @@ export function FetchAPI({
     });
   }
 
+  async function checkCredentials(): Promise<{ message: string } | string> {
+    logger.trace(`check credentials`);
+    return await fetcher({
+      url: `/api/`,
+    });
+  }
+
   return {
     calendarSearch,
     callService,
     checkConfig,
+    checkCredentials,
     download,
     fetch: fetcher,
     fetchEntityCustomizations,

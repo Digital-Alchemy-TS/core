@@ -111,3 +111,7 @@ ZCC.toHassId = <DOMAIN extends ALL_DOMAINS>(
     .replaceAll(/\W/g, "");
   return `${domain}.${name}` as PICK_ENTITY<DOMAIN>;
 };
+export const PostConfigPriorities = {
+  FETCH: 1,
+  VALIDATE: 2,
+} as const;

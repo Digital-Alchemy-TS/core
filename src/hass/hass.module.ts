@@ -4,6 +4,7 @@ import {
   EntityManager,
   FetchAPI,
   Utilities,
+  Validate,
   WebsocketAPI,
 } from "./extensions";
 
@@ -47,6 +48,11 @@ export const LIB_HASS = CreateLibrary({
       required: true,
       type: "string",
     },
+    VALIDATE_CONFIGURATION: {
+      default: false,
+      description: "Validate the credentials, then quit",
+      type: "boolean",
+    },
     WEBSOCKET_URL: {
       description: `Override calculated value if it's breaking or you want something custom. Make sure to use "ws[s]://" scheme.`,
       type: "string",
@@ -61,6 +67,7 @@ export const LIB_HASS = CreateLibrary({
     fetch: FetchAPI,
     socket: WebsocketAPI,
     utils: Utilities,
+    validate: Validate,
   },
 });
 

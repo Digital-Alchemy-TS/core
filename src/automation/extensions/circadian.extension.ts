@@ -7,11 +7,6 @@ import { LOCATION_UPDATED } from "../helpers";
 const MIN = 0;
 const MAX = 1;
 
-/**
- * # Circadian lighting
- *
- * Generate an entity to maintain the current color temperature target for lights
- */
 export function CircadianLighting({
   logger,
   lifecycle,

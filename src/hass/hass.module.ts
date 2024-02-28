@@ -62,11 +62,29 @@ export const LIB_HASS = CreateLibrary({
   // no internal dependency ones first
   priorityInit: ["fetch", "utils"],
   services: {
+    /**
+     * general service calling interface
+     */
     call: CallProxy,
+    /**
+     * retrieve and interact with home assistant entities
+     */
     entity: EntityManager,
+    /**
+     * rest api commands
+     */
     fetch: FetchAPI,
+    /**
+     * websocket interface
+     */
     socket: WebsocketAPI,
+    /**
+     * extra helper functions for interacting with home assistant
+     */
     utils: Utilities,
+    /**
+     * internal tool
+     */
     validate: Validate,
   },
 });

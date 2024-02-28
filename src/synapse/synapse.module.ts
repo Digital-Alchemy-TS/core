@@ -35,11 +35,33 @@ export const LIB_SYNAPSE = CreateLibrary({
   // everything depends registry
   priorityInit: ["registry"],
   services: {
+    /**
+     * create `binary_sensor` domain entities
+     */
     binary_sensor: BinarySensor,
+    /**
+     * create `button` domain entities
+     *
+     * run callback on activation
+     */
     button: Button,
+    /**
+     * internal tools for managing entities
+     */
     registry: Registry,
+    /**
+     * create `scene` domain entities
+     *
+     * run callback on activation
+     */
     scene: Scene,
+    /**
+     * create `sensor` domain entities
+     */
     sensor: Sensor,
+    /**
+     * create `switch` domain entities
+     */
     switch: Switch,
   },
 });

@@ -15,16 +15,6 @@ type TValidateOptions = {
   scene: RoomScene;
 };
 
-/**
- * # Aggressive Scenes extension
- *
- * Sets up opt-in functionality that allows for more active management of scene states inside the system
- * It coordinates with rooms to know what the current state is, and periodically checks entities to ensure that are currently in the state that they are expected to be
- *
- * - Correct for changes made in the real world (humans turning on a switch that should be off at the moment)
- * - Changing definitions of "correct" (like light colors for circadian lighting)
- * - Entities that failed to change to the correct state when asked the first time
- */
 export function AggressiveScenes({
   logger,
   config,

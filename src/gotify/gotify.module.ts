@@ -32,6 +32,11 @@ export const LIB_GOTIFY = CreateLibrary({
 
 declare module "../boilerplate" {
   export interface LoadedModules {
+    /**
+     * a simple api for a simple notification service
+     *
+     * https://gotify.net
+     */
     gotify: typeof LIB_GOTIFY;
   }
 }

@@ -133,12 +133,46 @@ export type TInjectedConfig = {
 };
 
 export type TServiceParams = {
+  /**
+   * provided by boilerplate library
+   *
+   * contains basic caching methods
+   */
   cache: TCache;
+  /**
+   * string describing how this service is wired into the main application
+   */
   context: TContext;
+  /**
+   * application global event emitter
+   */
   event: EventEmitter;
+  /**
+   * - utility methods
+   * - descriptions of application wiring
+   *
+   * mostly useful for libraries
+   */
+  internal: ZCCDefinition;
+  /**
+   * add to the way the application starts / stops
+   */
   lifecycle: TLifecycleBase;
+  /**
+   * context aware logger instance
+   */
   logger: ILogger;
+  /**
+   * run commands on intervals & schedules
+   *
+   * respects lifecycle events, not starting to run until the application is ready
+   */
   scheduler: TScheduler;
+  /**
+   * application configuration
+   *
+   * make sure to use with/after the `onPostConfig` lifecycle event in order to receive user configuration values
+   */
   config: TInjectedConfig;
 } & {
   [K in keyof LoadedModules]: GetApis<LoadedModules[K]>;

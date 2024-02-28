@@ -73,6 +73,9 @@ export const LIB_HASS = CreateLibrary({
 
 declare module "../boilerplate" {
   export interface LoadedModules {
+    /**
+     * tools for interacting with home assistant
+     */
     hass: typeof LIB_HASS;
   }
 }

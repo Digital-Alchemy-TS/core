@@ -46,6 +46,9 @@ export const LIB_SYNAPSE = CreateLibrary({
 
 declare module "../boilerplate" {
   export interface LoadedModules {
+    /**
+     * tools for creating new entities within home assistant
+     */
     synapse: typeof LIB_SYNAPSE;
   }
 }

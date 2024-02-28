@@ -385,6 +385,7 @@ async function WireService(
       config,
       context,
       event: ZCC.event,
+      internal: ZCC,
       lifecycle,
       logger,
       scheduler: scheduler && scheduler(context),

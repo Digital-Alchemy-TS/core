@@ -82,6 +82,9 @@ export const LIB_AUTOMATION = CreateLibrary({
 
 declare module "../boilerplate" {
   export interface LoadedModules {
+    /**
+     * higher level automation tools
+     */
     automation: typeof LIB_AUTOMATION;
   }
 }

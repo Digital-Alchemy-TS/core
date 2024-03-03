@@ -522,7 +522,7 @@ async function Bootstrap<
     STATS.Total = `${Date.now() - startup.getTime()}ms`;
     // * App is ready!
     logger.info(
-      options.showExtraBootStats ? STATS : { Total: STATS.Total },
+      options?.showExtraBootStats ? STATS : { Total: STATS.Total },
       `🪄 [%s] application bootstrapped`,
       application.name,
     );

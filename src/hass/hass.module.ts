@@ -22,7 +22,7 @@ export const LIB_HASS = CreateLibrary({
       type: "boolean",
     },
     BASE_URL: {
-      default: "http://localhost:8123",
+      default: "http://homeassistant.local:8123",
       description: "Url to reach Home Assistant at",
       type: "string",
     },

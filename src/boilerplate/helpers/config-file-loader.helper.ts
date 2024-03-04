@@ -1,11 +1,12 @@
 import { existsSync, readFileSync, statSync } from "fs";
 import { decode } from "ini";
 import { load } from "js-yaml";
+import minimist from "minimist";
 import { homedir } from "os";
 import { join } from "path";
 import { cwd, platform } from "process";
 
-import { deepExtend, INVERT_VALUE, is, START } from "../..";
+import { deepExtend, INVERT_VALUE, is, START, ZCC_Testing } from "../..";
 import {
   AbstractConfig,
   ConfigLoaderParams,
@@ -50,7 +51,24 @@ export async function ConfigLoaderFile({
   application,
   logger,
 }: ConfigLoaderParams): ConfigLoaderReturn {
-  const files = configFilePaths(application.name);
+  const CLI_SWITCHES = minimist(process.argv);
+  const configFile = CLI_SWITCHES.config;
+  let files: string[];
+  if (is.empty(configFile)) {
+    files = configFilePaths(application.name);
+    logger.trace({ files }, `identified config files`);
+  } else {
+    if (!existsSync(configFile)) {
+      logger.fatal(
+        { configFile },
+        `used {--config} to specify path that does not exist`,
+      );
+      ZCC_Testing.FailFast();
+    }
+    files = [configFile];
+    logger.debug({ configFile }, `used {--config}, loading from target file`);
+  }
+
   if (is.empty(files)) {
     return {};
   }

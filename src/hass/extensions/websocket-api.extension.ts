@@ -186,11 +186,11 @@ export function WebsocketAPI({
   function getUrl() {
     const url = new URL(config.hass.BASE_URL);
     const protocol = url.protocol === `http:` ? `ws:` : `wss:`;
+    const path = url.pathname === "/" ? "" : url.pathname;
+    const port = url.port ? `:${url.port}` : "";
     return (
       config.hass.WEBSOCKET_URL ||
-      `${protocol}//${url.hostname}${
-        url.port ? `:${url.port}` : ``
-      }/api/websocket`
+      `${protocol}//${url.hostname}${port}${path}/api/websocket`
     );
   }
 

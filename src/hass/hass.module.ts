@@ -1,10 +1,10 @@
 import { CreateLibrary } from "..";
 import {
   CallProxy,
+  Configure,
   EntityManager,
   FetchAPI,
   Utilities,
-  Validate,
   WebsocketAPI,
 } from "./extensions";
 
@@ -66,26 +66,31 @@ export const LIB_HASS = CreateLibrary({
      * general service calling interface
      */
     call: CallProxy,
+
+    /**
+     * internal tools
+     */
+    configure: Configure,
+
     /**
      * retrieve and interact with home assistant entities
      */
     entity: EntityManager,
+
     /**
      * rest api commands
      */
     fetch: FetchAPI,
+
     /**
      * websocket interface
      */
     socket: WebsocketAPI,
+
     /**
      * extra helper functions for interacting with home assistant
      */
     utils: Utilities,
-    /**
-     * internal tool
-     */
-    validate: Validate,
   },
 });
 

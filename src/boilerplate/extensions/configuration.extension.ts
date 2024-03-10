@@ -1,4 +1,4 @@
-import { deepExtend, DOWN, eachSeries, is, UP, ZCC } from "../..";
+import { deepExtend, DOWN, eachSeries, is, UP } from "../..";
 import {
   ApplicationDefinition,
   BootstrapException,
@@ -25,11 +25,12 @@ export function Configuration({
   context,
   event,
   lifecycle,
+  internal,
   // ! THIS DOES NOT EXIST BEFORE PRE INIT
   logger,
 }: TServiceParams) {
   // 🙊 but that's illegal!
-  lifecycle.onPreInit(() => (logger = ZCC.logger.context(context)));
+  lifecycle.onPreInit(() => (logger = internal.logger.context(context)));
 
   // # Locals
   const configLoaders = new Set<ConfigLoader>();
@@ -82,7 +83,7 @@ export function Configuration({
         const config = [project, key].join(".");
         if (
           definitions[key].required &&
-          is.undefined(ZCC.utils.object.get(configuration, config))
+          is.undefined(internal.utils.object.get(configuration, config))
         ) {
           // ruh roh
           throw new BootstrapException(
@@ -100,7 +101,18 @@ export function Configuration({
   function InjectedDefinitions() {
     return new Proxy({} as TInjectedConfig, {
       get(_, project: keyof TInjectedConfig) {
-        return ZCC.utils.object.get(configuration, project) ?? {};
+        return internal.utils.object.get(configuration, project) ?? {};
+      },
+      getOwnPropertyDescriptor(_, project: string) {
+        return {
+          configurable: false,
+          enumerable: true,
+          value: internal.utils.object.get(configuration, project) ?? {},
+          writable: false,
+        };
+      },
+      ownKeys() {
+        return Object.keys(configuration);
       },
     });
   }
@@ -114,7 +126,11 @@ export function Configuration({
     property: Property,
     value: TInjectedConfig[Project][Property],
   ): void {
-    ZCC.utils.object.set(configuration, [project, property].join("."), value);
+    internal.utils.object.set(
+      configuration,
+      [project, property].join("."),
+      value,
+    );
     // in case anyone needs a hook
     event.emit(EVENT_CONFIGURATION_UPDATED);
   }
@@ -126,9 +142,9 @@ export function Configuration({
 
   // ## Add a library, and it's associated definitions
   function LoadProject(library: string, definitions: CodeConfigDefinition) {
-    ZCC.utils.object.set(configuration, library, {});
+    internal.utils.object.set(configuration, library, {});
     Object.keys(definitions).forEach((key) => {
-      ZCC.utils.object.set(
+      internal.utils.object.set(
         configuration,
         [library, key].join("."),
         definitions[key].default,
@@ -147,7 +163,7 @@ export function Configuration({
     merge: Merge,
     set: SetConfig,
   };
-  ZCC.config = out;
+  internal.config = out;
   return out;
 }
 

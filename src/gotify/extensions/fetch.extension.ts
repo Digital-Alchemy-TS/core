@@ -1,7 +1,12 @@
-import { TServiceParams, ZCC } from "../..";
+import { TServiceParams } from "../..";
 
-export function GotifyFetch({ context, config, lifecycle }: TServiceParams) {
-  const fetcher = ZCC.createFetcher({ context });
+export function GotifyFetch({
+  context,
+  config,
+  lifecycle,
+  internal,
+}: TServiceParams) {
+  const fetcher = internal.createFetcher({ context });
 
   lifecycle.onPostConfig(() => {
     fetcher.setBaseUrl(config.gotify.BASE_URL);

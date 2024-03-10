@@ -237,6 +237,18 @@ export type LibraryConfigurationOptions<
   // neat trick, enforcing that they are named the same as they are loaded
   name: keyof LoadedModules;
   services: S;
+  /**
+   * ensure other libraries get loaded first.
+   * only list those that are directly utilized in library
+   *
+   * - application must declare all dependencies, this is used for validation & determining loading order
+   * - warnings will be emitted if this library utilizes a different version of a dependency than what the app uses
+   * - version provided by app will be substituted
+   */
+  depends?: LibraryConfigurationOptions<
+    ServiceMap,
+    OptionalModuleConfiguration
+  >[];
   configuration?: C;
   /**
    * Define which services should be initialized first. Any remaining services are done at the end in no set order

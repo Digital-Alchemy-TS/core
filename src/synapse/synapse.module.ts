@@ -1,4 +1,5 @@
 import { CreateLibrary } from "../boilerplate";
+import { LIB_HASS } from "../hass";
 import {
   BinarySensor,
   Button,
@@ -31,6 +32,7 @@ export const LIB_SYNAPSE = CreateLibrary({
       type: "boolean",
     },
   },
+  depends: [LIB_HASS],
   name: "synapse",
   // everything depends registry
   priorityInit: ["registry"],

@@ -1,4 +1,6 @@
 import { CreateLibrary } from "../boilerplate";
+import { LIB_HASS } from "../hass";
+import { LIB_SYNAPSE } from "../synapse";
 import {
   AggressiveScenes,
   CircadianLighting,
@@ -66,6 +68,7 @@ export const LIB_AUTOMATION = CreateLibrary({
       type: "number",
     },
   },
+  depends: [LIB_HASS, LIB_SYNAPSE],
   name: "automation",
   // light depends circadian
   priorityInit: ["circadian"],

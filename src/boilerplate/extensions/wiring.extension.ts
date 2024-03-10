@@ -433,6 +433,71 @@ async function RunStageCallbacks(stage: LifecycleStages): Promise<string> {
   return `${Date.now() - start}ms`;
 }
 
+type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration>;
+
+function BuildSortOrder<
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+>(app: ApplicationDefinition<S, C>) {
+  if (is.empty(app.libraries)) {
+    return [];
+  }
+  const libraryMap = new Map<string, TLibrary>(
+    app.libraries.map((i) => [i.name, i]),
+  );
+
+  // Recursive function to check for missing dependencies at any depth
+  function checkDependencies(library: TLibrary) {
+    if (!is.empty(library.depends)) {
+      library.depends.forEach((item) => {
+        const loaded = libraryMap.get(item.name);
+        if (!loaded) {
+          throw new BootstrapException(
+            WIRING_CONTEXT,
+            "MISSING_DEPENDENCY",
+            `${item.name} is required by ${library.name}, but was not provided`,
+          );
+        }
+        // just "are they the same object reference?" as the test
+        // you get a warning, and the one the app asks for
+        // hopefully there is no breaking changes
+        if (loaded !== item) {
+          logger.warn(
+            { name: library.name },
+            "depends different version [%s]",
+            item.name,
+          );
+        }
+      });
+    }
+    return library;
+  }
+
+  let starting = app.libraries.map((i) => checkDependencies(i));
+  const out = [] as TLibrary[];
+  while (!is.empty(starting)) {
+    const next = starting.find((library) => {
+      if (is.empty(library.depends)) {
+        return true;
+      }
+      return library.depends?.every((depend) =>
+        out.some((i) => i.name === depend.name),
+      );
+    });
+    if (!next) {
+      logger.fatal({ current: out.map((i) => i.name) });
+      throw new BootstrapException(
+        WIRING_CONTEXT,
+        "BAD_SORT",
+        `Cannot find a next lib to load`,
+      );
+    }
+    starting = starting.filter((i) => next.name !== i.name);
+    out.push(next);
+  }
+  return out;
+}
+
 let startup: Date;
 
 // # Lifecycle runners
@@ -487,7 +552,8 @@ async function Bootstrap<
 
     // * Add in libraries
     application.libraries ??= [];
-    await eachSeries(application.libraries, async (i) => {
+    const order = BuildSortOrder(application);
+    await eachSeries(order, async (i) => {
       start = Date.now();
       logger.info(`[%s] init project`, i.name);
       await i[WIRE_PROJECT](ZCC);

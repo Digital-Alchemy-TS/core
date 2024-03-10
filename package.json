@@ -12,7 +12,8 @@
     "build": "tsc -p tsconfig.lib.json",
     "lint": "eslint src",
     "prepublishOnly": "npm run build",
-    "test": "./scripts/test.sh"
+    "test": "./scripts/test.sh",
+    "upgrade": "ncu -u; npm i"
   },
   "exports": {
     ".": "./dist/index.js"
@@ -37,14 +38,14 @@
     "redis": "^4.6.13"
   },
   "devDependencies": {
-    "@cspell/eslint-plugin": "^8.5.0",
+    "@cspell/eslint-plugin": "^8.6.0",
     "@faker-js/faker": "^8.4.1",
     "@types/ini": "^4.1.0",
     "@types/jest": "^29.5.12",
     "@types/js-yaml": "^4.0.9",
     "@types/minimist": "^1.2.5",
     "@types/node-cron": "^3.0.11",
-    "@types/node": "^20.11.24",
+    "@types/node": "^20.11.25",
     "@types/semver": "^7.5.8",
     "@types/sinonjs__fake-timers": "^8.1.5",
     "@typescript-eslint/eslint-plugin": "7.1.1",
@@ -67,8 +68,8 @@
     "ts-jest": "^29.1.2",
     "tslib": "^2.6.2",
     "tsx": "^4.7.1",
-    "type-fest": "^4.11.0",
-    "typescript": "^5.3.3"
+    "type-fest": "^4.12.0",
+    "typescript": "^5.4.2"
   },
   "jest": {
     "preset": "ts-jest",

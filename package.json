@@ -1,9 +1,9 @@
 {
   "name": "@digital-alchemy/core",
   "repository": {
-    "url": "git+https://github.com/zoe-codez/digital-alchemy.git"
+    "url": "git+https://github.com/Digital-Alchemy-TS/core"
   },
-  "version": "0.1.17",
+  "version": "0.2.0",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe"

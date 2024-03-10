@@ -1,4 +1,2 @@
-// Main namespace exports. MVP folders to not pollute the loaded modules
-export * from "./utilities";
-//
-export * from "./boilerplate";
+export * from "./extensions";
+export * from "./helpers";

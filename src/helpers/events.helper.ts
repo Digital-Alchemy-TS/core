@@ -1,0 +1,10 @@
+import { is } from "..";
+
+export const DIGITAL_ALCHEMY_NODE_GLOBAL_ERROR =
+  "DIGITAL_ALCHEMY_NODE_GLOBAL_ERROR";
+export const DIGITAL_ALCHEMY_APPLICATION_ERROR =
+  "DIGITAL_ALCHEMY_APPLICATION_ERROR";
+export const DIGITAL_ALCHEMY_LIBRARY_ERROR = (library?: string) =>
+  is.empty(library)
+    ? "DIGITAL_ALCHEMY_LIBRARY_ERROR"
+    : `DIGITAL_ALCHEMY_LIBRARY_ERROR:${library}`;

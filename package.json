@@ -12,21 +12,10 @@
     "build": "tsc -p tsconfig.lib.json",
     "lint": "eslint src",
     "prepublishOnly": "npm run build",
-    "dev:type-writer": "tsx watch src/type-writer/main.ts",
-    "dev:nexus": "tsx watch src/nexus/main.ts",
-    "dev:purge": "tsx watch src/purge/main.ts",
     "test": "./scripts/test.sh"
   },
   "exports": {
-    ".": "./dist/index.js",
-    "./hass": "./dist/hass/index.js",
-    "./gotify": "./dist/gotify/index.js",
-    "./synapse": "./dist/synapse/index.js",
-    "./automation": "./dist/automation/index.js"
-  },
-  "bin": {
-    "synapse-purge": "./dist/purge/main.js",
-    "type-writer": "./dist/type-writer/main.js"
+    ".": "./dist/index.js"
   },
   "files": [
     "dist/**/*"
@@ -42,12 +31,10 @@
     "minimist": "^1.2.8",
     "node-cache": "^5.1.2",
     "node-cron": "^3.0.3",
-    "prom-client": "^15.1.0",
-    "ws": "^8.16.0"
+    "prom-client": "^15.1.0"
   },
   "optionalDependencies": {
-    "redis": "^4.6.13",
-    "typescript": "^5.3.3"
+    "redis": "^4.6.13"
   },
   "devDependencies": {
     "@cspell/eslint-plugin": "^8.5.0",
@@ -60,8 +47,6 @@
     "@types/node": "^20.11.24",
     "@types/semver": "^7.5.8",
     "@types/sinonjs__fake-timers": "^8.1.5",
-    "@types/uuid": "^9.0.8",
-    "@types/ws": "^8.5.10",
     "@typescript-eslint/eslint-plugin": "7.1.1",
     "@typescript-eslint/parser": "7.1.1",
     "eslint-config-prettier": "9.1.0",
@@ -82,7 +67,8 @@
     "ts-jest": "^29.1.2",
     "tslib": "^2.6.2",
     "tsx": "^4.7.1",
-    "type-fest": "^4.11.0"
+    "type-fest": "^4.11.0",
+    "typescript": "^5.3.3"
   },
   "jest": {
     "preset": "ts-jest",

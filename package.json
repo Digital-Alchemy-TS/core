@@ -3,7 +3,7 @@
   "repository": {
     "url": "git+https://github.com/Digital-Alchemy-TS/core"
   },
-  "version": "0.2.1",
+  "version": "0.2.2",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe"
@@ -45,11 +45,11 @@
     "@types/js-yaml": "^4.0.9",
     "@types/minimist": "^1.2.5",
     "@types/node-cron": "^3.0.11",
-    "@types/node": "^20.11.25",
+    "@types/node": "^20.11.27",
     "@types/semver": "^7.5.8",
     "@types/sinonjs__fake-timers": "^8.1.5",
-    "@typescript-eslint/eslint-plugin": "7.1.1",
-    "@typescript-eslint/parser": "7.1.1",
+    "@typescript-eslint/eslint-plugin": "7.2.0",
+    "@typescript-eslint/parser": "7.2.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-jsonc": "^2.13.0",

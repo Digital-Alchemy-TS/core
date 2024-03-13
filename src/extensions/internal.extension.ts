@@ -11,7 +11,6 @@ import {
   DAY,
   FetcherOptions,
   HOUR,
-  ILogger,
   is,
   Logger,
   MINUTE,
@@ -213,7 +212,6 @@ export class InternalDefinition {
     setHeaders: (headers: Record<string, string>) => void;
     fetch: TFetch;
   };
-  public fetch: TFetch;
   /**
    * In case something needs to grab details about the app
    *
@@ -226,7 +224,6 @@ export class InternalDefinition {
   public cache: TCache;
   public config: ExcludeSymbolKeys<ConfigManager>;
   public logger: Awaited<ReturnType<typeof Logger>>;
-  public systemLogger: ILogger;
   public bootOptions: BootstrapOptions;
   /**
    * The global eventemitter. All of `@digital-alchemy` will be wired through this
@@ -263,7 +260,10 @@ export class InternalDefinition {
         end(labels as LabelFixer<LABELS>);
       }
     } catch (error) {
-      this.systemLogger.error({ error, ...labels }, `Callback threw error`);
+      this.logger.systemLogger.error(
+        { error, ...labels },
+        `Callback threw error`,
+      );
       if (!is.empty(labels.label)) {
         errorMetric?.inc(labels as LabelFixer<LABELS>);
       }

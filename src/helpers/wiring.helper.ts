@@ -298,7 +298,6 @@ export type LibraryDefinition<
   C extends OptionalModuleConfiguration,
 > = LibraryConfigurationOptions<S, C> &
   Wire & {
-    serviceApis: GetApisResult<S>;
     lifecycle: TChildLifecycle;
   };
 
@@ -308,7 +307,6 @@ export type ApplicationDefinition<
 > = ApplicationConfigurationOptions<S, C> &
   Wire & {
     booted: boolean;
-    serviceApis: GetApisResult<S>;
     bootstrap: (options?: BootstrapOptions) => Promise<void>;
     lifecycle: TChildLifecycle;
     teardown: () => Promise<void>;

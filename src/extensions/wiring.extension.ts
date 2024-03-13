@@ -10,6 +10,7 @@ import {
   DOWN,
   each,
   eachSeries,
+  GetApis,
   GetApisResult,
   LibraryConfigurationOptions,
   LibraryDefinition,
@@ -121,6 +122,12 @@ const processEvents = new Map([
   // ["unhandledRejection", (reason, promise) => {}],
 ]);
 
+// ## Boilerplate Quick Ref
+const BOILERPLATE = () =>
+  LOADED_MODULES.get("boilerplate") as GetApis<
+    ReturnType<typeof CreateBoilerplate>
+  >;
+
 // ## Validate Library
 function ValidateLibrary<S extends ServiceMap>(
   project: string,
@@ -222,8 +229,6 @@ function WireOrder<T extends string>(priority: T[], list: T[]): T[] {
   return [...out, ...list.filter((i) => !out.includes(i))];
 }
 
-const CfgManager = () => internal?.config as ConfigManager;
-
 // ## Create Library
 export function CreateLibrary<
   S extends ServiceMap,
@@ -290,7 +295,10 @@ export function CreateApplication<
   const application = {
     [WIRE_PROJECT]: async (internal: InternalDefinition) => {
       LOADED_LIFECYCLES.set(name, lifecycle);
-      CfgManager()[LOAD_PROJECT](name as keyof LoadedModules, configuration);
+      BOILERPLATE()?.configuration?.[LOAD_PROJECT](
+        name as keyof LoadedModules,
+        configuration,
+      );
       await eachSeries(
         WireOrder(priorityInit, Object.keys(services)),
         async (service) => {
@@ -359,12 +367,13 @@ async function WireService(
   const context = COERCE_CONTEXT(`${project}:${service}`);
 
   // logger gets defined first, so this really is only for the start of the start of bootstrapping
-  const logger = internal.logger ? internal.logger.context(context) : undefined;
+  const boilerplate = BOILERPLATE();
+  const logger = boilerplate?.logger?.context(context);
   const loaded = LOADED_MODULES.get(project) ?? {};
   LOADED_MODULES.set(project, loaded);
   try {
     logger?.trace(`initializing`);
-    const config = CfgManager()?.[INJECTED_DEFINITIONS]();
+    const config = boilerplate?.configuration?.[INJECTED_DEFINITIONS]();
     const inject = Object.fromEntries(
       [...LOADED_MODULES.keys()].map((project) => [
         project as keyof TServiceParams,
@@ -524,17 +533,17 @@ async function Bootstrap<
     // * Wire it
     let start = Date.now();
     await LIB_BOILERPLATE[WIRE_PROJECT](internal);
-    const api = LIB_BOILERPLATE.serviceApis;
+    const api = LOADED_MODULES.get("boilerplate") as GetApis<
+      ReturnType<typeof CreateBoilerplate>
+    >;
     internal.cache = api.cache;
     internal.logger = api.logger;
-    internal.systemLogger = api.logger.context("digital-alchemy:system");
     internal.createFetcher = api.fetch;
-    internal.fetch = api.fetch({ context: WIRING_CONTEXT }).fetch;
     internal.config = api.configuration;
 
     CONSTRUCT.boilerplate = `${Date.now() - start}ms`;
     // ~ configuration
-    CfgManager()[LOAD_PROJECT](
+    BOILERPLATE()?.configuration?.[LOAD_PROJECT](
       LIB_BOILERPLATE.name,
       LIB_BOILERPLATE.configuration,
     );
@@ -577,7 +586,8 @@ async function Bootstrap<
     STATS.PreInit = await RunStageCallbacks("PreInit");
     // - Pull in user configurations
     logger.debug("loading configuration");
-    STATS.Configure = await CfgManager()[INITIALIZE](application);
+    STATS.Configure =
+      await BOILERPLATE()?.configuration?.[INITIALIZE](application);
     // - Run through other events in order
     logger.debug(`[PostConfig] running lifecycle callbacks`);
     STATS.PostConfig = await RunStageCallbacks("PostConfig");

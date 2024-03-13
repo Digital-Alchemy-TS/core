@@ -164,22 +164,25 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
 
   lifecycle.onPostConfig(() => (logLevel = config.boilerplate.LOG_LEVEL));
 
+  function context(context: string | TContext) {
+    return {
+      debug: (...params: Parameters<TLoggerFunction>) =>
+        shouldLog("debug") && logger.debug(context as TContext, ...params),
+      error: (...params: Parameters<TLoggerFunction>) =>
+        shouldLog("error") && logger.error(context as TContext, ...params),
+      fatal: (...params: Parameters<TLoggerFunction>) =>
+        shouldLog("fatal") && logger.fatal(context as TContext, ...params),
+      info: (...params: Parameters<TLoggerFunction>) =>
+        shouldLog("info") && logger.info(context as TContext, ...params),
+      trace: (...params: Parameters<TLoggerFunction>) =>
+        shouldLog("trace") && logger.trace(context as TContext, ...params),
+      warn: (...params: Parameters<TLoggerFunction>) =>
+        shouldLog("warn") && logger.warn(context as TContext, ...params),
+    } as ILogger;
+  }
+
   return {
-    context: (context: string | TContext) =>
-      ({
-        debug: (...params: Parameters<TLoggerFunction>) =>
-          shouldLog("debug") && logger.debug(context as TContext, ...params),
-        error: (...params: Parameters<TLoggerFunction>) =>
-          shouldLog("error") && logger.error(context as TContext, ...params),
-        fatal: (...params: Parameters<TLoggerFunction>) =>
-          shouldLog("fatal") && logger.fatal(context as TContext, ...params),
-        info: (...params: Parameters<TLoggerFunction>) =>
-          shouldLog("info") && logger.info(context as TContext, ...params),
-        trace: (...params: Parameters<TLoggerFunction>) =>
-          shouldLog("trace") && logger.trace(context as TContext, ...params),
-        warn: (...params: Parameters<TLoggerFunction>) =>
-          shouldLog("warn") && logger.warn(context as TContext, ...params),
-      }) as ILogger,
+    context,
     getBaseLogger: () => logger,
     getLogLevel: () => logLevel,
     setBaseLogger: (base: ILogger) => (logger = base),
@@ -187,5 +190,6 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
       logLevel = level;
       internal.config.set("boilerplate", "LOG_LEVEL", level);
     },
+    systemLogger: context("digital-alchemy:system-logger"),
   };
 }

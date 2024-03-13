@@ -2,7 +2,7 @@
 import dayjs, { Dayjs } from "dayjs";
 import { schedule } from "node-cron";
 
-import { TBlackHole, TContext, ZCC } from "..";
+import { TBlackHole, TContext } from "..";
 import {
   Schedule,
   SCHEDULE_ERRORS,
@@ -12,7 +12,7 @@ import {
   TServiceParams,
 } from "../helpers";
 
-export function Scheduler({ logger, lifecycle }: TServiceParams) {
+export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
   const stop = new Set<() => TBlackHole>();
 
   lifecycle.onShutdownStart(() => {
@@ -38,7 +38,7 @@ export function Scheduler({ logger, lifecycle }: TServiceParams) {
         const cronJob = schedule(
           cronSchedule,
           async () =>
-            await ZCC.safeExec({
+            await internal.safeExec({
               duration: SCHEDULE_EXECUTION_TIME,
               errors: SCHEDULE_ERRORS,
               exec,
@@ -79,7 +79,7 @@ export function Scheduler({ logger, lifecycle }: TServiceParams) {
 
         runningInterval = setInterval(
           async () =>
-            await ZCC.safeExec({
+            await internal.safeExec({
               duration: SCHEDULE_EXECUTION_TIME,
               errors: SCHEDULE_ERRORS,
               exec,
@@ -141,7 +141,7 @@ export function Scheduler({ logger, lifecycle }: TServiceParams) {
           if (nextTime) {
             timeout = setTimeout(
               async () => {
-                await ZCC.safeExec({
+                await internal.safeExec({
                   duration: SCHEDULE_EXECUTION_TIME,
                   errors: SCHEDULE_ERRORS,
                   exec,

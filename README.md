@@ -1,47 +1,43 @@
-# Digital Alchemy core 🌟
+# 🚀 Project Overview - Digital Alchemy TypeScript Libraries
 
-## Introduction
+Welcome to `@digital-alchemy/core`!
+This repository contains the boilerplate code for building applications and wiring logic.
 
-`@digital-alchemy`: A TypeScript framework designed for Home Assistant, enabling dynamic entity management, service calls, and automation with minimal dependencies.
+## 🌐 Core Library Overview
 
-## 📦 Major Exports
+### 🗃️ Cache
 
-`@digital-alchemy` framework is built on key exports, each offering unique features that complement one another:
+Flexible caching solutions with support for memory and Redis cache drivers.
 
-- **@digital-alchemy/core (Base Framework):** Provides caching, logging, configuration, lifecycle events, and utility types.
+### ⚙️ Configuration
 
-- **@digital-alchemy/core/hass:** Facilitates base interactions with Home Assistant, including websocket connection management, entity reference checking, and a service call interface.
+Dynamic application settings management, prioritizing configuration from multiple sources for maximum flexibility.
 
-- **@digital-alchemy/core/synapse:** Enables the generation of new entities in Home Assistant, such as buttons, sensors, and switches. Requires a socket connection and a custom component installation.
+### 🌍 Fetch Wrapper
 
-- **@digital-alchemy/core/automation:** Focuses on home automation logic, offering room-based scene coordination, active state management for switches, circadian lighting, and more.
+Simplifies RESTful service integration, streamlining the development of verbose adapters.
 
-- **type-writer (CLI Tool):** A helper script that customizes internal type definitions by connecting to your Home Assistant instance and generating accurate service & entity validations.
+### 📝 Logger
 
-## 🛠 Installation
+Advanced logging interface for detailed and customizable output, compatible with external libraries for specialized logging needs.
 
-### Synapse Integration
+### ⏲️ Scheduler
 
-The Synapse component is essential for creating and managing entities within Home Assistant. Visit the [Synapse Repo](https://github.com/zoe-codez/synapse) for installation instructions and to understand its importance in your setup.
+Lifecycle-aware task scheduling, featuring flexible timing functions and robust error handling.
 
-## 📚 External Libraries and Examples
+### 🔄 Application Lifecycle Management
 
-Explore the full potential of `@digital-alchemy/core` with our extensions library and illustrative examples. These resources are designed to expand the framework's functionality and provide inspiration for your projects:
+Comprehensive support for managing the application's lifecycle, from initialization to shutdown.
 
-### 📚 Extensions Library
+## 📚 Explore Our Libraries and Applications
 
-Enhance your home automation capabilities with the [Digital Alchemy Extensions Library](https://github.com/digital-alchemy-extensions), which includes:
+Dive deeper into the ecosystem by exploring related libraries and applications published under the Digital Alchemy organization.
+Each is designed to extend the capabilities the core library, offering specialized functionalities for a wide range of use cases.
 
-- **MQTT Bindings:** Seamlessly integrate MQTT protocols for broader IoT connectivity.
-- **Fastify Bindings:** Leverage Fastify to add efficient HTTP server functionality to your automation projects.
-
-### 🎓 Demo and Example Repositories
-
-Kickstart your development with these practical applications:
-
-- **Mock Home:** A comprehensive sandbox for experimenting with and showcasing various automation techniques. [Mock Home on GitHub](https://github.com/zoe-codez/mock-home)
-- **Automation Template:** A starter template to quickly get your projects up and running. [Automation Template on GitHub](https://github.com/zoe-codez/automation-template)
-
-## 🤝 Contribution
-
-We warmly welcome contributions. Whether you're enhancing the framework, sharing examples, or enriching documentation, your efforts significantly benefit the community.
+| Library/Application | Description                                                                     | GitHub                                                     | npm                                                                    |
+| ------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------- |
+| `hass`              | Home Assistant integration for smart home automation.                           | [GitHub](https://github.com/Digital-Alchemy-TS/hass)       | [npm](https://www.npmjs.com/package/@digital-alchemy/hass)             |
+| `synapse`           | Tools for generating entities within home assistant                             | [GitHub](https://github.com/Digital-Alchemy-TS/synapse)    | [npm](https://www.npmjs.com/package/@digital-alchemy/synapse)          |
+| `automation`        | Advanced automation tools for creating dynamic workflows.                       | [GitHub](https://github.com/Digital-Alchemy-TS/automation) | [npm](https://www.npmjs.com/package/@digital-alchemy/automation)       |
+| `terminal`          | Tools and components for complex terminal applications                          | [GitHub](https://github.com/Digital-Alchemy-TS/terminal)   | [npm](https://www.npmjs.com/package/@digital-alchemy/terminal)         |
+| `gotify`            | Integration for Gotify notifications, enabling seamless alerting and messaging. | [GitHub](https://github.com/Digital-Alchemy-TS/gotify)     | [npm](https://www.npmjs.com/package/@digital-alchemy/gotify-extension) |

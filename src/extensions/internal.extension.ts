@@ -1,8 +1,30 @@
 import dayjs, { Dayjs } from "dayjs";
 import { EventEmitter } from "events";
+import { Counter, Summary } from "prom-client";
 import { Get } from "type-fest";
 
-import { ARRAY_OFFSET, DAY, HOUR, is, MINUTE, SECOND, START } from "..";
+import {
+  ApplicationDefinition,
+  ARRAY_OFFSET,
+  BootstrapOptions,
+  ConfigManager,
+  DAY,
+  FetcherOptions,
+  HOUR,
+  ILogger,
+  is,
+  Logger,
+  MINUTE,
+  OptionalModuleConfiguration,
+  SECOND,
+  ServiceMap,
+  START,
+  TBlackHole,
+  TCache,
+  TContext,
+  TDownload,
+  TFetch,
+} from "..";
 
 const FIRST = 0;
 const EVERYTHING_ELSE = 1;
@@ -148,7 +170,64 @@ export class InternalUtils {
   };
 }
 
+/**
+ * ugh, really prom?
+ */
+type LabelFixer<LABELS extends BaseLabels> = Record<
+  Extract<keyof LABELS, string>,
+  string | number
+>;
+
+type SafeExecOptions<LABELS extends BaseLabels> = {
+  exec: () => TBlackHole;
+  labels: LABELS;
+  duration: Summary<Extract<keyof LABELS, string>>;
+  executions: Counter<Extract<keyof LABELS, string>>;
+  errors: Counter<Extract<keyof LABELS, string>>;
+};
+
+// ? Using symbols to provide methods to the bootstrapping process
+// The values don't have a use elsewhere, so they get excluded from the public interface
+type ExcludeSymbolKeys<T> = {
+  [Key in keyof T as Key extends symbol ? never : Key]: T[Key];
+};
+
+type BaseLabels = {
+  context: TContext;
+  /**
+   * ! if provided, specific metrics will be kept
+   *
+   * do not pass label if you do not want metrics to be kept, you may not want / need metrics to be kept on all instances
+   *
+   * - execution count
+   * - error count
+   * - summary of execution time
+   */
+  label?: string;
+};
+
 export class InternalDefinition {
+  public createFetcher: (options: FetcherOptions) => {
+    download: TDownload;
+    setBaseUrl: (url: string) => void;
+    setHeaders: (headers: Record<string, string>) => void;
+    fetch: TFetch;
+  };
+  public fetch: TFetch;
+  /**
+   * In case something needs to grab details about the app
+   *
+   * Abnormal operation
+   */
+  public application: ApplicationDefinition<
+    ServiceMap,
+    OptionalModuleConfiguration
+  >;
+  public cache: TCache;
+  public config: ExcludeSymbolKeys<ConfigManager>;
+  public logger: Awaited<ReturnType<typeof Logger>>;
+  public systemLogger: ILogger;
+  public bootOptions: BootstrapOptions;
   /**
    * The global eventemitter. All of `@digital-alchemy` will be wired through this
    *
@@ -158,6 +237,36 @@ export class InternalDefinition {
   public event = new EventEmitter();
 
   public utils = new InternalUtils();
-}
 
-export const ZCC = new InternalDefinition();
+  public async safeExec<LABELS extends BaseLabels>(
+    options: (() => TBlackHole) | SafeExecOptions<LABELS>,
+  ) {
+    let labels = {} as BaseLabels;
+    let errorMetric: Counter<Extract<keyof LABELS, string>>;
+    try {
+      if (is.function(options)) {
+        await options();
+        return;
+      }
+      const opt = options as SafeExecOptions<LABELS>;
+      labels = opt.labels;
+      errorMetric = opt.errors;
+      const { exec, duration, executions } = opt;
+      if (is.empty(labels.label)) {
+        await exec();
+        return;
+      }
+      executions?.inc(labels as LabelFixer<LABELS>);
+      const end = duration?.startTimer();
+      await exec();
+      if (end) {
+        end(labels as LabelFixer<LABELS>);
+      }
+    } catch (error) {
+      this.systemLogger.error({ error, ...labels }, `Callback threw error`);
+      if (!is.empty(labels.label)) {
+        errorMetric?.inc(labels as LabelFixer<LABELS>);
+      }
+    }
+  }
+}

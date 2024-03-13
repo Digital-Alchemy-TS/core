@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { format, inspect } from "util";
 
-import { FIRST, is, START, TContext, ZCC } from "..";
+import { FIRST, is, START, TContext } from "..";
 import { TServiceParams } from "..";
 
 export type TLoggerFunction =
@@ -64,10 +64,11 @@ const frontDash = " - ";
 const SYMBOL_START = 1;
 const SYMBOL_END = -1;
 
-export async function Logger({ lifecycle, config }: TServiceParams) {
+export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   const chalk = (await import("chalk")).default;
 
   const YELLOW_DASH = chalk.yellowBright(frontDash);
+  const BLUE_TICK = chalk.blue(`>`);
 
   const prettyFormatMessage = (message: string): string => {
     if (!message) {
@@ -80,7 +81,7 @@ export async function Logger({ lifecycle, config }: TServiceParams) {
       // ? partA#partB - highlight it all in yellow
       .replaceAll(new RegExp("([^ ]+#[^ ]+)", "g"), (i) => chalk.yellow(i))
       // ? [A] > [B] > [C] - highlight the >'s in blue
-      .replaceAll("] > [", chalk`] {blue >} [`)
+      .replaceAll("] > [", `] ${BLUE_TICK} [`)
       // ? [Text] - strip brackets, highlight magenta
       .replaceAll(new RegExp("(\\[[^\\]\\[]+\\])", "g"), (i) =>
         chalk.bold.magenta(i.slice(SYMBOL_START, SYMBOL_END)),
@@ -157,13 +158,13 @@ export async function Logger({ lifecycle, config }: TServiceParams) {
   // if bootstrap hard coded something specific, then start there
   // otherwise, be noisy until config loads a user preference
   let logLevel: keyof ILogger =
-    ZCC.bootOptions?.configuration?.boilerplate?.LOG_LEVEL || "trace";
+    internal.bootOptions?.configuration?.boilerplate?.LOG_LEVEL || "trace";
   const shouldLog = (level: keyof ILogger) =>
     LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[logLevel];
 
   lifecycle.onPostConfig(() => (logLevel = config.boilerplate.LOG_LEVEL));
 
-  const out = {
+  return {
     context: (context: string | TContext) =>
       ({
         debug: (...params: Parameters<TLoggerFunction>) =>
@@ -184,18 +185,7 @@ export async function Logger({ lifecycle, config }: TServiceParams) {
     setBaseLogger: (base: ILogger) => (logger = base),
     setLogLevel: (level: keyof ILogger) => {
       logLevel = level;
-      ZCC.config.set("boilerplate", "LOG_LEVEL", level);
+      internal.config.set("boilerplate", "LOG_LEVEL", level);
     },
   };
-  ZCC.logger = out;
-  ZCC.systemLogger = ZCC.logger.context("digital-alchemy:system");
-
-  return out;
-}
-
-declare module "." {
-  export interface InternalDefinition {
-    logger: Awaited<ReturnType<typeof Logger>>;
-    systemLogger: ILogger;
-  }
 }

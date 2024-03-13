@@ -11,7 +11,7 @@ import { SINGLE } from ".";
 export const TESTING_APP_NAME = "digital-alchemy-unit-tests";
 
 // export type RandomFileTestingDataFormat = ReturnType<
-//   typeof ZCC_Testing.generateRandomData
+//   typeof Testing.generateRandomData
 // >;
 export type RandomFileTestingDataFormat = object;
 
@@ -56,7 +56,7 @@ export function ConfigurationFiles() {
           : paths,
       ).forEach((filename) => {
         console.log("FIXME: GENERATE RANDOM DATA", filename, writeConfigFile);
-        // const data = ZCC_Testing.generateRandomData();
+        // const data = Testing.generateRandomData();
         // writeConfigFile(filename, data);
       });
     },

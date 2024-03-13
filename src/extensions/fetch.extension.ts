@@ -19,12 +19,12 @@ import {
   TFetchBody,
   TServiceParams,
 } from "..";
-import { is, ZCC } from ".";
+import { is } from ".";
 
 const streamPipeline = promisify(pipeline);
 
 export function Fetch({ logger, context: parentContext }: TServiceParams) {
-  const createFetcher = ({
+  return ({
     headers: baseHeaders,
     baseUrl,
     context: logContext,
@@ -183,9 +183,6 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
       setHeaders: (headers: Record<string, string>) => (baseHeaders = headers),
     };
   };
-  ZCC.createFetcher = createFetcher;
-  ZCC.fetch = createFetcher({ context: parentContext }).fetch;
-  return createFetcher;
 }
 
 export type TFetch = <T, BODY extends object = object>(
@@ -193,15 +190,3 @@ export type TFetch = <T, BODY extends object = object>(
 ) => Promise<T>;
 
 export type TDownload = (fetchWith: DownloadOptions) => Promise<void>;
-
-declare module "." {
-  export interface InternalDefinition {
-    createFetcher: (options: FetcherOptions) => {
-      download: TDownload;
-      setBaseUrl: (url: string) => void;
-      setHeaders: (headers: Record<string, string>) => void;
-      fetch: TFetch;
-    };
-    fetch: TFetch;
-  }
-}

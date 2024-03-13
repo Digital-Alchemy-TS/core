@@ -256,7 +256,6 @@ export type LibraryConfigurationOptions<
   priorityInit?: Extract<keyof S, string>[];
 };
 
-type onErrorCallback = () => void;
 export type PartialConfiguration = Partial<{
   [ModuleName in keyof ModuleConfigs]: Partial<
     ConfigTypes<ModuleConfigs[ModuleName]>
@@ -291,7 +290,7 @@ type Wire = {
    * - initializes lifecycle
    * - attaches event emitters
    */
-  [WIRE_PROJECT]: (ZCC: InternalDefinition) => Promise<TChildLifecycle>;
+  [WIRE_PROJECT]: (internal: InternalDefinition) => Promise<TChildLifecycle>;
 };
 
 export type LibraryDefinition<
@@ -299,8 +298,8 @@ export type LibraryDefinition<
   C extends OptionalModuleConfiguration,
 > = LibraryConfigurationOptions<S, C> &
   Wire & {
+    serviceApis: GetApisResult<S>;
     lifecycle: TChildLifecycle;
-    onError: (callback: onErrorCallback) => void;
   };
 
 export type ApplicationDefinition<
@@ -309,8 +308,8 @@ export type ApplicationDefinition<
 > = ApplicationConfigurationOptions<S, C> &
   Wire & {
     booted: boolean;
+    serviceApis: GetApisResult<S>;
     bootstrap: (options?: BootstrapOptions) => Promise<void>;
     lifecycle: TChildLifecycle;
-    onError: (callback: onErrorCallback) => void;
     teardown: () => Promise<void>;
   };

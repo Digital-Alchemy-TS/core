@@ -1,6 +1,6 @@
 import minimist from "minimist";
 
-import { is, ZCC } from "..";
+import { is } from "..";
 import {
   AbstractConfig,
   ConfigLoaderParams,
@@ -9,6 +9,7 @@ import {
 
 export async function ConfigLoaderEnvironment({
   configs,
+  internal,
   logger,
 }: ConfigLoaderParams): ConfigLoaderReturn {
   const environmentKeys = Object.keys(process.env);
@@ -48,7 +49,11 @@ export async function ConfigLoaderEnvironment({
           ),
         );
         if (is.string(formattedFlag)) {
-          ZCC.utils.object.set(out, configPath, CLI_SWITCHES[formattedFlag]);
+          internal.utils.object.set(
+            out,
+            configPath,
+            CLI_SWITCHES[formattedFlag],
+          );
           logger.trace(
             { flag: formattedFlag, path: configPath },
             `load config from [cli switch]`,
@@ -82,7 +87,11 @@ export async function ConfigLoaderEnvironment({
         ),
       );
       if (is.string(environmentName)) {
-        ZCC.utils.object.set(out, configPath, process.env[environmentName]);
+        internal.utils.object.set(
+          out,
+          configPath,
+          process.env[environmentName],
+        );
         logger.trace(
           { path: configPath, var: environmentName },
           `load config from [env]`,

@@ -1,8 +1,8 @@
-import { ILogger, is } from "..";
+import { ILogger, InternalDefinition, is } from "..";
 import { ApplicationDefinition, ServiceMap } from "./wiring.helper";
 
 export type CodeConfigDefinition = Record<string, AnyConfig>;
-export type ZccConfigTypes =
+export type ProjectConfigTypes =
   | "string"
   | "boolean"
   | "internal"
@@ -31,7 +31,7 @@ export interface BaseConfig {
    */
   required?: boolean;
 
-  type: ZccConfigTypes;
+  type: ProjectConfigTypes;
 }
 export type KnownConfigs = Map<string, CodeConfigDefinition>;
 export interface StringConfig<STRING extends string> extends BaseConfig {
@@ -118,6 +118,7 @@ export type ConfigLoaderParams<
 > = {
   application: ApplicationDefinition<S, C>;
   configs: KnownConfigs;
+  internal: InternalDefinition;
   logger: ILogger;
 };
 

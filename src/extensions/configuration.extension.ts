@@ -74,6 +74,7 @@ export function Configuration({
         const merge = await loader({
           application,
           configs: configDefinitions,
+          internal,
           logger,
         });
         deepExtend(configuration, merge);
@@ -158,7 +159,7 @@ export function Configuration({
   }
 
   // ## Return object
-  const out: ConfigManager = {
+  return {
     [INITIALIZE]: Initialize,
     [INJECTED_DEFINITIONS]: InjectedDefinitions,
     [LOAD_PROJECT]: LoadProject,
@@ -167,8 +168,6 @@ export function Configuration({
     merge: Merge,
     set: SetConfig,
   };
-  internal.config = out;
-  return out;
 }
 
 // # Type definitions
@@ -195,15 +194,3 @@ export type ConfigManager = {
     value: TInjectedConfig[Project][Property],
   ): void;
 };
-
-// ? Using symbols to provide methods to the bootstrapping process
-// The values don't have a use elsewhere, so they get excluded from the public interface
-type ExcludeSymbolKeys<T> = {
-  [Key in keyof T as Key extends symbol ? never : Key]: T[Key];
-};
-
-declare module "." {
-  export interface InternalDefinition {
-    config: ExcludeSymbolKeys<ConfigManager>;
-  }
-}

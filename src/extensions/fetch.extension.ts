@@ -30,14 +30,10 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
     context: logContext,
     // eslint-disable-next-line sonarjs/cognitive-complexity
   }: FetcherOptions) => {
-    const extras: Record<string, string> = {};
-    if (!is.empty(logContext)) {
-      extras["context"] = logContext;
-    }
     const capabilities: string[] = [];
 
     if (!is.empty(capabilities)) {
-      logger.trace({ capabilities, ...extras }, `initialized fetcher`);
+      logger.trace({ capabilities, name: logContext }, `initialized fetcher`);
     }
 
     function checkForHttpErrors<T extends unknown = unknown>(
@@ -50,7 +46,10 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
         is.string(maybeError.error)
       ) {
         // Log the error if needed
-        logger.error({ error: maybeError, ...extras }, maybeError.message);
+        logger.error(
+          { error: maybeError, name: logContext },
+          maybeError.message,
+        );
 
         // Throw a FetchRequestError
         // throw new FetchRequestError(maybeError);
@@ -78,11 +77,11 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
       }
       if (!["{", "["].includes(text.charAt(FIRST))) {
         if (["OK"].includes(text)) {
-          logger.debug({ text, ...extras }, "Full response text");
+          logger.debug({ name: logContext, text }, "Full response text");
         } else {
           // It's probably a coding error error, and not something a user did.
           // Will try to keep the array up to date if any other edge cases pop up
-          logger.warn({ text, ...extras }, `Unexpected API Response`);
+          logger.warn({ name: logContext, text }, `Unexpected API Response`);
         }
         return text as T;
       }
@@ -114,7 +113,7 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
         }
         return out;
       } catch (error) {
-        logger.error({ error, ...extras }, `Request failed`);
+        logger.error({ error, name: logContext }, `Request failed`);
         if (!is.empty(label)) {
           FETCH_REQUESTS_FAILED.labels(context, label).inc();
         }

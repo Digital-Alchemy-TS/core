@@ -56,24 +56,30 @@ export async function ConfigLoaderFile({
   let files: string[];
   if (is.empty(configFile)) {
     files = configFilePaths(application.name);
-    logger.trace({ files }, `identified config files`);
+    logger.trace({ files, name: ConfigLoaderFile }, `identified config files`);
   } else {
     if (!existsSync(configFile)) {
       logger.fatal(
-        { configFile },
+        { configFile, name: ConfigLoaderFile },
         `used {--config} to specify path that does not exist`,
       );
       exit();
     }
     files = [configFile];
-    logger.debug({ configFile }, `used {--config}, loading from target file`);
+    logger.debug(
+      { configFile, name: ConfigLoaderFile },
+      `used {--config}, loading from target file`,
+    );
   }
 
   if (is.empty(files)) {
     return {};
   }
   const out: Partial<AbstractConfig> = {};
-  logger.trace({ files }, `loading configuration files`);
+  logger.trace(
+    { files, name: ConfigLoaderFile },
+    `loading configuration files`,
+  );
   files.forEach((file) => loadConfigFromFile(out, file));
   return out;
 }

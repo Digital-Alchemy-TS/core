@@ -106,14 +106,17 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
         ? (parameters.shift() as {
             context?: TContext;
             error?: Error | string;
-            name?: string;
+            name?: string | { name: string };
             stack?: string | string[];
           })
         : {};
       const highlighted = chalk.bold[METHOD_COLORS.get(key)](
         `[${data.context || context}]`,
       );
-      const name = data.name;
+      const name =
+        is.object(data.name) || is.function(data.name)
+          ? data.name.name
+          : data.name;
       delete data.context;
       delete data.name;
 

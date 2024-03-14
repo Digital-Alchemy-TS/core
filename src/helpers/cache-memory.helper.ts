@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 import NodeCache from "node-cache";
 
 import { is } from "..";
@@ -22,7 +23,7 @@ export function createMemoryDriver(
       try {
         client.del(key);
       } catch (error) {
-        logger.error({ err: error }, "Error in Memory Cache del operation");
+        logger.error({ err: error, name: "del" }, "memory cache error");
         MEMORY_CACHE_ERROR_COUNT.inc();
       }
     },
@@ -34,7 +35,7 @@ export function createMemoryDriver(
         }
         return defaultValue;
       } catch (error) {
-        logger.error({ err: error }, "Error in Memory Cache get operation");
+        logger.error({ err: error, name: "get" }, "memory cache error");
         MEMORY_CACHE_ERROR_COUNT.inc();
         return defaultValue;
       }
@@ -46,7 +47,7 @@ export function createMemoryDriver(
           ? allKeys.filter((key) => new RegExp(pattern).test(key))
           : allKeys;
       } catch (error) {
-        logger.error({ err: error }, "Error in Memory Cache keys operation");
+        logger.error({ err: error, name: "keys" }, "memory cache error");
         MEMORY_CACHE_ERROR_COUNT.inc();
         return [];
       }
@@ -55,7 +56,7 @@ export function createMemoryDriver(
       try {
         client.set(key, JSON.stringify(value), ttl);
       } catch (error) {
-        logger.error({ err: error }, "Error in Memory Cache set operation");
+        logger.error({ err: error, name: "set" }, "memory cache error");
         MEMORY_CACHE_ERROR_COUNT.inc();
       }
     },

@@ -68,7 +68,7 @@ export function Cache({
         });
       } catch (error) {
         CACHE_DRIVER_ERROR_COUNT.labels("del").inc();
-        logger.error({ error }, `cache delete error`);
+        logger.error({ error, name: "del" }, `cache error`);
       }
     },
     get: async <T>(key: string, defaultValue?: T): Promise<T> => {
@@ -82,7 +82,7 @@ export function Cache({
         });
         return is.undefined(result) ? defaultValue : (result as T);
       } catch (error) {
-        logger.warn({ defaultValue, error, key }, `cache lookup error`);
+        logger.warn({ defaultValue, error, key, name: "get" }, `cache error`);
         CACHE_DRIVER_ERROR_COUNT.labels("get").inc();
         return defaultValue;
       }
@@ -94,7 +94,7 @@ export function Cache({
         return keys.map((key) => key.slice(Math.max(NONE, prefix().length)));
       } catch (error) {
         CACHE_DRIVER_ERROR_COUNT.labels("keys").inc();
-        logger.warn({ error }, `cache keys error`);
+        logger.warn({ error, name: "keys" }, `cache error`);
         return [];
       }
     },
@@ -112,11 +112,11 @@ export function Cache({
         });
       } catch (error) {
         CACHE_DRIVER_ERROR_COUNT.labels("set").inc();
-        logger.error({ error }, `cache set error`);
+        logger.error({ error, name: "set" }, `cache error`);
       }
     },
     setClient: (newClient) => {
-      logger.debug(`using new cache driver`);
+      logger.debug({ name: "setClient" }, `using new cache driver`);
       client = newClient;
     },
   } as TCache;

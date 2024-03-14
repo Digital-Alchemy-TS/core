@@ -63,7 +63,10 @@ export function Configuration({
 
     // * if a new standalone loader hasn't been defined, use provided
     if (is.empty(configLoaders)) {
-      logger.debug(`no config loaders defined, adding default`);
+      logger.debug(
+        { name: Initialize },
+        `no config loaders defined, adding default`,
+      );
       DEFAULT_LOADERS.forEach((i, index) => configLoaders.add([i, index]));
     }
 

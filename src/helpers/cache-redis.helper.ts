@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 import { createClient } from "redis";
 
@@ -26,7 +27,7 @@ export async function createRedisDriver(
       try {
         await client.del(key);
       } catch (error) {
-        logger.error({ err: error }, "Error in Redis del operation");
+        logger.error({ err: error, name: "del" }, "redis cache error");
         REDIS_ERROR_COUNT.inc();
       }
     },
@@ -42,7 +43,7 @@ export async function createRedisDriver(
         }
         return defaultValue;
       } catch (error) {
-        logger.error({ err: error }, "Error in Redis get operation");
+        logger.error({ err: error, name: "get" }, "redis cache error");
         REDIS_ERROR_COUNT.inc();
         return defaultValue;
       }
@@ -51,7 +52,7 @@ export async function createRedisDriver(
       try {
         return await client.keys(pattern || "*");
       } catch (error) {
-        logger.error({ err: error }, "Error in Redis keys operation");
+        logger.error({ err: error, name: "keys" }, "redis cache error");
         REDIS_ERROR_COUNT.inc();
         return [];
       }
@@ -62,7 +63,7 @@ export async function createRedisDriver(
           EX: ttl,
         });
       } catch (error) {
-        logger.error({ err: error }, "Error in Redis set operation");
+        logger.error({ err: error, name: "set" }, "redis cache error");
         REDIS_ERROR_COUNT.inc();
       }
     },

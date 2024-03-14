@@ -54,7 +54,7 @@ export class IsIt {
       return true;
     }
     // Optional: Throw an error or return a default value for unsupported types
-    throw new Error("Unsupported type");
+    throw new Error("Unsupported type " + typeof test);
   }
 
   /**

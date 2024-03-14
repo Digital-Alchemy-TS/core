@@ -55,7 +55,11 @@ export async function ConfigLoaderEnvironment({
             CLI_SWITCHES[formattedFlag],
           );
           logger.trace(
-            { flag: formattedFlag, path: configPath },
+            {
+              flag: formattedFlag,
+              name: ConfigLoaderEnvironment,
+              path: configPath,
+            },
             `load config from [cli switch]`,
           );
         }
@@ -93,7 +97,11 @@ export async function ConfigLoaderEnvironment({
           process.env[environmentName],
         );
         logger.trace(
-          { path: configPath, var: environmentName },
+          {
+            name: ConfigLoaderEnvironment,
+            path: configPath,
+            var: environmentName,
+          },
           `load config from [env]`,
         );
       }

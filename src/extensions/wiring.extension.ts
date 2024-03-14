@@ -104,7 +104,7 @@ const processEvents = new Map([
   [
     "SIGTERM",
     async () => {
-      logger.warn(`received [SIGTERM]`);
+      logger.warn({ name: "processEvents" }, `received [SIGTERM]`);
       await Teardown();
       exit();
     },
@@ -112,7 +112,7 @@ const processEvents = new Map([
   [
     "SIGINT",
     async () => {
-      logger.warn(`received [SIGINT]`);
+      logger.warn({ name: "processEvents" }, `received [SIGINT]`);
       await Teardown();
       exit();
     },
@@ -334,7 +334,10 @@ export function CreateApplication<
     services,
     teardown: async () => {
       if (!application.booted) {
-        logger.error(`application is not booted, cannot teardown`);
+        logger.error(
+          { name: CreateApplication },
+          `application is not booted, cannot teardown`,
+        );
         return;
       }
       await Teardown();
@@ -464,8 +467,9 @@ function BuildSortOrder<
         // hopefully there is no breaking changes
         if (loaded !== item) {
           logger.warn(
-            { name: library.name },
-            "depends different version [%s]",
+            { name: BuildSortOrder },
+            "[%s] depends different version {%s}",
+            library.name,
             item.name,
           );
         }
@@ -486,7 +490,7 @@ function BuildSortOrder<
       );
     });
     if (!next) {
-      logger.fatal({ current: out.map((i) => i.name) });
+      logger.fatal({ current: out.map((i) => i.name), name: BuildSortOrder });
       throw new BootstrapException(
         WIRING_CONTEXT,
         "BAD_SORT",
@@ -552,12 +556,12 @@ async function Bootstrap<
       context: TContext,
     ) => TScheduler;
     logger = internal.logger.context(WIRING_CONTEXT);
-    logger.info(`[boilerplate] wiring complete`);
+    logger.info({ name: Bootstrap }, `[boilerplate] wiring complete`);
 
     // * Wire in various shutdown events
     processEvents.forEach((callback, event) => {
       process.on(event, callback);
-      logger.trace({ event }, "shutdown event");
+      logger.trace({ event, name: Bootstrap }, "shutdown event");
     });
 
     // * Add in libraries
@@ -565,12 +569,12 @@ async function Bootstrap<
     const order = BuildSortOrder(application);
     await eachSeries(order, async (i) => {
       start = Date.now();
-      logger.info(`[%s] init project`, i.name);
+      logger.info({ name: Bootstrap }, `[%s] init project`, i.name);
       await i[WIRE_PROJECT](internal);
       CONSTRUCT[i.name] = `${Date.now() - start}ms`;
     });
 
-    logger.info(`init application`);
+    logger.info({ name: Bootstrap }, `init application`);
     // * Finally the application
     start = Date.now();
     await application[WIRE_PROJECT](internal);
@@ -582,30 +586,38 @@ async function Bootstrap<
     }
 
     // - Kick off lifecycle
-    logger.debug(`[PreInit] running lifecycle callbacks`);
+    logger.debug({ name: Bootstrap }, `[PreInit] running lifecycle callbacks`);
     STATS.PreInit = await RunStageCallbacks("PreInit");
     // - Pull in user configurations
-    logger.debug("loading configuration");
+    logger.debug({ name: Bootstrap }, "loading configuration");
     STATS.Configure =
       await BOILERPLATE()?.configuration?.[INITIALIZE](application);
     // - Run through other events in order
-    logger.debug(`[PostConfig] running lifecycle callbacks`);
+    logger.debug(
+      { name: Bootstrap },
+      `[PostConfig] running lifecycle callbacks`,
+    );
     STATS.PostConfig = await RunStageCallbacks("PostConfig");
-    logger.debug(`[Bootstrap] running lifecycle callbacks`);
+    logger.debug(
+      { name: Bootstrap },
+      `[Bootstrap] running lifecycle callbacks`,
+    );
     STATS.Bootstrap = await RunStageCallbacks("Bootstrap");
-    logger.debug(`[Ready] running lifecycle callbacks`);
+    logger.debug({ name: Bootstrap }, `[Ready] running lifecycle callbacks`);
     STATS.Ready = await RunStageCallbacks("Ready");
 
     STATS.Total = `${Date.now() - startup.getTime()}ms`;
     // * App is ready!
     logger.info(
-      options?.showExtraBootStats ? STATS : { Total: STATS.Total },
+      options?.showExtraBootStats
+        ? { ...STATS, name: Bootstrap }
+        : { Total: STATS.Total, name: Bootstrap },
       `🪄 [%s] application bootstrapped`,
       application.name,
     );
     ACTIVE_APPLICATION = application;
   } catch (error) {
-    logger?.fatal({ error }, "bootstrap failed");
+    logger?.fatal({ error, name: Bootstrap }, "bootstrap failed");
     exit();
   }
 }
@@ -615,10 +627,16 @@ async function Teardown() {
   if (!ACTIVE_APPLICATION) {
     return;
   }
-  logger.info(`tearing down application`);
-  logger.debug(`[ShutdownStart] running lifecycle callbacks`);
+  logger.info({ name: Teardown }, `tearing down application`);
+  logger.debug(
+    { name: Teardown },
+    `[ShutdownStart] running lifecycle callbacks`,
+  );
   await RunStageCallbacks("ShutdownStart");
-  logger.debug(`[ShutdownComplete] running lifecycle callbacks`);
+  logger.debug(
+    { name: Teardown },
+    `[ShutdownComplete] running lifecycle callbacks`,
+  );
   await RunStageCallbacks("ShutdownComplete");
   ACTIVE_APPLICATION = undefined;
   completedLifecycleCallbacks = new Set<string>();
@@ -626,7 +644,7 @@ async function Teardown() {
     process.removeListener(event, callback),
   );
   logger.info(
-    { started_at: internal.utils.relativeDate(startup) },
+    { name: Teardown, started_at: internal.utils.relativeDate(startup) },
     `application terminated`,
   );
 }
@@ -657,7 +675,10 @@ function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
           }
           // What does this mean in reality?
           // Probably a broken unit test, I really don't know what workflow would cause this
-          logger.fatal(`on${stage} late attach, cannot attach callback`);
+          logger.fatal(
+            { name: CreateChildLifecycle },
+            `on${stage} late attach, cannot attach callback`,
+          );
           return;
         }
         childCallbacks[stage].push([callback, priority]);

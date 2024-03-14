@@ -32,8 +32,8 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
       const stopFunctions: (() => TBlackHole)[] = [];
       [scheduleList].flat().forEach((cronSchedule) => {
         logger.trace(
-          { context, label, schedule: cronSchedule },
-          `start schedule`,
+          { context, label, name: cron, schedule: cronSchedule },
+          `init`,
         );
         const cronJob = schedule(
           cronSchedule,
@@ -47,14 +47,17 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
             }),
         );
         lifecycle.onReady(() => {
-          logger.trace({ context, schedule: cronSchedule }, "start cron");
+          logger.trace(
+            { context, name: cron, schedule: cronSchedule },
+            "starting",
+          );
           cronJob.start();
         });
 
         const stopFunction = () => {
           logger.trace(
-            { context, label, schedule: cronSchedule },
-            `stop schedule`,
+            { context, label, name: cron, schedule: cronSchedule },
+            `stopping`,
           );
           cronJob.stop();
         };
@@ -75,7 +78,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
     }: SchedulerOptions & { interval: number }) {
       let runningInterval: ReturnType<typeof setInterval>;
       lifecycle.onReady(() => {
-        logger.trace({ context }, "start interval");
+        logger.trace({ context, name: "interval" }, "starting");
 
         runningInterval = setInterval(
           async () =>
@@ -117,7 +120,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
         exec: () => {
           if (timeout) {
             logger.warn(
-              { context },
+              { context, name: sliding },
               `sliding schedule retrieving next execution time before previous ran`,
             );
             clearTimeout(timeout);
@@ -131,7 +134,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
           nextTime = dayjs(nextTime);
           if (dayjs().isAfter(nextTime)) {
             logger.warn(
-              { nextTime: nextTime.toISOString() },
+              { name: sliding, nextTime: nextTime.toISOString() },
               `cannot schedule sliding schedules for the past`,
             );
             // or anything else really

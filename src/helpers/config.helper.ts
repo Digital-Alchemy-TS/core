@@ -122,14 +122,12 @@ export type ConfigLoaderParams<
   logger: ILogger;
 };
 
-export type ConfigLoaderMethod = <
+export type ConfigLoader = <
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
 >(
   params: ConfigLoaderParams<S, C>,
 ) => ConfigLoaderReturn;
-
-export type ConfigLoader = [loader: ConfigLoaderMethod, priority: number];
 
 export function cast<T = unknown>(data: string | string[], type: string): T {
   switch (type) {

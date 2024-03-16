@@ -77,11 +77,11 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
       }
       if (!["{", "["].includes(text.charAt(FIRST))) {
         if (["OK"].includes(text)) {
-          logger.debug({ name: logContext, text }, "Full response text");
+          logger.debug({ name: logContext, text }, "full response text");
         } else {
           // It's probably a coding error error, and not something a user did.
           // Will try to keep the array up to date if any other edge cases pop up
-          logger.warn({ name: logContext, text }, `Unexpected API Response`);
+          logger.warn({ name: logContext, text }, `unexpected api Response`);
         }
         return text as T;
       }
@@ -113,7 +113,7 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
         }
         return out;
       } catch (error) {
-        logger.error({ error, name: logContext }, `Request failed`);
+        logger.error({ error, name: logContext }, `request failed`);
         if (!is.empty(label)) {
           FETCH_REQUESTS_FAILED.labels(context, label).inc();
         }

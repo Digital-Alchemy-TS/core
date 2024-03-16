@@ -2,7 +2,7 @@
 import dayjs, { Dayjs } from "dayjs";
 import { schedule } from "node-cron";
 
-import { TBlackHole, TContext } from "..";
+import { is, TBlackHole, TContext } from "..";
 import {
   Schedule,
   SCHEDULE_ERRORS,
@@ -16,6 +16,14 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
   const stop = new Set<() => TBlackHole>();
 
   lifecycle.onShutdownStart(() => {
+    if (is.empty(stop)) {
+      return;
+    }
+    logger.info(
+      { name: "onShutdownStart" },
+      `removing [%s] schedules`,
+      stop.size,
+    );
     stop.forEach((stopFunctions) => {
       stopFunctions();
       stop.delete(stopFunctions);

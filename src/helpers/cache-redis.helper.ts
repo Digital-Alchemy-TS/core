@@ -2,25 +2,29 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 import { createClient } from "redis";
 
-import { is, SECOND } from "..";
-import { ICacheDriver } from "..";
+import { CacheDriverOptions, ICacheDriver, is, SECOND } from "..";
 import {
   REDIS_ERROR_COUNT,
   REDIS_OPERATION_LATENCY_MS,
 } from "./metrics.helper";
-import { TServiceParams } from "./wiring.helper";
 /**
  * url & name properties automatically generated from config
  */
 export async function createRedisDriver(
-  { logger, config }: Pick<TServiceParams, "logger" | "config">,
+  { logger, config, lifecycle }: CacheDriverOptions,
   options?: Parameters<typeof createClient>[0],
 ): Promise<ICacheDriver> {
-  const client = createClient({
+  let client = createClient({
     url: config.boilerplate.REDIS_URL,
     ...options,
   });
   await client.connect();
+
+  lifecycle.onShutdownStart(async () => {
+    logger.info({ name: "onShutdownStart" }, `disconnecting`);
+    await client.disconnect();
+    client = undefined;
+  });
 
   return {
     async del(key: string) {

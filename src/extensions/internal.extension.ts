@@ -37,6 +37,14 @@ const DAYS = 365;
 const MONTHS = 12;
 const YEAR = DAY * DAYS;
 export class InternalUtils {
+  /**
+   * The global eventemitter. All of `@digital-alchemy` will be wired through this
+   *
+   * **NOTE:** bootstrapping process will initialize this at boot, and cleanup at teardown.
+   * Making listener changes should only be done from within the context of service functions
+   */
+  public event = new EventEmitter();
+
   public TitleCase(input: string): string {
     const matches = input.match(new RegExp("[a-z][A-Z]", "g"));
     if (matches) {
@@ -188,7 +196,7 @@ type SafeExecOptions<LABELS extends BaseLabels> = {
 // ? Using symbols to provide methods to the bootstrapping process
 // The values don't have a use elsewhere, so they get excluded from the public interface
 type ExcludeSymbolKeys<T> = {
-  [Key in keyof T as Key extends symbol ? never : Key]: T[Key];
+  [Key in keyof T as Key extends string ? Key : never]: T[Key];
 };
 
 type BaseLabels = {
@@ -206,33 +214,27 @@ type BaseLabels = {
 };
 
 export class InternalDefinition {
-  public createFetcher: (options: FetcherOptions) => {
-    download: TDownload;
-    setBaseUrl: (url: string) => void;
-    setHeaders: (headers: Record<string, string>) => void;
-    fetch: TFetch;
+  public boilerplate: {
+    fetch: (options: FetcherOptions) => {
+      download: TDownload;
+      setBaseUrl: (url: string) => void;
+      setHeaders: (headers: Record<string, string>) => void;
+      fetch: TFetch;
+    };
+    cache: TCache;
+    config: ExcludeSymbolKeys<ConfigManager>;
+    logger: Awaited<ReturnType<typeof Logger>>;
   };
-  /**
-   * In case something needs to grab details about the app
-   *
-   * Abnormal operation
-   */
-  public application: ApplicationDefinition<
-    ServiceMap,
-    OptionalModuleConfiguration
-  >;
-  public cache: TCache;
-  public config: ExcludeSymbolKeys<ConfigManager>;
-  public logger: Awaited<ReturnType<typeof Logger>>;
-  public bootOptions: BootstrapOptions;
-  /**
-   * The global eventemitter. All of `@digital-alchemy` will be wired through this
-   *
-   * **NOTE:** bootstrapping process will initialize this at boot, and cleanup at teardown.
-   * Making listener changes should only be done from within the context of service functions
-   */
-  public event = new EventEmitter();
+  public boot: {
+    options: BootstrapOptions;
 
+    /**
+     * In case something needs to grab details about the app
+     *
+     * Abnormal operation
+     */
+    application: ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
+  };
   public utils = new InternalUtils();
 
   public async safeExec<LABELS extends BaseLabels>(
@@ -260,9 +262,9 @@ export class InternalDefinition {
         end(labels as LabelFixer<LABELS>);
       }
     } catch (error) {
-      this.logger.systemLogger.error(
+      this.boilerplate.logger.systemLogger.error(
         { error, ...labels },
-        `Callback threw error`,
+        `callback threw error`,
       );
       if (!is.empty(labels.label)) {
         errorMetric?.inc(labels as LabelFixer<LABELS>);

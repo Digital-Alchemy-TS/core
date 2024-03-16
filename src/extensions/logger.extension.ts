@@ -161,7 +161,10 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   // if bootstrap hard coded something specific, then start there
   // otherwise, be noisy until config loads a user preference
   let logLevel: keyof ILogger =
-    internal.bootOptions?.configuration?.boilerplate?.LOG_LEVEL || "trace";
+    internal.utils.object.get(
+      internal,
+      "boot.options.configuration.boilerplate.LOG_LEVEL",
+    ) || "trace";
   const shouldLog = (level: keyof ILogger) =>
     LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[logLevel];
 
@@ -191,7 +194,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
     setBaseLogger: (base: ILogger) => (logger = base),
     setLogLevel: (level: keyof ILogger) => {
       logLevel = level;
-      internal.config.set("boilerplate", "LOG_LEVEL", level);
+      internal.boilerplate.config.set("boilerplate", "LOG_LEVEL", level);
     },
     systemLogger: context("digital-alchemy:system-logger"),
   };

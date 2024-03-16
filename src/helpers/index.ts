@@ -1,4 +1,5 @@
 export * from "./async.helper";
+export * from "./cache.helper";
 export * from "./cache-memory.helper";
 export * from "./cache-redis.helper";
 export * from "./config.helper";

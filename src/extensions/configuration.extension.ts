@@ -5,9 +5,7 @@ import {
   ConfigLoader,
   ConfigLoaderEnvironment,
   ConfigLoaderFile,
-  ConfigLoaderMethod,
   deepExtend,
-  DOWN,
   eachSeries,
   KnownConfigs,
   OptionalModuleConfiguration,
@@ -15,15 +13,14 @@ import {
   ServiceMap,
   TInjectedConfig,
   TServiceParams,
-  UP,
 } from "..";
 import { is } from ".";
 
-// # Symbols
 export const INITIALIZE = Symbol.for("initialize");
 export const LOAD_PROJECT = Symbol.for("load-project");
 export const EVENT_CONFIGURATION_UPDATED = "event_configuration_updated";
 export const INJECTED_DEFINITIONS = Symbol.for("injected-config");
+export type ConfigManager = ReturnType<typeof Configuration>;
 
 export function Configuration({
   context,
@@ -34,23 +31,24 @@ export function Configuration({
   logger,
 }: TServiceParams) {
   // 🙊 but that's illegal!
-  lifecycle.onPreInit(() => (logger = internal.logger.context(context)));
+  lifecycle.onPreInit(
+    () => (logger = internal.boilerplate.logger.context(context)),
+  );
 
   // # Locals
-  const configLoaders = new Set<ConfigLoader>();
-  const configuration: PartialConfiguration = {};
-  const configDefinitions: KnownConfigs = new Map();
-  const DEFAULT_LOADERS = [
+  let configLoaders = [
     ConfigLoaderEnvironment,
     ConfigLoaderFile,
-  ] as ConfigLoaderMethod[];
+  ] as ConfigLoader[];
+  const configuration: PartialConfiguration = {};
+  const configDefinitions: KnownConfigs = new Map();
 
   // # Methods
   // ## Load the config for an app
   async function Initialize<
     S extends ServiceMap,
     C extends OptionalModuleConfiguration,
-  >(application: ApplicationDefinition<S, C>) {
+  >(application: ApplicationDefinition<S, C>): Promise<string | never> {
     const start = Date.now();
     // * sanity check
     if (!application) {
@@ -61,28 +59,22 @@ export function Configuration({
       );
     }
 
-    // * if a new standalone loader hasn't been defined, use provided
+    // * were configs disabled?
     if (is.empty(configLoaders)) {
-      logger.debug(
-        { name: Initialize },
-        `no config loaders defined, adding default`,
-      );
-      DEFAULT_LOADERS.forEach((i, index) => configLoaders.add([i, index]));
+      logger.warn({ name: Initialize }, `no config loaders defined`);
+      return `${Date.now() - start}ms`;
     }
 
     // * load!
-    await eachSeries(
-      [...configLoaders.values()].sort(([, a], [, b]) => (a > b ? UP : DOWN)),
-      async ([loader]) => {
-        const merge = await loader({
-          application,
-          configs: configDefinitions,
-          internal,
-          logger,
-        });
-        deepExtend(configuration, merge);
-      },
-    );
+    await eachSeries(configLoaders, async (loader) => {
+      const merge = await loader({
+        application,
+        configs: configDefinitions,
+        internal,
+        logger,
+      });
+      deepExtend(configuration, merge);
+    });
 
     // * validate
     // - ensure all required properties have been defined
@@ -125,6 +117,11 @@ export function Configuration({
     });
   }
 
+  type OnConfigUpdateCallback<
+    Project extends keyof TInjectedConfig,
+    Property extends keyof TInjectedConfig[Project],
+  > = (project: Project, property: Property) => Promise<void>;
+
   // ## Set a configuration value at runtime
   function SetConfig<
     Project extends keyof TInjectedConfig,
@@ -140,7 +137,7 @@ export function Configuration({
       value,
     );
     // in case anyone needs a hook
-    event.emit(EVENT_CONFIGURATION_UPDATED);
+    event.emit(EVENT_CONFIGURATION_UPDATED, project, property);
   }
 
   // ## Provide new values for some config values
@@ -166,34 +163,45 @@ export function Configuration({
     [INITIALIZE]: Initialize,
     [INJECTED_DEFINITIONS]: InjectedDefinitions,
     [LOAD_PROJECT]: LoadProject,
-    addConfigLoader: (loader: ConfigLoader) => configLoaders.add(loader),
+
+    /**
+     * retrieve the metadata that was originally used to define the configs
+     */
     getDefinitions: () => configDefinitions,
+
+    /**
+     * take a configuration object, and deep merge values
+     *
+     * intended for initial loading workflows
+     */
     merge: Merge,
+
+    onUpdate: <
+      Project extends keyof TInjectedConfig,
+      Property extends keyof TInjectedConfig[Project],
+    >(
+      callback: OnConfigUpdateCallback<Project, Property>,
+    ) => {
+      event.on(EVENT_CONFIGURATION_UPDATED, (project, property) =>
+        callback(project, property),
+      );
+    },
+
+    /**
+     * type friendly method of updating a single configuration
+     *
+     * emits update event
+     */
     set: SetConfig,
+
+    /**
+     * replace the default set of configuration loaders with a new batch
+     *
+     * provide empty array to disable all user configs (good for unit testing!)
+     */
+    setConfigLoaders: (loaders: ConfigLoader[]) => {
+      logger.info({ name: "setConfigLoaders" }, ``);
+      configLoaders = loaders;
+    },
   };
 }
-
-// # Type definitions
-export type ConfigManager = {
-  addConfigLoader: (loader: ConfigLoader) => Set<ConfigLoader>;
-  [INJECTED_DEFINITIONS]: () => TInjectedConfig;
-  [LOAD_PROJECT]: (
-    library: keyof TInjectedConfig,
-    definitions: CodeConfigDefinition,
-  ) => KnownConfigs;
-  [INITIALIZE]: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
-    application: ApplicationDefinition<S, C>,
-  ) => Promise<string>;
-  getDefinitions: () => KnownConfigs;
-  merge: (
-    merge: Partial<PartialConfiguration>,
-  ) => PartialConfiguration & Partial<PartialConfiguration>;
-  set<
-    Project extends keyof TInjectedConfig,
-    Property extends keyof TInjectedConfig[Project],
-  >(
-    project: Project,
-    property: Property,
-    value: TInjectedConfig[Project][Property],
-  ): void;
-};

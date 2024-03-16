@@ -6,6 +6,7 @@ import {
   ApplicationDefinition,
   BootstrapException,
   BootstrapOptions,
+  CacheProviders,
   CallbackList,
   DOWN,
   each,
@@ -34,7 +35,7 @@ import {
   WIRE_PROJECT,
 } from "../helpers";
 import { InternalDefinition, is } from ".";
-import { Cache, CacheProviders } from "./cache.extension";
+import { Cache } from "./cache.extension";
 import {
   ConfigManager,
   Configuration,
@@ -59,22 +60,22 @@ let completedLifecycleCallbacks = new Set<string>();
 /**
  * association of projects to { service : Declaration Function }
  */
-const MODULE_MAPPINGS = new Map<string, TModuleMappings>();
+let MODULE_MAPPINGS = new Map<string, TModuleMappings>();
 
 /**
  * association of projects to { service : Initialized Service }
  */
-const LOADED_MODULES = new Map<string, TResolvedModuleMappings>();
+let LOADED_MODULES = new Map<string, TResolvedModuleMappings>();
 
 /**
  * Optimized reverse lookups: Declaration  Function => [project, service]
  */
-export const REVERSE_MODULE_MAPPING = new Map<
+export let REVERSE_MODULE_MAPPING = new Map<
   ServiceFunction,
   [project: string, service: string]
 >();
 
-const LOADED_LIFECYCLES = new Map<string, TLoadableChildLifecycle>();
+let LOADED_LIFECYCLES = new Map<string, TLoadableChildLifecycle>();
 
 /**
  * Details relating to the application that is actively running
@@ -87,10 +88,10 @@ let ACTIVE_APPLICATION: ApplicationDefinition<
 // heisenberg's variables. it's probably here, but maybe not
 let scheduler: (context: TContext) => TScheduler;
 let logger: ILogger;
+let internal: InternalDefinition;
 const COERCE_CONTEXT = (context: string): TContext => context as TContext;
 const WIRING_CONTEXT = COERCE_CONTEXT("boilerplate:wiring");
 const NONE = -1;
-let internal: InternalDefinition;
 // (re)defined at bootstrap
 export let LIB_BOILERPLATE: ReturnType<typeof CreateBoilerplate>;
 // exporting a let makes me feel dirty inside
@@ -251,7 +252,7 @@ export function CreateLibrary<
       LOADED_LIFECYCLES.set(libraryName, lifecycle);
       // not defined for boilerplate (chicken & egg)
       // manually added inside the bootstrap process
-      const config = internal?.config as ConfigManager;
+      const config = internal?.boilerplate.config as ConfigManager;
       config?.[LOAD_PROJECT](libraryName as keyof LoadedModules, configuration);
       await eachSeries(
         WireOrder(priorityInit, Object.keys(services)),
@@ -385,10 +386,10 @@ async function WireService(
     );
     const params: Partial<TServiceParams> = {
       ...inject,
-      cache: internal.cache,
+      cache: internal.boilerplate.cache,
       config,
       context,
-      event: internal.event,
+      event: internal.utils.event,
       internal: internal,
       lifecycle,
       logger,
@@ -519,7 +520,7 @@ async function Bootstrap<
     );
   }
   internal = new InternalDefinition();
-  internal.bootOptions = options;
+  internal.boot = { application, options };
   process.title = application.name;
   startup = new Date();
   try {
@@ -527,9 +528,8 @@ async function Bootstrap<
     const CONSTRUCT = {} as Record<string, unknown>;
     STATS.Construct = CONSTRUCT;
     // * Recreate base eventemitter
-    internal.event = new EventEmitter();
+    internal.utils.event = new EventEmitter();
     // ? Some libraries need to be aware of
-    internal.application = application;
 
     // * Generate a new boilerplate module
     LIB_BOILERPLATE = CreateBoilerplate();
@@ -540,10 +540,10 @@ async function Bootstrap<
     const api = LOADED_MODULES.get("boilerplate") as GetApis<
       ReturnType<typeof CreateBoilerplate>
     >;
-    internal.cache = api.cache;
-    internal.logger = api.logger;
-    internal.createFetcher = api.fetch;
-    internal.config = api.configuration;
+    internal.boilerplate.cache = api.cache;
+    internal.boilerplate.logger = api.logger;
+    internal.boilerplate.fetch = api.fetch;
+    internal.boilerplate.config = api.configuration;
 
     CONSTRUCT.boilerplate = `${Date.now() - start}ms`;
     // ~ configuration
@@ -555,7 +555,7 @@ async function Bootstrap<
     scheduler = LOADED_MODULES.get(LIB_BOILERPLATE.name).scheduler as (
       context: TContext,
     ) => TScheduler;
-    logger = internal.logger.context(WIRING_CONTEXT);
+    logger = internal.boilerplate.logger.context(WIRING_CONTEXT);
     logger.info({ name: Bootstrap }, `[boilerplate] wiring complete`);
 
     // * Wire in various shutdown events
@@ -582,7 +582,7 @@ async function Bootstrap<
 
     // ? Configuration values provided bootstrap take priority over module level
     if (!is.empty(options?.configuration)) {
-      internal.config.merge(options?.configuration);
+      internal.boilerplate.config.merge(options?.configuration);
     }
 
     // - Kick off lifecycle
@@ -627,22 +627,52 @@ async function Teardown() {
   if (!ACTIVE_APPLICATION) {
     return;
   }
-  logger.info({ name: Teardown }, `tearing down application`);
-  logger.debug(
-    { name: Teardown },
-    `[ShutdownStart] running lifecycle callbacks`,
-  );
-  await RunStageCallbacks("ShutdownStart");
-  logger.debug(
-    { name: Teardown },
-    `[ShutdownComplete] running lifecycle callbacks`,
-  );
-  await RunStageCallbacks("ShutdownComplete");
-  ACTIVE_APPLICATION = undefined;
-  completedLifecycleCallbacks = new Set<string>();
+  // * Announce
+  logger.warn({ name: Teardown }, `received teardown request`);
+  try {
+    // * PreShutdown
+    logger.debug(
+      { name: Teardown },
+      `[PreShutdown] running lifecycle callbacks`,
+    );
+    await RunStageCallbacks("PreShutdown");
+
+    // * Formally shutting down
+    logger.info({ name: Teardown }, `tearing down application`);
+    logger.debug(
+      { name: Teardown },
+      `[ShutdownStart] running lifecycle callbacks`,
+    );
+    await RunStageCallbacks("ShutdownStart");
+    logger.debug(
+      { name: Teardown },
+      `[ShutdownComplete] running lifecycle callbacks`,
+    );
+    await RunStageCallbacks("ShutdownComplete");
+  } catch (error) {
+    // ! oof
+    logger.error(
+      { error, name: Teardown },
+      "error occurred during teardown, some lifecycle events may be incomplete",
+    );
+  }
+  // * Final resource cleanup, attempt to reset everything possible
   processEvents.forEach((callback, event) =>
     process.removeListener(event, callback),
   );
+
+  internal = undefined;
+  internal.utils.event.removeAllListeners();
+  logger = undefined;
+  ACTIVE_APPLICATION = undefined;
+  completedLifecycleCallbacks = new Set<string>();
+  scheduler = undefined;
+
+  MODULE_MAPPINGS = new Map();
+  LOADED_MODULES = new Map();
+  LOADED_LIFECYCLES = new Map();
+  REVERSE_MODULE_MAPPING = new Map();
+
   logger.info(
     { name: Teardown, started_at: internal.utils.relativeDate(startup) },
     `application terminated`,
@@ -663,6 +693,7 @@ function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
     onReady,
     onShutdownStart,
     onShutdownComplete,
+    onPreShutdown,
   ] = LIFECYCLE_STAGES.map(
     (stage) =>
       (callback: LifecycleCallback, priority = NONE) => {
@@ -691,6 +722,7 @@ function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
     onBootstrap,
     onPostConfig,
     onPreInit,
+    onPreShutdown,
     onReady,
     onShutdownComplete,
     onShutdownStart,

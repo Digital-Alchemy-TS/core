@@ -5,6 +5,8 @@ This repository contains the boilerplate code for building applications and wiri
 
 ## 🌐 Core Library Overview
 
+> See extended docs at https://docs.digital-alchemy.app/01-Core/
+
 ### 🗃️ Cache
 
 Flexible caching solutions with support for memory and Redis cache drivers.

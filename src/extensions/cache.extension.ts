@@ -5,30 +5,12 @@ import {
   CACHE_SET_OPERATIONS_TOTAL,
   createMemoryDriver,
   createRedisDriver,
+  ICacheDriver,
   NONE,
+  TCache,
   TServiceParams,
 } from "..";
 import { is } from ".";
-
-export interface ICacheDriver {
-  get<T>(key: string, defaultValue?: T): Promise<T | undefined>;
-  set<T>(key: string, value: T, ttl: number): Promise<void>;
-  del(key: string): Promise<void>;
-  keys(pattern?: string): Promise<string[]>;
-}
-
-export type TCache = {
-  del: (key: string) => Promise<void>;
-  get: <T>(key: string, defaultValue?: T) => Promise<T>;
-  set: <T>(key: string, value: T, ttl?: number) => Promise<void>;
-  keys: (pattern?: string) => Promise<string[]>;
-  setClient: (client: ICacheDriver) => void;
-};
-
-export enum CacheProviders {
-  redis = "redis",
-  memory = "memory",
-}
 
 export function Cache({
   logger,
@@ -38,7 +20,7 @@ export function Cache({
 }: TServiceParams): TCache {
   let client: ICacheDriver;
   const prefix = () =>
-    config.boilerplate.CACHE_PREFIX || internal.application.name;
+    config.boilerplate.CACHE_PREFIX || internal.boot.application.name;
 
   function fullKeyName(key: string): string {
     return `${config.boilerplate.CACHE_PREFIX}${key}`;
@@ -48,12 +30,15 @@ export function Cache({
     if (client) {
       return;
     }
-    logger.trace({ provider: config.boilerplate.CACHE_PROVIDER }, `init cache`);
+    logger.trace(
+      { name: "onPostConfig", provider: config.boilerplate.CACHE_PROVIDER },
+      `init cache`,
+    );
     if (config.boilerplate.CACHE_PROVIDER === "redis") {
-      client = await createRedisDriver({ config, logger });
+      client = await createRedisDriver({ config, lifecycle, logger });
       return;
     }
-    client = await createMemoryDriver({ config, logger });
+    client = await createMemoryDriver({ config, lifecycle, logger });
   });
 
   return {

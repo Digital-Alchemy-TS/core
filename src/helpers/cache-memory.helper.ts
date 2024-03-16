@@ -1,21 +1,24 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 import NodeCache from "node-cache";
 
-import { is } from "..";
-import { ICacheDriver } from "..";
+import { CacheDriverOptions, ICacheDriver, is } from "..";
 import { MEMORY_CACHE_ERROR_COUNT } from "./metrics.helper";
-import { TServiceParams } from "./wiring.helper";
 
 /**
  * url & name properties automatically generated from config
  */
 export function createMemoryDriver(
-  { logger, config }: Pick<TServiceParams, "logger" | "config">,
+  { logger, config, lifecycle }: CacheDriverOptions,
   options?: NodeCache.Options,
 ): ICacheDriver {
-  const client = new NodeCache({
+  let client = new NodeCache({
     stdTTL: config.boilerplate.CACHE_TTL,
     ...options,
+  });
+
+  lifecycle.onShutdownStart(() => {
+    logger.info({ name: "onShutdownStart" }, `cleanup`);
+    client = undefined;
   });
 
   return {

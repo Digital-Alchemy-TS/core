@@ -34,6 +34,11 @@ export type TLifecycleBase = {
   onReady: TLifeCycleRegister;
 
   /**
+   * Notification that the application intends to shut down.
+   */
+  onPreShutdown: TLifeCycleRegister;
+
+  /**
    * Begins the shutdown process, typically invoked when the system is about to shut down.
    */
   onShutdownStart: TLifeCycleRegister;
@@ -59,6 +64,7 @@ export const LIFECYCLE_STAGES = [
   "PostConfig",
   "Bootstrap",
   "Ready",
+  "PreShutdown",
   "ShutdownStart",
   "ShutdownComplete",
 ] as const;

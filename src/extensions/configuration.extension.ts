@@ -192,7 +192,7 @@ export function Configuration({
      *
      * emits update event
      */
-    set: SetConfig,
+    set: SetConfig as TSetConfig,
 
     /**
      * replace the default set of configuration loaders with a new batch
@@ -205,3 +205,12 @@ export function Configuration({
     },
   };
 }
+
+export type TSetConfig = <
+  Project extends keyof TInjectedConfig,
+  Property extends keyof TInjectedConfig[Project],
+>(
+  project: Project,
+  property: Property,
+  value: TInjectedConfig[Project][Property],
+) => void;

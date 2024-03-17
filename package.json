@@ -3,14 +3,14 @@
   "repository": {
     "url": "git+https://github.com/Digital-Alchemy-TS/core"
   },
-  "version": "0.3.1",
+  "version": "0.3.2",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe Codez"
   },
-  "homepage": "https://docs.digital-alchemy.app",
+  "homepage": "https://docs.digital-alchemy.app/01-Core/%F0%9F%A7%AD-Core-Overview",
   "scripts": {
-    "build": "tsc -p tsconfig.lib.json",
+    "build": "rm -rf dist/; tsc -p tsconfig.lib.json",
     "lint": "eslint src",
     "prepublishOnly": "npm run build",
     "test": "./scripts/test.sh",

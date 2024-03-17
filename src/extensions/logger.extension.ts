@@ -37,6 +37,7 @@ const LOG_LEVEL_PRIORITY = {
   trace: 10,
   warn: 40,
 };
+const LOG_LEVELS = Object.keys(LOG_LEVEL_PRIORITY) as (keyof ILogger)[];
 
 export const METHOD_COLORS = new Map<keyof ILogger, CONTEXT_COLORS>([
   ["trace", "grey"],
@@ -69,12 +70,14 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
 
   const YELLOW_DASH = chalk.yellowBright(frontDash);
   const BLUE_TICK = chalk.blue(`>`);
+  let prettyFormat = true;
+  const shouldILog = {} as Record<keyof ILogger, boolean>;
 
   const prettyFormatMessage = (message: string): string => {
     if (!message) {
       return ``;
     }
-    if (message.length > MAX_CUTOFF) {
+    if (message.length > MAX_CUTOFF || !prettyFormat) {
       return message;
     }
     message = message
@@ -160,42 +163,68 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
 
   // if bootstrap hard coded something specific, then start there
   // otherwise, be noisy until config loads a user preference
-  let logLevel: keyof ILogger =
+  //
+  // stored as separate variable to cut down on internal config lookups
+  let CURRENT_LOG_LEVEL: keyof ILogger =
     internal.utils.object.get(
       internal,
       "boot.options.configuration.boilerplate.LOG_LEVEL",
     ) || "trace";
-  const shouldLog = (level: keyof ILogger) =>
-    LOG_LEVEL_PRIORITY[level] >= LOG_LEVEL_PRIORITY[logLevel];
-
-  lifecycle.onPostConfig(() => (logLevel = config.boilerplate.LOG_LEVEL));
 
   function context(context: string | TContext) {
     return {
       debug: (...params: Parameters<TLoggerFunction>) =>
-        shouldLog("debug") && logger.debug(context as TContext, ...params),
+        shouldILog.debug && logger.debug(context as TContext, ...params),
       error: (...params: Parameters<TLoggerFunction>) =>
-        shouldLog("error") && logger.error(context as TContext, ...params),
+        shouldILog.error && logger.error(context as TContext, ...params),
       fatal: (...params: Parameters<TLoggerFunction>) =>
-        shouldLog("fatal") && logger.fatal(context as TContext, ...params),
+        shouldILog.fatal && logger.fatal(context as TContext, ...params),
       info: (...params: Parameters<TLoggerFunction>) =>
-        shouldLog("info") && logger.info(context as TContext, ...params),
+        shouldILog.info && logger.info(context as TContext, ...params),
       trace: (...params: Parameters<TLoggerFunction>) =>
-        shouldLog("trace") && logger.trace(context as TContext, ...params),
+        shouldILog.trace && logger.trace(context as TContext, ...params),
       warn: (...params: Parameters<TLoggerFunction>) =>
-        shouldLog("warn") && logger.warn(context as TContext, ...params),
+        shouldILog.warn && logger.warn(context as TContext, ...params),
     } as ILogger;
   }
 
+  const updateShouldLog = () => {
+    CURRENT_LOG_LEVEL = config.boilerplate.LOG_LEVEL;
+    LOG_LEVELS.forEach((key: keyof ILogger) => {
+      shouldILog[key] =
+        LOG_LEVEL_PRIORITY[key] >= LOG_LEVEL_PRIORITY[CURRENT_LOG_LEVEL];
+    });
+  };
+
+  lifecycle.onPostConfig(updateShouldLog);
+  internal.boilerplate.configuration.onUpdate(
+    updateShouldLog,
+    "boilerplate",
+    "LOG_LEVEL",
+  );
+
   return {
+    /**
+     * Create a new logger instance for a given context
+     */
     context,
+    /**
+     * Retrieve a reference to the base logger used to emit from
+     */
     getBaseLogger: () => logger,
-    getLogLevel: () => logLevel,
+    /**
+     * Modify the base logger
+     *
+     * Note: Extension still handles LOG_LEVEL logic
+     */
     setBaseLogger: (base: ILogger) => (logger = base),
-    setLogLevel: (level: keyof ILogger) => {
-      logLevel = level;
-      internal.boilerplate.config.set("boilerplate", "LOG_LEVEL", level);
-    },
+    /**
+     * Set the enabled/disabled state of the message pretty formatting logic
+     */
+    setPrettyFormat: (state: boolean) => (prettyFormat = state),
+    /**
+     * Logger instance of last resort
+     */
     systemLogger: context("digital-alchemy:system-logger"),
   };
 }

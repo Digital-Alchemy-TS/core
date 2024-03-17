@@ -39,8 +39,10 @@ export const DOWN = -1;
 export const MINUTE = 60_000;
 export const HOUR = 3_600_000;
 export const DAY = 86_400_000;
+export const WEEK = 7 * DAY;
 export const SECOND = 1000;
 export const PERCENT = 100;
+export const YEAR = 365 * DAY;
 
 type SleepReturn = Promise<void> & {
   kill: (execute: "stop" | "continue") => void;
@@ -87,7 +89,8 @@ export function sleep(target: number | Date = SECOND): SleepReturn {
   return out;
 }
 
-export const noop = async () => await sleep(NONE);
+export const asyncNoop = async () => await sleep(NONE);
+export const noop = () => {};
 
 /**
  * ## (re)peat

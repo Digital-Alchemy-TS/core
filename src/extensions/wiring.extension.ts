@@ -28,7 +28,6 @@ import {
   TLoadableChildLifecycle,
   TModuleMappings,
   TResolvedModuleMappings,
-  TScheduler,
   TServiceParams,
   TServiceReturn,
   UP,
@@ -55,8 +54,6 @@ import { Scheduler } from "./scheduler.extension";
 // By moving to outside the function, the internal methods will be able to re-initialize as expected, without needing to fully rebuild every reference everywhere
 // ... in theory
 
-let completedLifecycleCallbacks = new Set<string>();
-
 /**
  * association of projects to { service : Declaration Function }
  */
@@ -77,16 +74,8 @@ export let REVERSE_MODULE_MAPPING = new Map<
 
 let LOADED_LIFECYCLES = new Map<string, TLoadableChildLifecycle>();
 
-/**
- * Details relating to the application that is actively running
- */
-let ACTIVE_APPLICATION: ApplicationDefinition<
-  ServiceMap,
-  OptionalModuleConfiguration
-> = undefined;
-
 // heisenberg's variables. it's probably here, but maybe not
-let scheduler: (context: TContext) => TScheduler;
+// let scheduler: (context: TContext) => TScheduler;
 let logger: ILogger;
 let internal: InternalDefinition;
 const COERCE_CONTEXT = (context: string): TContext => context as TContext;
@@ -105,7 +94,7 @@ const processEvents = new Map([
   [
     "SIGTERM",
     async () => {
-      logger.warn({ name: "processEvents" }, `received [SIGTERM]`);
+      logger.warn({ name: "SIGTERM" }, `starting`);
       await Teardown();
       exit();
     },
@@ -113,7 +102,7 @@ const processEvents = new Map([
   [
     "SIGINT",
     async () => {
-      logger.warn({ name: "processEvents" }, `received [SIGINT]`);
+      logger.warn({ name: "SIGINT" }, `starting`);
       await Teardown();
       exit();
     },
@@ -252,7 +241,7 @@ export function CreateLibrary<
       LOADED_LIFECYCLES.set(libraryName, lifecycle);
       // not defined for boilerplate (chicken & egg)
       // manually added inside the bootstrap process
-      const config = internal?.boilerplate.config as ConfigManager;
+      const config = internal?.boilerplate.configuration as ConfigManager;
       config?.[LOAD_PROJECT](libraryName as keyof LoadedModules, configuration);
       await eachSeries(
         WireOrder(priorityInit, Object.keys(services)),
@@ -376,35 +365,30 @@ async function WireService(
   const loaded = LOADED_MODULES.get(project) ?? {};
   LOADED_MODULES.set(project, loaded);
   try {
-    logger?.trace(`initializing`);
-    const config = boilerplate?.configuration?.[INJECTED_DEFINITIONS]();
+    logger?.trace({ name: WireService }, `initializing`);
     const inject = Object.fromEntries(
       [...LOADED_MODULES.keys()].map((project) => [
         project as keyof TServiceParams,
         LOADED_MODULES.get(project),
       ]),
     );
-    const params: Partial<TServiceParams> = {
+
+    loaded[service] = (await definition({
       ...inject,
-      cache: internal.boilerplate.cache,
-      config,
+      cache: boilerplate.cache,
+      config: boilerplate?.configuration?.[INJECTED_DEFINITIONS](),
       context,
       event: internal.utils.event,
-      internal: internal,
+      internal,
       lifecycle,
       logger,
-      scheduler: scheduler && scheduler(context),
-    };
+      scheduler: boilerplate?.scheduler(context),
+    })) as TServiceReturn;
 
-    const resolved = (await definition(
-      params as TServiceParams,
-    )) as TServiceReturn;
-    loaded[service] = resolved;
-    return resolved;
+    return loaded[service];
   } catch (error) {
-    // Init errors at this level are considered blocking.
-    // Doubling up on errors to be extra noisy for now, might back off to single later
-    logger?.fatal({ error, name: context }, `Initialization error`);
+    // Init errors at this level are considered blocking / fatal
+    logger?.fatal({ error, name: context }, `initialization error`);
     exit();
     return undefined;
   }
@@ -413,7 +397,6 @@ async function WireService(
 // ## Run Callbacks
 async function RunStageCallbacks(stage: LifecycleStages): Promise<string> {
   const start = Date.now();
-  completedLifecycleCallbacks.add(`on${stage}`);
   const list = [
     // boilerplate priority
     LOADED_LIFECYCLES.get("boilerplate").getCallbacks(stage),
@@ -435,6 +418,7 @@ async function RunStageCallbacks(stage: LifecycleStages): Promise<string> {
     );
     await each(quick, async ([callback]) => await callback());
   });
+  internal.boot.completedLifecycleEvents.add(stage);
   return `${Date.now() - start}ms`;
 }
 
@@ -512,7 +496,7 @@ async function Bootstrap<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
 >(application: ApplicationDefinition<S, C>, options: BootstrapOptions) {
-  if (ACTIVE_APPLICATION) {
+  if (internal) {
     throw new BootstrapException(
       COERCE_CONTEXT("wiring.extension"),
       "NO_DUAL_BOOT",
@@ -520,12 +504,25 @@ async function Bootstrap<
     );
   }
   internal = new InternalDefinition();
-  internal.boot = { application, options };
+  internal.boot = {
+    application,
+    completedLifecycleEvents: new Set(),
+    options,
+    phase: "bootstrap",
+  };
   process.title = application.name;
   startup = new Date();
   try {
     const STATS = {} as Record<string, unknown>;
     const CONSTRUCT = {} as Record<string, unknown>;
+
+    // pre-create loaded module for boilerplate, so it can be attached to `internal`
+    // this allows it to be used as part of `internal` during boilerplate construction
+    // otherwise it'd only be there for everyone else
+    const api = {} as GetApis<ReturnType<typeof CreateBoilerplate>>;
+    internal.boilerplate = api;
+    LOADED_MODULES.set("boilerplate", api);
+
     STATS.Construct = CONSTRUCT;
     // * Recreate base eventemitter
     internal.utils.event = new EventEmitter();
@@ -537,25 +534,14 @@ async function Bootstrap<
     // * Wire it
     let start = Date.now();
     await LIB_BOILERPLATE[WIRE_PROJECT](internal);
-    const api = LOADED_MODULES.get("boilerplate") as GetApis<
-      ReturnType<typeof CreateBoilerplate>
-    >;
-    internal.boilerplate.cache = api.cache;
-    internal.boilerplate.logger = api.logger;
-    internal.boilerplate.fetch = api.fetch;
-    internal.boilerplate.config = api.configuration;
 
     CONSTRUCT.boilerplate = `${Date.now() - start}ms`;
     // ~ configuration
-    BOILERPLATE()?.configuration?.[LOAD_PROJECT](
+    api.configuration?.[LOAD_PROJECT](
       LIB_BOILERPLATE.name,
       LIB_BOILERPLATE.configuration,
     );
-    // ~ scheduler (for injecting into other modules)
-    scheduler = LOADED_MODULES.get(LIB_BOILERPLATE.name).scheduler as (
-      context: TContext,
-    ) => TScheduler;
-    logger = internal.boilerplate.logger.context(WIRING_CONTEXT);
+    logger = api.logger.context(WIRING_CONTEXT);
     logger.info({ name: Bootstrap }, `[boilerplate] wiring complete`);
 
     // * Wire in various shutdown events
@@ -582,7 +568,7 @@ async function Bootstrap<
 
     // ? Configuration values provided bootstrap take priority over module level
     if (!is.empty(options?.configuration)) {
-      internal.boilerplate.config.merge(options?.configuration);
+      api.configuration.merge(options?.configuration);
     }
 
     // - Kick off lifecycle
@@ -615,7 +601,7 @@ async function Bootstrap<
       `🪄 [%s] application bootstrapped`,
       application.name,
     );
-    ACTIVE_APPLICATION = application;
+    internal.boot.phase = "running";
   } catch (error) {
     logger?.fatal({ error, name: Bootstrap }, "bootstrap failed");
     exit();
@@ -624,11 +610,12 @@ async function Bootstrap<
 
 // ## Teardown
 async function Teardown() {
-  if (!ACTIVE_APPLICATION) {
+  if (!internal) {
     return;
   }
   // * Announce
   logger.warn({ name: Teardown }, `received teardown request`);
+  internal.boot.phase = "teardown";
   try {
     // * PreShutdown
     logger.debug(
@@ -664,9 +651,6 @@ async function Teardown() {
   internal = undefined;
   internal.utils.event.removeAllListeners();
   logger = undefined;
-  ACTIVE_APPLICATION = undefined;
-  completedLifecycleCallbacks = new Set<string>();
-  scheduler = undefined;
 
   MODULE_MAPPINGS = new Map();
   LOADED_MODULES = new Map();
@@ -697,7 +681,7 @@ function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
   ] = LIFECYCLE_STAGES.map(
     (stage) =>
       (callback: LifecycleCallback, priority = NONE) => {
-        if (completedLifecycleCallbacks.has(`on${stage}`)) {
+        if (internal.boot.completedLifecycleEvents.has(stage)) {
           // this is makes "earliest run time" logic way easier to implement
           // intended mode of operation
           if (["PreInit", "PostConfig", "Bootstrap", "Ready"].includes(stage)) {

@@ -7,35 +7,34 @@ import {
   ApplicationDefinition,
   ARRAY_OFFSET,
   BootstrapOptions,
-  ConfigManager,
   DAY,
-  FetcherOptions,
+  FIRST,
+  GetApis,
   HOUR,
   is,
-  Logger,
+  LIB_BOILERPLATE,
+  LifecycleStages,
   MINUTE,
   OptionalModuleConfiguration,
   SECOND,
   ServiceMap,
   START,
   TBlackHole,
-  TCache,
   TContext,
-  TDownload,
-  TFetch,
+  YEAR,
 } from "..";
 
-const FIRST = 0;
 const EVERYTHING_ELSE = 1;
+const MONTHS = 12;
+
 type inputFormats = Date | string | number | Dayjs;
+
+// TODO: probably should make this configurable
 const formatter = new Intl.RelativeTimeFormat("en", {
   numeric: "auto",
   style: "short",
 });
 
-const DAYS = 365;
-const MONTHS = 12;
-const YEAR = DAY * DAYS;
 export class InternalUtils {
   /**
    * The global eventemitter. All of `@digital-alchemy` will be wired through this
@@ -193,12 +192,6 @@ type SafeExecOptions<LABELS extends BaseLabels> = {
   errors: Counter<Extract<keyof LABELS, string>>;
 };
 
-// ? Using symbols to provide methods to the bootstrapping process
-// The values don't have a use elsewhere, so they get excluded from the public interface
-type ExcludeSymbolKeys<T> = {
-  [Key in keyof T as Key extends string ? Key : never]: T[Key];
-};
-
 type BaseLabels = {
   context: TContext;
   /**
@@ -213,27 +206,36 @@ type BaseLabels = {
   label?: string;
 };
 
+type Phase = "bootstrap" | "teardown" | "running";
+
 export class InternalDefinition {
-  public boilerplate: {
-    fetch: (options: FetcherOptions) => {
-      download: TDownload;
-      setBaseUrl: (url: string) => void;
-      setHeaders: (headers: Record<string, string>) => void;
-      fetch: TFetch;
-    };
-    cache: TCache;
-    config: ExcludeSymbolKeys<ConfigManager>;
-    logger: Awaited<ReturnType<typeof Logger>>;
-  };
+  /**
+   * Utility methods provided by boilerplate
+   */
+  public boilerplate: Pick<
+    GetApis<typeof LIB_BOILERPLATE>,
+    "configuration" | "fetch" | "logger"
+  >;
   public boot: {
+    /**
+     * Options that were passed into bootstrap
+     */
     options: BootstrapOptions;
 
     /**
-     * In case something needs to grab details about the app
-     *
-     * Abnormal operation
+     * Application that was bootstrapped
      */
     application: ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
+
+    /**
+     * Lifecycle events that have completed
+     */
+    completedLifecycleEvents: Set<LifecycleStages>;
+
+    /**
+     * Roughly speaking, what's the application doing? Mostly useful for debugging
+     */
+    phase: Phase;
   };
   public utils = new InternalUtils();
 

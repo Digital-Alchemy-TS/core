@@ -175,11 +175,15 @@ export type TServiceParams = {
    */
   config: TInjectedConfig;
 } & {
-  [K in keyof LoadedModules]: GetApis<LoadedModules[K]>;
+  [K in ExternalLoadedModules]: GetApis<LoadedModules[K]>;
 };
 
+type LoadedModuleNames = Extract<keyof LoadedModules, string>;
+
+type ExternalLoadedModules = Exclude<LoadedModuleNames, "boilerplate">;
+
 type ModuleConfigs = {
-  [K in keyof LoadedModules]: LoadedModules[K] extends LibraryDefinition<
+  [K in LoadedModuleNames]: LoadedModules[K] extends LibraryDefinition<
     ServiceMap,
     infer Config
   >

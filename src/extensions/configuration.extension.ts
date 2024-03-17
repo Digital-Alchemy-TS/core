@@ -7,10 +7,12 @@ import {
   ConfigLoaderFile,
   deepExtend,
   eachSeries,
+  InternalError,
   KnownConfigs,
   OptionalModuleConfiguration,
   PartialConfiguration,
   ServiceMap,
+  TBlackHole,
   TInjectedConfig,
   TServiceParams,
 } from "..";
@@ -120,7 +122,7 @@ export function Configuration({
   type OnConfigUpdateCallback<
     Project extends keyof TInjectedConfig,
     Property extends keyof TInjectedConfig[Project],
-  > = (project: Project, property: Property) => Promise<void>;
+  > = (project: Project, property: Property) => TBlackHole;
 
   // ## Set a configuration value at runtime
   function SetConfig<
@@ -176,14 +178,30 @@ export function Configuration({
      */
     merge: Merge,
 
-    onUpdate: <
+    /**
+     * Not a replacement for `onPostConfig`
+     *
+     * Only receives updates from `config.set` calls
+     */
+    onUpdate<
       Project extends keyof TInjectedConfig,
-      Property extends keyof TInjectedConfig[Project],
+      Property extends Extract<keyof TInjectedConfig[Project], string>,
     >(
       callback: OnConfigUpdateCallback<Project, Property>,
-    ) => {
-      event.on(EVENT_CONFIGURATION_UPDATED, (project, property) =>
-        callback(project, property),
+      project?: Project,
+      property?: Property,
+    ) {
+      event.on(
+        EVENT_CONFIGURATION_UPDATED,
+        (updatedProject, updatedProperty) => {
+          if (!is.empty(project) && project !== updatedProject) {
+            return;
+          }
+          if (!is.empty(property) && property !== updatedProperty) {
+            return;
+          }
+          callback(updatedProject, updatedProperty);
+        },
       );
     },
 
@@ -199,8 +217,16 @@ export function Configuration({
      *
      * provide empty array to disable all user configs (good for unit testing!)
      */
-    setConfigLoaders: (loaders: ConfigLoader[]) => {
-      logger.info({ name: "setConfigLoaders" }, ``);
+    setConfigLoaders(loaders: ConfigLoader[]) {
+      if (internal.boot.completedLifecycleEvents.has("PreInit")) {
+        // Maybe you want `.merge` instead?
+        throw new InternalError(
+          context,
+          "LATE_SET_CONFIG_LOADERS",
+          "The configuration process has already started, unable to modify config loaders",
+        );
+      }
+      logger.info({ name: "setConfigLoaders" }, `replaced config loaders`);
       configLoaders = loaders;
     },
   };

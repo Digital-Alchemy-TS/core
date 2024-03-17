@@ -382,7 +382,7 @@ async function WireService(
       internal,
       lifecycle,
       logger,
-      scheduler: boilerplate?.scheduler(context),
+      scheduler: boilerplate?.scheduler?.(context),
     })) as TServiceReturn;
 
     return loaded[service];

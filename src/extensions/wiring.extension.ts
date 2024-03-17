@@ -648,8 +648,8 @@ async function Teardown() {
     process.removeListener(event, callback),
   );
 
-  internal = undefined;
   internal.utils.event.removeAllListeners();
+  internal = undefined;
   logger = undefined;
 
   MODULE_MAPPINGS = new Map();

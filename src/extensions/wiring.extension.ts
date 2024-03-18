@@ -648,19 +648,18 @@ async function Teardown() {
     process.removeListener(event, callback),
   );
 
+  logger.info(
+    { name: Teardown, started_at: internal.utils.relativeDate(startup) },
+    `application terminated`,
+  );
   internal.utils.event.removeAllListeners();
-  internal = undefined;
-  logger = undefined;
 
   MODULE_MAPPINGS = new Map();
   LOADED_MODULES = new Map();
   LOADED_LIFECYCLES = new Map();
   REVERSE_MODULE_MAPPING = new Map();
-
-  logger.info(
-    { name: Teardown, started_at: internal.utils.relativeDate(startup) },
-    `application terminated`,
-  );
+  internal = undefined;
+  logger = undefined;
 }
 
 // # Lifecycle

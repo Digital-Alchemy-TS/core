@@ -3,7 +3,8 @@
 Welcome to `@digital-alchemy/core`!
 This repository contains the boilerplate code for building applications and wiring logic.
 
-> See more at the [extended docs](https://docs.digital-alchemy.app/01-Core/%F0%9F%A7%AD-Core-Overview)
+- Extended docs: https://docs.digital-alchemy.app/Core
+- Discord: https://discord.digital-alchemy.app
 
 ## 🌐 Core Library Overview
 

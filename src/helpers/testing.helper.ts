@@ -55,9 +55,11 @@ export function ConfigurationFiles() {
             ])
           : paths,
       ).forEach((filename) => {
-        console.log("FIXME: GENERATE RANDOM DATA", filename, writeConfigFile);
+        // console.log("FIXME: GENERATE RANDOM DATA", filename, writeConfigFile);
         // const data = Testing.generateRandomData();
         // writeConfigFile(filename, data);
+        filename;
+        return writeConfigFile;
       });
     },
     sort: (filePaths: string[]): string[] => {

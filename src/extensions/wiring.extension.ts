@@ -17,6 +17,7 @@ import {
   LibraryDefinition,
   LIFECYCLE_STAGES,
   LifecycleCallback,
+  LifecyclePrioritizedCallback,
   LifecycleStages,
   LoadedModules,
   OptionalModuleConfiguration,
@@ -80,7 +81,6 @@ let logger: ILogger;
 let internal: InternalDefinition;
 const COERCE_CONTEXT = (context: string): TContext => context as TContext;
 const WIRING_CONTEXT = COERCE_CONTEXT("boilerplate:wiring");
-const NONE = -1;
 // (re)defined at bootstrap
 export let LIB_BOILERPLATE: ReturnType<typeof CreateBoilerplate>;
 // exporting a let makes me feel dirty inside
@@ -410,17 +410,39 @@ async function RunStageCallbacks(stage: LifecycleStages): Promise<string> {
     if (is.empty(callbacks)) {
       return;
     }
-    const sorted = callbacks.filter(([, sort]) => sort !== NONE);
-    const quick = callbacks.filter(([, sort]) => sort === NONE);
+    const sorted = callbacks.filter(([, sort]) => sort !== undefined);
+    const quick = callbacks.filter(([, sort]) => sort === undefined);
+    const positive = [] as LifecyclePrioritizedCallback[];
+    const negative = [] as LifecyclePrioritizedCallback[];
+    sorted.forEach(([callback, priority]) => {
+      if (priority >= PRE_CALLBACKS_START) {
+        positive.push([callback, priority]);
+        return;
+      }
+      negative.push([callback, priority]);
+    });
+
+    // * callbacks with a priority greater than 0
+    // larger number happen first
     await eachSeries(
-      sorted.sort(([, a], [, b]) => (a > b ? UP : DOWN)),
+      positive.sort(([, a], [, b]) => (a > b ? UP : DOWN)),
       async ([callback]) => await callback(),
     );
+
+    // * callbacks without a priority
     await each(quick, async ([callback]) => await callback());
+
+    // * callbacks with a priority less than 0
+    // smaller numbers happen last
+    await eachSeries(
+      negative.sort(([, a], [, b]) => (a > b ? UP : DOWN)),
+      async ([callback]) => await callback(),
+    );
   });
   internal.boot.completedLifecycleEvents.add(stage);
   return `${Date.now() - start}ms`;
 }
+const PRE_CALLBACKS_START = 0;
 
 type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration>;
 
@@ -678,25 +700,24 @@ function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
     onShutdownComplete,
     onPreShutdown,
   ] = LIFECYCLE_STAGES.map(
-    (stage) =>
-      (callback: LifecycleCallback, priority = NONE) => {
-        if (internal.boot.completedLifecycleEvents.has(stage)) {
-          // this is makes "earliest run time" logic way easier to implement
-          // intended mode of operation
-          if (["PreInit", "PostConfig", "Bootstrap", "Ready"].includes(stage)) {
-            setImmediate(async () => await callback());
-            return;
-          }
-          // What does this mean in reality?
-          // Probably a broken unit test, I really don't know what workflow would cause this
-          logger.fatal(
-            { name: CreateChildLifecycle },
-            `on${stage} late attach, cannot attach callback`,
-          );
+    (stage) => (callback: LifecycleCallback, priority?: number) => {
+      if (internal.boot.completedLifecycleEvents.has(stage)) {
+        // this is makes "earliest run time" logic way easier to implement
+        // intended mode of operation
+        if (["PreInit", "PostConfig", "Bootstrap", "Ready"].includes(stage)) {
+          setImmediate(async () => await callback());
           return;
         }
-        childCallbacks[stage].push([callback, priority]);
-      },
+        // What does this mean in reality?
+        // Probably a broken unit test, I really don't know what workflow would cause this
+        logger.fatal(
+          { name: CreateChildLifecycle },
+          `on${stage} late attach, cannot attach callback`,
+        );
+        return;
+      }
+      childCallbacks[stage].push([callback, priority]);
+    },
   );
 
   const lifecycle = {

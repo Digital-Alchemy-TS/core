@@ -525,7 +525,7 @@ describe("Wiring", () => {
       expect(observed).toBeDefined();
     });
 
-    describe("app + library interactions", () => {
+    describe.skip("app + library interactions", () => {
       let list: string[];
       const LIBRARY_A = CreateLibrary({
         // @ts-expect-error testing

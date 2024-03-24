@@ -15,12 +15,12 @@ import {
 export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
   const stop = new Set<() => TBlackHole>();
 
-  lifecycle.onShutdownStart(() => {
+  lifecycle.onPreShutdown(() => {
     if (is.empty(stop)) {
       return;
     }
     logger.info(
-      { name: "onShutdownStart" },
+      { name: "onPreShutdown" },
       `removing [%s] schedules`,
       stop.size,
     );

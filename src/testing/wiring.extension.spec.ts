@@ -1,3 +1,5 @@
+import internal from "stream";
+
 import {
   ApplicationDefinition,
   BootstrapException,
@@ -6,6 +8,7 @@ import {
   CreateLibrary,
   InternalDefinition,
   LIB_BOILERPLATE,
+  LifecycleStages,
   LOADED_LIFECYCLES,
   LOADED_MODULES,
   MODULE_MAPPINGS,
@@ -315,6 +318,190 @@ describe("Wiring", () => {
 
       // Compare the actual execution order with the expected order
       expect(executionOrder).toEqual(expectedOrder);
+    });
+
+    describe("Completed events", () => {
+      it("starts off empty", async () => {
+        let list: LifecycleStages[];
+        application = CreateApplication({
+          // @ts-expect-error Testing
+          name: "testing",
+          services: {
+            Test({ lifecycle, internal }: TServiceParams) {
+              lifecycle.onPreInit(
+                () => (list = [...internal.boot.completedLifecycleEvents]),
+              );
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+        expect(list).toEqual([]);
+      });
+
+      it("tracks onPreInit", async () => {
+        let list: LifecycleStages[];
+        application = CreateApplication({
+          // @ts-expect-error Testing
+          name: "testing",
+          services: {
+            Test({ lifecycle, internal }: TServiceParams) {
+              lifecycle.onPostConfig(
+                () => (list = [...internal.boot.completedLifecycleEvents]),
+              );
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+        expect(list).toEqual(["PreInit"]);
+      });
+
+      it("tracks onPostConfig", async () => {
+        let list: LifecycleStages[];
+        application = CreateApplication({
+          // @ts-expect-error Testing
+          name: "testing",
+          services: {
+            Test({ lifecycle, internal }: TServiceParams) {
+              lifecycle.onBootstrap(
+                () => (list = [...internal.boot.completedLifecycleEvents]),
+              );
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+        expect(list).toEqual(["PreInit", "PostConfig"]);
+      });
+
+      it("tracks onPreInit", async () => {
+        let list: LifecycleStages[];
+        application = CreateApplication({
+          // @ts-expect-error Testing
+          name: "testing",
+          services: {
+            Test({ lifecycle, internal }: TServiceParams) {
+              lifecycle.onReady(
+                () => (list = [...internal.boot.completedLifecycleEvents]),
+              );
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+        expect(list).toEqual(["PreInit", "PostConfig", "Bootstrap"]);
+      });
+
+      it("tracks ready", async () => {
+        let i: InternalDefinition;
+        application = CreateApplication({
+          // @ts-expect-error Testing
+          name: "testing",
+          services: {
+            Test({ internal }: TServiceParams) {
+              i = internal;
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+        expect([...i.boot.completedLifecycleEvents.values()]).toEqual([
+          "PreInit",
+          "PostConfig",
+          "Bootstrap",
+          "Ready",
+        ]);
+      });
+
+      it("does not change by start of teardown", async () => {
+        let list: LifecycleStages[];
+        application = CreateApplication({
+          // @ts-expect-error Testing
+          name: "testing",
+          services: {
+            Test({ lifecycle, internal }: TServiceParams) {
+              lifecycle.onPreShutdown(
+                () => (list = [...internal.boot.completedLifecycleEvents]),
+              );
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+        await application.teardown();
+        application = undefined;
+        expect(list).toEqual(["PreInit", "PostConfig", "Bootstrap", "Ready"]);
+      });
+
+      it("tracks preShutdown", async () => {
+        let list: LifecycleStages[];
+        application = CreateApplication({
+          // @ts-expect-error Testing
+          name: "testing",
+          services: {
+            Test({ lifecycle, internal }: TServiceParams) {
+              lifecycle.onShutdownStart(
+                () => (list = [...internal.boot.completedLifecycleEvents]),
+              );
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+        await application.teardown();
+        application = undefined;
+        expect(list).toEqual([
+          "PreInit",
+          "PostConfig",
+          "Bootstrap",
+          "Ready",
+          "PreShutdown",
+        ]);
+      });
+
+      it("tracks shutdownStart", async () => {
+        let list: LifecycleStages[];
+        application = CreateApplication({
+          // @ts-expect-error Testing
+          name: "testing",
+          services: {
+            Test({ lifecycle, internal }: TServiceParams) {
+              lifecycle.onShutdownComplete(
+                () => (list = [...internal.boot.completedLifecycleEvents]),
+              );
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+        await application.teardown();
+        application = undefined;
+        expect(list).toEqual([
+          "PreInit",
+          "PostConfig",
+          "Bootstrap",
+          "Ready",
+          "PreShutdown",
+          "ShutdownStart",
+        ]);
+      });
+
+      it("tracks shutdownComplete", async () => {
+        let i: InternalDefinition;
+        application = CreateApplication({
+          // @ts-expect-error Testing
+          name: "testing",
+          services: {
+            Test({ internal }: TServiceParams) {
+              i = internal;
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+        await application.teardown();
+        expect([...i.boot.completedLifecycleEvents.values()]).toEqual([
+          "PreInit",
+          "PostConfig",
+          "Bootstrap",
+          "Ready",
+          "PreShutdown",
+          "ShutdownStart",
+          "ShutdownComplete",
+        ]);
+      });
     });
   });
 

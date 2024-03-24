@@ -409,7 +409,7 @@ async function RunStageCallbacks(stage: LifecycleStages): Promise<string> {
     // children next
     // ...
     ...[...LOADED_LIFECYCLES.entries()]
-      .filter(([name]) => !["boilerplate", "application"].includes(name))
+      .filter(([name]) => name !== "boilerplate")
       .map(([, thing]) => thing.getCallbacks(stage)),
   ];
   await eachSeries(list, async (callbacks) => {
@@ -701,21 +701,20 @@ export function Reset() {
 function CreateChildLifecycle(
   internal: InternalDefinition,
 ): TLoadableChildLifecycle {
-  const stages = [...LIFECYCLE_STAGES];
-  const childCallbacks = Object.fromEntries(
-    stages.map((i) => [i, []]),
-  ) as Record<LifecycleStages, CallbackList>;
+  const childCallbacks = {} as Record<LifecycleStages, CallbackList>;
 
   const [
+    // ! This list must be sorted!
     onPreInit,
     onPostConfig,
     onBootstrap,
     onReady,
+    onPreShutdown,
     onShutdownStart,
     onShutdownComplete,
-    onPreShutdown,
-  ] = LIFECYCLE_STAGES.map(
-    (stage) => (callback: LifecycleCallback, priority?: number) => {
+  ] = LIFECYCLE_STAGES.map((stage) => {
+    childCallbacks[stage] = [];
+    return (callback: LifecycleCallback, priority?: number) => {
       if (internal.boot.completedLifecycleEvents.has(stage)) {
         // this is makes "earliest run time" logic way easier to implement
         // intended mode of operation
@@ -732,8 +731,8 @@ function CreateChildLifecycle(
         return;
       }
       childCallbacks[stage].push([callback, priority]);
-    },
-  );
+    };
+  });
 
   return {
     getCallbacks: (stage: LifecycleStages) =>

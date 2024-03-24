@@ -1,5 +1,3 @@
-import internal from "stream";
-
 import {
   ApplicationDefinition,
   BootstrapException,

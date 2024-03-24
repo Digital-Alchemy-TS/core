@@ -63,7 +63,7 @@ export let MODULE_MAPPINGS = new Map<string, TModuleMappings>();
 /**
  * association of projects to { service : Initialized Service }
  */
-let LOADED_MODULES = new Map<string, TResolvedModuleMappings>();
+export let LOADED_MODULES = new Map<string, TResolvedModuleMappings>();
 
 /**
  * Optimized reverse lookups: Declaration  Function => [project, service]
@@ -73,7 +73,7 @@ export let REVERSE_MODULE_MAPPING = new Map<
   [project: string, service: string]
 >();
 
-let LOADED_LIFECYCLES = new Map<string, TLoadableChildLifecycle>();
+export let LOADED_LIFECYCLES = new Map<string, TLoadableChildLifecycle>();
 
 // heisenberg's variables. it's probably here, but maybe not
 // let scheduler: (context: TContext) => TScheduler;
@@ -228,6 +228,7 @@ export function CreateLibrary<
   configuration = {} as C,
   priorityInit,
   services,
+  depends,
 }: LibraryConfigurationOptions<S, C>): LibraryDefinition<S, C> {
   ValidateLibrary(libraryName, services);
 
@@ -259,6 +260,7 @@ export function CreateLibrary<
       return lifecycle;
     },
     configuration,
+    depends,
     name: libraryName,
     priorityInit,
     serviceApis,
@@ -511,6 +513,9 @@ function BuildSortOrder<
     starting = starting.filter((i) => next.name !== i.name);
     out.push(next);
   }
+
+  const order = out.map((i) => i.name);
+  logger.trace({ name: BuildSortOrder, order }, ``);
   return out;
 }
 

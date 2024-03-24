@@ -1,12 +1,16 @@
-import exp from "constants";
-
 import {
   ApplicationDefinition,
   BootstrapException,
   BootstrapOptions,
   CreateApplication,
   CreateLibrary,
+  InternalDefinition,
+  LIB_BOILERPLATE,
+  LOADED_LIFECYCLES,
+  LOADED_MODULES,
+  MODULE_MAPPINGS,
   OptionalModuleConfiguration,
+  REVERSE_MODULE_MAPPING,
   ServiceMap,
   TServiceParams,
   WIRE_PROJECT,
@@ -32,104 +36,102 @@ describe("Wiring", () => {
     jest.restoreAllMocks();
   });
 
-  describe("Basics", () => {
-    describe("CreateLibrary", () => {
-      it("should be defined", () => {
-        expect(CreateLibrary).toBeDefined();
-        expect(CreateApplication).toBeDefined();
-      });
-
-      it("should create a library without services", () => {
-        const library = CreateLibrary({
-          // @ts-expect-error For unit testing
-          name: "testing",
-          services: {},
-        });
-
-        expect(library).toBeDefined();
-        expect(library.name).toBe("testing");
-        expect(library.services).toEqual({});
-      });
-
-      it("properly wires services when creating a library", async () => {
-        const testService = jest.fn();
-        const library = CreateLibrary({
-          // @ts-expect-error For unit testing
-          name: "testing",
-          services: { testService },
-        });
-        await library[WIRE_PROJECT](undefined);
-        // Check that the service is wired correctly
-        expect(testService).toHaveBeenCalled();
-      });
-      it("throws an error with invalid service definition", () => {
-        expect(() => {
-          CreateLibrary({
-            // @ts-expect-error For unit testing
-            name: "testing",
-            services: { InvalidService: undefined },
-          });
-        }).toThrow("INVALID_SERVICE_DEFINITION");
-      });
-
-      it("creates multiple libraries with distinct configurations", () => {
-        const libraryOne = CreateLibrary({
-          // @ts-expect-error For unit testing
-          name: "testing",
-          services: {},
-        });
-        const libraryTwo = CreateLibrary({
-          // @ts-expect-error For unit testing
-          name: "testing_second",
-          services: {},
-        });
-        expect(libraryOne.name).not.toBe(libraryTwo.name);
-      });
-
-      it("throws a BootstrapException for an invalid service definition in a library", () => {
-        expect(() => {
-          CreateLibrary({
-            // @ts-expect-error For unit testing
-            name: "testing",
-            services: { invalidServiceDefinition: undefined },
-          });
-        }).toThrow(BootstrapException);
-      });
-
-      it("throws a BootstrapException if no name is provided for the library", () => {
-        expect(() => {
-          // @ts-expect-error that's the test
-          CreateLibrary({ name: "", services: {} });
-        }).toThrow(BootstrapException);
-      });
+  describe("CreateLibrary", () => {
+    it("should be defined", () => {
+      expect(CreateLibrary).toBeDefined();
+      expect(CreateApplication).toBeDefined();
     });
 
-    describe("CreateApplication Function", () => {
-      it("should create an application with specified services and libraries", () => {
-        const testService = jest.fn();
-        const testLibrary = CreateLibrary({
+    it("should create a library without services", () => {
+      const library = CreateLibrary({
+        // @ts-expect-error For unit testing
+        name: "testing",
+        services: {},
+      });
+
+      expect(library).toBeDefined();
+      expect(library.name).toBe("testing");
+      expect(library.services).toEqual({});
+    });
+
+    it("properly wires services when creating a library", async () => {
+      const testService = jest.fn();
+      const library = CreateLibrary({
+        // @ts-expect-error For unit testing
+        name: "testing",
+        services: { testService },
+      });
+      await library[WIRE_PROJECT](undefined);
+      // Check that the service is wired correctly
+      expect(testService).toHaveBeenCalled();
+    });
+    it("throws an error with invalid service definition", () => {
+      expect(() => {
+        CreateLibrary({
           // @ts-expect-error For unit testing
           name: "testing",
-          services: { TestService: testService },
+          services: { InvalidService: undefined },
         });
+      }).toThrow("INVALID_SERVICE_DEFINITION");
+    });
 
-        application = CreateApplication({
-          libraries: [testLibrary],
-          // @ts-expect-error For unit testing
-          name: "testing_app",
-          services: { AppService: jest.fn() },
-        });
-
-        expect(application).toBeDefined();
-        expect(application.name).toBe("testing_app");
-        expect(Object.keys(application.services).length).toBe(1);
-        expect(application.libraries.length).toBe(1);
-        expect(application.libraries[0]).toBe(testLibrary);
+    it("creates multiple libraries with distinct configurations", () => {
+      const libraryOne = CreateLibrary({
+        // @ts-expect-error For unit testing
+        name: "testing",
+        services: {},
       });
+      const libraryTwo = CreateLibrary({
+        // @ts-expect-error For unit testing
+        name: "testing_second",
+        services: {},
+      });
+      expect(libraryOne.name).not.toBe(libraryTwo.name);
+    });
+
+    it("throws a BootstrapException for an invalid service definition in a library", () => {
+      expect(() => {
+        CreateLibrary({
+          // @ts-expect-error For unit testing
+          name: "testing",
+          services: { invalidServiceDefinition: undefined },
+        });
+      }).toThrow(BootstrapException);
+    });
+
+    it("throws a BootstrapException if no name is provided for the library", () => {
+      expect(() => {
+        // @ts-expect-error that's the test
+        CreateLibrary({ name: "", services: {} });
+      }).toThrow(BootstrapException);
     });
   });
 
-  describe("Application Lifecycle", () => {
+  describe("CreateApplication", () => {
+    it("should create an application with specified services and libraries", () => {
+      const testService = jest.fn();
+      const testLibrary = CreateLibrary({
+        // @ts-expect-error For unit testing
+        name: "testing",
+        services: { TestService: testService },
+      });
+
+      application = CreateApplication({
+        libraries: [testLibrary],
+        // @ts-expect-error For unit testing
+        name: "testing_app",
+        services: { AppService: jest.fn() },
+      });
+
+      expect(application).toBeDefined();
+      expect(application.name).toBe("testing_app");
+      expect(Object.keys(application.services).length).toBe(1);
+      expect(application.libraries.length).toBe(1);
+      expect(application.libraries[0]).toBe(testLibrary);
+    });
+  });
+
+  describe("Lifecycle", () => {
     beforeEach(() => {
       application = CreateApplication({
         // @ts-expect-error For unit testing
@@ -230,7 +232,7 @@ describe("Wiring", () => {
       expect(mockCallback).toHaveBeenCalled();
     });
 
-    it("triggers fail-fast on catastrophic bootstrap errors", async () => {
+    it("exits on catastrophic bootstrap errors", async () => {
       const errorMock = jest.fn().mockImplementation(() => {
         throw new Error("EXPECTED_UNIT_TESTING_ERROR");
       });
@@ -382,6 +384,98 @@ describe("Wiring", () => {
     });
   });
 
+  describe("Boot Phase", () => {
+    it("phase should be bootstrap during boot", async () => {
+      let i: string;
+      application = CreateApplication({
+        // @ts-expect-error Testing
+        name: "testing",
+        services: {
+          Service({ internal }: TServiceParams) {
+            i = internal.boot.phase;
+          },
+        },
+      });
+      await application.bootstrap(BASIC_BOOT);
+
+      expect(i).toBe("bootstrap");
+    });
+
+    it("phase should be running when finished booting", async () => {
+      let i: InternalDefinition;
+      application = CreateApplication({
+        // @ts-expect-error Testing
+        name: "testing",
+        services: {
+          Service({ internal }: TServiceParams) {
+            i = internal;
+          },
+        },
+      });
+      await application.bootstrap(BASIC_BOOT);
+
+      expect(i.boot.phase).toBe("running");
+    });
+
+    it("phase should be teardown after teardown starts", async () => {
+      let i: string;
+      application = CreateApplication({
+        // @ts-expect-error Testing
+        name: "testing",
+        services: {
+          Service({ internal, lifecycle }: TServiceParams) {
+            lifecycle.onPreShutdown(() => {
+              i = internal.boot.phase;
+            });
+          },
+        },
+      });
+      await application.bootstrap(BASIC_BOOT);
+      await application.teardown();
+      application = undefined;
+
+      expect(i).toBe("teardown");
+    });
+  });
+
+  describe("Teardown", () => {
+    it("phase should be teardown after teardown starts", async () => {
+      let i: string;
+      application = CreateApplication({
+        // @ts-expect-error Testing
+        name: "testing",
+        services: {
+          Service({ internal, lifecycle }: TServiceParams) {
+            lifecycle.onPreShutdown(() => {
+              i = internal.boot.phase;
+            });
+          },
+        },
+      });
+      await application.bootstrap(BASIC_BOOT);
+      await application.teardown();
+      application = undefined;
+
+      expect(i).toBe("teardown");
+    });
+  });
+
+  describe("Internal Variable Usage", () => {
+    it("populates maps during bootstrap", async () => {
+      application = CreateApplication({
+        // @ts-expect-error Testing
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap(BASIC_BOOT);
+      expect(MODULE_MAPPINGS.size).not.toEqual(0);
+      expect(LOADED_MODULES.size).not.toEqual(0);
+      expect(REVERSE_MODULE_MAPPING.size).not.toEqual(0);
+      expect(LOADED_LIFECYCLES.size).not.toEqual(0);
+      expect(LIB_BOILERPLATE).toBeDefined();
+    });
+  });
+
   describe("Wiring", () => {
     it("should add library to TServiceParams", async () => {
       let observed: unknown;
@@ -524,54 +618,91 @@ describe("Wiring", () => {
       await application.bootstrap(BASIC_BOOT);
       expect(observed).toBeDefined();
     });
+  });
 
-    describe.skip("app + library interactions", () => {
-      let list: string[];
-      const LIBRARY_A = CreateLibrary({
+  describe("Application + Library interactions", () => {
+    let list: string[];
+    const LIBRARY_A = CreateLibrary({
+      // @ts-expect-error testing
+      name: "A",
+      services: {
+        AddToList: () => list.push("A"),
+      },
+    });
+    const LIBRARY_B = CreateLibrary({
+      depends: [LIBRARY_A],
+      // @ts-expect-error testing
+      name: "B",
+      services: {
+        AddToList: () => list.push("B"),
+      },
+    });
+
+    const LIBRARY_C = CreateLibrary({
+      depends: [LIBRARY_A, LIBRARY_B],
+      // @ts-expect-error testing
+      name: "C",
+      services: {
+        AddToList: () => list.push("C"),
+      },
+    });
+
+    beforeEach(() => {
+      list = [];
+    });
+
+    it("should wire libraries in the correct order", async () => {
+      // Provided in C -> A -> B
+      // Needs to be loaded in A -> B -> C
+      application = CreateApplication({
+        libraries: [LIBRARY_C, LIBRARY_A, LIBRARY_B],
         // @ts-expect-error testing
-        name: "A",
-        services: {
-          AddToList: () => list.push("A"),
-        },
+        name: "testing",
+        services: {},
       });
-      const LIBRARY_B = CreateLibrary({
-        depends: [LIBRARY_A],
+
+      await application.bootstrap(BASIC_BOOT);
+      expect(list).toEqual(["A", "B", "C"]);
+    });
+
+    it("should throw errors if a dependency is missing from the app", async () => {
+      application = CreateApplication({
+        libraries: [LIBRARY_C, LIBRARY_B],
         // @ts-expect-error testing
-        name: "B",
-        services: {
-          AddToList: () => list.push("B"),
-        },
+        name: "testing",
+        services: {},
       });
+      const failFastSpy = jest
+        .spyOn(process, "exit")
+        .mockImplementation(FAKE_EXIT);
+      expect.assertions(1);
+      await application.bootstrap(BASIC_BOOT);
+      expect(failFastSpy).toHaveBeenCalled();
+    });
 
-      const LIBRARY_C = CreateLibrary({
-        depends: [LIBRARY_A, LIBRARY_B],
+    it("should allow name compatible library substitutions", async () => {
+      application = CreateApplication({
+        libraries: [
+          LIBRARY_C,
+          LIBRARY_B,
+          CreateLibrary({
+            // @ts-expect-error testing
+            name: "A",
+            services: {
+              AddToList: () => list.push("A"),
+            },
+          }),
+        ],
         // @ts-expect-error testing
-        name: "C",
-        services: {
-          AddToList: () => list.push("C"),
-        },
+        name: "testing",
+        services: {},
       });
-
-      beforeEach(() => {
-        list = [];
-      });
-
-      it("should wire libraries in the correct order", async () => {
-        application = CreateApplication({
-          libraries: [
-            //
-            LIBRARY_B,
-            LIBRARY_C,
-            LIBRARY_A,
-          ],
-          // @ts-expect-error testing
-          name: "testing",
-          services: {},
-        });
-
-        await application.bootstrap(BASIC_BOOT);
-        expect(list).toEqual(["A", "B", "C"]);
-      });
+      const failFastSpy = jest
+        .spyOn(process, "exit")
+        .mockImplementation(FAKE_EXIT);
+      await application.bootstrap(BASIC_BOOT);
+      expect(list).toEqual(["A", "B", "C"]);
+      expect(failFastSpy).not.toHaveBeenCalled();
     });
   });
 });

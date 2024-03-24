@@ -58,7 +58,7 @@ import { Scheduler } from "./scheduler.extension";
 /**
  * association of projects to { service : Declaration Function }
  */
-let MODULE_MAPPINGS = new Map<string, TModuleMappings>();
+export let MODULE_MAPPINGS = new Map<string, TModuleMappings>();
 
 /**
  * association of projects to { service : Initialized Service }
@@ -225,18 +225,17 @@ export function CreateLibrary<
   C extends OptionalModuleConfiguration,
 >({
   name: libraryName,
-  configuration,
+  configuration = {} as C,
   priorityInit,
   services,
 }: LibraryConfigurationOptions<S, C>): LibraryDefinition<S, C> {
   ValidateLibrary(libraryName, services);
 
-  const lifecycle = CreateChildLifecycle();
-
   const serviceApis = {} as GetApisResult<ServiceMap>;
 
   const library = {
     [WIRE_PROJECT]: async (internal: InternalDefinition) => {
+      const lifecycle = CreateChildLifecycle(internal);
       // This one hasn't been loaded yet, generate an object with all the correct properties
       LOADED_LIFECYCLES.set(libraryName, lifecycle);
       // not defined for boilerplate (chicken & egg)
@@ -260,7 +259,6 @@ export function CreateLibrary<
       return lifecycle;
     },
     configuration,
-    lifecycle,
     name: libraryName,
     priorityInit,
     serviceApis,
@@ -278,12 +276,21 @@ export function CreateApplication<
   services,
   libraries = [],
   configuration = {} as C,
-  priorityInit,
+  priorityInit = [],
 }: ApplicationConfigurationOptions<S, C>) {
-  const lifecycle = CreateChildLifecycle();
+  priorityInit.forEach((name) => {
+    if (!is.function(services[name])) {
+      throw new BootstrapException(
+        WIRING_CONTEXT,
+        "MISSING_PRIORITY_SERVICE",
+        `${name} was listed as priority init, but was not found in services`,
+      );
+    }
+  });
   const serviceApis = {} as GetApisResult<ServiceMap>;
   const application = {
     [WIRE_PROJECT]: async (internal: InternalDefinition) => {
+      const lifecycle = CreateChildLifecycle(internal);
       LOADED_LIFECYCLES.set(name, lifecycle);
       BOILERPLATE()?.configuration?.[LOAD_PROJECT](
         name as keyof LoadedModules,
@@ -317,17 +324,13 @@ export function CreateApplication<
     },
     configuration,
     libraries,
-    lifecycle,
     name,
     priorityInit,
     serviceApis,
     services,
     teardown: async () => {
       if (!application.booted) {
-        logger.error(
-          { name: CreateApplication },
-          `application is not booted, cannot teardown`,
-        );
+        Reset();
         return;
       }
       await Teardown();
@@ -375,10 +378,10 @@ async function WireService(
 
     loaded[service] = (await definition({
       ...inject,
-      cache: boilerplate.cache,
+      cache: boilerplate?.cache,
       config: boilerplate?.configuration?.[INJECTED_DEFINITIONS](),
       context,
-      event: internal.utils.event,
+      event: internal?.utils?.event,
       internal,
       lifecycle,
       logger,
@@ -388,7 +391,8 @@ async function WireService(
     return loaded[service];
   } catch (error) {
     // Init errors at this level are considered blocking / fatal
-    logger?.fatal({ error, name: context }, `initialization error`);
+    // eslint-disable-next-line no-console
+    console.error("initialization error", error);
     exit();
     return undefined;
   }
@@ -425,7 +429,7 @@ async function RunStageCallbacks(stage: LifecycleStages): Promise<string> {
     // * callbacks with a priority greater than 0
     // larger number happen first
     await eachSeries(
-      positive.sort(([, a], [, b]) => (a > b ? UP : DOWN)),
+      positive.sort(([, a], [, b]) => (a < b ? UP : DOWN)),
       async ([callback]) => await callback(),
     );
 
@@ -625,7 +629,8 @@ async function Bootstrap<
     );
     internal.boot.phase = "running";
   } catch (error) {
-    logger?.fatal({ error, name: Bootstrap }, "bootstrap failed");
+    // eslint-disable-next-line no-console
+    console.error("bootstrap failed", error);
     exit();
   }
 }
@@ -666,15 +671,18 @@ async function Teardown() {
     );
   }
   // * Final resource cleanup, attempt to reset everything possible
-  processEvents.forEach((callback, event) =>
-    process.removeListener(event, callback),
-  );
 
   logger.info(
     { name: Teardown, started_at: internal.utils.relativeDate(startup) },
     `application terminated`,
   );
-  internal.utils.event.removeAllListeners();
+  Reset();
+}
+export function Reset() {
+  processEvents.forEach((callback, event) =>
+    process.removeListener(event, callback),
+  );
+  internal?.utils?.event?.removeAllListeners?.();
 
   MODULE_MAPPINGS = new Map();
   LOADED_MODULES = new Map();
@@ -685,7 +693,9 @@ async function Teardown() {
 }
 
 // # Lifecycle
-function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
+function CreateChildLifecycle(
+  internal: InternalDefinition,
+): TLoadableChildLifecycle {
   const stages = [...LIFECYCLE_STAGES];
   const childCallbacks = Object.fromEntries(
     stages.map((i) => [i, []]),
@@ -720,7 +730,7 @@ function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
     },
   );
 
-  const lifecycle = {
+  return {
     getCallbacks: (stage: LifecycleStages) =>
       childCallbacks[stage] as CallbackList,
     onBootstrap,
@@ -731,24 +741,4 @@ function CreateChildLifecycle(name?: string): TLoadableChildLifecycle {
     onShutdownComplete,
     onShutdownStart,
   };
-  if (!is.empty(name)) {
-    LOADED_LIFECYCLES.set(name, lifecycle);
-  }
-  return lifecycle;
 }
-
-// ## Testing
-// DATesting.FailFast = (): void => exit();
-// DATesting.LOADED_MODULES = () => LOADED_MODULES;
-// DATesting.MODULE_MAPPINGS = () => MODULE_MAPPINGS;
-// DATesting.REVERSE_MODULE_MAPPING = () => REVERSE_MODULE_MAPPING;
-// DATesting.WiringReset = () => {
-//   process.removeAllListeners();
-//   MODULE_MAPPINGS = new Map();
-//   LOADED_MODULES = new Map();
-//   LOADED_LIFECYCLES = new Map();
-//   REVERSE_MODULE_MAPPING = new Map();
-//   completedLifecycleCallbacks = new Set<string>();
-//   ACTIVE_APPLICATION = undefined;
-// };
-// DATesting.WireService = WireService;

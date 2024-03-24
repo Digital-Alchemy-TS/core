@@ -6,7 +6,7 @@ import { extname, join } from "path";
 import { cwd } from "process";
 
 import { is } from "..";
-import { SINGLE } from ".";
+import { SINGLE, TServiceParams } from "../helpers";
 
 export const TESTING_APP_NAME = "digital-alchemy-unit-tests";
 
@@ -15,7 +15,7 @@ export const TESTING_APP_NAME = "digital-alchemy-unit-tests";
 // >;
 export type RandomFileTestingDataFormat = object;
 
-export function ConfigurationFiles() {
+export function Testing({ logger }: TServiceParams) {
   const testDataMap = new Map<string, RandomFileTestingDataFormat>();
 
   function writeConfigFile(
@@ -58,6 +58,7 @@ export function ConfigurationFiles() {
         // console.log("FIXME: GENERATE RANDOM DATA", filename, writeConfigFile);
         // const data = Testing.generateRandomData();
         // writeConfigFile(filename, data);
+        logger.info({ filename });
         filename;
         return writeConfigFile;
       });

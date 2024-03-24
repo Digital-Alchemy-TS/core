@@ -300,10 +300,7 @@ type Wire = {
 export type LibraryDefinition<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
-> = LibraryConfigurationOptions<S, C> &
-  Wire & {
-    lifecycle: TChildLifecycle;
-  };
+> = LibraryConfigurationOptions<S, C> & Wire;
 
 export type ApplicationDefinition<
   S extends ServiceMap,
@@ -312,6 +309,5 @@ export type ApplicationDefinition<
   Wire & {
     booted: boolean;
     bootstrap: (options?: BootstrapOptions) => Promise<void>;
-    lifecycle: TChildLifecycle;
     teardown: () => Promise<void>;
   };

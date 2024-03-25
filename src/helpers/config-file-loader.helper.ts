@@ -6,11 +6,12 @@ import { homedir } from "os";
 import { join } from "path";
 import { cwd, exit, platform } from "process";
 
-import { deepExtend, INVERT_VALUE, is, START } from "..";
+import { deepExtend, INVERT_VALUE, is, ServiceMap, START } from "..";
 import {
   AbstractConfig,
   ConfigLoaderParams,
   ConfigLoaderReturn,
+  ModuleConfiguration,
 } from "./config.helper";
 
 const isWindows = platform === "win32";
@@ -31,7 +32,7 @@ export function configFilePaths(name = "digital-alchemy"): string[] {
   let current = cwd();
   let next: string;
   while (!is.empty(current)) {
-    out.push(join(current, `.${name}`), ...withExtensions(current));
+    out.push(...withExtensions(join(current, `.${name}`)));
     next = join(current, "..");
     if (next === current) {
       break;
@@ -47,10 +48,10 @@ export function configFilePaths(name = "digital-alchemy"): string[] {
   );
 }
 
-export async function ConfigLoaderFile({
-  application,
-  logger,
-}: ConfigLoaderParams): ConfigLoaderReturn {
+export async function ConfigLoaderFile<
+  S extends ServiceMap = ServiceMap,
+  C extends ModuleConfiguration = ModuleConfiguration,
+>({ application, logger }: ConfigLoaderParams<S, C>): ConfigLoaderReturn {
   const CLI_SWITCHES = minimist(process.argv);
   const configFile = CLI_SWITCHES.config;
   let files: string[];

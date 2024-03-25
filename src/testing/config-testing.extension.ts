@@ -9,6 +9,7 @@ import { cwd } from "process";
 import { is } from "..";
 import { SINGLE, TServiceParams } from "../helpers";
 
+export type RandomFileTestingDataFormat = ReturnType<typeof generateRandomData>;
 function generateRandomData() {
   return {
     testing: {
@@ -30,10 +31,8 @@ function generateRandomData() {
   };
 }
 
-export type RandomFileTestingDataFormat = object;
-
-export function ConfigTesting({ logger, internal }: TServiceParams) {
-  const appName = internal.boot.application.name;
+export function ConfigTesting({ logger, internal, lifecycle }: TServiceParams) {
+  const appName = "testing";
   const testDataMap = new Map<string, RandomFileTestingDataFormat>();
 
   function writeConfigFile(
@@ -60,26 +59,43 @@ export function ConfigTesting({ logger, internal }: TServiceParams) {
     testDataMap.set(filePath, data);
   }
 
+  function unlink(path?: string) {
+    if (path) {
+      if (testDataMap.has(path)) {
+        existsSync(path) && unlinkSync(path);
+        testDataMap.delete(path);
+        return;
+      }
+      return;
+    }
+    testDataMap.forEach((_, filePath) => {
+      existsSync(filePath) && unlinkSync(filePath);
+    });
+  }
+
+  lifecycle.onPreShutdown(() => {
+    unlink();
+    [...testDataMap.keys()].forEach((i) => testDataMap.delete(i));
+  });
+
   return {
     dataMap: testDataMap,
     link: (paths?: string[]) => {
-      is.unique(
+      const list = is.unique(
         is.empty(paths)
           ? [cwd(), join(homedir(), ".config")].flatMap((base) => [
-              join(base, appName),
-              join(base, `${appName}.json`),
-              join(base, `${appName}.ini`),
-              join(base, `${appName}.yaml`),
+              join(base, `.${appName}`),
+              join(base, `.${appName}.json`),
+              join(base, `.${appName}.ini`),
+              join(base, `.${appName}.yaml`),
             ])
           : paths,
-      ).forEach((filename) => {
-        // console.log("FIXME: GENERATE RANDOM DATA", filename, writeConfigFile);
-        const data = generateRandomData();
-        writeConfigFile(filename, data);
-        logger.info({ filename });
-        filename;
-        return writeConfigFile;
+      );
+      list.forEach((filename) => {
+        // console.log(testDataMap);
+        writeConfigFile(filename, generateRandomData());
       });
+      return list;
     },
     sort: (filePaths: string[]): string[] => {
       const dirOrder = [
@@ -87,40 +103,33 @@ export function ConfigTesting({ logger, internal }: TServiceParams) {
         join("/etc", appName, "config.json"),
         join("/etc", appName, "config.ini"),
         join("/etc", appName, "config.yaml"),
+        join("/etc", appName, "config.yml"),
         join("/etc", `${appName}`),
         join("/etc", `${appName}.json`),
         join("/etc", `${appName}.ini`),
         join("/etc", `${appName}.yaml`),
+        join("/etc", `${appName}.yml`),
         join(cwd(), `.${appName}`),
         join(cwd(), `.${appName}.json`),
         join(cwd(), `.${appName}.ini`),
         join(cwd(), `.${appName}.yaml`),
+        join(cwd(), `.${appName}.yml`),
         join(homedir(), ".config", appName),
         join(homedir(), ".config", `${appName}.json`),
         join(homedir(), ".config", `${appName}.ini`),
         join(homedir(), ".config", `${appName}.yaml`),
+        join(homedir(), ".config", `${appName}.yml`),
         join(homedir(), ".config", appName, "config"),
         join(homedir(), ".config", appName, "config.json"),
         join(homedir(), ".config", appName, "config.ini"),
         join(homedir(), ".config", appName, "config.yaml"),
+        join(homedir(), ".config", appName, "config.yml"),
       ].reverse();
 
       return filePaths
         .filter((path) => dirOrder.includes(path))
         .sort((a, b) => dirOrder.indexOf(a) - dirOrder.indexOf(b));
     },
-    unlink: (path?: string) => {
-      if (path) {
-        if (testDataMap.has(path)) {
-          existsSync(path) && unlinkSync(path);
-          testDataMap.delete(path);
-          return;
-        }
-        return;
-      }
-      testDataMap.forEach((_, filePath) => {
-        existsSync(filePath) && unlinkSync(filePath);
-      });
-    },
+    unlink,
   };
 }

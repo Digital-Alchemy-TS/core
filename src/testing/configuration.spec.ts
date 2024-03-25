@@ -3,7 +3,6 @@ import { env } from "process";
 import {
   ApplicationDefinition,
   BootstrapOptions,
-  ConfigLoader,
   ConfigLoaderEnvironment,
   ConfigLoaderFile,
   CreateApplication,
@@ -13,6 +12,7 @@ import {
   ServiceMap,
   TServiceParams,
 } from "..";
+import { ConfigTesting } from "./config-testing.extension";
 
 const BASIC_BOOT = {
   configuration: { boilerplate: { LOG_LEVEL: "silent" } },
@@ -95,6 +95,9 @@ describe("Configuration", () => {
           },
         },
       });
+      // hide logs that result from lack of "silent" LOG_LEVEL
+      jest.spyOn(console, "log").mockImplementation(() => {});
+      jest.spyOn(console, "error").mockImplementation(() => {});
       // MUST STAY EMPTY!
       await application.bootstrap({});
     });
@@ -228,7 +231,7 @@ describe("Configuration", () => {
               type: "string",
             },
           },
-          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          configurationLoaders: [ConfigLoaderEnvironment],
           // @ts-expect-error testing
           name: "testing",
           services: {
@@ -253,7 +256,7 @@ describe("Configuration", () => {
               type: "string",
             },
           },
-          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          configurationLoaders: [ConfigLoaderEnvironment],
           // @ts-expect-error testing
           name: "testing",
           services: {
@@ -278,7 +281,7 @@ describe("Configuration", () => {
               type: "string",
             },
           },
-          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          configurationLoaders: [ConfigLoaderEnvironment],
           // @ts-expect-error testing
           name: "testing",
           services: {
@@ -332,7 +335,7 @@ describe("Configuration", () => {
               type: "string",
             },
           },
-          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          configurationLoaders: [ConfigLoaderEnvironment],
           // @ts-expect-error testing
           name: "testing",
           services: {
@@ -357,7 +360,7 @@ describe("Configuration", () => {
               type: "string",
             },
           },
-          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          configurationLoaders: [ConfigLoaderEnvironment],
           // @ts-expect-error testing
           name: "testing",
           services: {
@@ -382,7 +385,7 @@ describe("Configuration", () => {
               type: "string",
             },
           },
-          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          configurationLoaders: [ConfigLoaderEnvironment],
           // @ts-expect-error testing
           name: "testing",
           services: {
@@ -407,7 +410,7 @@ describe("Configuration", () => {
               type: "string",
             },
           },
-          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          configurationLoaders: [ConfigLoaderEnvironment],
           // @ts-expect-error testing
           name: "testing",
           services: {
@@ -424,33 +427,53 @@ describe("Configuration", () => {
     });
 
     describe("File", () => {
-      afterAll(() => {
-        //
-      });
-
-      it("is valid with equals signs", async () => {
-        expect.assertions(1);
-        process.argv.push("--current_WEATHER=hail");
-        application = CreateApplication({
-          configuration: {
-            CURRENT_WEATHER: {
-              default: "raining",
-              type: "string",
-            },
-          },
-          configurationLoaders: [ConfigLoaderFile as ConfigLoader],
-          // @ts-expect-error testing
-          name: "testing",
+      it("resolves files in the correct order", async () => {
+        let testFiles: ReturnType<typeof ConfigTesting>;
+        const helper = CreateApplication({
+          configurationLoaders: [],
+          // @ts-expect-error Testing
+          name: "helper",
           services: {
-            Testing({ config, lifecycle }: TServiceParams) {
-              lifecycle.onPostConfig(() => {
-                // @ts-expect-error testing
-                expect(config.testing.CURRENT_WEATHER).toBe("raining");
-              });
+            ConfigTesting,
+            // @ts-expect-error Testing
+            Helper({ helper }: TServiceParams) {
+              testFiles = helper.ConfigTesting;
             },
           },
         });
-        await application.bootstrap(BASIC_BOOT);
+        await helper.bootstrap(BASIC_BOOT);
+        await helper.teardown();
+        const keys = [...testFiles.dataMap.keys()];
+        let sortedFiles = testFiles.sort(keys);
+
+        for (const filePath of sortedFiles) {
+          const expectedData = testFiles.dataMap.get(filePath).testing.string;
+
+          application = CreateApplication({
+            configuration: {
+              string: {
+                default: "testing default value",
+                type: "string",
+              },
+            },
+            configurationLoaders: [ConfigLoaderFile],
+            // @ts-expect-error Testing
+            name: "testing",
+            services: {
+              Test({ lifecycle, config }: TServiceParams) {
+                lifecycle.onPostConfig(() => {
+                  // @ts-expect-error Testing
+                  expect(config.testing.string).toBe(expectedData);
+                });
+              },
+            },
+          });
+          await application.bootstrap(BASIC_BOOT);
+          await application.teardown();
+          application = undefined;
+          testFiles.unlink(filePath);
+          sortedFiles = testFiles.sort([...testFiles.dataMap.keys()]);
+        }
       });
     });
   });

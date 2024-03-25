@@ -277,6 +277,7 @@ export function CreateApplication<
 >({
   name,
   services,
+  configurationLoaders,
   libraries = [],
   configuration = {} as C,
   priorityInit = [],
@@ -326,6 +327,7 @@ export function CreateApplication<
       application.booted = true;
     },
     configuration,
+    configurationLoaders,
     libraries,
     name,
     priorityInit,
@@ -526,10 +528,10 @@ let startup: Date;
 async function Bootstrap<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
->(application: ApplicationDefinition<S, C>, options: BootstrapOptions) {
+>(application: ApplicationDefinition<S, C>, options: BootstrapOptions = {}) {
   if (internal) {
     throw new BootstrapException(
-      COERCE_CONTEXT("wiring.extension"),
+      WIRING_CONTEXT,
       "NO_DUAL_BOOT",
       "Another application is already active, please terminate",
     );

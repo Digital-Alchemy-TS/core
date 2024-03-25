@@ -1,3 +1,4 @@
+import { faker } from "@faker-js/faker";
 import { existsSync, unlinkSync, writeFileSync } from "fs";
 import { encode as iniEncode } from "ini";
 import { dump as yamlDump } from "js-yaml";
@@ -8,14 +9,31 @@ import { cwd } from "process";
 import { is } from "..";
 import { SINGLE, TServiceParams } from "../helpers";
 
-export const TESTING_APP_NAME = "digital-alchemy-unit-tests";
+function generateRandomData() {
+  return {
+    testing: {
+      boolean: faker.datatype.boolean(),
+      internal: {
+        mqtt: {
+          host: faker.internet.ip(),
+          port: faker.number.int({ max: 65_535, min: 1024 }),
+        },
+      },
+      number: faker.number.int(),
+      record: {
+        key1: faker.lorem.word(),
+        key2: faker.lorem.word(),
+      },
+      string: faker.lorem.word(),
+      stringArray: [faker.lorem.word(), faker.lorem.word(), faker.lorem.word()],
+    },
+  };
+}
 
-// export type RandomFileTestingDataFormat = ReturnType<
-//   typeof Testing.generateRandomData
-// >;
 export type RandomFileTestingDataFormat = object;
 
-export function Testing({ logger }: TServiceParams) {
+export function ConfigTesting({ logger, internal }: TServiceParams) {
+  const appName = internal.boot.application.name;
   const testDataMap = new Map<string, RandomFileTestingDataFormat>();
 
   function writeConfigFile(
@@ -48,16 +66,16 @@ export function Testing({ logger }: TServiceParams) {
       is.unique(
         is.empty(paths)
           ? [cwd(), join(homedir(), ".config")].flatMap((base) => [
-              join(base, TESTING_APP_NAME),
-              join(base, `${TESTING_APP_NAME}.json`),
-              join(base, `${TESTING_APP_NAME}.ini`),
-              join(base, `${TESTING_APP_NAME}.yaml`),
+              join(base, appName),
+              join(base, `${appName}.json`),
+              join(base, `${appName}.ini`),
+              join(base, `${appName}.yaml`),
             ])
           : paths,
       ).forEach((filename) => {
         // console.log("FIXME: GENERATE RANDOM DATA", filename, writeConfigFile);
-        // const data = Testing.generateRandomData();
-        // writeConfigFile(filename, data);
+        const data = generateRandomData();
+        writeConfigFile(filename, data);
         logger.info({ filename });
         filename;
         return writeConfigFile;
@@ -65,26 +83,26 @@ export function Testing({ logger }: TServiceParams) {
     },
     sort: (filePaths: string[]): string[] => {
       const dirOrder = [
-        join("/etc", TESTING_APP_NAME, "config"),
-        join("/etc", TESTING_APP_NAME, "config.json"),
-        join("/etc", TESTING_APP_NAME, "config.ini"),
-        join("/etc", TESTING_APP_NAME, "config.yaml"),
-        join("/etc", `${TESTING_APP_NAME}rc`),
-        join("/etc", `${TESTING_APP_NAME}rc.json`),
-        join("/etc", `${TESTING_APP_NAME}rc.ini`),
-        join("/etc", `${TESTING_APP_NAME}rc.yaml`),
-        join(cwd(), `.${TESTING_APP_NAME}rc`),
-        join(cwd(), `.${TESTING_APP_NAME}rc.json`),
-        join(cwd(), `.${TESTING_APP_NAME}rc.ini`),
-        join(cwd(), `.${TESTING_APP_NAME}rc.yaml`),
-        join(homedir(), ".config", TESTING_APP_NAME),
-        join(homedir(), ".config", `${TESTING_APP_NAME}.json`),
-        join(homedir(), ".config", `${TESTING_APP_NAME}.ini`),
-        join(homedir(), ".config", `${TESTING_APP_NAME}.yaml`),
-        join(homedir(), ".config", TESTING_APP_NAME, "config"),
-        join(homedir(), ".config", TESTING_APP_NAME, "config.json"),
-        join(homedir(), ".config", TESTING_APP_NAME, "config.ini"),
-        join(homedir(), ".config", TESTING_APP_NAME, "config.yaml"),
+        join("/etc", appName, "config"),
+        join("/etc", appName, "config.json"),
+        join("/etc", appName, "config.ini"),
+        join("/etc", appName, "config.yaml"),
+        join("/etc", `${appName}`),
+        join("/etc", `${appName}.json`),
+        join("/etc", `${appName}.ini`),
+        join("/etc", `${appName}.yaml`),
+        join(cwd(), `.${appName}`),
+        join(cwd(), `.${appName}.json`),
+        join(cwd(), `.${appName}.ini`),
+        join(cwd(), `.${appName}.yaml`),
+        join(homedir(), ".config", appName),
+        join(homedir(), ".config", `${appName}.json`),
+        join(homedir(), ".config", `${appName}.ini`),
+        join(homedir(), ".config", `${appName}.yaml`),
+        join(homedir(), ".config", appName, "config"),
+        join(homedir(), ".config", appName, "config.json"),
+        join(homedir(), ".config", appName, "config.ini"),
+        join(homedir(), ".config", appName, "config.yaml"),
       ].reverse();
 
       return filePaths

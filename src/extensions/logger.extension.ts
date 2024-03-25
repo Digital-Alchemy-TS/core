@@ -67,6 +67,7 @@ const MAX_CUTOFF = 2000;
 const frontDash = " - ";
 const SYMBOL_START = 1;
 const SYMBOL_END = -1;
+const LEVEL_MAX = 7;
 
 export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   const chalk = (await import("chalk")).default;
@@ -75,6 +76,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   const BLUE_TICK = chalk.blue(`>`);
   let prettyFormat = true;
   const shouldILog = {} as Record<TConfigLogLevel, boolean>;
+  const includeLogLevel = !internal.boot.options.hideLogLevel;
 
   const prettyFormatMessage = (message: string): string => {
     if (!message) {
@@ -104,6 +106,9 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   };
 
   [...METHOD_COLORS.keys()].forEach((key) => {
+    const level = includeLogLevel
+      ? `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ")
+      : ``;
     logger[key] = (
       context: TContext,
       ...parameters: Parameters<TLoggerFunction>
@@ -133,7 +138,8 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
         logMessage = format(prettyFormatMessage(text), ...parameters);
       }
 
-      let message = `${timestamp} ${highlighted}`;
+      let message = `${timestamp} ${level}${highlighted}`;
+
       if (!is.empty(name)) {
         message += chalk.blue(` (${name})`);
       }

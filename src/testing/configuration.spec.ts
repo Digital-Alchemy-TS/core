@@ -3,6 +3,9 @@ import { env } from "process";
 import {
   ApplicationDefinition,
   BootstrapOptions,
+  ConfigLoader,
+  ConfigLoaderEnvironment,
+  ConfigLoaderFile,
   CreateApplication,
   CreateLibrary,
   INITIALIZE,
@@ -13,6 +16,7 @@ import {
 
 const BASIC_BOOT = {
   configuration: { boilerplate: { LOG_LEVEL: "silent" } },
+  hideLogLevel: true,
 } as BootstrapOptions;
 
 describe("Configuration", () => {
@@ -91,7 +95,8 @@ describe("Configuration", () => {
           },
         },
       });
-      await application.bootstrap();
+      // MUST STAY EMPTY!
+      await application.bootstrap({});
     });
 
     it("should generate the correct structure for applications", async () => {
@@ -153,42 +158,300 @@ describe("Configuration", () => {
   });
 
   describe("Loaders", () => {
-    beforeEach(() => {
-      delete env["LOG_LEVEL"];
-      delete env["log_level"];
-      delete env["log-level"];
+    describe("General", () => {
+      afterEach(() => {
+        delete env["DO_NOT_LOAD"];
+      });
+      it("should not find variables without loaders", async () => {
+        expect.assertions(1);
+        env["DO_NOT_LOAD"] = "env";
+        // process.argv.push("--current_WEATHER=hail");
+        application = CreateApplication({
+          configuration: {
+            DO_NOT_LOAD: {
+              default: "unloaded",
+              type: "string",
+            },
+          },
+          configurationLoaders: [],
+          // @ts-expect-error testing
+          name: "testing",
+          services: {
+            Testing({ config, lifecycle }: TServiceParams) {
+              lifecycle.onPostConfig(() => {
+                // @ts-expect-error testing
+                expect(config.testing.DO_NOT_LOAD).toBe("unloaded");
+              });
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+      });
     });
+
     describe("Environment", () => {
-      it("should resolve direct match", async () => {
+      afterEach(() => {
+        delete env["current_weather"];
+        delete env["current_WEATHER"];
+        delete env["CURRENT_WEATHER"];
+      });
+      it("should default properly if environment variables do not exist", async () => {
         expect.assertions(1);
         application = CreateApplication({
           configuration: {
             CURRENT_WEATHER: {
+              default: "raining",
               type: "string",
-              default: "raining"
-            }
+            },
           },
           // @ts-expect-error testing
           name: "testing",
           services: {
-            Testing({ config , lifecycle}: TServiceParams) {
+            Testing({ config, lifecycle }: TServiceParams) {
               lifecycle.onPostConfig(() => {
-
                 // @ts-expect-error testing
-                expect(config.library.RAINING).toBe(false);
-              })
+                expect(config.testing.CURRENT_WEATHER).toBe("raining");
+              });
             },
           },
         });
+        await application.bootstrap(BASIC_BOOT);
+      });
+
+      it("should do direct match by key", async () => {
+        expect.assertions(1);
+        env["CURRENT_WEATHER"] = "windy";
+        application = CreateApplication({
+          configuration: {
+            CURRENT_WEATHER: {
+              default: "raining",
+              type: "string",
+            },
+          },
+          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          // @ts-expect-error testing
+          name: "testing",
+          services: {
+            Testing({ config, lifecycle }: TServiceParams) {
+              lifecycle.onPostConfig(() => {
+                // @ts-expect-error testing
+                expect(config.testing.CURRENT_WEATHER).toBe("windy");
+              });
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+      });
+
+      it("should wrong case (all lower)", async () => {
+        expect.assertions(1);
+        env["current_weather"] = "sunny";
+        application = CreateApplication({
+          configuration: {
+            CURRENT_WEATHER: {
+              default: "raining",
+              type: "string",
+            },
+          },
+          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          // @ts-expect-error testing
+          name: "testing",
+          services: {
+            Testing({ config, lifecycle }: TServiceParams) {
+              lifecycle.onPostConfig(() => {
+                // @ts-expect-error testing
+                expect(config.testing.CURRENT_WEATHER).toBe("sunny");
+              });
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+      });
+
+      it("should wrong case (mixed)", async () => {
+        expect.assertions(1);
+        env["current_WEATHER"] = "hail";
+        application = CreateApplication({
+          configuration: {
+            CURRENT_WEATHER: {
+              default: "raining",
+              type: "string",
+            },
+          },
+          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          // @ts-expect-error testing
+          name: "testing",
+          services: {
+            Testing({ config, lifecycle }: TServiceParams) {
+              lifecycle.onPostConfig(() => {
+                // @ts-expect-error testing
+                expect(config.testing.CURRENT_WEATHER).toBe("hail");
+              });
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
       });
     });
 
-    describe("CLI", () => {
-      //
+    describe("CLI Switch", () => {
+      beforeEach(() => {
+        process.argv = ["/path/to/node", "/path/to/main"];
+      });
+
+      it("should default properly if environment variables do not exist", async () => {
+        expect.assertions(1);
+        application = CreateApplication({
+          configuration: {
+            CURRENT_WEATHER: {
+              default: "raining",
+              type: "string",
+            },
+          },
+          // @ts-expect-error testing
+          name: "testing",
+          services: {
+            Testing({ config, lifecycle }: TServiceParams) {
+              lifecycle.onPostConfig(() => {
+                // @ts-expect-error testing
+                expect(config.testing.CURRENT_WEATHER).toBe("raining");
+              });
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+      });
+
+      it("should do direct match by key", async () => {
+        expect.assertions(1);
+        process.argv.push("--CURRENT_WEATHER", "windy");
+        application = CreateApplication({
+          configuration: {
+            CURRENT_WEATHER: {
+              default: "raining",
+              type: "string",
+            },
+          },
+          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          // @ts-expect-error testing
+          name: "testing",
+          services: {
+            Testing({ config, lifecycle }: TServiceParams) {
+              lifecycle.onPostConfig(() => {
+                // @ts-expect-error testing
+                expect(config.testing.CURRENT_WEATHER).toBe("windy");
+              });
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+      });
+
+      it("should wrong case (all lower)", async () => {
+        expect.assertions(1);
+        process.argv.push("--current_weather", "sunny");
+        application = CreateApplication({
+          configuration: {
+            CURRENT_WEATHER: {
+              default: "raining",
+              type: "string",
+            },
+          },
+          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          // @ts-expect-error testing
+          name: "testing",
+          services: {
+            Testing({ config, lifecycle }: TServiceParams) {
+              lifecycle.onPostConfig(() => {
+                // @ts-expect-error testing
+                expect(config.testing.CURRENT_WEATHER).toBe("sunny");
+              });
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+      });
+
+      it("should wrong case (mixed)", async () => {
+        expect.assertions(1);
+        process.argv.push("--current_WEATHER", "hail");
+        application = CreateApplication({
+          configuration: {
+            CURRENT_WEATHER: {
+              default: "raining",
+              type: "string",
+            },
+          },
+          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          // @ts-expect-error testing
+          name: "testing",
+          services: {
+            Testing({ config, lifecycle }: TServiceParams) {
+              lifecycle.onPostConfig(() => {
+                // @ts-expect-error testing
+                expect(config.testing.CURRENT_WEATHER).toBe("hail");
+              });
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+      });
+
+      it("is valid with equals signs", async () => {
+        expect.assertions(1);
+        process.argv.push("--current_WEATHER=hail");
+        application = CreateApplication({
+          configuration: {
+            CURRENT_WEATHER: {
+              default: "raining",
+              type: "string",
+            },
+          },
+          configurationLoaders: [ConfigLoaderEnvironment as ConfigLoader],
+          // @ts-expect-error testing
+          name: "testing",
+          services: {
+            Testing({ config, lifecycle }: TServiceParams) {
+              lifecycle.onPostConfig(() => {
+                // @ts-expect-error testing
+                expect(config.testing.CURRENT_WEATHER).toBe("hail");
+              });
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+      });
     });
 
     describe("File", () => {
-      //
+      afterAll(() => {
+        //
+      });
+
+      it("is valid with equals signs", async () => {
+        expect.assertions(1);
+        process.argv.push("--current_WEATHER=hail");
+        application = CreateApplication({
+          configuration: {
+            CURRENT_WEATHER: {
+              default: "raining",
+              type: "string",
+            },
+          },
+          configurationLoaders: [ConfigLoaderFile as ConfigLoader],
+          // @ts-expect-error testing
+          name: "testing",
+          services: {
+            Testing({ config, lifecycle }: TServiceParams) {
+              lifecycle.onPostConfig(() => {
+                // @ts-expect-error testing
+                expect(config.testing.CURRENT_WEATHER).toBe("raining");
+              });
+            },
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+      });
     });
   });
 });

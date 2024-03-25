@@ -285,6 +285,12 @@ export type BootstrapOptions = {
    * Show detailed boot time statistics
    */
   showExtraBootStats?: boolean;
+  /**
+   * default false
+   *
+   * if set to true, log levels text will be hidden, relying only on color to indicate level
+   */
+  hideLogLevel?: boolean;
 };
 
 export const WIRE_PROJECT = Symbol.for("wire-project");

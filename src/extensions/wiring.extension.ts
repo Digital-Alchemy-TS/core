@@ -44,7 +44,7 @@ import {
   LOAD_PROJECT,
 } from "./configuration.extension";
 import { Fetch } from "./fetch.extension";
-import { ILogger, Logger } from "./logger.extension";
+import { ILogger, Logger, TConfigLogLevel } from "./logger.extension";
 import { Scheduler } from "./scheduler.extension";
 
 // # "Semi-local variables"
@@ -151,6 +151,7 @@ function CreateBoilerplate() {
   return CreateLibrary({
     configuration: {
       CACHE_PREFIX: {
+        default: "",
         description: [
           "Use a prefix with all cache keys",
           "If blank, then application name is used",
@@ -181,7 +182,7 @@ function CreateBoilerplate() {
         description: "Minimum log level to process",
         enum: ["silent", "trace", "info", "warn", "debug", "error"],
         type: "string",
-      } as StringConfig<keyof ILogger>,
+      } as StringConfig<TConfigLogLevel>,
       REDIS_URL: {
         default: "redis://localhost:6379",
         description:
@@ -396,7 +397,6 @@ async function WireService(
     // eslint-disable-next-line no-console
     console.error("initialization error", error);
     exit();
-    return undefined;
   }
 }
 
@@ -634,8 +634,10 @@ async function Bootstrap<
     );
     internal.boot.phase = "running";
   } catch (error) {
-    // eslint-disable-next-line no-console
-    console.error("bootstrap failed", error);
+    if (options?.configuration?.boilerplate?.LOG_LEVEL !== "silent") {
+      // eslint-disable-next-line no-console
+      console.error("bootstrap failed", error);
+    }
     exit();
   }
 }

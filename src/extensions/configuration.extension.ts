@@ -7,7 +7,6 @@ import {
   ConfigLoaderFile,
   deepExtend,
   eachSeries,
-  InternalError,
   KnownConfigs,
   OptionalModuleConfiguration,
   PartialConfiguration,
@@ -38,10 +37,6 @@ export function Configuration({
   );
 
   // # Locals
-  let configLoaders = [
-    ConfigLoaderEnvironment,
-    ConfigLoaderFile,
-  ] as ConfigLoader[];
   const configuration: PartialConfiguration = {};
   const configDefinitions: KnownConfigs = new Map();
 
@@ -51,6 +46,10 @@ export function Configuration({
     S extends ServiceMap,
     C extends OptionalModuleConfiguration,
   >(application: ApplicationDefinition<S, C>): Promise<string | never> {
+    const configLoaders =
+      internal.boot.application.configurationLoaders ??
+      ([ConfigLoaderEnvironment, ConfigLoaderFile] as ConfigLoader[]);
+
     const start = Date.now();
     // * sanity check
     if (!application) {
@@ -211,24 +210,6 @@ export function Configuration({
      * emits update event
      */
     set: SetConfig as TSetConfig,
-
-    /**
-     * replace the default set of configuration loaders with a new batch
-     *
-     * provide empty array to disable all user configs (good for unit testing!)
-     */
-    setConfigLoaders(loaders: ConfigLoader[]) {
-      if (internal.boot.completedLifecycleEvents.has("PreInit")) {
-        // Maybe you want `.merge` instead?
-        throw new InternalError(
-          context,
-          "LATE_SET_CONFIG_LOADERS",
-          "The configuration process has already started, unable to modify config loaders",
-        );
-      }
-      logger.info({ name: "setConfigLoaders" }, `replaced config loaders`);
-      configLoaders = loaders;
-    },
   };
 }
 

@@ -20,7 +20,7 @@ import {
 const FAKE_EXIT = (() => {}) as () => never;
 
 const BASIC_BOOT = {
-  configuration: { boilerplate: { LOG_LEVEL: "error" } },
+  configuration: { boilerplate: { LOG_LEVEL: "silent" } },
 } as BootstrapOptions;
 
 describe("Wiring", () => {
@@ -118,14 +118,15 @@ describe("Wiring", () => {
       });
 
       application = CreateApplication({
+        configurationLoaders: [],
         libraries: [testLibrary],
         // @ts-expect-error For unit testing
-        name: "testing_app",
+        name: "testing",
         services: { AppService: jest.fn() },
       });
 
       expect(application).toBeDefined();
-      expect(application.name).toBe("testing_app");
+      expect(application.name).toBe("testing");
       expect(Object.keys(application.services).length).toBe(1);
       expect(application.libraries.length).toBe(1);
       expect(application.libraries[0]).toBe(testLibrary);
@@ -135,8 +136,9 @@ describe("Wiring", () => {
   describe("Lifecycle", () => {
     beforeEach(() => {
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error For unit testing
-        name: "testing_app",
+        name: "testing",
         services: {},
       });
     });
@@ -148,8 +150,9 @@ describe("Wiring", () => {
       const spyBootstrap = jest.fn();
       const spyReady = jest.fn();
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error For unit testing
-        name: "testing_app",
+        name: "testing",
         services: {
           spy({ lifecycle }: TServiceParams) {
             lifecycle.onPreInit(() => spyPreInit());
@@ -186,8 +189,9 @@ describe("Wiring", () => {
       const mockBootstrap = jest.fn();
       const mockReady = jest.fn();
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error For unit testing
-        name: "testing_app",
+        name: "testing",
         services: {
           spy({ lifecycle }: TServiceParams) {
             lifecycle.onPreInit(() => mockPreInit());
@@ -217,8 +221,9 @@ describe("Wiring", () => {
       const mockCallback = jest.fn();
 
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error For unit testing
-        name: "testing_app",
+        name: "testing",
         services: {
           spy({ lifecycle }: TServiceParams) {
             lifecycle.onBootstrap(() => mockCallback());
@@ -239,8 +244,9 @@ describe("Wiring", () => {
       });
 
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error For unit testing
-        name: "testing_app",
+        name: "testing",
         services: {
           spy({ lifecycle }: TServiceParams) {
             lifecycle.onBootstrap(() => errorMock());
@@ -264,8 +270,9 @@ describe("Wiring", () => {
       const executionOrder: string[] = [];
 
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error For unit testing
-        name: "testing_app",
+        name: "testing",
         services: {
           spy({ lifecycle }: TServiceParams) {
             lifecycle.onBootstrap(
@@ -293,8 +300,9 @@ describe("Wiring", () => {
       const executionOrder: string[] = [];
 
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error For unit testing
-        name: "testing_app",
+        name: "testing",
         services: {
           spy({ lifecycle }: TServiceParams) {
             lifecycle.onBootstrap(
@@ -322,6 +330,7 @@ describe("Wiring", () => {
       it("starts off empty", async () => {
         let list: LifecycleStages[];
         application = CreateApplication({
+          configurationLoaders: [],
           // @ts-expect-error Testing
           name: "testing",
           services: {
@@ -339,6 +348,7 @@ describe("Wiring", () => {
       it("tracks onPreInit", async () => {
         let list: LifecycleStages[];
         application = CreateApplication({
+          configurationLoaders: [],
           // @ts-expect-error Testing
           name: "testing",
           services: {
@@ -356,6 +366,7 @@ describe("Wiring", () => {
       it("tracks onPostConfig", async () => {
         let list: LifecycleStages[];
         application = CreateApplication({
+          configurationLoaders: [],
           // @ts-expect-error Testing
           name: "testing",
           services: {
@@ -373,6 +384,7 @@ describe("Wiring", () => {
       it("tracks onPreInit", async () => {
         let list: LifecycleStages[];
         application = CreateApplication({
+          configurationLoaders: [],
           // @ts-expect-error Testing
           name: "testing",
           services: {
@@ -390,6 +402,7 @@ describe("Wiring", () => {
       it("tracks ready", async () => {
         let i: InternalDefinition;
         application = CreateApplication({
+          configurationLoaders: [],
           // @ts-expect-error Testing
           name: "testing",
           services: {
@@ -410,6 +423,7 @@ describe("Wiring", () => {
       it("does not change by start of teardown", async () => {
         let list: LifecycleStages[];
         application = CreateApplication({
+          configurationLoaders: [],
           // @ts-expect-error Testing
           name: "testing",
           services: {
@@ -429,6 +443,7 @@ describe("Wiring", () => {
       it("tracks preShutdown", async () => {
         let list: LifecycleStages[];
         application = CreateApplication({
+          configurationLoaders: [],
           // @ts-expect-error Testing
           name: "testing",
           services: {
@@ -454,6 +469,7 @@ describe("Wiring", () => {
       it("tracks shutdownStart", async () => {
         let list: LifecycleStages[];
         application = CreateApplication({
+          configurationLoaders: [],
           // @ts-expect-error Testing
           name: "testing",
           services: {
@@ -480,6 +496,7 @@ describe("Wiring", () => {
       it("tracks shutdownComplete", async () => {
         let i: InternalDefinition;
         application = CreateApplication({
+          configurationLoaders: [],
           // @ts-expect-error Testing
           name: "testing",
           services: {
@@ -507,6 +524,7 @@ describe("Wiring", () => {
     it("should prioritize services with priorityInit", async () => {
       const list = [] as string[];
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         priorityInit: ["First", "Second"],
@@ -530,6 +548,7 @@ describe("Wiring", () => {
     it("throws errors with missing priority services", async () => {
       expect(() => {
         CreateApplication({
+          configurationLoaders: [],
           // @ts-expect-error Testing
           name: "testing",
           priorityInit: ["Testing"],
@@ -542,6 +561,7 @@ describe("Wiring", () => {
 
     it("sets booted after finishing bootstrap", async () => {
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {},
@@ -553,6 +573,7 @@ describe("Wiring", () => {
 
     it("forbids double booting", async () => {
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {},
@@ -573,6 +594,7 @@ describe("Wiring", () => {
     it("phase should be bootstrap during boot", async () => {
       let i: string;
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {
@@ -589,6 +611,7 @@ describe("Wiring", () => {
     it("phase should be running when finished booting", async () => {
       let i: InternalDefinition;
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {
@@ -605,6 +628,7 @@ describe("Wiring", () => {
     it("phase should be teardown after teardown starts", async () => {
       let i: string;
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {
@@ -627,6 +651,7 @@ describe("Wiring", () => {
     it("phase should be teardown after teardown starts", async () => {
       let i: string;
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {
@@ -648,6 +673,7 @@ describe("Wiring", () => {
   describe("Internal Variable Usage", () => {
     it("populates maps during bootstrap", async () => {
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {},
@@ -665,6 +691,7 @@ describe("Wiring", () => {
     it("should add library to TServiceParams", async () => {
       let observed: unknown;
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         priorityInit: ["First"],
@@ -682,6 +709,7 @@ describe("Wiring", () => {
     it("should use service context as keys in assembled api", async () => {
       let foo: string;
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         priorityInit: ["First"],
@@ -702,6 +730,7 @@ describe("Wiring", () => {
     it("passes lifecycle into services", async () => {
       let observed: unknown;
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {
@@ -717,6 +746,7 @@ describe("Wiring", () => {
     it("passes logger into services", async () => {
       let observed: unknown;
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {
@@ -732,6 +762,7 @@ describe("Wiring", () => {
     it("passes scheduler into services", async () => {
       let observed: unknown;
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {
@@ -747,6 +778,7 @@ describe("Wiring", () => {
     it("passes cache into services", async () => {
       let observed: unknown;
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {
@@ -762,6 +794,7 @@ describe("Wiring", () => {
     it("passes event into services", async () => {
       let observed: unknown;
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {
@@ -777,6 +810,7 @@ describe("Wiring", () => {
     it("passes config into services", async () => {
       let observed: unknown;
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {
@@ -792,6 +826,7 @@ describe("Wiring", () => {
     it("passes context into services", async () => {
       let observed: unknown;
       application = CreateApplication({
+        configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
         services: {
@@ -852,6 +887,7 @@ describe("Wiring", () => {
 
     it("should throw errors if a dependency is missing from the app", async () => {
       application = CreateApplication({
+        configurationLoaders: [],
         libraries: [LIBRARY_C, LIBRARY_B],
         // @ts-expect-error testing
         name: "testing",
@@ -867,6 +903,7 @@ describe("Wiring", () => {
 
     it("should allow name compatible library substitutions", async () => {
       application = CreateApplication({
+        configurationLoaders: [],
         libraries: [
           LIBRARY_C,
           LIBRARY_B,

@@ -31,7 +31,7 @@ function generateRandomData() {
   };
 }
 
-export function ConfigTesting({ logger, internal, lifecycle }: TServiceParams) {
+export function ConfigTesting({ lifecycle }: TServiceParams) {
   const appName = "testing";
   const testDataMap = new Map<string, RandomFileTestingDataFormat>();
 

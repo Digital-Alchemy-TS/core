@@ -34,10 +34,13 @@ const LOG_LEVEL_PRIORITY = {
   error: 50,
   fatal: 60,
   info: 30,
+  silent: 100,
   trace: 10,
   warn: 40,
 };
-const LOG_LEVELS = Object.keys(LOG_LEVEL_PRIORITY) as (keyof ILogger)[];
+const LOG_LEVELS = Object.keys(LOG_LEVEL_PRIORITY) as TConfigLogLevel[];
+
+export type TConfigLogLevel = keyof ILogger | "silent";
 
 export const METHOD_COLORS = new Map<keyof ILogger, CONTEXT_COLORS>([
   ["trace", "grey"],
@@ -72,7 +75,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   const YELLOW_DASH = chalk.yellowBright(frontDash);
   const BLUE_TICK = chalk.blue(`>`);
   let prettyFormat = true;
-  const shouldILog = {} as Record<keyof ILogger, boolean>;
+  const shouldILog = {} as Record<TConfigLogLevel, boolean>;
   const includeLogLevel = !internal.boot.options.hideLogLevel;
 
   const prettyFormatMessage = (message: string): string => {
@@ -171,7 +174,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   // otherwise, be noisy until config loads a user preference
   //
   // stored as separate variable to cut down on internal config lookups
-  let CURRENT_LOG_LEVEL: keyof ILogger =
+  let CURRENT_LOG_LEVEL: TConfigLogLevel =
     internal.utils.object.get(
       internal,
       "boot.options.configuration.boilerplate.LOG_LEVEL",
@@ -196,7 +199,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
 
   const updateShouldLog = () => {
     CURRENT_LOG_LEVEL = config.boilerplate.LOG_LEVEL;
-    LOG_LEVELS.forEach((key: keyof ILogger) => {
+    LOG_LEVELS.forEach((key: TConfigLogLevel) => {
       shouldILog[key] =
         LOG_LEVEL_PRIORITY[key] >= LOG_LEVEL_PRIORITY[CURRENT_LOG_LEVEL];
     });

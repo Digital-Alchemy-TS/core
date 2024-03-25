@@ -6,6 +6,7 @@ import { ILogger, LIB_BOILERPLATE, TCache } from "..";
 import {
   AnyConfig,
   BooleanConfig,
+  ConfigLoader,
   InternalConfig,
   NumberConfig,
   OptionalModuleConfiguration,
@@ -23,6 +24,7 @@ export type ApplicationConfigurationOptions<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
 > = {
+  configurationLoaders?: ConfigLoader[];
   name: keyof LoadedModules;
   services: S;
   libraries?: LibraryDefinition<ServiceMap, OptionalModuleConfiguration>[];
@@ -306,10 +308,7 @@ type Wire = {
 export type LibraryDefinition<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
-> = LibraryConfigurationOptions<S, C> &
-  Wire & {
-    lifecycle: TChildLifecycle;
-  };
+> = LibraryConfigurationOptions<S, C> & Wire;
 
 export type ApplicationDefinition<
   S extends ServiceMap,
@@ -318,6 +317,5 @@ export type ApplicationDefinition<
   Wire & {
     booted: boolean;
     bootstrap: (options?: BootstrapOptions) => Promise<void>;
-    lifecycle: TChildLifecycle;
     teardown: () => Promise<void>;
   };

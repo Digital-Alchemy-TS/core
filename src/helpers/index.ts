@@ -13,6 +13,5 @@ export * from "./extend.helper";
 export * from "./fetch.helper";
 export * from "./lifecycle.helper";
 export * from "./metrics.helper";
-export * from "./testing.helper";
 export * from "./utilities.helper";
 export * from "./wiring.helper";

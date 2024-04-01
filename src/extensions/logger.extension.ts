@@ -105,70 +105,76 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
     return message;
   };
 
-  [...METHOD_COLORS.keys()].forEach((key) => {
-    const level = includeLogLevel
-      ? `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ")
-      : ``;
-    logger[key] = (
-      context: TContext,
-      ...parameters: Parameters<TLoggerFunction>
-    ) => {
-      const data = is.object(parameters[FIRST])
-        ? (parameters.shift() as {
-            context?: TContext;
-            error?: Error | string;
-            name?: string | { name: string };
-            stack?: string | string[];
-          })
-        : {};
-      const highlighted = chalk.bold[METHOD_COLORS.get(key)](
-        `[${data.context || context}]`,
-      );
-      const name =
-        is.object(data.name) || is.function(data.name)
-          ? data.name.name
-          : data.name;
-      delete data.context;
-      delete data.name;
+  if (is.empty(internal.boot.options.customLogger)) {
+    [...METHOD_COLORS.keys()].forEach((key) => {
+      const level = includeLogLevel
+        ? `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ")
+        : ``;
+      logger[key] = (
+        context: TContext,
+        ...parameters: Parameters<TLoggerFunction>
+      ) => {
+        const data = is.object(parameters[FIRST])
+          ? (parameters.shift() as {
+              context?: TContext;
+              error?: Error | string;
+              name?: string | { name: string };
+              stack?: string | string[];
+            })
+          : {};
+        const highlighted = chalk.bold[METHOD_COLORS.get(key)](
+          `[${data.context || context}]`,
+        );
+        const name =
+          is.object(data.name) || is.function(data.name)
+            ? data.name.name
+            : data.name;
+        delete data.context;
+        delete data.name;
 
-      const timestamp = chalk.white(`[${dayjs().format("ddd hh:mm:ss.SSS")}]`);
-      let logMessage: string;
-      if (!is.empty(parameters)) {
-        const text = parameters.shift() as string;
-        logMessage = format(prettyFormatMessage(text), ...parameters);
-      }
+        const timestamp = chalk.white(
+          `[${dayjs().format("ddd hh:mm:ss.SSS")}]`,
+        );
+        let logMessage: string;
+        if (!is.empty(parameters)) {
+          const text = parameters.shift() as string;
+          logMessage = format(prettyFormatMessage(text), ...parameters);
+        }
 
-      let message = `${timestamp} ${level}${highlighted}`;
+        let message = `${timestamp} ${level}${highlighted}`;
 
-      if (!is.empty(name)) {
-        message += chalk.blue(` (${name})`);
-      }
-      if (!is.empty(logMessage)) {
-        message += `: ${chalk.cyan(logMessage)}`;
-      }
-      if (!is.empty(data)) {
-        message +=
-          "\n" +
-          inspect(data, {
-            colors: true,
-            compact: false,
-            depth: 10,
-            numericSeparator: true,
-            sorted: true,
-          })
-            .split("\n")
-            .slice(SYMBOL_START, SYMBOL_END)
-            .join("\n");
-      }
-      if (["warn", "error", "log"].includes(key)) {
+        if (!is.empty(name)) {
+          message += chalk.blue(` (${name})`);
+        }
+        if (!is.empty(logMessage)) {
+          message += `: ${chalk.cyan(logMessage)}`;
+        }
+        if (!is.empty(data)) {
+          message +=
+            "\n" +
+            inspect(data, {
+              colors: true,
+              compact: false,
+              depth: 10,
+              numericSeparator: true,
+              sorted: true,
+            })
+              .split("\n")
+              .slice(SYMBOL_START, SYMBOL_END)
+              .join("\n");
+        }
+        if (["warn", "error", "log"].includes(key)) {
+          // eslint-disable-next-line no-console
+          console.error(message);
+          return;
+        }
         // eslint-disable-next-line no-console
-        console.error(message);
-        return;
-      }
-      // eslint-disable-next-line no-console
-      console.log(message);
-    };
-  });
+        console.log(message);
+      };
+    });
+  } else {
+    logger = internal.boot.options.customLogger;
+  }
 
   // if bootstrap hard coded something specific, then start there
   // otherwise, be noisy until config loads a user preference

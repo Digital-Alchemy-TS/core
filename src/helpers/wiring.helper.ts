@@ -1,8 +1,22 @@
 import { Dayjs } from "dayjs";
 import { EventEmitter } from "events";
 
-import { CronExpression, InternalDefinition, TBlackHole, TContext } from "..";
-import { ILogger, LIB_BOILERPLATE, TCache } from "..";
+import {
+  BootstrapException,
+  ConfigManager,
+  CronExpression,
+  eachSeries,
+  ILogger,
+  InternalDefinition,
+  is,
+  LIB_BOILERPLATE,
+  LOAD_PROJECT,
+  LOADED_LIFECYCLES,
+  TBlackHole,
+  TCache,
+  TContext,
+} from "..";
+import { CreateChildLifecycle } from "../extensions/lifecycle.extension";
 import {
   AnyConfig,
   BooleanConfig,
@@ -302,7 +316,17 @@ type Wire = {
    * - initializes lifecycle
    * - attaches event emitters
    */
-  [WIRE_PROJECT]: (internal: InternalDefinition) => Promise<TChildLifecycle>;
+  [WIRE_PROJECT]: (
+    internal: InternalDefinition,
+    WireService: (
+      project: string,
+      service: string,
+      definition: ServiceFunction,
+      lifecycle: TLifecycleBase,
+      internal: InternalDefinition,
+    ) => Promise<TServiceReturn<object>>,
+    logger: ILogger,
+  ) => Promise<TChildLifecycle>;
 };
 
 export type LibraryDefinition<
@@ -319,3 +343,177 @@ export type ApplicationDefinition<
     bootstrap: (options?: BootstrapOptions) => Promise<void>;
     teardown: () => Promise<void>;
   };
+
+type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration>;
+
+export function BuildSortOrder<
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+>(app: ApplicationDefinition<S, C>, logger: ILogger) {
+  if (is.empty(app.libraries)) {
+    return [];
+  }
+  const libraryMap = new Map<string, TLibrary>(
+    app.libraries.map((i) => [i.name, i]),
+  );
+
+  // Recursive function to check for missing dependencies at any depth
+  function checkDependencies(library: TLibrary) {
+    if (!is.empty(library.depends)) {
+      library.depends.forEach((item) => {
+        const loaded = libraryMap.get(item.name);
+        if (!loaded) {
+          throw new BootstrapException(
+            WIRING_CONTEXT,
+            "MISSING_DEPENDENCY",
+            `${item.name} is required by ${library.name}, but was not provided`,
+          );
+        }
+        // just "are they the same object reference?" as the test
+        // you get a warning, and the one the app asks for
+        // hopefully there is no breaking changes
+        if (loaded !== item) {
+          logger.warn(
+            { name: BuildSortOrder },
+            "[%s] depends different version {%s}",
+            library.name,
+            item.name,
+          );
+        }
+      });
+    }
+    return library;
+  }
+
+  let starting = app.libraries.map((i) => checkDependencies(i));
+  const out = [] as TLibrary[];
+  while (!is.empty(starting)) {
+    const next = starting.find((library) => {
+      if (is.empty(library.depends)) {
+        return true;
+      }
+      return library.depends?.every((depend) =>
+        out.some((i) => i.name === depend.name),
+      );
+    });
+    if (!next) {
+      logger.fatal({ current: out.map((i) => i.name), name: BuildSortOrder });
+      throw new BootstrapException(
+        WIRING_CONTEXT,
+        "BAD_SORT",
+        `Cannot find a next lib to load`,
+      );
+    }
+    starting = starting.filter((i) => next.name !== i.name);
+    out.push(next);
+  }
+
+  const order = out.map((i) => i.name);
+  logger.trace({ name: BuildSortOrder, order }, ``);
+  return out;
+}
+
+export const COERCE_CONTEXT = (context: string): TContext =>
+  context as TContext;
+export const WIRING_CONTEXT = COERCE_CONTEXT("boilerplate:wiring");
+
+export function ValidateLibrary<S extends ServiceMap>(
+  project: string,
+  serviceList: S,
+): void | never {
+  if (is.empty(project)) {
+    throw new BootstrapException(
+      COERCE_CONTEXT("CreateLibrary"),
+      "MISSING_LIBRARY_NAME",
+      "Library name is required",
+    );
+  }
+  const services = Object.entries(serviceList);
+
+  // Find the first invalid service
+  const invalidService = services.find(
+    ([, definition]) => typeof definition !== "function",
+  );
+  if (invalidService) {
+    const [invalidServiceName, service] = invalidService;
+    throw new BootstrapException(
+      COERCE_CONTEXT("CreateLibrary"),
+      "INVALID_SERVICE_DEFINITION",
+      `Invalid service definition for '${invalidServiceName}' in library '${project}' (${typeof service}})`,
+    );
+  }
+}
+
+export function WireOrder<T extends string>(priority: T[], list: T[]): T[] {
+  const out = [...(priority || [])];
+  if (!is.empty(priority)) {
+    const check = is.unique(priority);
+    if (check.length !== out.length) {
+      throw new BootstrapException(
+        WIRING_CONTEXT,
+        "DOUBLE_PRIORITY",
+        "There are duplicate items in the priority load list",
+      );
+    }
+  }
+  return [...out, ...list.filter((i) => !out.includes(i))];
+}
+
+export function CreateLibrary<
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+>({
+  name: libraryName,
+  configuration = {} as C,
+  priorityInit,
+  services,
+  depends,
+}: LibraryConfigurationOptions<S, C>): LibraryDefinition<S, C> {
+  ValidateLibrary(libraryName, services);
+
+  const serviceApis = {} as GetApisResult<ServiceMap>;
+
+  const library = {
+    [WIRE_PROJECT]: async (
+      internal: InternalDefinition,
+      WireService: (
+        project: string,
+        service: string,
+        definition: ServiceFunction,
+        lifecycle: TLifecycleBase,
+        internal: InternalDefinition,
+      ) => Promise<TServiceReturn<object>>,
+      logger: ILogger,
+    ) => {
+      const lifecycle = CreateChildLifecycle(internal, logger);
+      // This one hasn't been loaded yet, generate an object with all the correct properties
+      LOADED_LIFECYCLES.set(libraryName, lifecycle);
+      // not defined for boilerplate (chicken & egg)
+      // manually added inside the bootstrap process
+      const config = internal?.boilerplate.configuration as ConfigManager;
+      config?.[LOAD_PROJECT](libraryName as keyof LoadedModules, configuration);
+      await eachSeries(
+        WireOrder(priorityInit, Object.keys(services)),
+        async (service) => {
+          serviceApis[service] = await WireService(
+            libraryName,
+            service,
+            services[service],
+            lifecycle,
+            internal,
+          );
+        },
+      );
+      // mental note: people should probably do all their lifecycle attachments at the base level function
+      // otherwise, it'll happen after this wire() call, and go into a black hole (worst case) or fatal error ("best" case)
+      return lifecycle;
+    },
+    configuration,
+    depends,
+    name: libraryName,
+    priorityInit,
+    serviceApis,
+    services,
+  } as LibraryDefinition<S, C>;
+  return library;
+}

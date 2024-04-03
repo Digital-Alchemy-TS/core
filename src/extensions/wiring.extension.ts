@@ -6,17 +6,15 @@ import {
   ApplicationDefinition,
   BootstrapException,
   BootstrapOptions,
+  BuildSortOrder,
   CacheProviders,
-  CallbackList,
+  COERCE_CONTEXT,
+  CreateLibrary,
   DOWN,
   each,
   eachSeries,
   GetApis,
   GetApisResult,
-  LibraryConfigurationOptions,
-  LibraryDefinition,
-  LIFECYCLE_STAGES,
-  LifecycleCallback,
   LifecyclePrioritizedCallback,
   LifecycleStages,
   LoadedModules,
@@ -24,7 +22,6 @@ import {
   ServiceFunction,
   ServiceMap,
   StringConfig,
-  TContext,
   TLifecycleBase,
   TLoadableChildLifecycle,
   TModuleMappings,
@@ -33,17 +30,19 @@ import {
   TServiceReturn,
   UP,
   WIRE_PROJECT,
+  WireOrder,
+  WIRING_CONTEXT,
 } from "../helpers";
 import { InternalDefinition, is } from ".";
 import { Cache } from "./cache.extension";
 import {
-  ConfigManager,
   Configuration,
   INITIALIZE,
   INJECTED_DEFINITIONS,
   LOAD_PROJECT,
 } from "./configuration.extension";
 import { Fetch } from "./fetch.extension";
+import { CreateChildLifecycle } from "./lifecycle.extension";
 import { ILogger, Logger, TConfigLogLevel } from "./logger.extension";
 import { Scheduler } from "./scheduler.extension";
 
@@ -79,8 +78,6 @@ export let LOADED_LIFECYCLES = new Map<string, TLoadableChildLifecycle>();
 // let scheduler: (context: TContext) => TScheduler;
 let logger: ILogger;
 let internal: InternalDefinition;
-const COERCE_CONTEXT = (context: string): TContext => context as TContext;
-const WIRING_CONTEXT = COERCE_CONTEXT("boilerplate:wiring");
 // (re)defined at bootstrap
 export let LIB_BOILERPLATE: ReturnType<typeof CreateBoilerplate>;
 // exporting a let makes me feel dirty inside
@@ -117,34 +114,6 @@ const BOILERPLATE = () =>
   LOADED_MODULES.get("boilerplate") as GetApis<
     ReturnType<typeof CreateBoilerplate>
   >;
-
-// ## Validate Library
-function ValidateLibrary<S extends ServiceMap>(
-  project: string,
-  serviceList: S,
-): void | never {
-  if (is.empty(project)) {
-    throw new BootstrapException(
-      COERCE_CONTEXT("CreateLibrary"),
-      "MISSING_LIBRARY_NAME",
-      "Library name is required",
-    );
-  }
-  const services = Object.entries(serviceList);
-
-  // Find the first invalid service
-  const invalidService = services.find(
-    ([, definition]) => typeof definition !== "function",
-  );
-  if (invalidService) {
-    const [invalidServiceName, service] = invalidService;
-    throw new BootstrapException(
-      COERCE_CONTEXT("CreateLibrary"),
-      "INVALID_SERVICE_DEFINITION",
-      `Invalid service definition for '${invalidServiceName}' in library '${project}' (${typeof service}})`,
-    );
-  }
-}
 
 // ## LIB_BOILERPLATE
 function CreateBoilerplate() {
@@ -205,70 +174,6 @@ function CreateBoilerplate() {
 }
 
 // # Module Creation
-function WireOrder<T extends string>(priority: T[], list: T[]): T[] {
-  const out = [...(priority || [])];
-  if (!is.empty(priority)) {
-    const check = is.unique(priority);
-    if (check.length !== out.length) {
-      throw new BootstrapException(
-        WIRING_CONTEXT,
-        "DOUBLE_PRIORITY",
-        "There are duplicate items in the priority load list",
-      );
-    }
-  }
-  return [...out, ...list.filter((i) => !out.includes(i))];
-}
-
-// ## Create Library
-export function CreateLibrary<
-  S extends ServiceMap,
-  C extends OptionalModuleConfiguration,
->({
-  name: libraryName,
-  configuration = {} as C,
-  priorityInit,
-  services,
-  depends,
-}: LibraryConfigurationOptions<S, C>): LibraryDefinition<S, C> {
-  ValidateLibrary(libraryName, services);
-
-  const serviceApis = {} as GetApisResult<ServiceMap>;
-
-  const library = {
-    [WIRE_PROJECT]: async (internal: InternalDefinition) => {
-      const lifecycle = CreateChildLifecycle(internal);
-      // This one hasn't been loaded yet, generate an object with all the correct properties
-      LOADED_LIFECYCLES.set(libraryName, lifecycle);
-      // not defined for boilerplate (chicken & egg)
-      // manually added inside the bootstrap process
-      const config = internal?.boilerplate.configuration as ConfigManager;
-      config?.[LOAD_PROJECT](libraryName as keyof LoadedModules, configuration);
-      await eachSeries(
-        WireOrder(priorityInit, Object.keys(services)),
-        async (service) => {
-          serviceApis[service] = await WireService(
-            libraryName,
-            service,
-            services[service],
-            lifecycle,
-            internal,
-          );
-        },
-      );
-      // mental note: people should probably do all their lifecycle attachments at the base level function
-      // otherwise, it'll happen after this wire() call, and go into a black hole (worst case) or fatal error ("best" case)
-      return lifecycle;
-    },
-    configuration,
-    depends,
-    name: libraryName,
-    priorityInit,
-    serviceApis,
-    services,
-  } as LibraryDefinition<S, C>;
-  return library;
-}
 
 // ## Create Application
 export function CreateApplication<
@@ -294,7 +199,7 @@ export function CreateApplication<
   const serviceApis = {} as GetApisResult<ServiceMap>;
   const application = {
     [WIRE_PROJECT]: async (internal: InternalDefinition) => {
-      const lifecycle = CreateChildLifecycle(internal);
+      const lifecycle = CreateChildLifecycle(internal, logger);
       LOADED_LIFECYCLES.set(name, lifecycle);
       BOILERPLATE()?.configuration?.[LOAD_PROJECT](
         name as keyof LoadedModules,
@@ -452,75 +357,6 @@ async function RunStageCallbacks(stage: LifecycleStages): Promise<string> {
 }
 const PRE_CALLBACKS_START = 0;
 
-type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration>;
-
-function BuildSortOrder<
-  S extends ServiceMap,
-  C extends OptionalModuleConfiguration,
->(app: ApplicationDefinition<S, C>) {
-  if (is.empty(app.libraries)) {
-    return [];
-  }
-  const libraryMap = new Map<string, TLibrary>(
-    app.libraries.map((i) => [i.name, i]),
-  );
-
-  // Recursive function to check for missing dependencies at any depth
-  function checkDependencies(library: TLibrary) {
-    if (!is.empty(library.depends)) {
-      library.depends.forEach((item) => {
-        const loaded = libraryMap.get(item.name);
-        if (!loaded) {
-          throw new BootstrapException(
-            WIRING_CONTEXT,
-            "MISSING_DEPENDENCY",
-            `${item.name} is required by ${library.name}, but was not provided`,
-          );
-        }
-        // just "are they the same object reference?" as the test
-        // you get a warning, and the one the app asks for
-        // hopefully there is no breaking changes
-        if (loaded !== item) {
-          logger.warn(
-            { name: BuildSortOrder },
-            "[%s] depends different version {%s}",
-            library.name,
-            item.name,
-          );
-        }
-      });
-    }
-    return library;
-  }
-
-  let starting = app.libraries.map((i) => checkDependencies(i));
-  const out = [] as TLibrary[];
-  while (!is.empty(starting)) {
-    const next = starting.find((library) => {
-      if (is.empty(library.depends)) {
-        return true;
-      }
-      return library.depends?.every((depend) =>
-        out.some((i) => i.name === depend.name),
-      );
-    });
-    if (!next) {
-      logger.fatal({ current: out.map((i) => i.name), name: BuildSortOrder });
-      throw new BootstrapException(
-        WIRING_CONTEXT,
-        "BAD_SORT",
-        `Cannot find a next lib to load`,
-      );
-    }
-    starting = starting.filter((i) => next.name !== i.name);
-    out.push(next);
-  }
-
-  const order = out.map((i) => i.name);
-  logger.trace({ name: BuildSortOrder, order }, ``);
-  return out;
-}
-
 let startup: Date;
 
 // # Lifecycle runners
@@ -566,7 +402,7 @@ async function Bootstrap<
 
     // * Wire it
     let start = Date.now();
-    await LIB_BOILERPLATE[WIRE_PROJECT](internal);
+    await LIB_BOILERPLATE[WIRE_PROJECT](internal, WireService, logger);
 
     CONSTRUCT.boilerplate = `${Date.now() - start}ms`;
     // ~ configuration
@@ -585,18 +421,18 @@ async function Bootstrap<
 
     // * Add in libraries
     application.libraries ??= [];
-    const order = BuildSortOrder(application);
+    const order = BuildSortOrder(application, logger);
     await eachSeries(order, async (i) => {
       start = Date.now();
       logger.info({ name: Bootstrap }, `[%s] init project`, i.name);
-      await i[WIRE_PROJECT](internal);
+      await i[WIRE_PROJECT](internal, WireService, logger);
       CONSTRUCT[i.name] = `${Date.now() - start}ms`;
     });
 
     logger.info({ name: Bootstrap }, `init application`);
     // * Finally the application
     start = Date.now();
-    await application[WIRE_PROJECT](internal);
+    await application[WIRE_PROJECT](internal, WireService, logger);
     CONSTRUCT[application.name] = `${Date.now() - start}ms`;
 
     // ? Configuration values provided bootstrap take priority over module level
@@ -699,54 +535,4 @@ export function Reset() {
   REVERSE_MODULE_MAPPING = new Map();
   internal = undefined;
   logger = undefined;
-}
-
-// # Lifecycle
-function CreateChildLifecycle(
-  internal: InternalDefinition,
-): TLoadableChildLifecycle {
-  const childCallbacks = {} as Record<LifecycleStages, CallbackList>;
-
-  const [
-    // ! This list must be sorted!
-    onPreInit,
-    onPostConfig,
-    onBootstrap,
-    onReady,
-    onPreShutdown,
-    onShutdownStart,
-    onShutdownComplete,
-  ] = LIFECYCLE_STAGES.map((stage) => {
-    childCallbacks[stage] = [];
-    return (callback: LifecycleCallback, priority?: number) => {
-      if (internal.boot.completedLifecycleEvents.has(stage)) {
-        // this is makes "earliest run time" logic way easier to implement
-        // intended mode of operation
-        if (["PreInit", "PostConfig", "Bootstrap", "Ready"].includes(stage)) {
-          setImmediate(async () => await callback());
-          return;
-        }
-        // What does this mean in reality?
-        // Probably a broken unit test, I really don't know what workflow would cause this
-        logger.fatal(
-          { name: CreateChildLifecycle },
-          `on${stage} late attach, cannot attach callback`,
-        );
-        return;
-      }
-      childCallbacks[stage].push([callback, priority]);
-    };
-  });
-
-  return {
-    getCallbacks: (stage: LifecycleStages) =>
-      childCallbacks[stage] as CallbackList,
-    onBootstrap,
-    onPostConfig,
-    onPreInit,
-    onPreShutdown,
-    onReady,
-    onShutdownComplete,
-    onShutdownStart,
-  };
 }

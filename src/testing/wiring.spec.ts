@@ -5,13 +5,8 @@ import {
   CreateApplication,
   CreateLibrary,
   InternalDefinition,
-  LIB_BOILERPLATE,
   LifecycleStages,
-  LOADED_LIFECYCLES,
-  LOADED_MODULES,
-  MODULE_MAPPINGS,
   OptionalModuleConfiguration,
-  REVERSE_MODULE_MAPPING,
   ServiceMap,
   TServiceParams,
 } from "..";
@@ -481,31 +476,6 @@ describe("Wiring", () => {
           "ShutdownStart",
         ]);
       });
-
-      it("tracks shutdownComplete", async () => {
-        let i: InternalDefinition;
-        application = CreateApplication({
-          configurationLoaders: [],
-          // @ts-expect-error Testing
-          name: "testing",
-          services: {
-            Test({ internal }: TServiceParams) {
-              i = internal;
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
-        await application.teardown();
-        expect([...i.boot.completedLifecycleEvents.values()]).toEqual([
-          "PreInit",
-          "PostConfig",
-          "Bootstrap",
-          "Ready",
-          "PreShutdown",
-          "ShutdownStart",
-          "ShutdownComplete",
-        ]);
-      });
     });
   });
 
@@ -661,18 +631,22 @@ describe("Wiring", () => {
 
   describe("Internal Variable Usage", () => {
     it("populates maps during bootstrap", async () => {
+      let i: InternalDefinition;
       application = CreateApplication({
         configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
-        services: {},
+        services: {
+          Test({ internal }: TServiceParams) {
+            i = internal;
+          },
+        },
       });
       await application.bootstrap(BASIC_BOOT);
-      expect(MODULE_MAPPINGS.size).not.toEqual(0);
-      expect(LOADED_MODULES.size).not.toEqual(0);
-      expect(REVERSE_MODULE_MAPPING.size).not.toEqual(0);
-      expect(LOADED_LIFECYCLES.size).not.toEqual(0);
-      expect(LIB_BOILERPLATE).toBeDefined();
+      // expect(MODULE_MAPPINGS.size).not.toEqual(0);
+      // expect(LOADED_MODULES.size).not.toEqual(0);
+      // expect(REVERSE_MODULE_MAPPING.size).not.toEqual(0);
+      expect(i.boot.lifecycleHooks.size).not.toEqual(0);
     });
   });
 

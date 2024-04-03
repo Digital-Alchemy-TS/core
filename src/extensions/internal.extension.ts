@@ -21,6 +21,7 @@ import {
   START,
   TBlackHole,
   TContext,
+  TLoadableChildLifecycle,
   YEAR,
 } from "..";
 
@@ -216,6 +217,7 @@ export class InternalDefinition {
     GetApis<typeof LIB_BOILERPLATE>,
     "configuration" | "fetch" | "logger"
   >;
+
   public boot: {
     /**
      * Options that were passed into bootstrap
@@ -236,6 +238,7 @@ export class InternalDefinition {
      * Roughly speaking, what's the application doing? Mostly useful for debugging
      */
     phase: Phase;
+    lifecycleHooks: Map<string, TLoadableChildLifecycle>;
   };
   public utils = new InternalUtils();
 

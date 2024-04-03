@@ -11,7 +11,6 @@ import {
   is,
   LIB_BOILERPLATE,
   LOAD_PROJECT,
-  LOADED_LIFECYCLES,
   TBlackHole,
   TCache,
   TContext,
@@ -487,7 +486,7 @@ export function CreateLibrary<
     ) => {
       const lifecycle = CreateChildLifecycle(internal, logger);
       // This one hasn't been loaded yet, generate an object with all the correct properties
-      LOADED_LIFECYCLES.set(libraryName, lifecycle);
+      internal.boot.lifecycleHooks.set(libraryName, lifecycle);
       // not defined for boilerplate (chicken & egg)
       // manually added inside the bootstrap process
       const config = internal?.boilerplate.configuration as ConfigManager;

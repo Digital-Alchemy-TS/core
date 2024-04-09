@@ -309,7 +309,7 @@ export const CreateApplication = (() => {
         return lifecycle;
       },
       booted: false,
-      async bootstrap(options) {
+      async bootstrap(options: BootstrapOptions = {}) {
         if (application.booted) {
           throw new BootstrapException(
             WIRING_CONTEXT,

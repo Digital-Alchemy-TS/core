@@ -336,7 +336,7 @@ export function fetchCast(item: FetchParameterTypes): string {
   return item;
 }
 
-export type TFetchBody = object | undefined;
+export type TFetchBody = object | string | undefined;
 
 export function buildFilterString(
   fetchWith: FetchWith<{

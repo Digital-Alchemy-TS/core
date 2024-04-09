@@ -184,7 +184,7 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
   };
 }
 
-export type TFetch = <T, BODY extends object = object>(
+export type TFetch = <T, BODY extends TFetchBody = object>(
   fetchWith: Partial<FetchArguments<BODY>>,
 ) => Promise<T>;
 

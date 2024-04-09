@@ -499,7 +499,7 @@ describe("Wiring", () => {
           },
         },
       });
-      //
+
       await application.bootstrap(BASIC_BOOT);
       expect(list).toStrictEqual(["First", "Second", "Third"]);
     });
@@ -651,6 +651,28 @@ describe("Wiring", () => {
   });
 
   describe("Wiring", () => {
+    it.only("should allow 2 separate apps to boot", () => {
+      expect(async () => {
+        application = CreateApplication({
+          configurationLoaders: [],
+          // @ts-expect-error Testing
+          name: "testing",
+          services: {
+            Test() {},
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+        // const secondary = CreateApplication({
+        //   configurationLoaders: [],
+        //   // @ts-expect-error Testing
+        //   name: "testing",
+        //   services: {},
+        // });
+        // await secondary.bootstrap();
+        // await secondary.teardown();
+      }).not.toThrow();
+    });
+
     it("should add library to TServiceParams", async () => {
       let observed: unknown;
       application = CreateApplication({

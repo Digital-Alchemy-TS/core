@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
-import { exit } from "process";
+import minimist from "minimist";
+import { argv, exit } from "process";
 
 import {
   ApplicationConfigurationOptions,
@@ -11,6 +12,7 @@ import {
   DOWN,
   each,
   eachSeries,
+  findKey,
   GetApis,
   GetApisResult,
   LibraryConfigurationOptions,
@@ -188,6 +190,11 @@ function CreateBoilerplate() {
         description:
           "Configuration property for cache provider, does not apply to memory caching",
         type: "string",
+      },
+      TRACE_CONFIG: {
+        default: false,
+        description: "Boot the app through configuration, then exit",
+        type: "boolean",
       },
     },
     name: "boilerplate",
@@ -521,6 +528,12 @@ function BuildSortOrder<
   return out;
 }
 
+const isTraceConfig = () => {
+  const keys = minimist(argv);
+  const target = findKey(Object.keys(keys), ["TRACE_CONFIG"]);
+  return !is.empty(target);
+};
+
 let startup: Date;
 
 // # Lifecycle runners
@@ -537,6 +550,8 @@ async function Bootstrap<
     );
   }
   internal = new InternalDefinition();
+  const isTrace = isTraceConfig();
+  // const
   internal.boot = {
     application,
     completedLifecycleEvents: new Set(),

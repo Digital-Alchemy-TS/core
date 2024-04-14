@@ -162,3 +162,18 @@ export type ModuleConfiguration = {
   [key: string]: AnyConfig;
 };
 export type OptionalModuleConfiguration = ModuleConfiguration | undefined;
+
+export function findKey<T extends string>(source: T[], find: T[]) {
+  return (
+    // Find an exact match (if available) first
+    source.find((line) => find.includes(line)) ||
+    // Do case insensitive searches
+    source.find((line) => {
+      const match = new RegExp(
+        `^${line.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
+        "gi",
+      );
+      return find.some((item) => item.match(match));
+    })
+  );
+}

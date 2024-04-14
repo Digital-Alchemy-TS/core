@@ -5,6 +5,7 @@ import {
   AbstractConfig,
   ConfigLoaderParams,
   ConfigLoaderReturn,
+  findKey,
   ModuleConfiguration,
 } from "./config.helper";
 
@@ -26,17 +27,7 @@ export async function ConfigLoaderEnvironment<
       const configPath = `${project}.${key}`;
 
       // Find an applicable switch
-      const flag =
-        // Find an exact match (if available) first
-        search.find((line) => switchKeys.includes(line)) ||
-        // Do case insensitive searches
-        search.find((line) => {
-          const match = new RegExp(
-            `^${line.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
-            "gi",
-          );
-          return switchKeys.some((item) => item.match(match));
-        });
+      const flag = findKey(search, switchKeys);
       if (flag) {
         const formattedFlag = switchKeys.find((key) =>
           search.some((line) =>
@@ -66,17 +57,7 @@ export async function ConfigLoaderEnvironment<
         return;
       }
       // Find an environment variable
-      const environment =
-        // Find an exact match (if available) first
-        search.find((line) => environmentKeys.includes(line)) ||
-        // Do case insensitive searches
-        search.find((line) => {
-          const match = new RegExp(
-            `^${line.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
-            "gi",
-          );
-          return environmentKeys.some((item) => item.match(match));
-        });
+      const environment = findKey(search, environmentKeys);
       if (is.empty(environment)) {
         return;
       }

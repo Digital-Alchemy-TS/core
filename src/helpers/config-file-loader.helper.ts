@@ -18,16 +18,16 @@ const isWindows = platform === "win32";
 
 export const SUPPORTED_CONFIG_EXTENSIONS = ["json", "ini", "yaml", "yml"];
 function withExtensions(path: string): string[] {
-  return [path, ...SUPPORTED_CONFIG_EXTENSIONS.map((i) => `${path}.${i}`)];
+  return [path, join(path, "config")].flatMap((path) => [
+    path,
+    ...SUPPORTED_CONFIG_EXTENSIONS.map((i) => `${path}.${i}`),
+  ]);
 }
 
 export function configFilePaths(name = "digital-alchemy"): string[] {
   const out: string[] = [];
   if (!isWindows) {
-    out.push(
-      ...withExtensions(join(`/etc`, name, "config")),
-      ...withExtensions(join(`/etc`, `${name}`)),
-    );
+    out.push(...withExtensions(join(`/etc`, `${name}`)));
   }
   let current = cwd();
   let next: string;
@@ -39,10 +39,7 @@ export function configFilePaths(name = "digital-alchemy"): string[] {
     }
     current = next;
   }
-  out.push(
-    ...withExtensions(join(homedir(), ".config", name)),
-    ...withExtensions(join(homedir(), ".config", name, "config")),
-  );
+  out.push(...withExtensions(join(homedir(), ".config", name)));
   return out.filter(
     (filePath) => existsSync(filePath) && statSync(filePath).isFile(),
   );

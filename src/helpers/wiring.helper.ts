@@ -20,6 +20,7 @@ export type TServiceReturn<OBJECT extends object = object> = void | OBJECT;
 export type TModuleMappings = Record<string, ServiceFunction>;
 export type TResolvedModuleMappings = Record<string, TServiceReturn>;
 
+// #MARK: ApplicationConfigurationOptions
 export type ApplicationConfigurationOptions<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
@@ -76,6 +77,7 @@ export type SchedulerOptions = {
   label?: string;
 };
 
+// #MARK: TScheduler
 /**
  * General code scheduling functions
  *
@@ -134,6 +136,7 @@ export type TInjectedConfig = {
   [ModuleName in keyof ModuleConfigs]: ConfigTypes<ModuleConfigs[ModuleName]>;
 };
 
+// #MARK: TServiceParams
 export type TServiceParams = {
   /**
    * provided by boilerplate library
@@ -236,6 +239,8 @@ export type ServiceFunction<R = unknown> = (
   params: TServiceParams,
 ) => R | Promise<R>;
 export type ServiceMap = Record<string, ServiceFunction>;
+
+// #MARK: LibraryConfigurationOptions
 export type LibraryConfigurationOptions<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
@@ -268,6 +273,7 @@ export type PartialConfiguration = Partial<{
   >;
 }>;
 
+// #MARK: BootstrapOptions
 export type BootstrapOptions = {
   /**
    * default: true

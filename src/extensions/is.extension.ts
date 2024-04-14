@@ -58,7 +58,7 @@ export class IsIt {
   }
 
   /**
-   * ### Deep equality test
+   * #MARK: Deep equality test
    */
   public equal<T extends unknown>(a: T, b: T): boolean {
     return isDeepStrictEqual(a, b);

@@ -37,8 +37,9 @@ words:
   - darkslategrey
   - darkturquoise
   - darkviolet
-  - Datetime
+  - datetime
   - dbaeumer
+  - endregion
   - deeppink
   - deepskyblue
   - desync

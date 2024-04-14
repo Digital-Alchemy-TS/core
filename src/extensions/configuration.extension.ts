@@ -36,12 +36,52 @@ export function Configuration({
     () => (logger = internal.boilerplate.logger.context(context)),
   );
 
-  // # Locals
   const configuration: PartialConfiguration = {};
   const configDefinitions: KnownConfigs = new Map();
 
-  // # Methods
-  // ## Load the config for an app
+  type OnConfigUpdateCallback<
+    Project extends keyof TInjectedConfig,
+    Property extends keyof TInjectedConfig[Project],
+  > = (project: Project, property: Property) => TBlackHole;
+
+  //#region Methods
+  function InjectedDefinitions() {
+    return new Proxy({} as TInjectedConfig, {
+      get(_, project: keyof TInjectedConfig) {
+        return internal.utils.object.get(configuration, project) ?? {};
+      },
+      getOwnPropertyDescriptor(_, project: string) {
+        return {
+          configurable: false,
+          enumerable: true,
+          value: internal.utils.object.get(configuration, project) ?? {},
+          writable: false,
+        };
+      },
+      ownKeys() {
+        return Object.keys(configuration);
+      },
+    });
+  }
+
+  function SetConfig<
+    Project extends keyof TInjectedConfig,
+    Property extends keyof TInjectedConfig[Project],
+  >(
+    project: Project,
+    property: Property,
+    value: TInjectedConfig[Project][Property],
+  ): void {
+    internal.utils.object.set(
+      configuration,
+      [project, property].join("."),
+      value,
+    );
+    // in case anyone needs a hook
+    event.emit(EVENT_CONFIGURATION_UPDATED, project, property);
+  }
+
+  // #MARK: Initialize
   async function Initialize<
     S extends ServiceMap,
     C extends OptionalModuleConfiguration,
@@ -98,55 +138,10 @@ export function Configuration({
     return `${Date.now() - start}ms`;
   }
 
-  // ## Value that gets injected into services
-  function InjectedDefinitions() {
-    return new Proxy({} as TInjectedConfig, {
-      get(_, project: keyof TInjectedConfig) {
-        return internal.utils.object.get(configuration, project) ?? {};
-      },
-      getOwnPropertyDescriptor(_, project: string) {
-        return {
-          configurable: false,
-          enumerable: true,
-          value: internal.utils.object.get(configuration, project) ?? {},
-          writable: false,
-        };
-      },
-      ownKeys() {
-        return Object.keys(configuration);
-      },
-    });
-  }
-
-  type OnConfigUpdateCallback<
-    Project extends keyof TInjectedConfig,
-    Property extends keyof TInjectedConfig[Project],
-  > = (project: Project, property: Property) => TBlackHole;
-
-  // ## Set a configuration value at runtime
-  function SetConfig<
-    Project extends keyof TInjectedConfig,
-    Property extends keyof TInjectedConfig[Project],
-  >(
-    project: Project,
-    property: Property,
-    value: TInjectedConfig[Project][Property],
-  ): void {
-    internal.utils.object.set(
-      configuration,
-      [project, property].join("."),
-      value,
-    );
-    // in case anyone needs a hook
-    event.emit(EVENT_CONFIGURATION_UPDATED, project, property);
-  }
-
-  // ## Provide new values for some config values
   function Merge(merge: Partial<PartialConfiguration>) {
     return deepExtend(configuration, merge);
   }
 
-  // ## Add a library, and it's associated definitions
   function LoadProject(library: string, definitions: CodeConfigDefinition) {
     internal.utils.object.set(configuration, library, {});
     Object.keys(definitions).forEach((key) => {
@@ -158,8 +153,9 @@ export function Configuration({
     });
     return configDefinitions.set(library, definitions);
   }
+  // #endregion
 
-  // ## Return object
+  // #region Return object
   return {
     [INITIALIZE]: Initialize,
     [INJECTED_DEFINITIONS]: InjectedDefinitions,
@@ -211,6 +207,7 @@ export function Configuration({
      */
     set: SetConfig as TSetConfig,
   };
+  // #endregion
 }
 
 export type TSetConfig = <

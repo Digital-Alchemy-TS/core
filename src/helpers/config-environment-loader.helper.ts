@@ -26,6 +26,7 @@ export async function ConfigLoaderEnvironment<
       const search = [noAppPath, key];
       const configPath = `${project}.${key}`;
 
+      // #MARK: cli switches
       // Find an applicable switch
       const flag = findKey(search, switchKeys);
       if (flag) {
@@ -56,6 +57,8 @@ export async function ConfigLoaderEnvironment<
         }
         return;
       }
+
+      // #MARK: environment variables
       // Find an environment variable
       const environment = findKey(search, environmentKeys);
       if (is.empty(environment)) {

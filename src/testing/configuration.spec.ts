@@ -34,7 +34,7 @@ describe("Configuration", () => {
     jest.restoreAllMocks();
     spy = undefined;
   });
-
+  // #region Initialization
   describe("Initialization", () => {
     it("should be configured at the correct time in the lifecycle", async () => {
       expect.assertions(2);
@@ -159,7 +159,8 @@ describe("Configuration", () => {
       await application.bootstrap(BASIC_BOOT);
     });
   });
-
+  // #endregion
+  // #region Loaders
   describe("Loaders", () => {
     describe("General", () => {
       afterEach(() => {
@@ -477,4 +478,5 @@ describe("Configuration", () => {
       });
     });
   });
+  // #endregion
 });

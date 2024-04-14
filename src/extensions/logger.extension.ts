@@ -69,6 +69,7 @@ const SYMBOL_START = 1;
 const SYMBOL_END = -1;
 const LEVEL_MAX = 7;
 
+// #region Service definition
 export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   const chalk = (await import("chalk")).default;
 
@@ -78,6 +79,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   const shouldILog = {} as Record<TConfigLogLevel, boolean>;
   const includeLogLevel = !internal.boot.options.hideLogLevel;
 
+  // #MARK: pretty logger
   const prettyFormatMessage = (message: string): string => {
     if (!message) {
       return ``;
@@ -106,6 +108,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   };
 
   if (is.empty(internal.boot.options.customLogger)) {
+    // #region formatter
     [...METHOD_COLORS.keys()].forEach((key) => {
       const level = includeLogLevel
         ? `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ")
@@ -172,10 +175,12 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
         console.log(message);
       };
     });
+    // #endregion
   } else {
     logger = internal.boot.options.customLogger;
   }
 
+  // #region instance creation
   // if bootstrap hard coded something specific, then start there
   // otherwise, be noisy until config loads a user preference
   //
@@ -210,7 +215,9 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
         LOG_LEVEL_PRIORITY[key] >= LOG_LEVEL_PRIORITY[CURRENT_LOG_LEVEL];
     });
   };
+  // #endregion
 
+  // #MARK: lifecycle
   lifecycle.onPostConfig(updateShouldLog);
   internal.boilerplate.configuration.onUpdate(
     updateShouldLog,
@@ -218,6 +225,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
     "LOG_LEVEL",
   );
 
+  // #MARK: return object
   return {
     /**
      * Create a new logger instance for a given context
@@ -243,3 +251,4 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
     systemLogger: context("digital-alchemy:system-logger"),
   };
 }
+// #endregion

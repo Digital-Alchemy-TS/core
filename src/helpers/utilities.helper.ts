@@ -50,13 +50,13 @@ type SleepReturn = Promise<void> & {
 /**
  * Defaults to 1000 (1 second).
  *
- * ## Simple usage
+ * #MARK: Simple usage
  *
  * ```typescript
  * await sleep(5000);
  * ```
  *
- * ## Early stop
+ * #MARK: Early stop
  *
  * ```typescript
  * const start = Date.now();
@@ -93,7 +93,7 @@ export const asyncNoop = async () => await sleep(NONE);
 export const noop = () => {};
 
 /**
- * ## (re)peat
+ * #MARK: (re)peat
  *
  * Create an array of length, where the values are filled with a provided fill value, or (index + 1) as default value
  */

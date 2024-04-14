@@ -1,6 +1,5 @@
 import { EventEmitter } from "events";
-import minimist from "minimist";
-import { argv, exit } from "process";
+import { exit } from "process";
 
 import {
   ApplicationConfigurationOptions,
@@ -12,7 +11,6 @@ import {
   DOWN,
   each,
   eachSeries,
-  findKey,
   GetApis,
   GetApisResult,
   LibraryConfigurationOptions,
@@ -49,7 +47,7 @@ import { Fetch } from "./fetch.extension";
 import { ILogger, Logger, TConfigLogLevel } from "./logger.extension";
 import { Scheduler } from "./scheduler.extension";
 
-// # "Semi-local variables"
+// #MARK: Variables
 // These are resettable variables, which are scoped to outside the function on purpose
 // If these were moved inside the service function, then re-running the method would result in application / library references being stranded
 // Items like lib_boilerplate would still exist, but their lifecycles would be not accessible by the current application
@@ -88,11 +86,8 @@ export let LIB_BOILERPLATE: ReturnType<typeof CreateBoilerplate>;
 // exporting a let makes me feel dirty inside
 // at least it's only for testing
 
-// # Utility
-
-// ## Global shutdown
+// #MARK: processEvents
 const processEvents = new Map([
-  // ### Shutdown requests
   [
     "SIGTERM",
     async () => {
@@ -109,18 +104,16 @@ const processEvents = new Map([
       exit();
     },
   ],
-  // ### Major application errors
   // ["uncaughtException", () => {}],
   // ["unhandledRejection", (reason, promise) => {}],
 ]);
 
-// ## Boilerplate Quick Ref
 const BOILERPLATE = () =>
   LOADED_MODULES.get("boilerplate") as GetApis<
     ReturnType<typeof CreateBoilerplate>
   >;
 
-// ## Validate Library
+// #MARK: ValidateLibrary
 function ValidateLibrary<S extends ServiceMap>(
   project: string,
   serviceList: S,
@@ -148,7 +141,7 @@ function ValidateLibrary<S extends ServiceMap>(
   }
 }
 
-// ## LIB_BOILERPLATE
+// #MARK: CreateBoilerplate
 function CreateBoilerplate() {
   return CreateLibrary({
     configuration: {
@@ -191,11 +184,6 @@ function CreateBoilerplate() {
           "Configuration property for cache provider, does not apply to memory caching",
         type: "string",
       },
-      TRACE_CONFIG: {
-        default: false,
-        description: "Boot the app through configuration, then exit",
-        type: "boolean",
-      },
     },
     name: "boilerplate",
     // > 🐔 🥚 dependencies
@@ -211,7 +199,7 @@ function CreateBoilerplate() {
   });
 }
 
-// # Module Creation
+// #MARK: WireOrder
 function WireOrder<T extends string>(priority: T[], list: T[]): T[] {
   const out = [...(priority || [])];
   if (!is.empty(priority)) {
@@ -227,7 +215,7 @@ function WireOrder<T extends string>(priority: T[], list: T[]): T[] {
   return [...out, ...list.filter((i) => !out.includes(i))];
 }
 
-// ## Create Library
+// #MARK: CreateLibrary
 export function CreateLibrary<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
@@ -277,7 +265,7 @@ export function CreateLibrary<
   return library;
 }
 
-// ## Create Application
+// #MARK: CreateApplication
 export function CreateApplication<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
@@ -352,8 +340,7 @@ export function CreateApplication<
   return application;
 }
 
-// # Wiring
-// ## Wire Service
+// #MARK: WireService
 async function WireService(
   project: string,
   service: string,
@@ -409,7 +396,7 @@ async function WireService(
   }
 }
 
-// ## Run Callbacks
+// #MARK: RunStageCallbacks
 async function RunStageCallbacks(stage: LifecycleStages): Promise<string> {
   const start = Date.now();
   const list = [
@@ -461,6 +448,7 @@ const PRE_CALLBACKS_START = 0;
 
 type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration>;
 
+// #MARK: BuildSortOrder
 function BuildSortOrder<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
@@ -528,16 +516,9 @@ function BuildSortOrder<
   return out;
 }
 
-const isTraceConfig = () => {
-  const keys = minimist(argv);
-  const target = findKey(Object.keys(keys), ["TRACE_CONFIG"]);
-  return !is.empty(target);
-};
-
 let startup: Date;
 
-// # Lifecycle runners
-// ## Bootstrap
+// #MARK: Bootstrap
 async function Bootstrap<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
@@ -550,7 +531,6 @@ async function Bootstrap<
     );
   }
   internal = new InternalDefinition();
-  const isTrace = isTraceConfig();
   // const
   internal.boot = {
     application,
@@ -659,7 +639,7 @@ async function Bootstrap<
   }
 }
 
-// ## Teardown
+// #MARK: Teardown
 async function Teardown() {
   if (!internal) {
     return;
@@ -702,6 +682,8 @@ async function Teardown() {
   );
   Reset();
 }
+
+// #MARK: Reset
 export function Reset() {
   processEvents.forEach((callback, event) =>
     process.removeListener(event, callback),

@@ -26,6 +26,7 @@ export function Cache({
     return `${config.boilerplate.CACHE_PREFIX}${key}`;
   }
 
+  // #MARK: onPostConfig
   lifecycle.onPostConfig(async () => {
     if (client) {
       return;
@@ -41,6 +42,7 @@ export function Cache({
     client = await createMemoryDriver({ config, lifecycle, logger });
   });
 
+  // #MARK: Return object
   return {
     [Symbol.for("cache_logger")]: logger,
     del: async (key: string): Promise<void> => {

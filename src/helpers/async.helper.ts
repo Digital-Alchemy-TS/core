@@ -6,6 +6,7 @@ import { ARRAY_OFFSET, SINGLE, START } from "./utilities.helper";
 //     so these exist to replace those doing exactly what I expect
 //
 
+// #MARK: each
 export async function each<T = unknown>(
   item: T[] = [],
   callback: (item: T) => Promise<void | unknown>,
@@ -13,6 +14,7 @@ export async function each<T = unknown>(
   await Promise.all(item.map(async (i) => await callback(i)));
 }
 
+// #MARK: eachSeries
 export async function eachSeries<T = void>(
   item: T[] | Set<T>,
   callback: (item: T) => Promise<void | unknown>,
@@ -28,6 +30,7 @@ export async function eachSeries<T = void>(
   }
 }
 
+// #MARK: eachLimit
 export async function eachLimit<T = unknown>(
   items: T[],
   limit: number,

@@ -38,6 +38,7 @@ describe("Wiring", () => {
     jest.restoreAllMocks();
   });
 
+  // #region CreateLibrary
   describe("CreateLibrary", () => {
     it("should be defined", () => {
       expect(CreateLibrary).toBeDefined();
@@ -108,7 +109,9 @@ describe("Wiring", () => {
       }).toThrow(BootstrapException);
     });
   });
+  // #endregion
 
+  // #region CreateApplication
   describe("CreateApplication", () => {
     it("should create an application with specified services and libraries", () => {
       const testService = jest.fn();
@@ -133,7 +136,9 @@ describe("Wiring", () => {
       expect(application.libraries[0]).toBe(testLibrary);
     });
   });
+  // #endregion
 
+  // #region Lifecycle
   describe("Lifecycle", () => {
     beforeEach(() => {
       application = CreateApplication({
@@ -520,7 +525,9 @@ describe("Wiring", () => {
       });
     });
   });
+  // #endregion
 
+  // #region Bootstrap
   describe("Bootstrap", () => {
     it("should prioritize services with priorityInit", async () => {
       const list = [] as string[];
@@ -590,7 +597,9 @@ describe("Wiring", () => {
       }
     });
   });
+  // #endregion
 
+  // #region Boot Phase
   describe("Boot Phase", () => {
     it("phase should be bootstrap during boot", async () => {
       let i: string;
@@ -647,7 +656,9 @@ describe("Wiring", () => {
       expect(i).toBe("teardown");
     });
   });
+  // #endregion
 
+  // #region Teardown
   describe("Teardown", () => {
     it("phase should be teardown after teardown starts", async () => {
       let i: string;
@@ -670,8 +681,10 @@ describe("Wiring", () => {
       expect(i).toBe("teardown");
     });
   });
+  // #endregion
 
-  describe("Internal Variable Usage", () => {
+  // #region Internal
+  describe("Internal", () => {
     it("populates maps during bootstrap", async () => {
       application = CreateApplication({
         configurationLoaders: [],
@@ -687,7 +700,9 @@ describe("Wiring", () => {
       expect(LIB_BOILERPLATE).toBeDefined();
     });
   });
+  // #endregion
 
+  // #region Wiring
   describe("Wiring", () => {
     it("should add library to TServiceParams", async () => {
       let observed: unknown;
@@ -840,7 +855,9 @@ describe("Wiring", () => {
       expect(observed).toBeDefined();
     });
   });
+  // #endregion
 
+  // #region Mixing
   describe("Application + Library interactions", () => {
     let list: string[];
     const LIBRARY_A = CreateLibrary({

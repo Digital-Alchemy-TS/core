@@ -64,6 +64,7 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
       return maybeError as T;
     }
 
+    // #MARK: fetchHandleResponse
     async function fetchHandleResponse<T extends unknown = unknown>(
       process: FetchProcessTypes,
       response: Response,
@@ -101,6 +102,7 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
       return out;
     }
 
+    // #MARK: MeasureRequest
     async function MeasureRequest<T>(
       label: string,
       context: TContext,
@@ -121,6 +123,7 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
       }
     }
 
+    // #MARK: execFetch
     async function execFetch<T, BODY extends TFetchBody = undefined>({
       body,
       headers = {},
@@ -149,6 +152,7 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
       return out;
     }
 
+    // #MARK: return object
     return {
       download: async ({
         destination,

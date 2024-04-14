@@ -35,6 +35,7 @@ const formatter = new Intl.RelativeTimeFormat("en", {
   style: "short",
 });
 
+// #MARK: misc
 export class InternalUtils {
   /**
    * The global eventemitter. All of `@digital-alchemy` will be wired through this
@@ -89,6 +90,7 @@ export class InternalUtils {
     return out;
   }
 
+  // #region .object
   public object = {
     del<T>(object: T, path: string): void {
       const keys = path.split(".");
@@ -174,6 +176,7 @@ export class InternalUtils {
       }
     },
   };
+  // #endregion
 }
 
 /**
@@ -208,6 +211,7 @@ type BaseLabels = {
 
 type Phase = "bootstrap" | "teardown" | "running";
 
+// #region Base definition
 export class InternalDefinition {
   /**
    * Utility methods provided by boilerplate
@@ -239,6 +243,7 @@ export class InternalDefinition {
   };
   public utils = new InternalUtils();
 
+  // #MARK: safeExec
   public async safeExec<LABELS extends BaseLabels>(
     options: (() => TBlackHole) | SafeExecOptions<LABELS>,
   ) {
@@ -274,3 +279,4 @@ export class InternalDefinition {
     }
   }
 }
+// #endregion

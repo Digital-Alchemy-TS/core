@@ -15,6 +15,7 @@ import {
 export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
   const stop = new Set<() => TBlackHole>();
 
+  // #MARK: lifecycle events
   lifecycle.onPreShutdown(() => {
     if (is.empty(stop)) {
       return;
@@ -31,7 +32,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
   });
 
   return (context: TContext) => {
-    // node-cron
+    // #MARK: node-cron
     function cron({
       exec,
       schedule: scheduleList,
@@ -78,7 +79,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
       return () => stopFunctions.forEach((stop) => stop());
     }
 
-    // setInterval
+    // #MARK: setInterval
     function interval({
       exec,
       interval,
@@ -109,6 +110,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
       return stopFunction;
     }
 
+    // #MARK: sliding
     function sliding({
       exec,
       reset,
@@ -179,6 +181,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
       };
     }
 
+    // #MARK: return object
     return {
       cron,
       interval,

@@ -2,7 +2,6 @@ import { env } from "process";
 
 import {
   ApplicationDefinition,
-  BootstrapOptions,
   ConfigLoaderEnvironment,
   ConfigLoaderFile,
   CreateApplication,
@@ -13,18 +12,13 @@ import {
   TServiceParams,
 } from "..";
 import { ConfigTesting } from "./config-testing.extension";
-
-const BASIC_BOOT = {
-  configuration: { boilerplate: { LOG_LEVEL: "silent" } },
-  hideLogLevel: true,
-} as BootstrapOptions;
+import { BASIC_BOOT, ServiceTest } from "./testing.helper";
 
 describe("Configuration", () => {
   let application: ApplicationDefinition<
     ServiceMap,
     OptionalModuleConfiguration
   >;
-  let spy: jest.SpyInstance;
 
   afterEach(async () => {
     if (application) {
@@ -32,74 +26,47 @@ describe("Configuration", () => {
       application = undefined;
     }
     jest.restoreAllMocks();
-    spy = undefined;
   });
+
   // #region Initialization
   describe("Initialization", () => {
     it("should be configured at the correct time in the lifecycle", async () => {
       expect.assertions(2);
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error testing
-        name: "testing",
-        services: {
-          Testing({ internal, lifecycle }: TServiceParams) {
-            spy = jest.spyOn(internal.boilerplate.configuration, INITIALIZE);
-            lifecycle.onPreInit(() => {
-              expect(spy).not.toHaveBeenCalled();
-            });
-            lifecycle.onPostConfig(() => {
-              expect(spy).toHaveBeenCalled();
-            });
-          },
-        },
+      await ServiceTest(({ internal, lifecycle }) => {
+        const spy = jest.spyOn(internal.boilerplate.configuration, INITIALIZE);
+        lifecycle.onPreInit(() => {
+          expect(spy).not.toHaveBeenCalled();
+        });
+        lifecycle.onPostConfig(() => {
+          expect(spy).toHaveBeenCalled();
+        });
       });
-      await application.bootstrap(BASIC_BOOT);
     });
 
     it("should prioritize bootstrap config over defaults", async () => {
       expect.assertions(1);
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error testing
-        name: "testing",
-        services: {
-          Testing({ config, lifecycle }: TServiceParams) {
-            lifecycle.onPostConfig(() => {
-              expect(config.boilerplate.LOG_LEVEL).toBe("silent");
-            });
-          },
-        },
+      await ServiceTest(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          expect(config.boilerplate.LOG_LEVEL).toBe("silent");
+        });
       });
-      await application.bootstrap(BASIC_BOOT);
     });
 
     it("should have the correct defaults for boilerplate", async () => {
       expect.assertions(6);
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error testing
-        name: "testing",
-        services: {
-          Testing({ config, lifecycle }: TServiceParams) {
-            lifecycle.onPostConfig(() => {
-              expect(config.boilerplate.CACHE_PREFIX).toBe("");
-              expect(config.boilerplate.CACHE_PROVIDER).toBe("memory");
-              expect(config.boilerplate.CACHE_TTL).toBe(86_400);
-              expect(config.boilerplate.CONFIG).toBe(undefined);
-              expect(config.boilerplate.LOG_LEVEL).toBe("trace");
-              expect(config.boilerplate.REDIS_URL).toBe(
-                "redis://localhost:6379",
-              );
-            });
-          },
-        },
-      });
       // hide logs that result from lack of "silent" LOG_LEVEL
       jest.spyOn(console, "log").mockImplementation(() => {});
       jest.spyOn(console, "error").mockImplementation(() => {});
-      // MUST STAY EMPTY!
-      await application.bootstrap({});
+      await ServiceTest(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          expect(config.boilerplate.CACHE_PREFIX).toBe("");
+          expect(config.boilerplate.CACHE_PROVIDER).toBe("memory");
+          expect(config.boilerplate.CACHE_TTL).toBe(86_400);
+          expect(config.boilerplate.CONFIG).toBe(undefined);
+          expect(config.boilerplate.LOG_LEVEL).toBe("trace");
+          expect(config.boilerplate.REDIS_URL).toBe("redis://localhost:6379");
+        });
+      }, {});
     });
 
     it("should generate the correct structure for applications", async () => {

@@ -271,7 +271,7 @@ export function CreateApplication<
   C extends OptionalModuleConfiguration,
 >({
   name,
-  services,
+  services = {} as S,
   configurationLoaders,
   libraries = [],
   configuration = {} as C,

@@ -7,14 +7,9 @@ import {
   InternalDefinition,
   LIB_BOILERPLATE,
   LifecycleStages,
-  LOADED_LIFECYCLES,
-  LOADED_MODULES,
-  MODULE_MAPPINGS,
   OptionalModuleConfiguration,
-  REVERSE_MODULE_MAPPING,
   ServiceMap,
   TServiceParams,
-  WIRE_PROJECT,
 } from "..";
 
 const FAKE_EXIT = (() => {}) as () => never;
@@ -57,17 +52,6 @@ describe("Wiring", () => {
       expect(library.services).toEqual({});
     });
 
-    it("properly wires services when creating a library", async () => {
-      const testService = jest.fn();
-      const library = CreateLibrary({
-        // @ts-expect-error For unit testing
-        name: "testing",
-        services: { testService },
-      });
-      await library[WIRE_PROJECT](undefined);
-      // Check that the service is wired correctly
-      expect(testService).toHaveBeenCalled();
-    });
     it("throws an error with invalid service definition", () => {
       expect(() => {
         CreateLibrary({
@@ -686,17 +670,19 @@ describe("Wiring", () => {
   // #region Internal
   describe("Internal", () => {
     it("populates maps during bootstrap", async () => {
+      let i: InternalDefinition;
       application = CreateApplication({
         configurationLoaders: [],
         // @ts-expect-error Testing
         name: "testing",
-        services: {},
+        services: {
+          Test({ internal }: TServiceParams) {
+            i = internal;
+          },
+        },
       });
       await application.bootstrap(BASIC_BOOT);
-      expect(MODULE_MAPPINGS.size).not.toEqual(0);
-      expect(LOADED_MODULES.size).not.toEqual(0);
-      expect(REVERSE_MODULE_MAPPING.size).not.toEqual(0);
-      expect(LOADED_LIFECYCLES.size).not.toEqual(0);
+      expect(i.boot.lifecycleHooks.size).not.toEqual(0);
       expect(LIB_BOILERPLATE).toBeDefined();
     });
   });

@@ -690,6 +690,28 @@ describe("Wiring", () => {
 
   // #region Wiring
   describe("Wiring", () => {
+    it("should allow 2 separate apps to boot", async () => {
+      application = CreateApplication({
+        configurationLoaders: [],
+        // @ts-expect-error Testing
+        name: "testing",
+        services: {
+          Test() {},
+        },
+      });
+      await application.bootstrap(BASIC_BOOT);
+      const secondary = CreateApplication({
+        configurationLoaders: [],
+        // @ts-expect-error Testing
+        name: "testing_second",
+        services: {
+          Test() {},
+        },
+      });
+      await secondary.bootstrap(BASIC_BOOT);
+      await secondary.teardown();
+    });
+
     it("should add library to TServiceParams", async () => {
       let observed: unknown;
       application = CreateApplication({

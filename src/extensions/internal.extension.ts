@@ -22,6 +22,8 @@ import {
   TBlackHole,
   TContext,
   TLoadableChildLifecycle,
+  TModuleMappings,
+  TResolvedModuleMappings,
   YEAR,
 } from "..";
 
@@ -241,7 +243,22 @@ export class InternalDefinition {
      * Roughly speaking, what's the application doing? Mostly useful for debugging
      */
     phase: Phase;
+
+    /**
+     * Registry for various lifecycle events that were registered by services
+     */
     lifecycleHooks: Map<string, TLoadableChildLifecycle>;
+
+    /**
+     * association of projects to { service : Declaration Function }
+     */
+    moduleMappings: Map<string, TModuleMappings>;
+
+    /**
+     * association of projects to { service : Initialized Service }
+     */
+    loadedModules: Map<string, TResolvedModuleMappings>;
+    startup: Date;
   };
   public utils = new InternalUtils();
 

@@ -342,6 +342,7 @@ export type ApplicationDefinition<
   C extends OptionalModuleConfiguration,
 > = ApplicationConfigurationOptions<S, C> &
   Wire & {
+    logger: ILogger;
     booted: boolean;
     bootstrap: (options?: BootstrapOptions) => Promise<void>;
     teardown: () => Promise<void>;

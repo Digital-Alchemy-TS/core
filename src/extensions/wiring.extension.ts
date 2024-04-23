@@ -6,17 +6,15 @@ import {
   ApplicationDefinition,
   BootstrapException,
   BootstrapOptions,
+  BuildSortOrder,
   CacheProviders,
-  CallbackList,
+  COERCE_CONTEXT,
+  CreateLibrary,
   DOWN,
   each,
   eachSeries,
   GetApis,
   GetApisResult,
-  LibraryConfigurationOptions,
-  LibraryDefinition,
-  LIFECYCLE_STAGES,
-  LifecycleCallback,
   LifecyclePrioritizedCallback,
   LifecycleStages,
   LoadedModules,
@@ -24,125 +22,31 @@ import {
   ServiceFunction,
   ServiceMap,
   StringConfig,
-  TContext,
   TLifecycleBase,
-  TLoadableChildLifecycle,
-  TModuleMappings,
-  TResolvedModuleMappings,
   TServiceParams,
   TServiceReturn,
   UP,
   WIRE_PROJECT,
+  WireOrder,
+  WIRING_CONTEXT,
 } from "../helpers";
 import { InternalDefinition, is } from ".";
 import { Cache } from "./cache.extension";
 import {
-  ConfigManager,
   Configuration,
   INITIALIZE,
   INJECTED_DEFINITIONS,
   LOAD_PROJECT,
 } from "./configuration.extension";
 import { Fetch } from "./fetch.extension";
+import { CreateChildLifecycle } from "./lifecycle.extension";
 import { ILogger, Logger, TConfigLogLevel } from "./logger.extension";
 import { Scheduler } from "./scheduler.extension";
 
-// #MARK: Variables
-// These are resettable variables, which are scoped to outside the function on purpose
-// If these were moved inside the service function, then re-running the method would result in application / library references being stranded
-// Items like lib_boilerplate would still exist, but their lifecycles would be not accessible by the current application
-//
-// By moving to outside the function, the internal methods will be able to re-initialize as expected, without needing to fully rebuild every reference everywhere
-// ... in theory
-
-/**
- * association of projects to { service : Declaration Function }
- */
-export let MODULE_MAPPINGS = new Map<string, TModuleMappings>();
-
-/**
- * association of projects to { service : Initialized Service }
- */
-export let LOADED_MODULES = new Map<string, TResolvedModuleMappings>();
-
-/**
- * Optimized reverse lookups: Declaration  Function => [project, service]
- */
-export let REVERSE_MODULE_MAPPING = new Map<
-  ServiceFunction,
-  [project: string, service: string]
->();
-
-export let LOADED_LIFECYCLES = new Map<string, TLoadableChildLifecycle>();
-
-// heisenberg's variables. it's probably here, but maybe not
-// let scheduler: (context: TContext) => TScheduler;
-let logger: ILogger;
-let internal: InternalDefinition;
-const COERCE_CONTEXT = (context: string): TContext => context as TContext;
-const WIRING_CONTEXT = COERCE_CONTEXT("boilerplate:wiring");
-// (re)defined at bootstrap
-export let LIB_BOILERPLATE: ReturnType<typeof CreateBoilerplate>;
-// exporting a let makes me feel dirty inside
-// at least it's only for testing
-
-// #MARK: processEvents
-const processEvents = new Map([
-  [
-    "SIGTERM",
-    async () => {
-      logger.warn({ name: "SIGTERM" }, `starting`);
-      await Teardown();
-      exit();
-    },
-  ],
-  [
-    "SIGINT",
-    async () => {
-      logger.warn({ name: "SIGINT" }, `starting`);
-      await Teardown();
-      exit();
-    },
-  ],
-  // ["uncaughtException", () => {}],
-  // ["unhandledRejection", (reason, promise) => {}],
-]);
-
-const BOILERPLATE = () =>
-  LOADED_MODULES.get("boilerplate") as GetApis<
-    ReturnType<typeof CreateBoilerplate>
-  >;
-
-// #MARK: ValidateLibrary
-function ValidateLibrary<S extends ServiceMap>(
-  project: string,
-  serviceList: S,
-): void | never {
-  if (is.empty(project)) {
-    throw new BootstrapException(
-      COERCE_CONTEXT("CreateLibrary"),
-      "MISSING_LIBRARY_NAME",
-      "Library name is required",
-    );
-  }
-  const services = Object.entries(serviceList);
-
-  // Find the first invalid service
-  const invalidService = services.find(
-    ([, definition]) => typeof definition !== "function",
-  );
-  if (invalidService) {
-    const [invalidServiceName, service] = invalidService;
-    throw new BootstrapException(
-      COERCE_CONTEXT("CreateLibrary"),
-      "INVALID_SERVICE_DEFINITION",
-      `Invalid service definition for '${invalidServiceName}' in library '${project}' (${typeof service}})`,
-    );
-  }
-}
-
 // #MARK: CreateBoilerplate
 function CreateBoilerplate() {
+  // ! DO NOT MOVE TO ANOTHER FILE !
+  // While it SEEMS LIKE this can be safely moved, it causes code init race conditions.
   return CreateLibrary({
     configuration: {
       CACHE_PREFIX: {
@@ -198,72 +102,49 @@ function CreateBoilerplate() {
     },
   });
 }
+const PRE_CALLBACKS_START = 0;
 
-// #MARK: WireOrder
-function WireOrder<T extends string>(priority: T[], list: T[]): T[] {
-  const out = [...(priority || [])];
-  if (!is.empty(priority)) {
-    const check = is.unique(priority);
-    if (check.length !== out.length) {
-      throw new BootstrapException(
-        WIRING_CONTEXT,
-        "DOUBLE_PRIORITY",
-        "There are duplicate items in the priority load list",
-      );
-    }
-  }
-  return [...out, ...list.filter((i) => !out.includes(i))];
+// (re)defined at bootstrap
+// unclear if this variable even serves a purpose beyond types
+export let LIB_BOILERPLATE: ReturnType<typeof CreateBoilerplate>;
+
+const RUNNING_APPLICATIONS = new Map<
+  string,
+  ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>
+>();
+
+// #MARK: QuickShutdown
+async function QuickShutdown(reason: string) {
+  await each([...RUNNING_APPLICATIONS.values()], async (application) => {
+    application.logger.warn({ reason }, `starting shutdown`);
+    await application.teardown();
+  });
 }
 
-// #MARK: CreateLibrary
-export function CreateLibrary<
-  S extends ServiceMap,
-  C extends OptionalModuleConfiguration,
->({
-  name: libraryName,
-  configuration = {} as C,
-  priorityInit,
-  services,
-  depends,
-}: LibraryConfigurationOptions<S, C>): LibraryDefinition<S, C> {
-  ValidateLibrary(libraryName, services);
-
-  const serviceApis = {} as GetApisResult<ServiceMap>;
-
-  const library = {
-    [WIRE_PROJECT]: async (internal: InternalDefinition) => {
-      const lifecycle = CreateChildLifecycle(internal);
-      // This one hasn't been loaded yet, generate an object with all the correct properties
-      LOADED_LIFECYCLES.set(libraryName, lifecycle);
-      // not defined for boilerplate (chicken & egg)
-      // manually added inside the bootstrap process
-      const config = internal?.boilerplate.configuration as ConfigManager;
-      config?.[LOAD_PROJECT](libraryName as keyof LoadedModules, configuration);
-      await eachSeries(
-        WireOrder(priorityInit, Object.keys(services)),
-        async (service) => {
-          serviceApis[service] = await WireService(
-            libraryName,
-            service,
-            services[service],
-            lifecycle,
-            internal,
-          );
-        },
-      );
-      // mental note: people should probably do all their lifecycle attachments at the base level function
-      // otherwise, it'll happen after this wire() call, and go into a black hole (worst case) or fatal error ("best" case)
-      return lifecycle;
+// #MARK: processEvents
+const processEvents = new Map([
+  [
+    "SIGTERM",
+    async () => {
+      await QuickShutdown("SIGTERM");
+      exit();
     },
-    configuration,
-    depends,
-    name: libraryName,
-    priorityInit,
-    serviceApis,
-    services,
-  } as LibraryDefinition<S, C>;
-  return library;
-}
+  ],
+  [
+    "SIGINT",
+    async () => {
+      await QuickShutdown("SIGINT");
+      exit();
+    },
+  ],
+  // ["uncaughtException", () => {}],
+  // ["unhandledRejection", (reason, promise) => {}],
+]);
+
+const BOILERPLATE = (internal: InternalDefinition) =>
+  internal.boot.loadedModules.get("boilerplate") as GetApis<
+    ReturnType<typeof CreateBoilerplate>
+  >;
 
 // #MARK: CreateApplication
 export function CreateApplication<
@@ -271,12 +152,14 @@ export function CreateApplication<
   C extends OptionalModuleConfiguration,
 >({
   name,
-  services,
+  services = {} as S,
   configurationLoaders,
   libraries = [],
   configuration = {} as C,
   priorityInit = [],
 }: ApplicationConfigurationOptions<S, C>) {
+  let internal: InternalDefinition;
+
   priorityInit.forEach((name) => {
     if (!is.function(services[name])) {
       throw new BootstrapException(
@@ -289,9 +172,9 @@ export function CreateApplication<
   const serviceApis = {} as GetApisResult<ServiceMap>;
   const application = {
     [WIRE_PROJECT]: async (internal: InternalDefinition) => {
-      const lifecycle = CreateChildLifecycle(internal);
-      LOADED_LIFECYCLES.set(name, lifecycle);
-      BOILERPLATE()?.configuration?.[LOAD_PROJECT](
+      const lifecycle = CreateChildLifecycle(internal, application.logger);
+      internal.boot.lifecycleHooks.set(name, lifecycle);
+      BOILERPLATE(internal)?.configuration?.[LOAD_PROJECT](
         name as keyof LoadedModules,
         configuration,
       );
@@ -318,23 +201,37 @@ export function CreateApplication<
           "Application is already booted! Cannot bootstrap again",
         );
       }
-      await Bootstrap(application, options);
+      if (internal) {
+        throw new BootstrapException(
+          WIRING_CONTEXT,
+          "NO_DUAL_BOOT",
+          "Another application is already active, please terminate",
+        );
+      }
+      internal = new InternalDefinition();
+      await Bootstrap(application, options, internal);
       application.booted = true;
+      RUNNING_APPLICATIONS.set(name, application);
     },
     configuration,
     configurationLoaders,
     libraries,
+    logger: undefined,
     name,
     priorityInit,
     serviceApis,
     services,
     teardown: async () => {
       if (!application.booted) {
-        Reset();
+        processEvents.forEach((callback, event) =>
+          process.removeListener(event, callback),
+        );
         return;
       }
-      await Teardown();
+      await Teardown(internal, application.logger);
+      internal?.utils?.event?.removeAllListeners?.();
       application.booted = false;
+      internal = undefined;
     },
   } as ApplicationDefinition<S, C>;
   return application;
@@ -348,7 +245,7 @@ async function WireService(
   lifecycle: TLifecycleBase,
   internal: InternalDefinition,
 ) {
-  const mappings = MODULE_MAPPINGS.get(project) ?? {};
+  const mappings = internal.boot.moduleMappings.get(project) ?? {};
   if (!is.undefined(mappings[service])) {
     throw new BootstrapException(
       WIRING_CONTEXT,
@@ -357,21 +254,20 @@ async function WireService(
     );
   }
   mappings[service] = definition;
-  MODULE_MAPPINGS.set(project, mappings);
-  REVERSE_MODULE_MAPPING.set(definition, [project, service]);
+  internal.boot.moduleMappings.set(project, mappings);
   const context = COERCE_CONTEXT(`${project}:${service}`);
 
   // logger gets defined first, so this really is only for the start of the start of bootstrapping
-  const boilerplate = BOILERPLATE();
+  const boilerplate = BOILERPLATE(internal);
   const logger = boilerplate?.logger?.context(context);
-  const loaded = LOADED_MODULES.get(project) ?? {};
-  LOADED_MODULES.set(project, loaded);
+  const loaded = internal.boot.loadedModules.get(project) ?? {};
+  internal.boot.loadedModules.set(project, loaded);
   try {
     logger?.trace({ name: WireService }, `initializing`);
     const inject = Object.fromEntries(
-      [...LOADED_MODULES.keys()].map((project) => [
+      [...internal.boot.loadedModules.keys()].map((project) => [
         project as keyof TServiceParams,
-        LOADED_MODULES.get(project),
+        internal.boot.loadedModules.get(project),
       ]),
     );
 
@@ -397,14 +293,17 @@ async function WireService(
 }
 
 // #MARK: RunStageCallbacks
-async function RunStageCallbacks(stage: LifecycleStages): Promise<string> {
+async function RunStageCallbacks(
+  stage: LifecycleStages,
+  internal: InternalDefinition,
+): Promise<string> {
   const start = Date.now();
   const list = [
     // boilerplate priority
-    LOADED_LIFECYCLES.get("boilerplate").getCallbacks(stage),
+    internal.boot.lifecycleHooks.get("boilerplate").getCallbacks(stage),
     // children next
     // ...
-    ...[...LOADED_LIFECYCLES.entries()]
+    ...[...internal.boot.lifecycleHooks.entries()]
       .filter(([name]) => name !== "boilerplate")
       .map(([, thing]) => thing.getCallbacks(stage)),
   ];
@@ -444,102 +343,28 @@ async function RunStageCallbacks(stage: LifecycleStages): Promise<string> {
   internal.boot.completedLifecycleEvents.add(stage);
   return `${Date.now() - start}ms`;
 }
-const PRE_CALLBACKS_START = 0;
-
-type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration>;
-
-// #MARK: BuildSortOrder
-function BuildSortOrder<
-  S extends ServiceMap,
-  C extends OptionalModuleConfiguration,
->(app: ApplicationDefinition<S, C>) {
-  if (is.empty(app.libraries)) {
-    return [];
-  }
-  const libraryMap = new Map<string, TLibrary>(
-    app.libraries.map((i) => [i.name, i]),
-  );
-
-  // Recursive function to check for missing dependencies at any depth
-  function checkDependencies(library: TLibrary) {
-    if (!is.empty(library.depends)) {
-      library.depends.forEach((item) => {
-        const loaded = libraryMap.get(item.name);
-        if (!loaded) {
-          throw new BootstrapException(
-            WIRING_CONTEXT,
-            "MISSING_DEPENDENCY",
-            `${item.name} is required by ${library.name}, but was not provided`,
-          );
-        }
-        // just "are they the same object reference?" as the test
-        // you get a warning, and the one the app asks for
-        // hopefully there is no breaking changes
-        if (loaded !== item) {
-          logger.warn(
-            { name: BuildSortOrder },
-            "[%s] depends different version {%s}",
-            library.name,
-            item.name,
-          );
-        }
-      });
-    }
-    return library;
-  }
-
-  let starting = app.libraries.map((i) => checkDependencies(i));
-  const out = [] as TLibrary[];
-  while (!is.empty(starting)) {
-    const next = starting.find((library) => {
-      if (is.empty(library.depends)) {
-        return true;
-      }
-      return library.depends?.every((depend) =>
-        out.some((i) => i.name === depend.name),
-      );
-    });
-    if (!next) {
-      logger.fatal({ current: out.map((i) => i.name), name: BuildSortOrder });
-      throw new BootstrapException(
-        WIRING_CONTEXT,
-        "BAD_SORT",
-        `Cannot find a next lib to load`,
-      );
-    }
-    starting = starting.filter((i) => next.name !== i.name);
-    out.push(next);
-  }
-
-  const order = out.map((i) => i.name);
-  logger.trace({ name: BuildSortOrder, order }, ``);
-  return out;
-}
-
-let startup: Date;
 
 // #MARK: Bootstrap
 async function Bootstrap<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
->(application: ApplicationDefinition<S, C>, options: BootstrapOptions = {}) {
-  if (internal) {
-    throw new BootstrapException(
-      WIRING_CONTEXT,
-      "NO_DUAL_BOOT",
-      "Another application is already active, please terminate",
-    );
-  }
-  internal = new InternalDefinition();
+>(
+  application: ApplicationDefinition<S, C>,
+  options: BootstrapOptions = {},
+  internal: InternalDefinition,
+) {
   // const
   internal.boot = {
     application,
     completedLifecycleEvents: new Set(),
+    lifecycleHooks: new Map(),
+    loadedModules: new Map(),
+    moduleMappings: new Map(),
     options,
     phase: "bootstrap",
+    startup: new Date(),
   };
   process.title = application.name;
-  startup = new Date();
   try {
     const STATS = {} as Record<string, unknown>;
     const CONSTRUCT = {} as Record<string, unknown>;
@@ -549,7 +374,7 @@ async function Bootstrap<
     // otherwise it'd only be there for everyone else
     const api = {} as GetApis<ReturnType<typeof CreateBoilerplate>>;
     internal.boilerplate = api;
-    LOADED_MODULES.set("boilerplate", api);
+    internal.boot.loadedModules.set("boilerplate", api);
 
     STATS.Construct = CONSTRUCT;
     // * Recreate base eventemitter
@@ -561,7 +386,7 @@ async function Bootstrap<
 
     // * Wire it
     let start = Date.now();
-    await LIB_BOILERPLATE[WIRE_PROJECT](internal);
+    await LIB_BOILERPLATE[WIRE_PROJECT](internal, WireService, undefined);
 
     CONSTRUCT.boilerplate = `${Date.now() - start}ms`;
     // ~ configuration
@@ -569,7 +394,8 @@ async function Bootstrap<
       LIB_BOILERPLATE.name,
       LIB_BOILERPLATE.configuration,
     );
-    logger = api.logger.context(WIRING_CONTEXT);
+    const logger = api.logger.context(WIRING_CONTEXT);
+    application.logger = logger;
     logger.info({ name: Bootstrap }, `[boilerplate] wiring complete`);
 
     // * Wire in various shutdown events
@@ -580,18 +406,18 @@ async function Bootstrap<
 
     // * Add in libraries
     application.libraries ??= [];
-    const order = BuildSortOrder(application);
+    const order = BuildSortOrder(application, logger);
     await eachSeries(order, async (i) => {
       start = Date.now();
       logger.info({ name: Bootstrap }, `[%s] init project`, i.name);
-      await i[WIRE_PROJECT](internal);
+      await i[WIRE_PROJECT](internal, WireService, logger);
       CONSTRUCT[i.name] = `${Date.now() - start}ms`;
     });
 
     logger.info({ name: Bootstrap }, `init application`);
     // * Finally the application
     start = Date.now();
-    await application[WIRE_PROJECT](internal);
+    await application[WIRE_PROJECT](internal, WireService, logger);
     CONSTRUCT[application.name] = `${Date.now() - start}ms`;
 
     // ? Configuration values provided bootstrap take priority over module level
@@ -601,26 +427,26 @@ async function Bootstrap<
 
     // - Kick off lifecycle
     logger.debug({ name: Bootstrap }, `[PreInit] running lifecycle callbacks`);
-    STATS.PreInit = await RunStageCallbacks("PreInit");
+    STATS.PreInit = await RunStageCallbacks("PreInit", internal);
     // - Pull in user configurations
     logger.debug({ name: Bootstrap }, "loading configuration");
     STATS.Configure =
-      await BOILERPLATE()?.configuration?.[INITIALIZE](application);
+      await BOILERPLATE(internal)?.configuration?.[INITIALIZE](application);
     // - Run through other events in order
     logger.debug(
       { name: Bootstrap },
       `[PostConfig] running lifecycle callbacks`,
     );
-    STATS.PostConfig = await RunStageCallbacks("PostConfig");
+    STATS.PostConfig = await RunStageCallbacks("PostConfig", internal);
     logger.debug(
       { name: Bootstrap },
       `[Bootstrap] running lifecycle callbacks`,
     );
-    STATS.Bootstrap = await RunStageCallbacks("Bootstrap");
+    STATS.Bootstrap = await RunStageCallbacks("Bootstrap", internal);
     logger.debug({ name: Bootstrap }, `[Ready] running lifecycle callbacks`);
-    STATS.Ready = await RunStageCallbacks("Ready");
+    STATS.Ready = await RunStageCallbacks("Ready", internal);
 
-    STATS.Total = `${Date.now() - startup.getTime()}ms`;
+    STATS.Total = `${Date.now() - internal.boot.startup.getTime()}ms`;
     // * App is ready!
     logger.info(
       options?.showExtraBootStats
@@ -640,7 +466,7 @@ async function Bootstrap<
 }
 
 // #MARK: Teardown
-async function Teardown() {
+async function Teardown(internal: InternalDefinition, logger: ILogger) {
   if (!internal) {
     return;
   }
@@ -653,7 +479,7 @@ async function Teardown() {
       { name: Teardown },
       `[PreShutdown] running lifecycle callbacks`,
     );
-    await RunStageCallbacks("PreShutdown");
+    await RunStageCallbacks("PreShutdown", internal);
 
     // * Formally shutting down
     logger.info({ name: Teardown }, `tearing down application`);
@@ -661,12 +487,12 @@ async function Teardown() {
       { name: Teardown },
       `[ShutdownStart] running lifecycle callbacks`,
     );
-    await RunStageCallbacks("ShutdownStart");
+    await RunStageCallbacks("ShutdownStart", internal);
     logger.debug(
       { name: Teardown },
       `[ShutdownComplete] running lifecycle callbacks`,
     );
-    await RunStageCallbacks("ShutdownComplete");
+    await RunStageCallbacks("ShutdownComplete", internal);
   } catch (error) {
     // ! oof
     logger.error(
@@ -677,73 +503,13 @@ async function Teardown() {
   // * Final resource cleanup, attempt to reset everything possible
 
   logger.info(
-    { name: Teardown, started_at: internal.utils.relativeDate(startup) },
+    {
+      name: Teardown,
+      started_at: internal.utils.relativeDate(internal.boot.startup),
+    },
     `application terminated`,
   );
-  Reset();
-}
-
-// #MARK: Reset
-export function Reset() {
   processEvents.forEach((callback, event) =>
     process.removeListener(event, callback),
   );
-  internal?.utils?.event?.removeAllListeners?.();
-
-  MODULE_MAPPINGS = new Map();
-  LOADED_MODULES = new Map();
-  LOADED_LIFECYCLES = new Map();
-  REVERSE_MODULE_MAPPING = new Map();
-  internal = undefined;
-  logger = undefined;
-}
-
-// # Lifecycle
-function CreateChildLifecycle(
-  internal: InternalDefinition,
-): TLoadableChildLifecycle {
-  const childCallbacks = {} as Record<LifecycleStages, CallbackList>;
-
-  const [
-    // ! This list must be sorted!
-    onPreInit,
-    onPostConfig,
-    onBootstrap,
-    onReady,
-    onPreShutdown,
-    onShutdownStart,
-    onShutdownComplete,
-  ] = LIFECYCLE_STAGES.map((stage) => {
-    childCallbacks[stage] = [];
-    return (callback: LifecycleCallback, priority?: number) => {
-      if (internal.boot.completedLifecycleEvents.has(stage)) {
-        // this is makes "earliest run time" logic way easier to implement
-        // intended mode of operation
-        if (["PreInit", "PostConfig", "Bootstrap", "Ready"].includes(stage)) {
-          setImmediate(async () => await callback());
-          return;
-        }
-        // What does this mean in reality?
-        // Probably a broken unit test, I really don't know what workflow would cause this
-        logger.fatal(
-          { name: CreateChildLifecycle },
-          `on${stage} late attach, cannot attach callback`,
-        );
-        return;
-      }
-      childCallbacks[stage].push([callback, priority]);
-    };
-  });
-
-  return {
-    getCallbacks: (stage: LifecycleStages) =>
-      childCallbacks[stage] as CallbackList,
-    onBootstrap,
-    onPostConfig,
-    onPreInit,
-    onPreShutdown,
-    onReady,
-    onShutdownComplete,
-    onShutdownStart,
-  };
 }

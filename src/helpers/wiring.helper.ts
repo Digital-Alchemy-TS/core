@@ -287,21 +287,37 @@ export type PartialConfiguration = Partial<{
 // #MARK: BootstrapOptions
 export type BootstrapOptions = {
   /**
+   * An extra library to load after the application is constructed.
+   * Can be used to provide testing specific logic
+   */
+  appendLibrary?: TLibrary;
+
+  /**
+   * An services to be appended to the application.
+   * Wired as if they were declared with the application, but doesn't come with any related type support
+   */
+  appendService?: ServiceMap;
+
+  /**
    * default: true
    */
   handleGlobalErrors?: boolean;
+
   /**
    * default values to use for configurations, before user values come in
    */
   configuration?: PartialConfiguration;
+
   /**
    * use this logger, instead of the baked in one. Maybe you want some custom transports or something? Put your customized thing here
    */
   customLogger?: ILogger;
+
   /**
    * Show detailed boot time statistics
    */
   showExtraBootStats?: boolean;
+
   /**
    * default false
    *

@@ -18,9 +18,11 @@ import {
   LifecyclePrioritizedCallback,
   LifecycleStages,
   LoadedModules,
+  NONE,
   OptionalModuleConfiguration,
   ServiceFunction,
   ServiceMap,
+  sleep,
   StringConfig,
   TLifecycleBase,
   TServiceParams,
@@ -190,6 +192,18 @@ export function CreateApplication<
           );
         },
       );
+      const append = internal.boot.options?.appendService;
+      if (!is.empty(append)) {
+        await eachSeries(Object.keys(append), async (service) => {
+          await WireService(
+            name,
+            service,
+            append[service],
+            lifecycle,
+            internal,
+          );
+        });
+      }
       return lifecycle;
     },
     booted: false,
@@ -341,6 +355,7 @@ async function RunStageCallbacks(
     );
   });
   internal.boot.completedLifecycleEvents.add(stage);
+  await sleep(NONE);
   return `${Date.now() - start}ms`;
 }
 
@@ -413,6 +428,12 @@ async function Bootstrap<
       await i[WIRE_PROJECT](internal, WireService, logger);
       CONSTRUCT[i.name] = `${Date.now() - start}ms`;
     });
+
+    if (!is.undefined(options?.appendLibrary)) {
+      start = Date.now();
+      await options.appendLibrary[WIRE_PROJECT](internal, WireService, logger);
+      CONSTRUCT[options.appendLibrary.name] = `${Date.now() - start}ms`;
+    }
 
     logger.info({ name: Bootstrap }, `init application`);
     // * Finally the application

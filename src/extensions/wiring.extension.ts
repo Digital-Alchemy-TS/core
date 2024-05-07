@@ -312,48 +312,41 @@ async function RunStageCallbacks(
   internal: InternalDefinition,
 ): Promise<string> {
   const start = Date.now();
-  const list = [
-    // boilerplate priority
-    internal.boot.lifecycleHooks.get("boilerplate").getCallbacks(stage),
-    // children next
-    // ...
-    ...[...internal.boot.lifecycleHooks.entries()]
-      .filter(([name]) => name !== "boilerplate")
-      .map(([, thing]) => thing.getCallbacks(stage)),
-  ];
-  await eachSeries(list, async (callbacks) => {
-    if (is.empty(callbacks)) {
+
+  const callbacks = [...internal.boot.lifecycleHooks.values()].flatMap(
+    (thing) => thing.getCallbacks(stage),
+  );
+  const sorted = callbacks.filter(([, sort]) => sort !== undefined);
+  const quick = callbacks.filter(([, sort]) => sort === undefined);
+  const positive = [] as LifecyclePrioritizedCallback[];
+  const negative = [] as LifecyclePrioritizedCallback[];
+
+  sorted.forEach(([callback, priority]) => {
+    if (priority >= PRE_CALLBACKS_START) {
+      positive.push([callback, priority]);
       return;
     }
-    const sorted = callbacks.filter(([, sort]) => sort !== undefined);
-    const quick = callbacks.filter(([, sort]) => sort === undefined);
-    const positive = [] as LifecyclePrioritizedCallback[];
-    const negative = [] as LifecyclePrioritizedCallback[];
-    sorted.forEach(([callback, priority]) => {
-      if (priority >= PRE_CALLBACKS_START) {
-        positive.push([callback, priority]);
-        return;
-      }
-      negative.push([callback, priority]);
-    });
-
-    // * callbacks with a priority greater than 0
-    // larger number happen first
-    await eachSeries(
-      positive.sort(([, a], [, b]) => (a < b ? UP : DOWN)),
-      async ([callback]) => await callback(),
-    );
-
-    // * callbacks without a priority
-    await each(quick, async ([callback]) => await callback());
-
-    // * callbacks with a priority less than 0
-    // smaller numbers happen last
-    await eachSeries(
-      negative.sort(([, a], [, b]) => (a > b ? UP : DOWN)),
-      async ([callback]) => await callback(),
-    );
+    negative.push([callback, priority]);
   });
+
+  // * callbacks with a priority greater than 0
+  // high to low (1000 => 0)
+  await eachSeries(
+    positive.sort(([, a], [, b]) => (a < b ? UP : DOWN)),
+    async ([callback]) => await callback(),
+  );
+
+  // * callbacks without a priority
+  // any order
+  await each(quick, async ([callback]) => await callback());
+
+  // * callbacks with a priority less than 0
+  // high to low (-1 => -1000)
+  await eachSeries(
+    negative.sort(([, a], [, b]) => (a < b ? UP : DOWN)),
+    async ([callback]) => await callback(),
+  );
+
   internal.boot.completedLifecycleEvents.add(stage);
   await sleep(NONE);
   return `${Date.now() - start}ms`;
@@ -458,6 +451,7 @@ async function Bootstrap<
       { name: Bootstrap },
       `[PostConfig] running lifecycle callbacks`,
     );
+
     STATS.PostConfig = await RunStageCallbacks("PostConfig", internal);
     logger.debug(
       { name: Bootstrap },

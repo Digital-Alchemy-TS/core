@@ -297,11 +297,11 @@ describe("Wiring", () => {
           spy({ lifecycle }: TServiceParams) {
             lifecycle.onBootstrap(
               () => executionOrder.push("LowPriorityBootstrap"),
-              -1,
+              -10,
             );
             lifecycle.onBootstrap(
               () => executionOrder.push("HighPriorityBootstrap"),
-              -10,
+              -1,
             );
           },
         },

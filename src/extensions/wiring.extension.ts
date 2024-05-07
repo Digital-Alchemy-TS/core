@@ -22,6 +22,7 @@ import {
   OptionalModuleConfiguration,
   ServiceFunction,
   ServiceMap,
+  SINGLE,
   sleep,
   StringConfig,
   TLifecycleBase,
@@ -215,13 +216,6 @@ export function CreateApplication<
           "Application is already booted! Cannot bootstrap again",
         );
       }
-      if (internal) {
-        throw new BootstrapException(
-          WIRING_CONTEXT,
-          "NO_DUAL_BOOT",
-          "Another application is already active, please terminate",
-        );
-      }
       internal = new InternalDefinition();
       await Bootstrap(application, options, internal);
       application.booted = true;
@@ -260,13 +254,6 @@ async function WireService(
   internal: InternalDefinition,
 ) {
   const mappings = internal.boot.moduleMappings.get(project) ?? {};
-  if (!is.undefined(mappings[service])) {
-    throw new BootstrapException(
-      WIRING_CONTEXT,
-      "DUPLICATE_SERVICE_NAME",
-      `${service} is already defined for ${project}`,
-    );
-  }
   mappings[service] = definition;
   internal.boot.moduleMappings.set(project, mappings);
   const context = COERCE_CONTEXT(`${project}:${service}`);
@@ -300,8 +287,7 @@ async function WireService(
     return loaded[service];
   } catch (error) {
     // Init errors at this level are considered blocking / fatal
-    // eslint-disable-next-line no-console
-    console.error("initialization error", error);
+    (logger || console).error("initialization error", error);
     exit();
   }
 }
@@ -414,6 +400,27 @@ async function Bootstrap<
 
     // * Add in libraries
     application.libraries ??= [];
+
+    if (!is.undefined(options.appendLibrary)) {
+      const list = is.array(options.appendLibrary)
+        ? options.appendLibrary
+        : [options.appendLibrary];
+      list.forEach((append) => {
+        application.libraries.some((library, index) => {
+          if (append.name === library.name) {
+            // remove existing
+            logger.warn({ name: append.name }, `replacing library`);
+            application.libraries.splice(index, SINGLE);
+            return true;
+          }
+          return false;
+        });
+        logger.info({ name: append.name }, `appending library`);
+        // append
+        application.libraries.push(append);
+      });
+    }
+
     const order = BuildSortOrder(application, logger);
     await eachSeries(order, async (i) => {
       start = Date.now();
@@ -421,12 +428,6 @@ async function Bootstrap<
       await i[WIRE_PROJECT](internal, WireService, logger);
       CONSTRUCT[i.name] = `${Date.now() - start}ms`;
     });
-
-    if (!is.undefined(options?.appendLibrary)) {
-      start = Date.now();
-      await options.appendLibrary[WIRE_PROJECT](internal, WireService, logger);
-      CONSTRUCT[options.appendLibrary.name] = `${Date.now() - start}ms`;
-    }
 
     logger.info({ name: Bootstrap }, `init application`);
     // * Finally the application

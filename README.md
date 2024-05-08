@@ -1,3 +1,7 @@
+[![codecov](https://codecov.io/github/Digital-Alchemy-TS/core/graph/badge.svg?token=IBGLY3RY68)](https://codecov.io/github/Digital-Alchemy-TS/core)
+
+---
+
 # 🚀 Project Overview - Digital Alchemy TypeScript Libraries
 
 Welcome to `@digital-alchemy/core`!

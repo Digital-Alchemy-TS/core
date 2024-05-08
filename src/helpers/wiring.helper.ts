@@ -289,12 +289,16 @@ export type BootstrapOptions = {
   /**
    * An extra library to load after the application is constructed.
    * Can be used to provide testing specific logic
+   *
+   * If a library collides with a name provided in the application, this version takes priority
    */
-  appendLibrary?: TLibrary;
+  appendLibrary?: TLibrary | TLibrary[];
 
   /**
    * An services to be appended to the application.
    * Wired as if they were declared with the application, but doesn't come with any related type support
+   *
+   * Will not collide with existing services, even if context names match
    */
   appendService?: ServiceMap;
 

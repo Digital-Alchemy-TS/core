@@ -9,6 +9,7 @@ import {
   LifecycleStages,
   OptionalModuleConfiguration,
   ServiceMap,
+  sleep,
   TServiceParams,
 } from "..";
 
@@ -118,6 +119,102 @@ describe("Wiring", () => {
       expect(Object.keys(application.services).length).toBe(1);
       expect(application.libraries.length).toBe(1);
       expect(application.libraries[0]).toBe(testLibrary);
+    });
+
+    it("should only allows a single boot", async () => {
+      expect.assertions(1);
+      application = CreateApplication({
+        configurationLoaders: [],
+        // @ts-expect-error For unit testing
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap(BASIC_BOOT);
+      try {
+        await application.bootstrap(BASIC_BOOT);
+      } catch (error) {
+        expect(error.message).toBe("DOUBLE_BOOT");
+      }
+    });
+
+    it("should allow appending services", async () => {
+      expect.assertions(1);
+      application = CreateApplication({
+        configurationLoaders: [],
+        // @ts-expect-error For unit testing
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap({
+        ...BASIC_BOOT,
+        appendService: {
+          Test() {
+            // always true, the test is that it ran (expect.assertions)
+            expect(true).toBe(true);
+          },
+        },
+      });
+    });
+
+    it("should allow appending libraries", async () => {
+      expect.assertions(1);
+      application = CreateApplication({
+        configurationLoaders: [],
+        // @ts-expect-error For unit testing
+        name: "testing",
+        services: {},
+      });
+      const testLibrary = CreateLibrary({
+        // @ts-expect-error For unit testing
+        name: "testing",
+        services: {
+          TestService() {
+            // always true, the test is that it ran (expect.assertions)
+            expect(true).toBe(true);
+          },
+        },
+      });
+
+      await application.bootstrap({
+        ...BASIC_BOOT,
+        appendLibrary: testLibrary,
+      });
+    });
+
+    it("should allow appending multiple libraries", async () => {
+      expect.assertions(2);
+      application = CreateApplication({
+        configurationLoaders: [],
+        // @ts-expect-error For unit testing
+        name: "testing",
+        services: {},
+      });
+
+      const testLibrary = CreateLibrary({
+        // @ts-expect-error For unit testing
+        name: "testing",
+        services: {
+          TestService() {
+            // always true, the test is that it ran (expect.assertions)
+            expect(true).toBe(true);
+          },
+        },
+      });
+      const testLibraryB = CreateLibrary({
+        // @ts-expect-error For unit testing
+        name: "testing_b",
+        services: {
+          TestService() {
+            // always true, the test is that it ran (expect.assertions)
+            expect(true).toBe(true);
+          },
+        },
+      });
+
+      await application.bootstrap({
+        ...BASIC_BOOT,
+        appendLibrary: [testLibrary, testLibraryB],
+      });
     });
   });
   // #endregion
@@ -585,6 +682,25 @@ describe("Wiring", () => {
 
   // #region Boot Phase
   describe("Boot Phase", () => {
+    it("should exit if service constructor throws error", async () => {
+      const spy = jest
+        .spyOn(process, "exit")
+        .mockImplementation(() => undefined as never);
+      application = CreateApplication({
+        configurationLoaders: [],
+        // @ts-expect-error Testing
+        name: "testing",
+        services: {
+          Service() {
+            throw new Error("boom");
+          },
+        },
+      });
+      await application.bootstrap(BASIC_BOOT);
+
+      expect(spy).toHaveBeenCalled();
+    });
+
     it("phase should be bootstrap during boot", async () => {
       let i: string;
       application = CreateApplication({
@@ -664,6 +780,48 @@ describe("Wiring", () => {
 
       expect(i).toBe("teardown");
     });
+
+    it("should shutdown on SIGTERM", async () => {
+      expect.assertions(1);
+      const exit = jest
+        .spyOn(process, "exit")
+        .mockImplementation(() => undefined as never);
+      application = CreateApplication({
+        configurationLoaders: [],
+        // @ts-expect-error Testing
+        name: "testing",
+        services: {
+          Service({ lifecycle }: TServiceParams) {
+            lifecycle.onReady(() => process.emit("SIGTERM"));
+          },
+        },
+      });
+      await application.bootstrap(BASIC_BOOT);
+      await sleep(10);
+      expect(exit).toHaveBeenCalled();
+      application = undefined;
+    });
+
+    it("should shutdown on SIGINT", async () => {
+      expect.assertions(1);
+      const exit = jest
+        .spyOn(process, "exit")
+        .mockImplementation(() => undefined as never);
+      application = CreateApplication({
+        configurationLoaders: [],
+        // @ts-expect-error Testing
+        name: "testing",
+        services: {
+          Service({ lifecycle }: TServiceParams) {
+            lifecycle.onReady(() => process.emit("SIGINT"));
+          },
+        },
+      });
+      await application.bootstrap(BASIC_BOOT);
+      await sleep(10);
+      expect(exit).toHaveBeenCalled();
+      application = undefined;
+    });
   });
   // #endregion
 
@@ -710,6 +868,42 @@ describe("Wiring", () => {
       });
       await secondary.bootstrap(BASIC_BOOT);
       await secondary.teardown();
+    });
+
+    it("should replace libraries with conflicting names", async () => {
+      expect.assertions(2);
+      const test = jest.fn();
+      const testLibrary = CreateLibrary({
+        // @ts-expect-error For unit testing
+        name: "testing",
+        services: {
+          TestService() {
+            test("A");
+          },
+        },
+      });
+      const testLibraryB = CreateLibrary({
+        // @ts-expect-error For unit testing
+        name: "testing",
+        services: {
+          TestService() {
+            test("B");
+          },
+        },
+      });
+      application = CreateApplication({
+        configurationLoaders: [],
+        libraries: [testLibrary],
+        // @ts-expect-error Testing
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap({
+        ...BASIC_BOOT,
+        appendLibrary: testLibraryB,
+      });
+      expect(test).toHaveBeenCalledWith("B");
+      expect(test).not.toHaveBeenCalledWith("A");
     });
 
     it("should add library to TServiceParams", async () => {

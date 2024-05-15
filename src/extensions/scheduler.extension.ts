@@ -126,51 +126,52 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
        */
       next: () => Dayjs | string | number | Date | undefined;
     }) {
+      let timeout: ReturnType<typeof setTimeout>;
+
+      const waitForNext = () => {
+        if (timeout) {
+          logger.warn(
+            { context, name: sliding },
+            `sliding schedule retrieving next execution time before previous ran`,
+          );
+          clearTimeout(timeout);
+        }
+        let nextTime = next();
+        if (!nextTime) {
+          // nothing to do?
+          // will try again next schedule
+          return;
+        }
+        nextTime = dayjs(nextTime);
+        if (dayjs().isAfter(nextTime)) {
+          // probably a result of boot
+          // ignore
+          return;
+        }
+        if (nextTime) {
+          timeout = setTimeout(
+            async () => {
+              await internal.safeExec({
+                duration: SCHEDULE_EXECUTION_TIME,
+                errors: SCHEDULE_ERRORS,
+                exec,
+                executions: SCHEDULE_EXECUTION_COUNT,
+                labels: { context, label },
+              });
+            },
+            Math.abs(dayjs().diff(nextTime, "ms")),
+          );
+        }
+      };
+      // reset on schedule
       const scheduleStop = cron({
-        exec: () => {
-          if (timeout) {
-            logger.warn(
-              { context, name: sliding },
-              `sliding schedule retrieving next execution time before previous ran`,
-            );
-            clearTimeout(timeout);
-          }
-          let nextTime = next();
-          if (!nextTime) {
-            // nothing to do?
-            // will try again next schedule
-            return;
-          }
-          nextTime = dayjs(nextTime);
-          if (dayjs().isAfter(nextTime)) {
-            logger.warn(
-              { name: sliding, nextTime: nextTime.toISOString() },
-              `cannot schedule sliding schedules for the past`,
-            );
-            // or anything else really
-            // life sucks that way
-            return;
-          }
-          if (nextTime) {
-            timeout = setTimeout(
-              async () => {
-                await internal.safeExec({
-                  duration: SCHEDULE_EXECUTION_TIME,
-                  errors: SCHEDULE_ERRORS,
-                  exec,
-                  executions: SCHEDULE_EXECUTION_COUNT,
-                  labels: { context, label },
-                });
-              },
-              Math.abs(dayjs().diff(nextTime, "ms")),
-            );
-          }
-        },
+        exec: waitForNext,
         label,
         schedule: reset,
       });
-
-      let timeout: ReturnType<typeof setTimeout>;
+      // find value for now (boot)
+      // assumption: function should always return the same value inside of reset window
+      waitForNext();
 
       return () => {
         scheduleStop();

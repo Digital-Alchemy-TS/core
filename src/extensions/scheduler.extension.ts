@@ -170,8 +170,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
         schedule: reset,
       });
       // find value for now (boot)
-      // assumption: function should always return the same value inside of reset window
-      waitForNext();
+      lifecycle.onReady(() => waitForNext());
 
       return () => {
         scheduleStop();

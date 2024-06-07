@@ -338,6 +338,15 @@ async function RunStageCallbacks(
   return `${Date.now() - start}ms`;
 }
 
+const runPreInit = async (internal: InternalDefinition) =>
+  await RunStageCallbacks("PreInit", internal);
+const runPostConfig = async (internal: InternalDefinition) =>
+  await RunStageCallbacks("PostConfig", internal);
+const runBootstrap = async (internal: InternalDefinition) =>
+  await RunStageCallbacks("Bootstrap", internal);
+const runReady = async (internal: InternalDefinition) =>
+  await RunStageCallbacks("Ready", internal);
+
 // #MARK: Bootstrap
 async function Bootstrap<
   S extends ServiceMap,
@@ -442,7 +451,7 @@ async function Bootstrap<
 
     // - Kick off lifecycle
     logger.debug({ name: Bootstrap }, `[PreInit] running lifecycle callbacks`);
-    STATS.PreInit = await RunStageCallbacks("PreInit", internal);
+    STATS.PreInit = await runPreInit(internal);
     // - Pull in user configurations
     logger.debug({ name: Bootstrap }, "loading configuration");
     STATS.Configure =
@@ -453,14 +462,14 @@ async function Bootstrap<
       `[PostConfig] running lifecycle callbacks`,
     );
 
-    STATS.PostConfig = await RunStageCallbacks("PostConfig", internal);
+    STATS.PostConfig = await runPostConfig(internal);
     logger.debug(
       { name: Bootstrap },
       `[Bootstrap] running lifecycle callbacks`,
     );
-    STATS.Bootstrap = await RunStageCallbacks("Bootstrap", internal);
+    STATS.Bootstrap = await runBootstrap(internal);
     logger.debug({ name: Bootstrap }, `[Ready] running lifecycle callbacks`);
-    STATS.Ready = await RunStageCallbacks("Ready", internal);
+    STATS.Ready = await runReady(internal);
 
     STATS.Total = `${Date.now() - internal.boot.startup.getTime()}ms`;
     // * App is ready!

@@ -258,6 +258,11 @@ export class InternalDefinition {
      * association of projects to { service : Initialized Service }
      */
     loadedModules: Map<string, TResolvedModuleMappings>;
+
+    /**
+     * simple list of modules that have their construction phase complete
+     */
+    constructComplete: Set<string>;
     startup: Date;
   };
   public utils = new InternalUtils();

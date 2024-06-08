@@ -527,6 +527,7 @@ export function CreateLibrary<
           );
         },
       );
+      internal.boot.constructComplete.add(libraryName);
       // mental note: people should probably do all their lifecycle attachments at the base level function
       // otherwise, it'll happen after this wire() call, and go into a black hole (worst case) or fatal error ("best" case)
       return lifecycle;

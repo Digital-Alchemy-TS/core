@@ -701,6 +701,36 @@ describe("Wiring", () => {
       expect(spy).toHaveBeenCalled();
     });
 
+    it("should not have project name in construction complete prior to completion", async () => {
+      application = CreateApplication({
+        configurationLoaders: [],
+        // @ts-expect-error Testing
+        name: "testing",
+        services: {
+          Service({ internal }: TServiceParams) {
+            expect(internal.boot.constructComplete.has("testing")).toBe(false);
+          },
+        },
+      });
+      await application.bootstrap(BASIC_BOOT);
+    });
+
+    it("should add project name to complete", async () => {
+      application = CreateApplication({
+        configurationLoaders: [],
+        // @ts-expect-error Testing
+        name: "testing",
+        services: {
+          Service({ internal, lifecycle }: TServiceParams) {
+            lifecycle.onPreInit(() => {
+              expect(internal.boot.constructComplete.has("testing")).toBe(true);
+            });
+          },
+        },
+      });
+      await application.bootstrap(BASIC_BOOT);
+    });
+
     it("phase should be bootstrap during boot", async () => {
       let i: string;
       application = CreateApplication({

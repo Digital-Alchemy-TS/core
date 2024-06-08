@@ -29,6 +29,7 @@ export const LABEL = 0;
 export const START = 0;
 export const NONE = 0;
 export const FIRST = 0;
+export type FIRST = 0;
 export const EMPTY = 0;
 export const NO_CHANGE = 0;
 

@@ -205,6 +205,7 @@ export function CreateApplication<
           );
         });
       }
+      internal.boot.constructComplete.add(name);
       return lifecycle;
     },
     booted: false,
@@ -360,6 +361,7 @@ async function Bootstrap<
   internal.boot = {
     application,
     completedLifecycleEvents: new Set(),
+    constructComplete: new Set(),
     lifecycleHooks: new Map(),
     loadedModules: new Map(),
     moduleMappings: new Map(),

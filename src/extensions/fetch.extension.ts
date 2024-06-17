@@ -25,8 +25,8 @@ const streamPipeline = promisify(pipeline);
 
 export function Fetch({ logger, context: parentContext }: TServiceParams) {
   return ({
-    headers: baseHeaders,
-    baseUrl,
+    headers: base_headers,
+    baseUrl: base_url,
     context: logContext,
     // eslint-disable-next-line sonarjs/cognitive-complexity
   }: FetcherOptions) => {
@@ -93,7 +93,7 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
     function fetchCreateUrl({ rawUrl, url, ...fetchWith }: FetchWith): string {
       let out = url || "";
       if (!rawUrl) {
-        const base = fetchWith.baseUrl || baseUrl;
+        const base = fetchWith.baseUrl || fetchWrapper.base_url;
         out = base + url;
       }
       if (!is.empty(fetchWith.params)) {
@@ -141,7 +141,7 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
           body: is.object(body) ? JSON.stringify(body) : body,
           headers: {
             ...contentType,
-            ...baseHeaders,
+            ...fetchWrapper.base_headers,
             ...headers,
           },
           method,
@@ -152,39 +152,46 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
       return out;
     }
 
-    // #MARK: return object
-    return {
-      download: async ({
-        destination,
-        body,
-        headers = {},
-        label,
-        context = logContext || parentContext,
-        method = "get",
-        ...fetchWith
-      }: DownloadOptions) => {
-        const url: string = await fetchCreateUrl(fetchWith);
-        const response = await fetch(url, {
-          body: is.object(body) ? JSON.stringify(body) : body,
-          headers: {
-            ...baseHeaders,
-            ...headers,
-          },
-          method,
-        });
+    async function download({
+      destination,
+      body,
+      headers = {},
+      label,
+      context = logContext || parentContext,
+      method = "get",
+      ...fetchWith
+    }: DownloadOptions) {
+      const url: string = await fetchCreateUrl(fetchWith);
+      const response = await fetch(url, {
+        body: is.object(body) ? JSON.stringify(body) : body,
+        headers: { ...fetchWrapper.base_headers, ...headers },
+        method,
+      });
 
-        const stream = createWriteStream(destination);
-        await streamPipeline(response.body, stream);
-        if (!is.empty(label)) {
-          FETCH_DOWNLOAD_REQUESTS_SUCCESSFUL.labels(context, label).inc();
-        }
-      },
-      fetch: async <T, BODY extends TFetchBody = undefined>(
-        fetchWith: Partial<FetchArguments<BODY>>,
-      ): Promise<T | undefined> => await execFetch(fetchWith),
-      setBaseUrl: (url: string) => (baseUrl = url),
-      setHeaders: (headers: Record<string, string>) => (baseHeaders = headers),
+      const stream = createWriteStream(destination);
+      await streamPipeline(response.body, stream);
+      if (!is.empty(label)) {
+        FETCH_DOWNLOAD_REQUESTS_SUCCESSFUL.labels(context, label).inc();
+      }
+    }
+
+    // #MARK: return object
+    const fetchWrapper = {
+      base_headers,
+      base_url,
+      download,
+      fetch: execFetch,
+      /**
+       * @deprecated set base_url directly
+       */
+      setBaseUrl: (url: string) => (fetchWrapper.base_url = url),
+      /**
+       * @deprecated set base_headers directly
+       */
+      setHeaders: (headers: Record<string, string>) =>
+        (fetchWrapper.base_headers = headers),
     };
+    return fetchWrapper;
   };
 }
 

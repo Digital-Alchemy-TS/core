@@ -250,6 +250,203 @@ describe("Fetch Extension", () => {
           ).rejects.toThrow("Invalid input");
         });
       });
+
+      describe("Response handling", () => {
+        it("returns raw response when process is 'raw'", async () => {
+          expect.assertions(1);
+          await ServiceTest(async ({ internal, context }) => {
+            const rawResponse = new Response("raw response");
+            jest.spyOn(global, "fetch").mockResolvedValue(rawResponse);
+            const response = await internal.boilerplate
+              .fetch({ baseUrl: "http://foo.bar", context })
+              .fetch({ process: "raw", url: "/foo" });
+            expect(response).toBe(rawResponse);
+          });
+        });
+
+        it("returns text response as string when process is 'text'", async () => {
+          expect.assertions(1);
+          await ServiceTest(async ({ internal, context }) => {
+            const textResponse = "Some plain text response";
+            // @ts-expect-error testing
+            jest.spyOn(global, "fetch").mockResolvedValue({
+              ok: true,
+              text: jest.fn().mockResolvedValue(textResponse),
+            });
+            const response = await internal.boilerplate
+              .fetch({ baseUrl: "http://foo.bar", context })
+              .fetch({ process: "text", url: "/foo" });
+            expect(response).toBe(textResponse);
+          });
+        });
+
+        it("deserializes JSON response correctly when process is not 'text' or 'raw'", async () => {
+          expect.assertions(1);
+          await ServiceTest(async ({ internal, context }) => {
+            const jsonResponse = { key: "value" };
+            // @ts-expect-error testing
+            jest.spyOn(global, "fetch").mockResolvedValue({
+              ok: true,
+              text: jest.fn().mockResolvedValue(JSON.stringify(jsonResponse)),
+            });
+            const response = await internal.boilerplate
+              .fetch({ baseUrl: "http://foo.bar", context })
+              .fetch({});
+            expect(response).toEqual(jsonResponse);
+          });
+        });
+
+        it("returns non-JSON text response as string", async () => {
+          expect.assertions(1);
+          await ServiceTest(async ({ internal, context }) => {
+            const textResponse = "Unexpected response";
+            // @ts-expect-error testing
+            jest.spyOn(global, "fetch").mockResolvedValue({
+              ok: true,
+              text: jest.fn().mockResolvedValue(textResponse),
+            });
+            const response = await internal.boilerplate
+              .fetch({ baseUrl: "http://foo.bar", context })
+              .fetch({});
+            expect(response).toBe(textResponse);
+          });
+        });
+
+        it("handles 'OK' text response correctly", async () => {
+          expect.assertions(1);
+          await ServiceTest(async ({ internal, context }) => {
+            const textResponse = "OK";
+            // @ts-expect-error testing
+            jest.spyOn(global, "fetch").mockResolvedValue({
+              ok: true,
+              text: jest.fn().mockResolvedValue(textResponse),
+            });
+            const response = await internal.boilerplate
+              .fetch({
+                baseUrl: "http://foo.bar",
+                context,
+              })
+              .fetch({});
+            expect(response).toBe(textResponse);
+          });
+        });
+
+        it("handles unexpected API response correctly", async () => {
+          expect.assertions(1);
+          await ServiceTest(async ({ internal, context }) => {
+            const textResponse = "Unexpected response";
+            // @ts-expect-error testing
+            jest.spyOn(global, "fetch").mockResolvedValue({
+              ok: true,
+              text: jest.fn().mockResolvedValue(textResponse),
+            });
+            const response = await internal.boilerplate
+              .fetch({
+                baseUrl: "http://foo.bar",
+                context,
+              })
+              .fetch({});
+            expect(response).toBe(textResponse);
+          });
+        });
+      });
+
+      describe("Response handling based on leading characters", () => {
+        it("deserializes JSON response starting with '{'", async () => {
+          expect.assertions(1);
+          await ServiceTest(async ({ internal, context }) => {
+            const jsonResponse = { key: "value" };
+            // @ts-expect-error testing
+            jest.spyOn(global, "fetch").mockResolvedValue({
+              ok: true,
+              text: jest.fn().mockResolvedValue(JSON.stringify(jsonResponse)),
+            });
+            const response = await internal.boilerplate
+              .fetch({
+                baseUrl: "http://foo.bar",
+                context,
+              })
+              .fetch({});
+            expect(response).toEqual(jsonResponse);
+          });
+        });
+
+        it("deserializes JSON response starting with '['", async () => {
+          expect.assertions(1);
+          await ServiceTest(async ({ internal, context }) => {
+            const jsonResponse = [{ key: "value" }];
+            // @ts-expect-error testing
+            jest.spyOn(global, "fetch").mockResolvedValue({
+              ok: true,
+              text: jest.fn().mockResolvedValue(JSON.stringify(jsonResponse)),
+            });
+            const response = await internal.boilerplate
+              .fetch({
+                baseUrl: "http://foo.bar",
+                context,
+              })
+              .fetch({});
+            expect(response).toEqual(jsonResponse);
+          });
+        });
+
+        it("returns text response as string when leading character is not '{' or '['", async () => {
+          expect.assertions(1);
+          await ServiceTest(async ({ internal, context }) => {
+            const textResponse = "Some plain text response";
+            // @ts-expect-error testing
+            jest.spyOn(global, "fetch").mockResolvedValue({
+              ok: true,
+              text: jest.fn().mockResolvedValue(textResponse),
+            });
+            const response = await internal.boilerplate
+              .fetch({
+                baseUrl: "http://foo.bar",
+                context,
+              })
+              .fetch({});
+            expect(response).toBe(textResponse);
+          });
+        });
+
+        it("handles 'OK' text response correctly when leading character is not '{' or '['", async () => {
+          expect.assertions(1);
+          await ServiceTest(async ({ internal, context }) => {
+            const textResponse = "OK";
+            // @ts-expect-error testing
+            jest.spyOn(global, "fetch").mockResolvedValue({
+              ok: true,
+              text: jest.fn().mockResolvedValue(textResponse),
+            });
+            const response = await internal.boilerplate
+              .fetch({
+                baseUrl: "http://foo.bar",
+                context,
+              })
+              .fetch({});
+            expect(response).toBe(textResponse);
+          });
+        });
+
+        it("returns text response as string for unexpected API response", async () => {
+          expect.assertions(1);
+          await ServiceTest(async ({ internal, context }) => {
+            const textResponse = "Unexpected response";
+            // @ts-expect-error testing
+            jest.spyOn(global, "fetch").mockResolvedValue({
+              ok: true,
+              text: jest.fn().mockResolvedValue(textResponse),
+            });
+            const response = await internal.boilerplate
+              .fetch({
+                baseUrl: "http://foo.bar",
+                context,
+              })
+              .fetch({});
+            expect(response).toBe(textResponse);
+          });
+        });
+      });
     });
   });
 });

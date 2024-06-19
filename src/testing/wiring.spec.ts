@@ -870,7 +870,7 @@ describe("Wiring", () => {
         },
       });
       await application.bootstrap(BASIC_BOOT);
-      expect(i.boot.lifecycleHooks.size).not.toEqual(0);
+      expect(i.boot.constructComplete.size).not.toEqual(0);
       expect(LIB_BOILERPLATE).toBeDefined();
     });
   });

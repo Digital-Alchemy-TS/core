@@ -10,25 +10,19 @@ import {
   CacheProviders,
   COERCE_CONTEXT,
   CreateLibrary,
-  DOWN,
   each,
   eachSeries,
   GetApis,
   GetApisResult,
-  LifecyclePrioritizedCallback,
-  LifecycleStages,
   LoadedModules,
-  NONE,
   OptionalModuleConfiguration,
   ServiceFunction,
   ServiceMap,
   SINGLE,
-  sleep,
   StringConfig,
   TLifecycleBase,
   TServiceParams,
   TServiceReturn,
-  UP,
   WIRE_PROJECT,
   WireOrder,
   WIRING_CONTEXT,
@@ -42,7 +36,7 @@ import {
   LOAD_PROJECT,
 } from "./configuration.extension";
 import { Fetch } from "./fetch.extension";
-import { CreateChildLifecycle } from "./lifecycle.extension";
+import { CreateLifecycle } from "./lifecycle.extension";
 import { ILogger, Logger, TConfigLogLevel } from "./logger.extension";
 import { Scheduler } from "./scheduler.extension";
 
@@ -105,7 +99,6 @@ function CreateBoilerplate() {
     },
   });
 }
-const PRE_CALLBACKS_START = 0;
 
 // (re)defined at bootstrap
 // unclear if this variable even serves a purpose beyond types
@@ -175,8 +168,6 @@ export function CreateApplication<
   const serviceApis = {} as GetApisResult<ServiceMap>;
   const application = {
     [WIRE_PROJECT]: async (internal: InternalDefinition) => {
-      const lifecycle = CreateChildLifecycle(internal, application.logger);
-      internal.boot.lifecycleHooks.set(name, lifecycle);
       BOILERPLATE(internal)?.configuration?.[LOAD_PROJECT](
         name as keyof LoadedModules,
         configuration,
@@ -188,7 +179,7 @@ export function CreateApplication<
             name,
             service,
             services[service],
-            lifecycle,
+            internal.boot.lifecycle.events,
             internal,
           );
         },
@@ -200,16 +191,15 @@ export function CreateApplication<
             name,
             service,
             append[service],
-            lifecycle,
+            internal.boot.lifecycle.events,
             internal,
           );
         });
       }
       internal.boot.constructComplete.add(name);
-      return lifecycle;
     },
     booted: false,
-    bootstrap: async (options) => {
+    bootstrap: async (options: BootstrapOptions) => {
       if (application.booted) {
         throw new BootstrapException(
           WIRING_CONTEXT,
@@ -242,7 +232,7 @@ export function CreateApplication<
       application.booted = false;
       internal = undefined;
     },
-  } as ApplicationDefinition<S, C>;
+  } as unknown as ApplicationDefinition<S, C>;
   return application;
 }
 
@@ -293,60 +283,22 @@ async function WireService(
   }
 }
 
-// #MARK: RunStageCallbacks
-async function RunStageCallbacks(
-  stage: LifecycleStages,
-  internal: InternalDefinition,
-): Promise<string> {
-  const start = Date.now();
-
-  const callbacks = [...internal.boot.lifecycleHooks.values()].flatMap(
-    (thing) => thing.getCallbacks(stage),
-  );
-  const sorted = callbacks.filter(([, sort]) => sort !== undefined);
-  const quick = callbacks.filter(([, sort]) => sort === undefined);
-  const positive = [] as LifecyclePrioritizedCallback[];
-  const negative = [] as LifecyclePrioritizedCallback[];
-
-  sorted.forEach(([callback, priority]) => {
-    if (priority >= PRE_CALLBACKS_START) {
-      positive.push([callback, priority]);
-      return;
-    }
-    negative.push([callback, priority]);
-  });
-
-  // * callbacks with a priority greater than 0
-  // high to low (1000 => 0)
-  await eachSeries(
-    positive.sort(([, a], [, b]) => (a < b ? UP : DOWN)),
-    async ([callback]) => await callback(),
-  );
-
-  // * callbacks without a priority
-  // any order
-  await each(quick, async ([callback]) => await callback());
-
-  // * callbacks with a priority less than 0
-  // high to low (-1 => -1000)
-  await eachSeries(
-    negative.sort(([, a], [, b]) => (a < b ? UP : DOWN)),
-    async ([callback]) => await callback(),
-  );
-
-  internal.boot.completedLifecycleEvents.add(stage);
-  await sleep(NONE);
-  return `${Date.now() - start}ms`;
-}
-
-const runPreInit = async (internal: InternalDefinition) =>
-  await RunStageCallbacks("PreInit", internal);
-const runPostConfig = async (internal: InternalDefinition) =>
-  await RunStageCallbacks("PostConfig", internal);
-const runBootstrap = async (internal: InternalDefinition) =>
-  await RunStageCallbacks("Bootstrap", internal);
-const runReady = async (internal: InternalDefinition) =>
-  await RunStageCallbacks("Ready", internal);
+const runPreInit = async (internal: InternalDefinition) => {
+  await internal.boot.lifecycle.exec("PreInit");
+  internal.boot.completedLifecycleEvents.add("PreInit");
+};
+const runPostConfig = async (internal: InternalDefinition) => {
+  await internal.boot.lifecycle.exec("PostConfig");
+  internal.boot.completedLifecycleEvents.add("PostConfig");
+};
+const runBootstrap = async (internal: InternalDefinition) => {
+  await internal.boot.lifecycle.exec("Bootstrap");
+  internal.boot.completedLifecycleEvents.add("Bootstrap");
+};
+const runReady = async (internal: InternalDefinition) => {
+  await internal.boot.lifecycle.exec("Ready");
+  internal.boot.completedLifecycleEvents.add("Ready");
+};
 
 // #MARK: Bootstrap
 async function Bootstrap<
@@ -362,13 +314,14 @@ async function Bootstrap<
     application,
     completedLifecycleEvents: new Set(),
     constructComplete: new Set(),
-    lifecycleHooks: new Map(),
+    lifecycle: CreateLifecycle(),
     loadedModules: new Map(),
     moduleMappings: new Map(),
     options,
     phase: "bootstrap",
     startup: new Date(),
   };
+
   process.title = application.name;
   try {
     const STATS = {} as Record<string, unknown>;
@@ -391,7 +344,7 @@ async function Bootstrap<
 
     // * Wire it
     let start = Date.now();
-    await LIB_BOILERPLATE[WIRE_PROJECT](internal, WireService, undefined);
+    await LIB_BOILERPLATE[WIRE_PROJECT](internal, WireService);
 
     CONSTRUCT.boilerplate = `${Date.now() - start}ms`;
     // ~ configuration
@@ -436,14 +389,14 @@ async function Bootstrap<
     await eachSeries(order, async (i) => {
       start = Date.now();
       logger.info({ name: Bootstrap }, `[%s] init project`, i.name);
-      await i[WIRE_PROJECT](internal, WireService, logger);
+      await i[WIRE_PROJECT](internal, WireService);
       CONSTRUCT[i.name] = `${Date.now() - start}ms`;
     });
 
     logger.info({ name: Bootstrap }, `init application`);
     // * Finally the application
     start = Date.now();
-    await application[WIRE_PROJECT](internal, WireService, logger);
+    await application[WIRE_PROJECT](internal, WireService);
     CONSTRUCT[application.name] = `${Date.now() - start}ms`;
 
     // ? Configuration values provided bootstrap take priority over module level
@@ -506,7 +459,8 @@ async function Teardown(internal: InternalDefinition, logger: ILogger) {
       { name: Teardown },
       `[PreShutdown] running lifecycle callbacks`,
     );
-    await RunStageCallbacks("PreShutdown", internal);
+    await internal.boot.lifecycle.exec("PreShutdown");
+    internal.boot.completedLifecycleEvents.add("PreShutdown");
 
     // * Formally shutting down
     logger.info({ name: Teardown }, `tearing down application`);
@@ -514,12 +468,14 @@ async function Teardown(internal: InternalDefinition, logger: ILogger) {
       { name: Teardown },
       `[ShutdownStart] running lifecycle callbacks`,
     );
-    await RunStageCallbacks("ShutdownStart", internal);
+    await internal.boot.lifecycle.exec("ShutdownStart");
+    internal.boot.completedLifecycleEvents.add("ShutdownStart");
     logger.debug(
       { name: Teardown },
       `[ShutdownComplete] running lifecycle callbacks`,
     );
-    await RunStageCallbacks("ShutdownComplete", internal);
+    await internal.boot.lifecycle.exec("ShutdownComplete");
+    internal.boot.completedLifecycleEvents.add("ShutdownComplete");
   } catch (error) {
     // ! oof
     logger.error(

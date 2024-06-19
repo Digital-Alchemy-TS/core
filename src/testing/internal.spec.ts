@@ -80,4 +80,96 @@ describe("Fetch Extension", () => {
       });
     });
   });
+
+  describe("internal.utils.object.del", () => {
+    test("deletes a top-level property", async () => {
+      expect.assertions(1);
+      await ServiceTest(({ internal }) => {
+        const object = { a: 1, b: 2 };
+        internal.utils.object.del(object, "a");
+        expect(object).toEqual({ b: 2 });
+      });
+    });
+
+    test("deletes a nested property", async () => {
+      expect.assertions(1);
+      await ServiceTest(({ internal }) => {
+        const object = { a: { b: { c: 3 } } };
+        internal.utils.object.del(object, "a.b.c");
+        expect(object).toEqual({ a: { b: {} } });
+      });
+    });
+
+    test("does nothing if the path does not exist", async () => {
+      expect.assertions(1);
+      await ServiceTest(({ internal }) => {
+        const object = { a: { b: { c: 3 } } };
+        internal.utils.object.del(object, "a.b.x");
+        expect(object).toEqual({ a: { b: { c: 3 } } });
+      });
+    });
+
+    test("handles path to a non-object gracefully", async () => {
+      expect.assertions(1);
+      await ServiceTest(({ internal }) => {
+        const object = { a: 1 };
+        internal.utils.object.del(object, "a.b.c");
+        expect(object).toEqual({ a: 1 });
+      });
+    });
+
+    test("handles deleting from an empty path", async () => {
+      expect.assertions(1);
+      await ServiceTest(({ internal }) => {
+        const object = { a: 1 };
+        internal.utils.object.del(object, "");
+        expect(object).toEqual({ a: 1 });
+      });
+    });
+
+    test("handles null or undefined values in the path", async () => {
+      expect.assertions(1);
+      await ServiceTest(({ internal }) => {
+        const object = { a: { b: null } } as object;
+        internal.utils.object.del(object, "a.b.c");
+        expect(object).toEqual({ a: { b: null } });
+      });
+    });
+  });
+
+  describe("internal.safeExec", () => {
+    test("executes the provided function successfully", async () => {
+      expect.assertions(1);
+      await ServiceTest(async ({ internal }) => {
+        const mockFunction = jest.fn();
+
+        await internal.safeExec(mockFunction);
+
+        expect(mockFunction).toHaveBeenCalled();
+      });
+    });
+
+    test("catches and logs errors thrown by the provided function", async () => {
+      expect.assertions(2);
+      await ServiceTest(async ({ internal }) => {
+        const mockFunction = jest.fn().mockImplementation(() => {
+          throw new Error("Test error");
+        });
+        const mockLogger = jest.spyOn(
+          internal.boilerplate.logger.systemLogger,
+          "error",
+        );
+
+        await internal.safeExec(mockFunction);
+
+        expect(mockFunction).toHaveBeenCalled();
+        expect(mockLogger).toHaveBeenCalledWith(
+          expect.objectContaining({ error: expect.any(Error) }),
+          "callback threw error",
+        );
+
+        mockLogger.mockRestore();
+      });
+    });
+  });
 });

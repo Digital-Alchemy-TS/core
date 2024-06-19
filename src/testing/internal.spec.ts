@@ -1,4 +1,4 @@
-import { CreateApplication, is } from "..";
+import { CreateApplication } from "..";
 import { BASIC_BOOT, ServiceTest } from "./testing.helper";
 
 describe("Fetch Extension", () => {

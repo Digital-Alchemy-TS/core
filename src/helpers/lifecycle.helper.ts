@@ -55,9 +55,6 @@ export type TParentLifecycle = TLifecycleBase & {
 
 export type TChildLifecycle = TLifecycleBase;
 
-export type TLoadableChildLifecycle = TChildLifecycle & {
-  getCallbacks: (stage: LifecycleStages) => CallbackList;
-};
 // ! This is a sorted array! Don't change the order
 export const LIFECYCLE_STAGES = [
   "PreInit",

@@ -6,14 +6,15 @@ import {
   ConfigManager,
   CronExpression,
   eachSeries,
+  ILogger,
   InternalDefinition,
   is,
+  LIB_BOILERPLATE,
   LOAD_PROJECT,
   TBlackHole,
+  TCache,
   TContext,
 } from "..";
-import { ILogger, LIB_BOILERPLATE, TCache } from "..";
-import { CreateChildLifecycle } from "../extensions/lifecycle.extension";
 import {
   AnyConfig,
   BooleanConfig,
@@ -348,7 +349,6 @@ type Wire = {
       lifecycle: TLifecycleBase,
       internal: InternalDefinition,
     ) => Promise<TServiceReturn<object>>,
-    logger: ILogger,
   ) => Promise<TChildLifecycle>;
 };
 
@@ -506,11 +506,7 @@ export function CreateLibrary<
         lifecycle: TLifecycleBase,
         internal: InternalDefinition,
       ) => Promise<TServiceReturn<object>>,
-      logger: ILogger,
     ) => {
-      const lifecycle = CreateChildLifecycle(internal, logger);
-      // This one hasn't been loaded yet, generate an object with all the correct properties
-      internal.boot.lifecycleHooks.set(libraryName, lifecycle);
       // not defined for boilerplate (chicken & egg)
       // manually added inside the bootstrap process
       const config = internal?.boilerplate.configuration as ConfigManager;
@@ -522,7 +518,7 @@ export function CreateLibrary<
             libraryName,
             service,
             services[service],
-            lifecycle,
+            internal.boot.lifecycle.events,
             internal,
           );
         },
@@ -530,7 +526,6 @@ export function CreateLibrary<
       internal.boot.constructComplete.add(libraryName);
       // mental note: people should probably do all their lifecycle attachments at the base level function
       // otherwise, it'll happen after this wire() call, and go into a black hole (worst case) or fatal error ("best" case)
-      return lifecycle;
     },
     configuration,
     depends,
@@ -538,6 +533,6 @@ export function CreateLibrary<
     priorityInit,
     serviceApis,
     services,
-  } as LibraryDefinition<S, C>;
+  } as unknown as LibraryDefinition<S, C>;
   return library;
 }

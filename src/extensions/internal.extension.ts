@@ -21,11 +21,11 @@ import {
   START,
   TBlackHole,
   TContext,
-  TLoadableChildLifecycle,
   TModuleMappings,
   TResolvedModuleMappings,
   YEAR,
 } from "..";
+import { CreateLifecycle } from "./lifecycle.extension";
 
 const EVERYTHING_ELSE = 1;
 const MONTHS = 12;
@@ -240,14 +240,14 @@ export class InternalDefinition {
     completedLifecycleEvents: Set<LifecycleStages>;
 
     /**
+     * for internal operations
+     */
+    lifecycle: ReturnType<typeof CreateLifecycle>;
+
+    /**
      * Roughly speaking, what's the application doing? Mostly useful for debugging
      */
     phase: Phase;
-
-    /**
-     * Registry for various lifecycle events that were registered by services
-     */
-    lifecycleHooks: Map<string, TLoadableChildLifecycle>;
 
     /**
      * association of projects to { service : Declaration Function }

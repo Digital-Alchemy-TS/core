@@ -4,6 +4,7 @@ import { schedule } from "node-cron";
 
 import { is, TBlackHole, TContext } from "..";
 import {
+  BootstrapException,
   Schedule,
   SCHEDULE_ERRORS,
   SCHEDULE_EXECUTION_COUNT,
@@ -126,6 +127,20 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
        */
       next: () => Dayjs | string | number | Date | undefined;
     }) {
+      if (!is.function(next)) {
+        throw new BootstrapException(
+          context,
+          "BAD_NEXT",
+          "Did not provide next function to schedule.sliding",
+        );
+      }
+      if (!is.function(exec)) {
+        throw new BootstrapException(
+          context,
+          "BAD_NEXT",
+          "Did not provide exec function to schedule.sliding",
+        );
+      }
       let timeout: ReturnType<typeof setTimeout>;
 
       const waitForNext = () => {

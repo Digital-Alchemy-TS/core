@@ -1,3 +1,4 @@
+import { config } from "dotenv";
 import minimist from "minimist";
 
 import { is, ServiceMap } from "..";
@@ -13,6 +14,9 @@ export async function ConfigLoaderEnvironment<
   S extends ServiceMap = ServiceMap,
   C extends ModuleConfiguration = ModuleConfiguration,
 >({ configs, internal, logger }: ConfigLoaderParams<S, C>): ConfigLoaderReturn {
+  config({
+    override: true,
+  });
   const environmentKeys = Object.keys(process.env);
   const CLI_SWITCHES = minimist(process.argv);
   const switchKeys = Object.keys(CLI_SWITCHES);

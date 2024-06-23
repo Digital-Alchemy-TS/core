@@ -3,7 +3,7 @@
   "repository": {
     "url": "git+https://github.com/Digital-Alchemy-TS/core"
   },
-  "version": "24.06.3",
+  "version": "24.6.4",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe Codez"
@@ -12,9 +12,9 @@
   "scripts": {
     "build": "rm -rf dist/; tsc -p tsconfig.lib.json",
     "lint": "eslint src",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "yarn build",
     "test": "./scripts/test.sh",
-    "upgrade": "ncu -u; npm i"
+    "upgrade": "ncu -u; yarn"
   },
   "exports": {
     ".": "./dist/index.js"
@@ -35,22 +35,27 @@
     "node-cron": "^3.0.3",
     "prom-client": "^15.1.0"
   },
+  "peerDependencies": {
+    "dotenv": "^16.4.5"
+  },
   "optionalDependencies": {
     "redis": "^4.6.13"
   },
   "devDependencies": {
     "@cspell/eslint-plugin": "^8.6.1",
     "@faker-js/faker": "^8.4.1",
+    "@types/dotenv": "^8.2.0",
     "@types/ini": "^4.1.0",
     "@types/jest": "^29.5.12",
     "@types/js-yaml": "^4.0.9",
     "@types/minimist": "^1.2.5",
-    "@types/node-cron": "^3.0.11",
     "@types/node": "^20.11.30",
+    "@types/node-cron": "^3.0.11",
     "@types/semver": "^7.5.8",
     "@types/sinonjs__fake-timers": "^8.1.5",
     "@typescript-eslint/eslint-plugin": "7.3.1",
     "@typescript-eslint/parser": "7.3.1",
+    "eslint": "8.57.0",
     "eslint-config-prettier": "9.1.0",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-jsonc": "^2.14.1",
@@ -61,9 +66,8 @@
     "eslint-plugin-sonarjs": "^0.24.0",
     "eslint-plugin-sort-keys-fix": "^1.1.2",
     "eslint-plugin-unicorn": "^51.0.1",
-    "eslint": "8.57.0",
-    "jest-environment-node": "^29.7.0",
     "jest": "^29.7.0",
+    "jest-environment-node": "^29.7.0",
     "npm-check-updates": "^16.14.18",
     "prettier": "^3.2.5",
     "ts-jest": "^29.1.2",
@@ -97,5 +101,6 @@
         }
       ]
     }
-  }
+  },
+  "packageManager": "yarn@4.3.1"
 }

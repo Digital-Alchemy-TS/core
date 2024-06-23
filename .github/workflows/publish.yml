@@ -15,7 +15,8 @@ jobs:
         node-version: '20'
         registry-url: 'https://registry.npmjs.org/'
     - run: corepack enable
-    - run: yarn ci
+    - run: yarn config set enableImmutableInstalls false
+    - run: yarn
     - run: yarn build
     - run: yarn lint
     - run: yarn test

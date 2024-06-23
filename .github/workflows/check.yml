@@ -16,7 +16,8 @@ jobs:
         with:
           node-version: '20'
       - run: corepack enable
-      - run: yarn ci
+      - run: yarn config set enableImmutableInstalls false
+      - run: yarn
       - run: yarn build
       - run: yarn lint
       - run: yarn test

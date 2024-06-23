@@ -77,7 +77,6 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   const BLUE_TICK = chalk.blue(`>`);
   let prettyFormat = true;
   const shouldILog = {} as Record<TConfigLogLevel, boolean>;
-  const includeLogLevel = !internal.boot.options.hideLogLevel;
 
   // #MARK: pretty logger
   const prettyFormatMessage = (message: string): string => {
@@ -110,9 +109,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   if (is.empty(internal.boot.options.customLogger)) {
     // #region formatter
     [...METHOD_COLORS.keys()].forEach((key) => {
-      const level = includeLogLevel
-        ? `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ")
-        : ``;
+      const level = `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ");
       logger[key] = (
         context: TContext,
         ...parameters: Parameters<TLoggerFunction>

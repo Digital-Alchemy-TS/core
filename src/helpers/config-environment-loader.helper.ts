@@ -1,5 +1,8 @@
 import { config } from "dotenv";
+import { existsSync } from "fs";
 import minimist from "minimist";
+import { join } from "path";
+import { argv, cwd, env } from "process";
 
 import { is, ServiceMap } from "..";
 import {
@@ -14,11 +17,14 @@ export async function ConfigLoaderEnvironment<
   S extends ServiceMap = ServiceMap,
   C extends ModuleConfiguration = ModuleConfiguration,
 >({ configs, internal, logger }: ConfigLoaderParams<S, C>): ConfigLoaderReturn {
-  config({
-    override: true,
-  });
-  const environmentKeys = Object.keys(process.env);
-  const CLI_SWITCHES = minimist(process.argv);
+  const { envFile } = internal.boot.options;
+  if (!is.empty(envFile) || existsSync(join(cwd(), ".env"))) {
+    const file = envFile ?? ".env";
+    logger.trace({ file }, `loading env file`);
+    config({ override: true, path: envFile ?? ".env" });
+  }
+  const environmentKeys = Object.keys(env);
+  const CLI_SWITCHES = minimist(argv);
   const switchKeys = Object.keys(CLI_SWITCHES);
 
   const out: Partial<AbstractConfig> = {};
@@ -79,11 +85,7 @@ export async function ConfigLoaderEnvironment<
         ),
       );
       if (is.string(environmentName)) {
-        internal.utils.object.set(
-          out,
-          configPath,
-          process.env[environmentName],
-        );
+        internal.utils.object.set(out, configPath, env[environmentName]);
         logger.trace(
           {
             name: ConfigLoaderEnvironment,

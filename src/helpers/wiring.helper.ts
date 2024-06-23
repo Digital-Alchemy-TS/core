@@ -322,6 +322,13 @@ export type BootstrapOptions = {
    * Show detailed boot time statistics
    */
   showExtraBootStats?: boolean;
+
+  /**
+   * Merge configurations from file
+   *
+   * Default: `.env`
+   */
+  envFile?: string | string[];
 };
 
 export const WIRE_PROJECT = Symbol.for("wire-project");

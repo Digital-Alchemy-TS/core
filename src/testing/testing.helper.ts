@@ -2,7 +2,7 @@ import { CreateApplication } from "../extensions";
 import { BootstrapOptions, TBlackHole, TServiceParams } from "../helpers";
 
 export const BASIC_BOOT = {
-  // configuration: { boilerplate: { LOG_LEVEL: "silent" } },
+  configuration: { boilerplate: { LOG_LEVEL: "silent" } },
 } as BootstrapOptions;
 
 export async function ServiceTest(

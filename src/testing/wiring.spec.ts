@@ -17,7 +17,6 @@ const FAKE_EXIT = (() => {}) as () => never;
 
 const BASIC_BOOT = {
   configuration: { boilerplate: { LOG_LEVEL: "silent" } },
-  hideLogLevel: true,
 } as BootstrapOptions;
 
 describe("Wiring", () => {

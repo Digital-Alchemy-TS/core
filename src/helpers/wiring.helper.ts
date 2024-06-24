@@ -324,11 +324,11 @@ export type BootstrapOptions = {
   showExtraBootStats?: boolean;
 
   /**
-   * default false
+   * Merge configurations from file
    *
-   * if set to true, log levels text will be hidden, relying only on color to indicate level
+   * Default: `.env`
    */
-  hideLogLevel?: boolean;
+  envFile?: string | string[];
 };
 
 export const WIRE_PROJECT = Symbol.for("wire-project");

@@ -123,3 +123,4 @@ bin/
 review.zip
 dynamic.d.ts
 /obsidian/.obsidian
+.yarn/install-state.gz

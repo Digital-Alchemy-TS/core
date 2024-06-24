@@ -15,10 +15,12 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '20'
-      - run: npm install
-      - run: npm run lint
-      - run: npm run build
-      - run: npm run test
+      - run: corepack enable
+      - run: yarn config set enableImmutableInstalls false
+      - run: yarn
+      - run: yarn build
+      - run: yarn lint
+      - run: yarn test
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4.0.1
         with:

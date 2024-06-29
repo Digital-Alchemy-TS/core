@@ -1116,6 +1116,17 @@ describe("Wiring", () => {
       },
     });
 
+    const LIBRARY_D = CreateLibrary({
+      depends: [LIBRARY_A],
+      // @ts-expect-error testing
+      name: "D",
+
+      optionalDepends: [LIBRARY_B],
+      services: {
+        AddToList: () => list.push("C"),
+      },
+    });
+
     beforeEach(() => {
       list = [];
     });
@@ -1148,6 +1159,22 @@ describe("Wiring", () => {
       expect.assertions(1);
       await application.bootstrap(BASIC_BOOT);
       expect(failFastSpy).toHaveBeenCalled();
+    });
+
+    it("should not throw errors if a optional dependency is missing from the app", async () => {
+      application = CreateApplication({
+        configurationLoaders: [],
+        libraries: [LIBRARY_A, LIBRARY_D],
+        // @ts-expect-error testing
+        name: "testing",
+        services: {},
+      });
+      const failFastSpy = jest
+        .spyOn(process, "exit")
+        .mockImplementation(FAKE_EXIT);
+      expect.assertions(1);
+      await application.bootstrap(BASIC_BOOT);
+      expect(failFastSpy).not.toHaveBeenCalled();
     });
 
     it("should allow name compatible library substitutions", async () => {

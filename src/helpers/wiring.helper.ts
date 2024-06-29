@@ -272,6 +272,15 @@ export type LibraryConfigurationOptions<
     ServiceMap,
     OptionalModuleConfiguration
   >[];
+  /**
+   * Same as depends, but will not error if library is not provided at app level
+   *
+   * **note**: related variables may come in as undefined, code needs to be built to allow for this
+   */
+  optionalDepends?: LibraryConfigurationOptions<
+    ServiceMap,
+    OptionalModuleConfiguration
+  >[];
   configuration?: C;
   /**
    * Define which services should be initialized first. Any remaining services are done at the end in no set order
@@ -382,15 +391,28 @@ export function BuildSortOrder<
 
   // Recursive function to check for missing dependencies at any depth
   function checkDependencies(library: TLibrary) {
-    if (!is.empty(library.depends)) {
-      library.depends.forEach((item) => {
+    const depends = [
+      ...(library?.depends ?? []),
+      ...(library?.optionalDepends ?? []),
+    ];
+    if (!is.empty(depends)) {
+      depends.forEach((item) => {
         const loaded = libraryMap.get(item.name);
         if (!loaded) {
-          throw new BootstrapException(
-            WIRING_CONTEXT,
-            "MISSING_DEPENDENCY",
-            `${item.name} is required by ${library.name}, but was not provided`,
-          );
+          if (library.depends.includes(item)) {
+            throw new BootstrapException(
+              WIRING_CONTEXT,
+              "MISSING_DEPENDENCY",
+              `${item.name} is required by ${library.name}, but was not provided`,
+            );
+          } else {
+            logger.info(
+              { library: library.name, name: checkDependencies },
+              `optional depends [%s] not provided`,
+              item.name,
+            );
+            return;
+          }
         }
         // just "are they the same object reference?" as the test
         // you get a warning, and the one the app asks for
@@ -412,12 +434,14 @@ export function BuildSortOrder<
   const out = [] as TLibrary[];
   while (!is.empty(starting)) {
     const next = starting.find((library) => {
-      if (is.empty(library.depends)) {
+      const depends = [
+        ...(library?.depends ?? []),
+        ...(library?.optionalDepends ?? []),
+      ];
+      if (is.empty(depends)) {
         return true;
       }
-      return library.depends?.every((depend) =>
-        out.some((i) => i.name === depend.name),
-      );
+      return depends.every((depend) => out.some((i) => i.name === depend.name));
     });
     if (!next) {
       logger.fatal({ current: out.map((i) => i.name), name: BuildSortOrder });
@@ -431,8 +455,6 @@ export function BuildSortOrder<
     out.push(next);
   }
 
-  const order = out.map((i) => i.name);
-  logger.trace({ name: BuildSortOrder, order }, ``);
   return out;
 }
 

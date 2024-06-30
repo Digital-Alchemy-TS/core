@@ -513,6 +513,7 @@ export function CreateLibrary<
   priorityInit,
   services,
   depends,
+  optionalDepends,
 }: LibraryConfigurationOptions<S, C>): LibraryDefinition<S, C> {
   ValidateLibrary(libraryName, services);
 
@@ -552,6 +553,7 @@ export function CreateLibrary<
     configuration,
     depends,
     name: libraryName,
+    optionalDepends,
     priorityInit,
     serviceApis,
     services,

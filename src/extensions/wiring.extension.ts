@@ -432,7 +432,7 @@ async function Bootstrap<
       options?.showExtraBootStats
         ? { ...STATS, name: Bootstrap }
         : { Total: STATS.Total, name: Bootstrap },
-      `🪄 [%s] application bootstrapped`,
+      `[%s] application bootstrapped`,
       application.name,
     );
     internal.boot.phase = "running";

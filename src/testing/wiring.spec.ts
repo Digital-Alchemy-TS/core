@@ -1131,6 +1131,10 @@ describe("Wiring", () => {
       list = [];
     });
 
+    it("should pass through optionalDepends", () => {
+      expect(LIBRARY_D.optionalDepends).toBeDefined();
+    });
+
     it("should wire libraries in the correct order", async () => {
       // Provided in C -> A -> B
       // Needs to be loaded in A -> B -> C

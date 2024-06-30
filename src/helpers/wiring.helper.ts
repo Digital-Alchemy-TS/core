@@ -436,7 +436,9 @@ export function BuildSortOrder<
     const next = starting.find((library) => {
       const depends = [
         ...(library?.depends ?? []),
-        ...(library?.optionalDepends ?? []),
+        ...(library?.optionalDepends?.filter((i) =>
+          app.libraries.some((index) => i.name === index.name),
+        ) ?? []),
       ];
       if (is.empty(depends)) {
         return true;
@@ -454,7 +456,6 @@ export function BuildSortOrder<
     starting = starting.filter((i) => next.name !== i.name);
     out.push(next);
   }
-
   return out;
 }
 
@@ -513,6 +514,7 @@ export function CreateLibrary<
   priorityInit,
   services,
   depends,
+  optionalDepends,
 }: LibraryConfigurationOptions<S, C>): LibraryDefinition<S, C> {
   ValidateLibrary(libraryName, services);
 
@@ -552,6 +554,7 @@ export function CreateLibrary<
     configuration,
     depends,
     name: libraryName,
+    optionalDepends,
     priorityInit,
     serviceApis,
     services,

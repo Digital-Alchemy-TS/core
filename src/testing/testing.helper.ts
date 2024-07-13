@@ -16,6 +16,9 @@ export async function ServiceTest(
     services: {
       async Testing(params: TServiceParams) {
         await callback(params);
+        const { metrics } = params.internal.boilerplate;
+        const keys = Object.keys(metrics) as (keyof typeof metrics)[];
+        keys.forEach((key) => metrics[key].reset());
       },
     },
   });

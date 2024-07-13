@@ -3,7 +3,6 @@
 import { createClient } from "redis";
 
 import { CacheDriverOptions, ICacheDriver, is, SECOND } from "..";
-import {} from "./metrics.helper";
 /**
  * url & name properties automatically generated from config
  */

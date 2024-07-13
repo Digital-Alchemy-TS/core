@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 import { Counter, Gauge, Histogram, Summary } from "prom-client";
 
-export function Metrics() {
+const build = () => {
   /**
    * Cache delete operations counter
    */
@@ -160,4 +160,11 @@ export function Metrics() {
     SCHEDULE_EXECUTION_COUNT,
     SCHEDULE_EXECUTION_TIME,
   };
+};
+
+let metrics: ReturnType<typeof build>;
+
+export function Metrics() {
+  metrics ??= build();
+  return metrics;
 }

@@ -6,9 +6,6 @@ import { is, TBlackHole, TContext } from "..";
 import {
   BootstrapException,
   Schedule,
-  SCHEDULE_ERRORS,
-  SCHEDULE_EXECUTION_COUNT,
-  SCHEDULE_EXECUTION_TIME,
   SchedulerOptions,
   TServiceParams,
 } from "../helpers";
@@ -49,10 +46,10 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
           cronSchedule,
           async () =>
             await internal.safeExec({
-              duration: SCHEDULE_EXECUTION_TIME,
-              errors: SCHEDULE_ERRORS,
+              duration: internal.boilerplate.metrics.SCHEDULE_EXECUTION_TIME,
+              errors: internal.boilerplate.metrics.SCHEDULE_ERRORS,
               exec,
-              executions: SCHEDULE_EXECUTION_COUNT,
+              executions: internal.boilerplate.metrics.SCHEDULE_EXECUTION_COUNT,
               labels: { context, label },
             }),
         );
@@ -93,10 +90,10 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
         runningInterval = setInterval(
           async () =>
             await internal.safeExec({
-              duration: SCHEDULE_EXECUTION_TIME,
-              errors: SCHEDULE_ERRORS,
+              duration: internal.boilerplate.metrics.SCHEDULE_EXECUTION_TIME,
+              errors: internal.boilerplate.metrics.SCHEDULE_ERRORS,
               exec,
-              executions: SCHEDULE_EXECUTION_COUNT,
+              executions: internal.boilerplate.metrics.SCHEDULE_EXECUTION_COUNT,
               labels: { context, label },
             }),
           interval,
@@ -167,10 +164,11 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
           timeout = setTimeout(
             async () => {
               await internal.safeExec({
-                duration: SCHEDULE_EXECUTION_TIME,
-                errors: SCHEDULE_ERRORS,
+                duration: internal.boilerplate.metrics.SCHEDULE_EXECUTION_TIME,
+                errors: internal.boilerplate.metrics.SCHEDULE_ERRORS,
                 exec,
-                executions: SCHEDULE_EXECUTION_COUNT,
+                executions:
+                  internal.boilerplate.metrics.SCHEDULE_EXECUTION_COUNT,
                 labels: { context, label },
               });
             },

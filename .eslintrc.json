@@ -38,6 +38,7 @@
         "unicorn/prefer-module": "off",
         "@typescript-eslint/no-magic-numbers": "warn",
         "unicorn/no-object-as-default-parameter": "off",
+        "@cspell/spellchecker": ["warn", { "checkComments": false, "autoFix": true }],
         "unicorn/no-null": "off",
         "unicorn/no-empty-file": "off",
         "sonarjs/prefer-single-boolean-return": "off",

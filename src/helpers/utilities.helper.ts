@@ -90,6 +90,21 @@ export function sleep(target: number | Date = SECOND): SleepReturn {
   return out;
 }
 
+export const ACTIVE_THROTTLE = new Map<string, SleepReturn>();
+export async function throttle(
+  identifier: string,
+  timeout: number,
+): Promise<void> {
+  const current = ACTIVE_THROTTLE.get(identifier);
+  if (current) {
+    current.kill("stop");
+  }
+  const delay = sleep(timeout);
+  ACTIVE_THROTTLE.set(identifier, delay);
+  await delay;
+  ACTIVE_THROTTLE.delete(identifier);
+}
+
 export const asyncNoop = async () => await sleep(NONE);
 export const noop = () => {};
 

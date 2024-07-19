@@ -1,8 +1,4 @@
 import {
-  CACHE_DELETE_OPERATIONS_TOTAL,
-  CACHE_DRIVER_ERROR_COUNT,
-  CACHE_GET_OPERATIONS_TOTAL,
-  CACHE_SET_OPERATIONS_TOTAL,
   createMemoryDriver,
   createRedisDriver,
   ICacheDriver,
@@ -36,10 +32,10 @@ export function Cache({
       `init cache`,
     );
     if (config.boilerplate.CACHE_PROVIDER === "redis") {
-      client = await createRedisDriver({ config, lifecycle, logger });
+      client = await createRedisDriver({ config, internal, lifecycle, logger });
       return;
     }
-    client = await createMemoryDriver({ config, lifecycle, logger });
+    client = await createMemoryDriver({ config, internal, lifecycle, logger });
   });
 
   // #MARK: Return object
@@ -49,12 +45,14 @@ export function Cache({
       try {
         const fullKey = fullKeyName(key);
         await client.del(fullKey);
-        CACHE_DELETE_OPERATIONS_TOTAL.inc({
+        internal.boilerplate.metrics.CACHE_DELETE_OPERATIONS_TOTAL.inc({
           key: fullKey,
           prefix: prefix(),
         });
       } catch (error) {
-        CACHE_DRIVER_ERROR_COUNT.labels("del").inc();
+        internal.boilerplate.metrics.CACHE_DRIVER_ERROR_COUNT.labels(
+          "del",
+        ).inc();
         logger.error({ error, name: "del" }, `cache error`);
       }
     },
@@ -62,7 +60,7 @@ export function Cache({
       try {
         const fullKey = fullKeyName(key);
         const result = await client.get(fullKey);
-        CACHE_GET_OPERATIONS_TOTAL.inc({
+        internal.boilerplate.metrics.CACHE_GET_OPERATIONS_TOTAL.inc({
           hit_miss: is.undefined(result) ? "miss" : "hit",
           key: fullKey,
           prefix: prefix(),
@@ -70,7 +68,9 @@ export function Cache({
         return is.undefined(result) ? defaultValue : (result as T);
       } catch (error) {
         logger.warn({ defaultValue, error, key, name: "get" }, `cache error`);
-        CACHE_DRIVER_ERROR_COUNT.labels("get").inc();
+        internal.boilerplate.metrics.CACHE_DRIVER_ERROR_COUNT.labels(
+          "get",
+        ).inc();
         return defaultValue;
       }
     },
@@ -80,7 +80,9 @@ export function Cache({
         const keys = await client.keys(fullPattern);
         return keys.map((key) => key.slice(Math.max(NONE, prefix().length)));
       } catch (error) {
-        CACHE_DRIVER_ERROR_COUNT.labels("keys").inc();
+        internal.boilerplate.metrics.CACHE_DRIVER_ERROR_COUNT.labels(
+          "keys",
+        ).inc();
         logger.warn({ error, name: "keys" }, `cache error`);
         return [];
       }
@@ -93,12 +95,14 @@ export function Cache({
       try {
         const fullKey = fullKeyName(key);
         await client.set(fullKey, value, ttl);
-        CACHE_SET_OPERATIONS_TOTAL.inc({
+        internal.boilerplate.metrics.CACHE_SET_OPERATIONS_TOTAL.inc({
           key: fullKey,
           prefix: config.boilerplate.CACHE_PREFIX,
         });
       } catch (error) {
-        CACHE_DRIVER_ERROR_COUNT.labels("set").inc();
+        internal.boilerplate.metrics.CACHE_DRIVER_ERROR_COUNT.labels(
+          "set",
+        ).inc();
         logger.error({ error, name: "set" }, `cache error`);
       }
     },

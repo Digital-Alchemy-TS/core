@@ -2,13 +2,12 @@
 import NodeCache from "node-cache";
 
 import { CacheDriverOptions, ICacheDriver, is } from "..";
-import { MEMORY_CACHE_ERROR_COUNT } from "./metrics.helper";
 
 /**
  * url & name properties automatically generated from config
  */
 export function createMemoryDriver(
-  { logger, config, lifecycle }: CacheDriverOptions,
+  { logger, config, lifecycle, internal }: CacheDriverOptions,
   options?: NodeCache.Options,
 ): ICacheDriver {
   let client = new NodeCache({
@@ -27,7 +26,7 @@ export function createMemoryDriver(
         client.del(key);
       } catch (error) {
         logger.error({ err: error, name: "del" }, "memory cache error");
-        MEMORY_CACHE_ERROR_COUNT.inc();
+        internal.boilerplate.metrics.MEMORY_CACHE_ERROR_COUNT.inc();
       }
     },
     async get<T>(key: string, defaultValue?: T): Promise<T | undefined> {
@@ -39,7 +38,7 @@ export function createMemoryDriver(
         return defaultValue;
       } catch (error) {
         logger.error({ err: error, name: "get" }, "memory cache error");
-        MEMORY_CACHE_ERROR_COUNT.inc();
+        internal.boilerplate.metrics.MEMORY_CACHE_ERROR_COUNT.inc();
         return defaultValue;
       }
     },
@@ -51,7 +50,7 @@ export function createMemoryDriver(
           : allKeys;
       } catch (error) {
         logger.error({ err: error, name: "keys" }, "memory cache error");
-        MEMORY_CACHE_ERROR_COUNT.inc();
+        internal.boilerplate.metrics.MEMORY_CACHE_ERROR_COUNT.inc();
         return [];
       }
     },
@@ -60,7 +59,7 @@ export function createMemoryDriver(
         client.set(key, JSON.stringify(value), ttl);
       } catch (error) {
         logger.error({ err: error, name: "set" }, "memory cache error");
-        MEMORY_CACHE_ERROR_COUNT.inc();
+        internal.boilerplate.metrics.MEMORY_CACHE_ERROR_COUNT.inc();
       }
     },
   };

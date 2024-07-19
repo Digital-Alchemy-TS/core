@@ -5,9 +5,6 @@ import { promisify } from "util";
 import {
   buildFilterString,
   DownloadOptions,
-  FETCH_DOWNLOAD_REQUESTS_SUCCESSFUL,
-  FETCH_REQUESTS_FAILED,
-  FETCH_REQUESTS_SUCCESSFUL,
   FetchArguments,
   FetcherOptions,
   FetchProcessTypes,
@@ -23,7 +20,11 @@ import { is } from ".";
 
 const streamPipeline = promisify(pipeline);
 
-export function Fetch({ logger, context: parentContext }: TServiceParams) {
+export function Fetch({
+  logger,
+  context: parentContext,
+  internal,
+}: TServiceParams) {
   return ({
     headers: base_headers,
     baseUrl: base_url,
@@ -111,13 +112,19 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
       try {
         const out = await exec();
         if (!is.empty(label)) {
-          FETCH_REQUESTS_SUCCESSFUL.labels(context, label).inc();
+          internal.boilerplate.metrics.FETCH_REQUESTS_SUCCESSFUL.labels(
+            context,
+            label,
+          ).inc();
         }
         return out;
       } catch (error) {
         logger.error({ error, name: logContext }, `request failed`);
         if (!is.empty(label)) {
-          FETCH_REQUESTS_FAILED.labels(context, label).inc();
+          internal.boilerplate.metrics.FETCH_REQUESTS_FAILED.labels(
+            context,
+            label,
+          ).inc();
         }
         throw error;
       }
@@ -148,7 +155,10 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
         });
         return await fetchHandleResponse<T>(process, result);
       });
-      FETCH_REQUESTS_SUCCESSFUL.labels(context, label).inc();
+      internal.boilerplate.metrics.FETCH_REQUESTS_SUCCESSFUL.labels(
+        context,
+        label,
+      ).inc();
       return out;
     }
 
@@ -171,7 +181,10 @@ export function Fetch({ logger, context: parentContext }: TServiceParams) {
       const stream = createWriteStream(destination);
       await streamPipeline(response.body, stream);
       if (!is.empty(label)) {
-        FETCH_DOWNLOAD_REQUESTS_SUCCESSFUL.labels(context, label).inc();
+        internal.boilerplate.metrics.FETCH_DOWNLOAD_REQUESTS_SUCCESSFUL.labels(
+          context,
+          label,
+        ).inc();
       }
     }
 

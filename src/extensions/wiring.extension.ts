@@ -27,7 +27,7 @@ import {
   WireOrder,
   WIRING_CONTEXT,
 } from "../helpers";
-import { InternalDefinition, is } from ".";
+import { InternalDefinition, is, Metrics } from ".";
 import { Cache } from "./cache.extension";
 import {
   Configuration,
@@ -89,12 +89,13 @@ function CreateBoilerplate() {
     name: "boilerplate",
     // > 🐔 🥚 dependencies
     // config system internally resolves this via lifecycle events
-    priorityInit: ["configuration", "logger"],
+    priorityInit: ["metrics", "configuration", "logger"],
     services: {
       cache: Cache,
       configuration: Configuration,
       fetch: Fetch,
       logger: Logger,
+      metrics: Metrics,
       scheduler: Scheduler,
     },
   });

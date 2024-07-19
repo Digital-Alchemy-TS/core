@@ -12,6 +12,5 @@ export * from "./events.helper";
 export * from "./extend.helper";
 export * from "./fetch.helper";
 export * from "./lifecycle.helper";
-export * from "./metrics.helper";
 export * from "./utilities.helper";
 export * from "./wiring.helper";

@@ -1,9 +1,4 @@
-import {
-  CACHE_DELETE_OPERATIONS_TOTAL,
-  CACHE_GET_OPERATIONS_TOTAL,
-  CACHE_SET_OPERATIONS_TOTAL,
-  CreateApplication,
-} from "..";
+import { CreateApplication } from "..";
 import { BASIC_BOOT, ServiceTest } from "./testing.helper";
 
 describe("Cache Extension", () => {
@@ -306,20 +301,14 @@ describe("Cache Extension", () => {
   });
 
   describe("Cache Operation Metrics", () => {
-    beforeEach(async () => {
-      // Resetting metrics before each test
-      await CACHE_DELETE_OPERATIONS_TOTAL.reset();
-      await CACHE_GET_OPERATIONS_TOTAL.reset();
-      await CACHE_SET_OPERATIONS_TOTAL.reset();
-    });
-
     it("should increment CACHE_SET_OPERATIONS_TOTAL on set operations", async () => {
       expect.assertions(1);
-      await ServiceTest(({ cache, lifecycle }) => {
+      await ServiceTest(({ cache, lifecycle, internal }) => {
         lifecycle.onReady(async () => {
           await cache.set("testKey", "testValue");
-          const newCount = (await CACHE_SET_OPERATIONS_TOTAL.get()).values[0]
-            .value;
+          const newCount = (
+            await internal.boilerplate.metrics.CACHE_SET_OPERATIONS_TOTAL.get()
+          ).values[0].value;
           expect(newCount).toBe(1);
         });
       });
@@ -327,11 +316,12 @@ describe("Cache Extension", () => {
 
     it("should increment CACHE_GET_OPERATIONS_TOTAL on get operations", async () => {
       expect.assertions(1);
-      await ServiceTest(({ cache, lifecycle }) => {
+      await ServiceTest(({ cache, lifecycle, internal }) => {
         lifecycle.onReady(async () => {
           await cache.get("testKey");
-          const newCount = (await CACHE_GET_OPERATIONS_TOTAL.get()).values[0]
-            .value;
+          const newCount = (
+            await internal.boilerplate.metrics.CACHE_GET_OPERATIONS_TOTAL.get()
+          ).values[0].value;
           expect(newCount).toBe(1);
         });
       });
@@ -339,11 +329,12 @@ describe("Cache Extension", () => {
 
     it("should increment CACHE_DELETE_OPERATIONS_TOTAL on delete operations", async () => {
       expect.assertions(1);
-      await ServiceTest(({ cache, lifecycle }) => {
+      await ServiceTest(({ cache, lifecycle, internal }) => {
         lifecycle.onReady(async () => {
           await cache.del("testKey");
-          const newCount = (await CACHE_DELETE_OPERATIONS_TOTAL.get()).values[0]
-            .value;
+          const newCount = (
+            await internal.boilerplate.metrics.CACHE_DELETE_OPERATIONS_TOTAL.get()
+          ).values[0].value;
           expect(newCount).toBe(1);
         });
       });

@@ -2,7 +2,7 @@ import { TServiceParams } from ".";
 
 export type CacheDriverOptions = Pick<
   TServiceParams,
-  "logger" | "config" | "lifecycle"
+  "logger" | "config" | "lifecycle" | "internal"
 >;
 
 export interface ICacheDriver {

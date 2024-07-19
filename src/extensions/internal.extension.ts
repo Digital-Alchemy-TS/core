@@ -221,7 +221,7 @@ export class InternalDefinition {
    */
   public boilerplate: Pick<
     GetApis<typeof LIB_BOILERPLATE>,
-    "configuration" | "fetch" | "logger"
+    "configuration" | "fetch" | "logger" | "metrics"
   >;
   public boot: {
     /**

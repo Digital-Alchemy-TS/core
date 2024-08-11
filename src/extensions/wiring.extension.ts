@@ -396,13 +396,13 @@ async function Bootstrap<
 
     logger.info({ name: Bootstrap }, `init application`);
     // * Finally the application
-    start = Date.now();
     if (options.bootLibrariesFirst) {
-      logger.info(`deferring application wire`);
+      logger.info({ name: Bootstrap }, `deferring application construction`);
     } else {
+      start = Date.now();
       await application[WIRE_PROJECT](internal, WireService);
+      CONSTRUCT[application.name] = `${Date.now() - start}ms`;
     }
-    CONSTRUCT[application.name] = `${Date.now() - start}ms`;
 
     // ? Configuration values provided bootstrap take priority over module level
     if (!is.empty(options?.configuration)) {
@@ -432,8 +432,10 @@ async function Bootstrap<
     STATS.Ready = await runReady(internal);
 
     if (options.bootLibrariesFirst) {
-      logger.info(`wiring application`);
+      logger.debug({ name: Bootstrap }, `late wire application`);
+      start = Date.now();
       await application[WIRE_PROJECT](internal, WireService);
+      CONSTRUCT[application.name] = `${Date.now() - start}ms`;
     }
 
     STATS.Total = `${Date.now() - internal.boot.startup.getTime()}ms`;

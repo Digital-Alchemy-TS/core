@@ -1,6 +1,6 @@
 import { isDeepStrictEqual, types } from "util";
 
-import { EMPTY, EVEN, TBlackHole, TContext } from "../helpers";
+import { EMPTY, EVEN, NONE, TBlackHole, TContext } from "../helpers";
 
 type MaybeEmptyTypes =
   | string
@@ -52,6 +52,9 @@ export class IsIt {
         }
       }
       return true;
+    }
+    if (typeof test === "number") {
+      return !Number.isNaN(test) && test !== NONE;
     }
     // Optional: Throw an error or return a default value for unsupported types
     throw new Error("Unsupported type " + typeof test);

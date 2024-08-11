@@ -59,7 +59,7 @@ function CreateBoilerplate() {
         description: "Redis is preferred if available",
         enum: ["redis", "memory"],
         type: "string",
-      } as StringConfig<`${CacheProviders}`>,
+      } satisfies StringConfig<`${CacheProviders}`>,
       CACHE_TTL: {
         default: 86_400,
         description: "Configuration property for cache provider, in seconds",
@@ -78,7 +78,7 @@ function CreateBoilerplate() {
         description: "Minimum log level to process",
         enum: ["silent", "trace", "info", "warn", "debug", "error"],
         type: "string",
-      } as StringConfig<TConfigLogLevel>,
+      } satisfies StringConfig<TConfigLogLevel>,
       REDIS_URL: {
         default: "redis://localhost:6379",
         description:

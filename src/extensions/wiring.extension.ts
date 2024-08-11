@@ -428,15 +428,23 @@ async function Bootstrap<
       `[Bootstrap] running lifecycle callbacks`,
     );
     STATS.Bootstrap = await runBootstrap(internal);
-    logger.debug({ name: Bootstrap }, `[Ready] running lifecycle callbacks`);
-    STATS.Ready = await runReady(internal);
 
     if (options.bootLibrariesFirst) {
+      // * mental note
+      // running between bootstrap & ready seems most appropriate
+      // resources are expected to *technically* be ready at this point, but not finalized
+      // reference examples:
+      // - hass: socket is open & resources are ready
+      // - fastify: bindings are available but port isn't listening
+
       logger.debug({ name: Bootstrap }, `late wire application`);
       start = Date.now();
       await application[WIRE_PROJECT](internal, WireService);
       CONSTRUCT[application.name] = `${Date.now() - start}ms`;
     }
+
+    logger.debug({ name: Bootstrap }, `[Ready] running lifecycle callbacks`);
+    STATS.Ready = await runReady(internal);
 
     STATS.Total = `${Date.now() - internal.boot.startup.getTime()}ms`;
     // * App is ready!

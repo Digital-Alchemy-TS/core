@@ -285,20 +285,27 @@ async function WireService(
 }
 
 const runPreInit = async (internal: InternalDefinition) => {
-  await internal.boot.lifecycle.exec("PreInit");
+  const duration = await internal.boot.lifecycle.exec("PreInit");
   internal.boot.completedLifecycleEvents.add("PreInit");
+  return duration;
 };
+
 const runPostConfig = async (internal: InternalDefinition) => {
-  await internal.boot.lifecycle.exec("PostConfig");
+  const duration = await internal.boot.lifecycle.exec("PostConfig");
   internal.boot.completedLifecycleEvents.add("PostConfig");
+  return duration;
 };
+
 const runBootstrap = async (internal: InternalDefinition) => {
-  await internal.boot.lifecycle.exec("Bootstrap");
+  const duration = await internal.boot.lifecycle.exec("Bootstrap");
   internal.boot.completedLifecycleEvents.add("Bootstrap");
+  return duration;
 };
+
 const runReady = async (internal: InternalDefinition) => {
-  await internal.boot.lifecycle.exec("Ready");
+  const duration = await internal.boot.lifecycle.exec("Ready");
   internal.boot.completedLifecycleEvents.add("Ready");
+  return duration;
 };
 
 // #MARK: Bootstrap
@@ -394,11 +401,11 @@ async function Bootstrap<
       CONSTRUCT[i.name] = `${Date.now() - start}ms`;
     });
 
-    logger.info({ name: Bootstrap }, `init application`);
     // * Finally the application
     if (options.bootLibrariesFirst) {
-      logger.info({ name: Bootstrap }, `deferring application construction`);
+      logger.warn({ name: Bootstrap }, `bootLibrariesFirst`);
     } else {
+      logger.info({ name: Bootstrap }, `init application`);
       start = Date.now();
       await application[WIRE_PROJECT](internal, WireService);
       CONSTRUCT[application.name] = `${Date.now() - start}ms`;
@@ -437,7 +444,7 @@ async function Bootstrap<
       // - hass: socket is open & resources are ready
       // - fastify: bindings are available but port isn't listening
 
-      logger.debug({ name: Bootstrap }, `late wire application`);
+      logger.info({ name: Bootstrap }, `late init application`);
       start = Date.now();
       await application[WIRE_PROJECT](internal, WireService);
       CONSTRUCT[application.name] = `${Date.now() - start}ms`;

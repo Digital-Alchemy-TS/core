@@ -609,6 +609,32 @@ describe("Wiring", () => {
 
   // #region Bootstrap
   describe("Bootstrap", () => {
+    it("constructs app in between boot and ready for bootLibrariesFirst", async () => {
+      application = CreateApplication({
+        configurationLoaders: [],
+        // @ts-expect-error Testing
+        name: "testing",
+        services: {
+          Test({ internal }: TServiceParams) {
+            expect(
+              internal.boot.completedLifecycleEvents.has("Bootstrap"),
+            ).toBe(true);
+            expect(internal.boot.completedLifecycleEvents.has("PreInit")).toBe(
+              true,
+            );
+            expect(
+              internal.boot.completedLifecycleEvents.has("PostConfig"),
+            ).toBe(true);
+            expect(internal.boot.completedLifecycleEvents.has("Ready")).toBe(
+              false,
+            );
+          },
+        },
+      });
+      //
+      await application.bootstrap({ ...BASIC_BOOT, bootLibrariesFirst: true });
+    });
+
     it("should prioritize services with priorityInit", async () => {
       const list = [] as string[];
       application = CreateApplication({

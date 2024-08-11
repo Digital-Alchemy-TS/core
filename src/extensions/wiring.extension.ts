@@ -397,7 +397,11 @@ async function Bootstrap<
     logger.info({ name: Bootstrap }, `init application`);
     // * Finally the application
     start = Date.now();
-    await application[WIRE_PROJECT](internal, WireService);
+    if (options.bootLibrariesFirst) {
+      logger.info(`deferring application wire`);
+    } else {
+      await application[WIRE_PROJECT](internal, WireService);
+    }
     CONSTRUCT[application.name] = `${Date.now() - start}ms`;
 
     // ? Configuration values provided bootstrap take priority over module level
@@ -426,6 +430,11 @@ async function Bootstrap<
     STATS.Bootstrap = await runBootstrap(internal);
     logger.debug({ name: Bootstrap }, `[Ready] running lifecycle callbacks`);
     STATS.Ready = await runReady(internal);
+
+    if (options.bootLibrariesFirst) {
+      logger.info(`wiring application`);
+      await application[WIRE_PROJECT](internal, WireService);
+    }
 
     STATS.Total = `${Date.now() - internal.boot.startup.getTime()}ms`;
     // * App is ready!

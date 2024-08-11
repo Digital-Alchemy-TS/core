@@ -68,11 +68,8 @@ describe("IsIt class", () => {
       expect(is.empty({ key: "value" })).toBe(false);
     });
 
-    test("returns false for 0", () => {
-      expect(is.empty(0)).toBe(true);
-    });
-
-    test("returns false for non-zero", () => {
+    test("returns false for numbers", () => {
+      expect(is.empty(0)).toBe(false);
       expect(is.empty(1)).toBe(false);
       expect(is.empty(-1)).toBe(false);
     });

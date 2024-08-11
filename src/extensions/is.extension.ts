@@ -1,6 +1,6 @@
 import { isDeepStrictEqual, types } from "util";
 
-import { EMPTY, EVEN, NONE, TBlackHole, TContext } from "../helpers";
+import { EMPTY, EVEN, TBlackHole, TContext } from "../helpers";
 
 type MaybeEmptyTypes =
   | string

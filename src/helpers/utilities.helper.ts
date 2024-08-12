@@ -91,6 +91,10 @@ export function sleep(target: number | Date = SECOND): SleepReturn {
 }
 
 export const ACTIVE_THROTTLE = new Map<string, SleepReturn>();
+
+/**
+ * > 🦶🔫 - careful about creating memory leaks!
+ */
 export async function throttle(
   identifier: string,
   timeout: number,

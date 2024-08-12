@@ -6,6 +6,7 @@ type MaybeEmptyTypes =
   | string
   | undefined
   | Array<unknown>
+  | number
   | Set<unknown>
   | Map<unknown, unknown>
   | object;
@@ -52,6 +53,9 @@ export class IsIt {
         }
       }
       return true;
+    }
+    if (typeof test === "number") {
+      return Number.isNaN(test);
     }
     // Optional: Throw an error or return a default value for unsupported types
     throw new Error("Unsupported type " + typeof test);

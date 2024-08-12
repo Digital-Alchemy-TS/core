@@ -1,9 +1,10 @@
 {
   "name": "@digital-alchemy/core",
+  "description": "Application wiring, configuration, and boilerplate utilities",
   "repository": {
     "url": "git+https://github.com/Digital-Alchemy-TS/core"
   },
-  "version": "24.7.2",
+  "version": "24.8.1",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe Codez"
@@ -16,6 +17,28 @@
     "test": "./scripts/test.sh",
     "upgrade": "ncu -u; yarn"
   },
+  "bugs": {
+    "email": "bugs@digital-alchemy.app",
+    "url": "https://github.com/Digital-Alchemy-TS/core/issues/new/choose"
+  },
+  "keywords": [
+    "nodejs",
+    "boilerplate",
+    "automation",
+    "typescript",
+    "core",
+    "digital-alchemy"
+  ],
+  "funding": [
+    {
+      "url": "https://github.com/sponsors/zoe-codez",
+      "type": "GitHub"
+    },
+    {
+      "url": "https://ko-fi.com/zoe_codez",
+      "type": "ko-fi"
+    }
+  ],
   "exports": {
     ".": "./dist/index.js"
   },

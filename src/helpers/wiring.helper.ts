@@ -313,6 +313,16 @@ export type BootstrapOptions = {
   appendService?: ServiceMap;
 
   /**
+   * Finish the bootstrap sequence for the libraries before loading the application services.
+   *
+   * - **pro**: easier to write code / you are not affected by lifecycle events
+   * - **con**: unable to meaningfully interact with bootstrap lifecycle events if you want to
+   *
+   * You can change later, but your code may require modifications
+   */
+  bootLibrariesFirst?: boolean;
+
+  /**
    * default: true
    */
   handleGlobalErrors?: boolean;

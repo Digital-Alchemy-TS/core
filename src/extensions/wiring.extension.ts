@@ -59,7 +59,7 @@ function CreateBoilerplate() {
         description: "Redis is preferred if available",
         enum: ["redis", "memory"],
         type: "string",
-      } as StringConfig<`${CacheProviders}`>,
+      } satisfies StringConfig<`${CacheProviders}`>,
       CACHE_TTL: {
         default: 86_400,
         description: "Configuration property for cache provider, in seconds",
@@ -78,7 +78,7 @@ function CreateBoilerplate() {
         description: "Minimum log level to process",
         enum: ["silent", "trace", "info", "warn", "debug", "error"],
         type: "string",
-      } as StringConfig<TConfigLogLevel>,
+      } satisfies StringConfig<TConfigLogLevel>,
       REDIS_URL: {
         default: "redis://localhost:6379",
         description:
@@ -285,20 +285,27 @@ async function WireService(
 }
 
 const runPreInit = async (internal: InternalDefinition) => {
-  await internal.boot.lifecycle.exec("PreInit");
+  const duration = await internal.boot.lifecycle.exec("PreInit");
   internal.boot.completedLifecycleEvents.add("PreInit");
+  return duration;
 };
+
 const runPostConfig = async (internal: InternalDefinition) => {
-  await internal.boot.lifecycle.exec("PostConfig");
+  const duration = await internal.boot.lifecycle.exec("PostConfig");
   internal.boot.completedLifecycleEvents.add("PostConfig");
+  return duration;
 };
+
 const runBootstrap = async (internal: InternalDefinition) => {
-  await internal.boot.lifecycle.exec("Bootstrap");
+  const duration = await internal.boot.lifecycle.exec("Bootstrap");
   internal.boot.completedLifecycleEvents.add("Bootstrap");
+  return duration;
 };
+
 const runReady = async (internal: InternalDefinition) => {
-  await internal.boot.lifecycle.exec("Ready");
+  const duration = await internal.boot.lifecycle.exec("Ready");
   internal.boot.completedLifecycleEvents.add("Ready");
+  return duration;
 };
 
 // #MARK: Bootstrap
@@ -394,11 +401,15 @@ async function Bootstrap<
       CONSTRUCT[i.name] = `${Date.now() - start}ms`;
     });
 
-    logger.info({ name: Bootstrap }, `init application`);
     // * Finally the application
-    start = Date.now();
-    await application[WIRE_PROJECT](internal, WireService);
-    CONSTRUCT[application.name] = `${Date.now() - start}ms`;
+    if (options.bootLibrariesFirst) {
+      logger.warn({ name: Bootstrap }, `bootLibrariesFirst`);
+    } else {
+      logger.info({ name: Bootstrap }, `init application`);
+      start = Date.now();
+      await application[WIRE_PROJECT](internal, WireService);
+      CONSTRUCT[application.name] = `${Date.now() - start}ms`;
+    }
 
     // ? Configuration values provided bootstrap take priority over module level
     if (!is.empty(options?.configuration)) {
@@ -424,6 +435,21 @@ async function Bootstrap<
       `[Bootstrap] running lifecycle callbacks`,
     );
     STATS.Bootstrap = await runBootstrap(internal);
+
+    if (options.bootLibrariesFirst) {
+      // * mental note
+      // running between bootstrap & ready seems most appropriate
+      // resources are expected to *technically* be ready at this point, but not finalized
+      // reference examples:
+      // - hass: socket is open & resources are ready
+      // - fastify: bindings are available but port isn't listening
+
+      logger.info({ name: Bootstrap }, `late init application`);
+      start = Date.now();
+      await application[WIRE_PROJECT](internal, WireService);
+      CONSTRUCT[application.name] = `${Date.now() - start}ms`;
+    }
+
     logger.debug({ name: Bootstrap }, `[Ready] running lifecycle callbacks`);
     STATS.Ready = await runReady(internal);
 

@@ -15,7 +15,7 @@
     "lint": "eslint src",
     "prepublishOnly": "yarn build",
     "test": "./scripts/test.sh",
-    "upgrade": "ncu -u; yarn"
+    "upgrade": "yarn up '@digital-alchemy/*'"
   },
   "bugs": {
     "email": "bugs@digital-alchemy.app",

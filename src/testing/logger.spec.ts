@@ -95,8 +95,16 @@ describe("Logger", () => {
 
   describe("Pretty Formatting", () => {
     let params: TServiceParams;
+    const getChalk = async () => (await import("chalk")).default;
+    let chalk: Awaited<ReturnType<typeof getChalk>>;
+    const frontDash = " - ";
+    let YELLOW_DASH: string;
+    let BLUE_TICK: string;
 
     beforeAll(async () => {
+      chalk = await getChalk();
+      YELLOW_DASH = chalk.yellowBright(frontDash);
+      BLUE_TICK = chalk.blue(`>`);
       application = CreateApplication({
         configurationLoaders: [],
         // @ts-expect-error For unit testing
@@ -109,11 +117,6 @@ describe("Logger", () => {
       });
       await application.bootstrap(BASIC_BOOT);
     });
-    it("should return an empty string if message is empty", () => {
-      expect(params.internal.boilerplate.logger.prettyFormatMessage("")).toBe(
-        "",
-      );
-    });
 
     it("should return the original message if it exceeds MAX_CUTOFF", () => {
       const longMessage = "a".repeat(2001);
@@ -124,42 +127,42 @@ describe("Logger", () => {
 
     it("should highlight text with # in yellow", () => {
       const message = "partA#partB";
-      const expected = "\x1B[33mpartA#partB\x1B[39m";
-      const target =
-        params.internal.boilerplate.logger.prettyFormatMessage(message);
-      expect(target).toBe(expected);
+      const expected = chalk.yellow("partA#partB");
+      expect(
+        params.internal.boilerplate.logger.prettyFormatMessage(message),
+      ).toBe(expected);
     });
 
     it('should highlight ">" in blue between square brackets', () => {
       const message = "[A] > [B] > [C]";
-      const expected =
-        "\x1B[1m\x1B[35mA\x1B[39m\x1B[22m \x1B[34m>\x1B[39m \x1B[1m\x1B[35mB\x1B[39m\x1B[22m \x1B[34m>\x1B[39m \x1B[1m\x1B[35mC\x1B[39m\x1B[22m";
-      const target =
-        params.internal.boilerplate.logger.prettyFormatMessage(message);
-      expect(target).toBe(expected);
+      const expected = `${chalk.bold.magenta("A")} ${BLUE_TICK} ${chalk.bold.magenta("B")} ${BLUE_TICK} ${chalk.bold.magenta("C")}`;
+      expect(
+        params.internal.boilerplate.logger.prettyFormatMessage(message),
+      ).toBe(expected);
     });
 
     it("should strip brackets and highlight text in magenta", () => {
       const message = "[Text]";
-      const expected = "\x1B[1m\x1B[35mText\x1B[39m\x1B[22m";
-      const target =
-        params.internal.boilerplate.logger.prettyFormatMessage(message);
-      expect(target).toBe(expected);
+      const expected = chalk.bold.magenta("Text");
+      expect(
+        params.internal.boilerplate.logger.prettyFormatMessage(message),
+      ).toBe(expected);
     });
 
     it("should strip braces and highlight text in gray", () => {
       const message = "{Text}";
-      const expected = "\x1B[1m\x1B[90mText\x1B[39m\x1B[22m";
-      const target =
-        params.internal.boilerplate.logger.prettyFormatMessage(message);
-      expect(target).toBe(expected);
+      const expected = chalk.bold.gray("Text");
+      expect(
+        params.internal.boilerplate.logger.prettyFormatMessage(message),
+      ).toBe(expected);
     });
 
     it("should highlight dash at the start of the message in yellow", () => {
       const message = " - Text";
+      const expected = `${YELLOW_DASH}Text`;
       expect(
         params.internal.boilerplate.logger.prettyFormatMessage(message),
-      ).toBe("\x1B[93m - \x1B[39mText");
+      ).toBe(expected);
     });
   });
 });

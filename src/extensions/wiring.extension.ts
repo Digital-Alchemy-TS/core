@@ -279,7 +279,8 @@ async function WireService(
     return loaded[service];
   } catch (error) {
     // Init errors at this level are considered blocking / fatal
-    (logger || console).error("initialization error", error);
+    // eslint-disable-next-line no-console
+    console.error("initialization error", error);
     exit();
   }
 }

@@ -163,7 +163,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
               .slice(SYMBOL_START, SYMBOL_END)
               .join("\n");
         }
-        if (["warn", "error", "log"].includes(key)) {
+        if (["warn", "error", "fatal"].includes(key)) {
           // eslint-disable-next-line no-console
           console.error(message);
           return;
@@ -214,16 +214,15 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
         LOG_LEVEL_PRIORITY[key] >= LOG_LEVEL_PRIORITY[CURRENT_LOG_LEVEL];
     });
   };
-  // #endregion
-  updateShouldLog();
 
   // #MARK: lifecycle
-  lifecycle.onPostConfig(updateShouldLog);
+  lifecycle.onPostConfig(() => internal.boilerplate.logger.updateShouldLog());
   internal.boilerplate.configuration.onUpdate(
-    updateShouldLog,
+    () => internal.boilerplate.logger.updateShouldLog(),
     "boilerplate",
     "LOG_LEVEL",
   );
+  updateShouldLog();
 
   // #MARK: return object
   return {
@@ -231,24 +230,43 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
      * Create a new logger instance for a given context
      */
     context,
+
     /**
      * Retrieve a reference to the base logger used to emit from
      */
     getBaseLogger: () => logger,
+
+    /**
+     * for testing
+     */
+    getShouldILog: () => ({ ...shouldILog }),
+
+    /**
+     * exposed for testing
+     */
+    prettyFormatMessage,
+
     /**
      * Modify the base logger
      *
      * Note: Extension still handles LOG_LEVEL logic
      */
     setBaseLogger: (base: ILogger) => (logger = base),
+
     /**
      * Set the enabled/disabled state of the message pretty formatting logic
      */
     setPrettyFormat: (state: boolean) => (prettyFormat = state),
+
     /**
      * Logger instance of last resort
      */
     systemLogger: context("digital-alchemy:system-logger"),
+
+    /**
+     * exposed for testing
+     */
+    updateShouldLog,
   };
 }
 // #endregion

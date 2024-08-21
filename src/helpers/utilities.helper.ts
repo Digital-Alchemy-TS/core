@@ -90,23 +90,41 @@ export function sleep(target: number | Date = SECOND): SleepReturn {
   return out;
 }
 
-export const ACTIVE_THROTTLE = new Map<string, SleepReturn>();
+export const ACTIVE_THROTTLE = new Set<string>();
+export const ACTIVE_DEBOUNCE = new Map<string, SleepReturn>();
 
 /**
- * > 🦶🔫 - careful about creating memory leaks!
+ * allow initial call, then block for a period
  */
 export async function throttle(
   identifier: string,
   timeout: number,
 ): Promise<void> {
-  const current = ACTIVE_THROTTLE.get(identifier);
+  if (ACTIVE_THROTTLE.has(identifier)) {
+    return;
+  }
+
+  ACTIVE_THROTTLE.add(identifier);
+
+  await sleep(timeout);
+  ACTIVE_THROTTLE.delete(identifier);
+}
+
+/**
+ * wait for duration after call before allowing next, extends for calls inside window
+ */
+export async function debounce(
+  identifier: string,
+  timeout: number,
+): Promise<void> {
+  const current = ACTIVE_DEBOUNCE.get(identifier);
   if (current) {
     current.kill("stop");
   }
   const delay = sleep(timeout);
-  ACTIVE_THROTTLE.set(identifier, delay);
+  ACTIVE_DEBOUNCE.set(identifier, delay);
   await delay;
-  ACTIVE_THROTTLE.delete(identifier);
+  ACTIVE_DEBOUNCE.delete(identifier);
 }
 
 export const asyncNoop = async () => await sleep(NONE);

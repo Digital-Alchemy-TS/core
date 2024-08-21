@@ -1,4 +1,4 @@
-import { ACTIVE_THROTTLE, sleep, throttle } from "../helpers";
+import { ACTIVE_THROTTLE, debounce, sleep } from "../helpers";
 
 describe("utilities", () => {
   describe("sleep", () => {
@@ -49,54 +49,54 @@ describe("utilities", () => {
     });
   });
 
-  describe("throttle", () => {
+  describe("debounce", () => {
     it("should delay execution by the specified timeout", async () => {
       const identifier = "test-id";
       const timeout = 10;
       const start = Date.now();
 
-      await throttle(identifier, timeout);
+      await debounce(identifier, timeout);
 
       const end = Date.now();
       expect(end - start).toBeGreaterThanOrEqual(timeout);
     });
 
-    it("should cancel the previous throttle if called with the same identifier", async () => {
+    it("should cancel the previous debounce if called with the same identifier", async () => {
       const identifier = "test-id";
       const timeout1 = 20;
       const timeout2 = 10;
 
       const start = Date.now();
-      throttle(identifier, timeout1);
-      await throttle(identifier, timeout2);
+      debounce(identifier, timeout1);
+      await debounce(identifier, timeout2);
 
       const end = Date.now();
       expect(end - start).toBeLessThan(timeout1);
       expect(end - start).toBeGreaterThanOrEqual(timeout2);
     });
 
-    it("should allow multiple identifiers to be throttled independently", async () => {
+    it("should allow multiple identifiers to be debounced independently", async () => {
       const identifier1 = "test-id-1";
       const identifier2 = "test-id-2";
       const timeout1 = 10;
       const timeout2 = 10;
 
       const start1 = Date.now();
-      throttle(identifier1, timeout1);
+      debounce(identifier1, timeout1);
 
       const start2 = Date.now();
-      await throttle(identifier2, timeout2);
+      await debounce(identifier2, timeout2);
 
       const end1 = Date.now();
       expect(end1 - start1).toBeGreaterThanOrEqual(timeout1);
       expect(end1 - start2).toBeGreaterThanOrEqual(timeout2);
     });
 
-    it("should clear the throttle once the timeout has passed", async () => {
+    it("should clear the debounce once the timeout has passed", async () => {
       const identifier = "test-id";
       const timeout = 100;
 
-      await throttle(identifier, timeout);
+      await debounce(identifier, timeout);
 
       expect(ACTIVE_THROTTLE.has(identifier)).toBe(false);
     });

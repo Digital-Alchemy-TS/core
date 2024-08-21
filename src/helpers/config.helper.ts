@@ -248,3 +248,22 @@ export function loadDotenv(
     config({ override: true, path: envFile ?? ".env" });
   }
 }
+
+export function parseConfig(config: AnyConfig, value: string) {
+  switch (config.type) {
+    case "string": {
+      return value;
+    }
+    case "number": {
+      return Number(value);
+    }
+    case "string[]":
+    case "record":
+    case "internal": {
+      return JSON.parse(value);
+    }
+    case "boolean": {
+      return ["y", "true"].includes(value.toLowerCase());
+    }
+  }
+}

@@ -10,6 +10,7 @@ import {
   iSearchKey,
   loadDotenv,
   ModuleConfiguration,
+  parseConfig,
 } from "./config.helper";
 
 export async function ConfigLoaderEnvironment<
@@ -42,7 +43,11 @@ export async function ConfigLoaderEnvironment<
       const flag = findKey(search, switchKeys);
       if (flag) {
         const formattedFlag = iSearchKey(flag, switchKeys);
-        internal.utils.object.set(out, configPath, CLI_SWITCHES[formattedFlag]);
+        internal.utils.object.set(
+          out,
+          configPath,
+          parseConfig(configuration[key], CLI_SWITCHES[formattedFlag]),
+        );
         logger.trace(
           {
             flag: formattedFlag,
@@ -58,7 +63,11 @@ export async function ConfigLoaderEnvironment<
       const environment = findKey(search, environmentKeys);
       if (!is.empty(environment)) {
         const environmentName = iSearchKey(environment, environmentKeys);
-        internal.utils.object.set(out, configPath, env[environmentName]);
+        internal.utils.object.set(
+          out,
+          configPath,
+          parseConfig(configuration[key], env[environmentName]),
+        );
         logger.trace(
           {
             name: ConfigLoaderEnvironment,

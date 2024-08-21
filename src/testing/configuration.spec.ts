@@ -1,5 +1,5 @@
 import { faker } from "@faker-js/faker";
-import dotenv, { DotenvConfigOutput } from "dotenv";
+import dotenv from "dotenv";
 import fs from "fs";
 import { ParsedArgs } from "minimist";
 import { join } from "path";

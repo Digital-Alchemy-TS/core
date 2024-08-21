@@ -4,7 +4,7 @@
   "repository": {
     "url": "git+https://github.com/Digital-Alchemy-TS/core"
   },
-  "version": "24.8.2",
+  "version": "24.8.3",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe Codez"
@@ -102,6 +102,9 @@
     "coverageReporters": [
       "text",
       "cobertura"
+    ],
+    "coveragePathIgnorePatterns": [
+      "src/testing/"
     ],
     "preset": "ts-jest",
     "testEnvironment": "node",

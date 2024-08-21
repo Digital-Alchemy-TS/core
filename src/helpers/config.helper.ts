@@ -1,3 +1,9 @@
+import { config } from "dotenv";
+import { existsSync } from "fs";
+import { ParsedArgs } from "minimist";
+import { isAbsolute, join, normalize } from "path";
+import { cwd } from "process";
+
 import { ILogger, InternalDefinition, is } from "..";
 import { ApplicationDefinition, ServiceMap } from "./wiring.helper";
 
@@ -12,10 +18,11 @@ export type ProjectConfigTypes =
 export type AnyConfig =
   | StringConfig<string>
   | BooleanConfig
-  | InternalConfig<unknown>
+  | InternalConfig<object>
   | NumberConfig
   | RecordConfig
   | StringArrayConfig;
+
 export interface BaseConfig {
   /**
    * If no other values are provided, what value should be injected?
@@ -57,7 +64,7 @@ export interface BooleanConfig extends BaseConfig {
  *
  * TODO: JSON schema magic for validation / maybe config builder help
  */
-export type InternalConfig<VALUE extends unknown> = BaseConfig & {
+export type InternalConfig<VALUE extends object> = BaseConfig & {
   default: VALUE;
   type: "internal";
 };
@@ -176,4 +183,88 @@ export function findKey<T extends string>(source: T[], find: T[]) {
       return find.some((item) => item.match(match));
     })
   );
+}
+
+export function iSearchKey(target: string, source: string[]) {
+  return source.find((key) =>
+    key.match(
+      new RegExp(
+        `^${target.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
+        "gi",
+      ),
+    ),
+  );
+}
+
+/**
+ * priorities:
+ * - --env-file
+ * - bootstrap envFile
+ * - cwd/.env (default file)
+ */
+export function loadDotenv(
+  internal: InternalDefinition,
+  CLI_SWITCHES: ParsedArgs,
+  logger: ILogger,
+) {
+  let { envFile } = internal.boot.options;
+  const switchKeys = Object.keys(CLI_SWITCHES);
+  const searched = iSearchKey("env-file", switchKeys);
+
+  // --env-file > bootstrap
+  if (!is.empty(CLI_SWITCHES[searched])) {
+    envFile = CLI_SWITCHES[searched];
+  }
+
+  let file: string;
+
+  // * was provided an --env-file or something via boot
+  if (!is.empty(envFile)) {
+    const checkFile = isAbsolute(envFile)
+      ? normalize(envFile)
+      : join(cwd(), envFile);
+    if (existsSync(checkFile)) {
+      file = checkFile;
+    } else {
+      logger.warn(
+        { checkFile, envFile, name: loadDotenv },
+        "invalid target for dotenv file",
+      );
+    }
+  }
+
+  // * attempt default file
+  if (is.empty(file)) {
+    const defaultFile = join(cwd(), ".env");
+    if (existsSync(defaultFile)) {
+      file = defaultFile;
+    } else {
+      logger.debug({ name: loadDotenv }, "no .env found");
+    }
+  }
+
+  // ? each of the steps above verified the path as valid
+  if (!is.empty(file)) {
+    logger.trace({ file, name: loadDotenv }, `loading env file`);
+    config({ override: true, path: file });
+  }
+}
+
+export function parseConfig(config: AnyConfig, value: string) {
+  switch (config.type) {
+    case "string": {
+      return value;
+    }
+    case "number": {
+      return Number(value);
+    }
+    case "string[]":
+    case "record":
+    case "internal": {
+      return JSON.parse(value);
+    }
+    case "boolean": {
+      return ["y", "true"].includes(value.toLowerCase());
+    }
+  }
 }

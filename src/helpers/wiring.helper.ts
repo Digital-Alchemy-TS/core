@@ -347,7 +347,7 @@ export type BootstrapOptions = {
    *
    * Default: `.env`
    */
-  envFile?: string | string[];
+  envFile?: string;
 };
 
 export const WIRE_PROJECT = Symbol.for("wire-project");

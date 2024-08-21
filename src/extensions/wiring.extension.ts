@@ -368,7 +368,7 @@ async function Bootstrap<
     // * Wire in various shutdown events
     processEvents.forEach((callback, event) => {
       process.on(event, callback);
-      logger.trace({ event, name: Bootstrap }, "shutdown event");
+      logger.trace({ event, name: Bootstrap }, "register shutdown event");
     });
 
     // * Add in libraries
@@ -401,6 +401,8 @@ async function Bootstrap<
       await i[WIRE_PROJECT](internal, WireService);
       CONSTRUCT[i.name] = `${Date.now() - start}ms`;
     });
+
+    logger.trace({ name: Bootstrap }, `library wiring complete`);
 
     // * Finally the application
     if (options.bootLibrariesFirst) {

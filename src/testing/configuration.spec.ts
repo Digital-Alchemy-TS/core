@@ -1,4 +1,9 @@
-import { env } from "process";
+import { faker } from "@faker-js/faker";
+import dotenv from "dotenv";
+import fs from "fs";
+import { ParsedArgs } from "minimist";
+import { join } from "path";
+import { cwd, env } from "process";
 
 import {
   ApplicationDefinition,
@@ -6,12 +11,18 @@ import {
   ConfigLoaderFile,
   CreateApplication,
   CreateLibrary,
+  ILogger,
   INITIALIZE,
+  InternalConfig,
+  InternalDefinition,
+  loadDotenv,
   OptionalModuleConfiguration,
+  parseConfig,
   ServiceMap,
   TServiceParams,
 } from "..";
 import { ConfigTesting } from "./config-testing.extension";
+import { createMockLogger } from "./helpers";
 import { BASIC_BOOT, ServiceTest } from "./testing.helper";
 
 describe("Configuration", () => {
@@ -160,6 +171,7 @@ describe("Configuration", () => {
       });
     });
 
+    // #MARK: Environment
     describe("Environment", () => {
       afterEach(() => {
         delete env["current_weather"];
@@ -265,6 +277,7 @@ describe("Configuration", () => {
       });
     });
 
+    // #MARK: CLI Switches
     describe("CLI Switch", () => {
       beforeEach(() => {
         process.argv = ["/path/to/node", "/path/to/main"];
@@ -394,6 +407,7 @@ describe("Configuration", () => {
       });
     });
 
+    // #MARK: File
     describe("File", () => {
       it("resolves files in the correct order", async () => {
         let testFiles: ReturnType<typeof ConfigTesting>;
@@ -446,4 +460,190 @@ describe("Configuration", () => {
     });
   });
   // #endregion
+
+  describe("Support functions", () => {
+    // #MARK: parseConfig
+    describe("parseConfig", () => {
+      it("string config (no enum)", () => {
+        const value = faker.string.alphanumeric();
+        const output = parseConfig({ type: "string" }, value);
+        expect(output).toBe(value);
+      });
+
+      it("string config (with enum)", () => {
+        const value = faker.string.alphanumeric();
+        // no logic related to enum currently, might be future logic
+        const output = parseConfig(
+          { enum: ["hello", "world"], type: "string" },
+          value,
+        );
+        expect(output).toBe(value);
+      });
+
+      it("number config", () => {
+        const value = faker.string.numeric();
+        const output = parseConfig({ type: "number" }, value);
+        expect(output).toBe(Number(value));
+      });
+
+      it("string[] config", () => {
+        const value = JSON.stringify(["hello", "world"]);
+        const output = parseConfig({ type: "string[]" }, value);
+        expect(output).toEqual(["hello", "world"]);
+      });
+
+      it("record config", () => {
+        const value = JSON.stringify({ key: "value" });
+        const output = parseConfig({ type: "record" }, value);
+        expect(output).toEqual({ key: "value" });
+      });
+
+      it("internal config", () => {
+        const value = JSON.stringify({ internalKey: "internalValue" });
+        const output = parseConfig(
+          { type: "internal" } as InternalConfig<object>,
+          value,
+        );
+        expect(output).toEqual({ internalKey: "internalValue" });
+      });
+
+      it("boolean config (true case)", () => {
+        const value = "true";
+        const output = parseConfig({ type: "boolean" }, value);
+        expect(output).toBe(true);
+      });
+
+      it("boolean config (false case)", () => {
+        const value = "false";
+        const output = parseConfig({ type: "boolean" }, value);
+        expect(output).toBe(false);
+      });
+
+      it("boolean config (yes case)", () => {
+        const value = "y";
+        const output = parseConfig({ type: "boolean" }, value);
+        expect(output).toBe(true);
+      });
+
+      it("boolean config (no case)", () => {
+        const value = "n";
+        const output = parseConfig({ type: "boolean" }, value);
+        expect(output).toBe(false);
+      });
+    });
+
+    describe("loadDotenv", () => {
+      let mockInternal: InternalDefinition;
+      let logger: ILogger;
+
+      beforeEach(() => {
+        mockInternal = {
+          boot: {
+            options: {
+              envFile: "",
+            },
+          },
+        } as InternalDefinition;
+        logger = createMockLogger();
+      });
+
+      it("should load env file from CLI switch if provided", () => {
+        jest.spyOn(fs, "existsSync").mockReturnValue(true);
+        const config = jest
+          .spyOn(dotenv, "config")
+          // @ts-expect-error idc
+          .mockReturnValue(() => undefined);
+        const CLI_SWITCHES = {
+          _: [],
+          "env-file": "path/to/env-file",
+        } as ParsedArgs;
+
+        loadDotenv(mockInternal, CLI_SWITCHES, logger);
+
+        expect(config).toHaveBeenCalledWith({
+          override: true,
+          path: join(cwd(), "path/to/env-file"),
+        });
+      });
+
+      it("should load env file from bootstrap if CLI switch is not provided", () => {
+        const config = jest
+          .spyOn(dotenv, "config")
+          // @ts-expect-error idc
+          .mockReturnValue(() => undefined);
+        jest.spyOn(fs, "existsSync").mockReturnValue(true);
+        mockInternal.boot.options.envFile = "path/to/bootstrap-env-file";
+
+        const CLI_SWITCHES = {
+          _: [],
+          "env-file": "",
+        } as ParsedArgs;
+
+        loadDotenv(mockInternal, CLI_SWITCHES, logger);
+
+        expect(config).toHaveBeenCalledWith({
+          override: true,
+          path: join(cwd(), "path/to/bootstrap-env-file"),
+        });
+      });
+
+      it("should load default .env file if no CLI switch or bootstrap envFile is provided", () => {
+        mockInternal.boot.options.envFile = "";
+        jest.spyOn(fs, "existsSync").mockReturnValue(true);
+
+        const config = jest
+          .spyOn(dotenv, "config")
+          // @ts-expect-error idc
+          .mockReturnValue(() => undefined);
+
+        const CLI_SWITCHES = {
+          _: [],
+          "env-file": "",
+        } as ParsedArgs;
+
+        loadDotenv(mockInternal, CLI_SWITCHES, logger);
+
+        expect(config).toHaveBeenCalledWith({
+          override: true,
+          path: join(cwd(), ".env"),
+        });
+      });
+
+      it("should log a warning if the specified envFile does not exist", () => {
+        mockInternal.boot.options.envFile = "nonexistent-file";
+
+        const CLI_SWITCHES = {
+          _: [],
+          "env-file": "",
+        } as ParsedArgs;
+        jest.spyOn(fs, "existsSync").mockReturnValue(false);
+
+        const config = jest
+          .spyOn(dotenv, "config")
+          // @ts-expect-error idc
+          .mockReturnValue(() => undefined);
+
+        loadDotenv(mockInternal, CLI_SWITCHES, logger);
+        expect(config).not.toHaveBeenCalled();
+      });
+
+      it("should do nothing if no valid envFile or .env file exists", () => {
+        mockInternal.boot.options.envFile = "";
+
+        const CLI_SWITCHES = {
+          _: [],
+          "env-file": "",
+        } as ParsedArgs;
+        jest.spyOn(fs, "existsSync").mockReturnValue(false);
+
+        const config = jest
+          .spyOn(dotenv, "config")
+          // @ts-expect-error idc
+          .mockReturnValue(() => undefined);
+
+        loadDotenv(mockInternal, CLI_SWITCHES, logger);
+        expect(config).not.toHaveBeenCalled();
+      });
+    });
+  });
 });

@@ -103,6 +103,9 @@
       "text",
       "cobertura"
     ],
+    "coveragePathIgnorePatterns": [
+      "src/testing/"
+    ],
     "preset": "ts-jest",
     "testEnvironment": "node",
     "moduleFileExtensions": [

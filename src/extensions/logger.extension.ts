@@ -206,13 +206,16 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   }
 
   const updateShouldLog = () => {
-    CURRENT_LOG_LEVEL = config.boilerplate.LOG_LEVEL;
+    if (!is.empty(config.boilerplate.LOG_LEVEL)) {
+      CURRENT_LOG_LEVEL = config.boilerplate.LOG_LEVEL;
+    }
     LOG_LEVELS.forEach((key: TConfigLogLevel) => {
       shouldILog[key] =
         LOG_LEVEL_PRIORITY[key] >= LOG_LEVEL_PRIORITY[CURRENT_LOG_LEVEL];
     });
   };
   // #endregion
+  updateShouldLog();
 
   // #MARK: lifecycle
   lifecycle.onPostConfig(updateShouldLog);

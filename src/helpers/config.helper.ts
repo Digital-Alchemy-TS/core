@@ -18,10 +18,11 @@ export type ProjectConfigTypes =
 export type AnyConfig =
   | StringConfig<string>
   | BooleanConfig
-  | InternalConfig<unknown>
+  | InternalConfig<object>
   | NumberConfig
   | RecordConfig
   | StringArrayConfig;
+
 export interface BaseConfig {
   /**
    * If no other values are provided, what value should be injected?
@@ -63,7 +64,7 @@ export interface BooleanConfig extends BaseConfig {
  *
  * TODO: JSON schema magic for validation / maybe config builder help
  */
-export type InternalConfig<VALUE extends unknown> = BaseConfig & {
+export type InternalConfig<VALUE extends object> = BaseConfig & {
   default: VALUE;
   type: "internal";
 };
@@ -245,7 +246,7 @@ export function loadDotenv(
   // ? each of the steps above verified the path as valid
   if (!is.empty(file)) {
     logger.trace({ file, name: loadDotenv }, `loading env file`);
-    config({ override: true, path: envFile ?? ".env" });
+    config({ override: true, path: file });
   }
 }
 

@@ -19,12 +19,12 @@ export async function ConfigLoaderEnvironment<
 >({ configs, internal, logger }: ConfigLoaderParams<S, C>): ConfigLoaderReturn {
   const CLI_SWITCHES = minimist(argv);
   const switchKeys = Object.keys(CLI_SWITCHES);
-  const environmentKeys = Object.keys(env);
   const out: Partial<AbstractConfig> = {};
 
   // * merge dotenv into local vars
   // accounts for `--env-file` switches, and whatever is passed in via bootstrap
   loadDotenv(internal, CLI_SWITCHES, logger);
+  const environmentKeys = Object.keys(env);
 
   // * go through all module
   configs.forEach((configuration, project) => {

@@ -170,7 +170,7 @@ describe("Logger", () => {
 
   describe("Fine Tuning", () => {
     it("allows timestamp format to be configured", async () => {
-      const format = "ddd HH:mm:ss.SSS";
+      const format = "ddd HH:mm:ss";
       application = CreateApplication({
         configurationLoaders: [],
         // @ts-expect-error For unit testing

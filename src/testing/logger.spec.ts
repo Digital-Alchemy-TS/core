@@ -3,6 +3,8 @@
 // magic import, do not remove / put anything above
 import "..";
 
+import dayjs from "dayjs";
+
 import { CreateApplication, is } from "../extensions";
 import {
   ApplicationDefinition,
@@ -163,6 +165,32 @@ describe("Logger", () => {
       expect(
         params.internal.boilerplate.logger.prettyFormatMessage(message),
       ).toBe(expected);
+    });
+  });
+
+  describe("Fine Tuning", () => {
+    it("allows timestamp format to be configured", async () => {
+      const format = "ddd HH:mm:ss";
+      application = CreateApplication({
+        configurationLoaders: [],
+        // @ts-expect-error For unit testing
+        name: "testing",
+        services: {
+          Test({ logger }: TServiceParams) {
+            jest.spyOn(console, "error").mockImplementation(() => {});
+            jest.spyOn(console, "log").mockImplementation(() => {});
+            const spy = jest
+              .spyOn(dayjs.prototype, "format")
+              .mockImplementation(() => "timestamp");
+            logger.info(`test`);
+            expect(spy).toHaveBeenCalledWith(format);
+          },
+        },
+      });
+      await application.bootstrap({
+        // ...BASIC_BOOT,
+        loggerOptions: { timestamp_format: format },
+      });
     });
   });
 });

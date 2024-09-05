@@ -508,8 +508,9 @@ async function Teardown(internal: InternalDefinition, logger: ILogger) {
     internal.boot.completedLifecycleEvents.add("ShutdownComplete");
   } catch (error) {
     // ! oof
-    logger.error(
-      { error, name: Teardown },
+    // eslint-disable-next-line no-console
+    console.error(
+      { error },
       "error occurred during teardown, some lifecycle events may be incomplete",
     );
   }

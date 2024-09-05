@@ -72,6 +72,8 @@ const LEVEL_MAX = 7;
 // #region Service definition
 export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   const chalk = (await import("chalk")).default;
+  const timestampFormat =
+    internal.boot.options.loggerOptions?.timestamp_format ?? "ddd HH:mm:ss.SSS";
 
   const YELLOW_DASH = chalk.yellowBright(frontDash);
   const BLUE_TICK = chalk.blue(`>`);
@@ -132,9 +134,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
         delete data.context;
         delete data.name;
 
-        const timestamp = chalk.white(
-          `[${dayjs().format("ddd hh:mm:ss.SSS")}]`,
-        );
+        const timestamp = chalk.white(`[${dayjs().format(timestampFormat)}]`);
         let logMessage: string;
         if (!is.empty(parameters)) {
           const text = parameters.shift() as string;

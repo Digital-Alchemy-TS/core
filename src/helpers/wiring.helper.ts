@@ -338,6 +338,16 @@ export type BootstrapOptions = {
   customLogger?: ILogger;
 
   /**
+   * fine tine the built in logger
+   */
+  loggerOptions?: {
+    /**
+     * > default: ddd HH:mm:ss.SSS
+     */
+    timestamp_format?: string;
+  };
+
+  /**
    * Show detailed boot time statistics
    */
   showExtraBootStats?: boolean;

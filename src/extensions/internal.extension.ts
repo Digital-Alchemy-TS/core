@@ -1,6 +1,5 @@
 import dayjs, { Dayjs } from "dayjs";
 import { EventEmitter } from "events";
-import { Counter, Summary } from "prom-client";
 import { Get } from "type-fest";
 
 import {
@@ -182,34 +181,9 @@ export class InternalUtils {
   // #endregion
 }
 
-/**
- * ugh, really prom?
- */
-type LabelFixer<LABELS extends BaseLabels> = Record<
-  Extract<keyof LABELS, string>,
-  string | number
->;
-
-type SafeExecOptions<LABELS extends BaseLabels> = {
+type SafeExecOptions = {
+  context?: TContext;
   exec: () => TBlackHole;
-  labels: LABELS;
-  duration: Summary<Extract<keyof LABELS, string>>;
-  executions: Counter<Extract<keyof LABELS, string>>;
-  errors: Counter<Extract<keyof LABELS, string>>;
-};
-
-type BaseLabels = {
-  context: TContext;
-  /**
-   * ! if provided, specific metrics will be kept
-   *
-   * do not pass label if you do not want metrics to be kept, you may not want / need metrics to be kept on all instances
-   *
-   * - execution count
-   * - error count
-   * - summary of execution time
-   */
-  label?: string;
 };
 
 type Phase = "bootstrap" | "teardown" | "running";
@@ -221,7 +195,7 @@ export class InternalDefinition {
    */
   public boilerplate: Pick<
     GetApis<typeof LIB_BOILERPLATE>,
-    "configuration" | "fetch" | "logger" | "metrics"
+    "configuration" | "fetch" | "logger"
   >;
   public boot: {
     /**
@@ -268,38 +242,21 @@ export class InternalDefinition {
   public utils = new InternalUtils();
 
   // #MARK: safeExec
-  public async safeExec<LABELS extends BaseLabels>(
-    options: (() => TBlackHole) | SafeExecOptions<LABELS>,
-  ) {
-    let labels = {} as BaseLabels;
-    let errorMetric: Counter<Extract<keyof LABELS, string>>;
+  public async safeExec<T>(
+    options: (() => TBlackHole) | SafeExecOptions,
+  ): Promise<T> {
+    const logger = this.boilerplate.logger.systemLogger;
+    const context = is.function(options) ? undefined : options?.context;
+    const exec = is.function(options) ? options : options?.exec;
+    if (!is.function(exec)) {
+      logger.error({ context }, `received non-function callback to [safeExec]`);
+      return undefined;
+    }
     try {
-      if (is.function(options)) {
-        await options();
-        return;
-      }
-      const opt = options as SafeExecOptions<LABELS>;
-      labels = opt.labels;
-      errorMetric = opt.errors;
-      const { exec, duration, executions } = opt;
-      if (is.empty(labels.label)) {
-        await exec();
-        return;
-      }
-      executions?.inc(labels as LabelFixer<LABELS>);
-      const end = duration?.startTimer();
-      await exec();
-      if (end) {
-        end(labels as LabelFixer<LABELS>);
-      }
+      return (await exec()) as T;
     } catch (error) {
-      this.boilerplate.logger.systemLogger.error(
-        { error, ...labels },
-        `callback threw error`,
-      );
-      if (!is.empty(labels.label)) {
-        errorMetric?.inc(labels as LabelFixer<LABELS>);
-      }
+      logger.error({ context, error }, `callback threw error`);
+      return undefined;
     }
   }
 }

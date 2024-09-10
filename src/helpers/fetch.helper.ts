@@ -56,10 +56,6 @@ type BaseFetchArguments = {
    */
   process?: FetchProcessTypes;
   /**
-   * If provided, metrics will be kept for this request, and associated with labels
-   */
-  label?: string;
-  /**
    * Defaults to global fetch context
    */
   context?: TContext;

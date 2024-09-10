@@ -299,45 +299,4 @@ describe("Cache Extension", () => {
       });
     });
   });
-
-  describe("Cache Operation Metrics", () => {
-    it("should increment CACHE_SET_OPERATIONS_TOTAL on set operations", async () => {
-      expect.assertions(1);
-      await ServiceTest(({ cache, lifecycle, internal }) => {
-        lifecycle.onReady(async () => {
-          await cache.set("testKey", "testValue");
-          const newCount = (
-            await internal.boilerplate.metrics.CACHE_SET_OPERATIONS_TOTAL.get()
-          ).values[0].value;
-          expect(newCount).toBe(1);
-        });
-      });
-    });
-
-    it("should increment CACHE_GET_OPERATIONS_TOTAL on get operations", async () => {
-      expect.assertions(1);
-      await ServiceTest(({ cache, lifecycle, internal }) => {
-        lifecycle.onReady(async () => {
-          await cache.get("testKey");
-          const newCount = (
-            await internal.boilerplate.metrics.CACHE_GET_OPERATIONS_TOTAL.get()
-          ).values[0].value;
-          expect(newCount).toBe(1);
-        });
-      });
-    });
-
-    it("should increment CACHE_DELETE_OPERATIONS_TOTAL on delete operations", async () => {
-      expect.assertions(1);
-      await ServiceTest(({ cache, lifecycle, internal }) => {
-        lifecycle.onReady(async () => {
-          await cache.del("testKey");
-          const newCount = (
-            await internal.boilerplate.metrics.CACHE_DELETE_OPERATIONS_TOTAL.get()
-          ).values[0].value;
-          expect(newCount).toBe(1);
-        });
-      });
-    });
-  });
 });

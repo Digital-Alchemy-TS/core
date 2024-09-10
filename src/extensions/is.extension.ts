@@ -1,3 +1,4 @@
+import dayjs, { Dayjs } from "dayjs";
 import { isDeepStrictEqual, types } from "util";
 
 import { EMPTY, EVEN, TBlackHole, TContext } from "../helpers";
@@ -32,8 +33,15 @@ export class IsIt {
     return typeof test === "string";
   }
 
+  /**
+   * test is valid date
+   */
   public date(test: unknown): test is Date {
-    return types.isDate(test);
+    return types.isDate(test) && is.number(test.getTime());
+  }
+
+  public dayjs(test: unknown): test is Dayjs {
+    return test instanceof dayjs && (test as Dayjs).isValid();
   }
 
   public empty(test: MaybeEmptyTypes): boolean {

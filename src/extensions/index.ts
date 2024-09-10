@@ -4,6 +4,5 @@ export * from "./fetch.extension";
 export * from "./internal.extension";
 export * from "./is.extension";
 export * from "./logger.extension";
-export * from "./metrics.extension";
 export * from "./scheduler.extension";
 export * from "./wiring.extension";

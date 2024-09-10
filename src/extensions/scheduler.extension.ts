@@ -34,24 +34,13 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
     function cron({
       exec,
       schedule: scheduleList,
-      label,
     }: SchedulerOptions & { schedule: Schedule | Schedule[] }) {
       const stopFunctions: (() => TBlackHole)[] = [];
       [scheduleList].flat().forEach((cronSchedule) => {
-        logger.trace(
-          { context, label, name: cron, schedule: cronSchedule },
-          `init`,
-        );
+        logger.trace({ context, name: cron, schedule: cronSchedule }, `init`);
         const cronJob = schedule(
           cronSchedule,
-          async () =>
-            await internal.safeExec({
-              duration: internal.boilerplate.metrics.SCHEDULE_EXECUTION_TIME,
-              errors: internal.boilerplate.metrics.SCHEDULE_ERRORS,
-              exec,
-              executions: internal.boilerplate.metrics.SCHEDULE_EXECUTION_COUNT,
-              labels: { context, label },
-            }),
+          async () => await internal.safeExec(exec),
         );
         lifecycle.onReady(() => {
           logger.trace(
@@ -63,7 +52,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
 
         const stopFunction = () => {
           logger.trace(
-            { context, label, name: cron, schedule: cronSchedule },
+            { context, name: cron, schedule: cronSchedule },
             `stopping`,
           );
           cronJob.stop();
@@ -81,21 +70,13 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
     function interval({
       exec,
       interval,
-      label,
     }: SchedulerOptions & { interval: number }) {
       let runningInterval: ReturnType<typeof setInterval>;
       lifecycle.onReady(() => {
         logger.trace({ context, name: "interval" }, "starting");
 
         runningInterval = setInterval(
-          async () =>
-            await internal.safeExec({
-              duration: internal.boilerplate.metrics.SCHEDULE_EXECUTION_TIME,
-              errors: internal.boilerplate.metrics.SCHEDULE_ERRORS,
-              exec,
-              executions: internal.boilerplate.metrics.SCHEDULE_EXECUTION_COUNT,
-              labels: { context, label },
-            }),
+          async () => await internal.safeExec(exec),
           interval,
         );
       });
@@ -113,7 +94,6 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
       exec,
       reset,
       next,
-      label,
     }: SchedulerOptions & {
       /**
        * How often to run the `next` method, to retrieve the next scheduled execution time
@@ -163,14 +143,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
         if (nextTime) {
           timeout = setTimeout(
             async () => {
-              await internal.safeExec({
-                duration: internal.boilerplate.metrics.SCHEDULE_EXECUTION_TIME,
-                errors: internal.boilerplate.metrics.SCHEDULE_ERRORS,
-                exec,
-                executions:
-                  internal.boilerplate.metrics.SCHEDULE_EXECUTION_COUNT,
-                labels: { context, label },
-              });
+              await internal.safeExec(exec);
             },
             Math.abs(dayjs().diff(nextTime, "ms")),
           );
@@ -179,7 +152,6 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
       // reset on schedule
       const scheduleStop = cron({
         exec: waitForNext,
-        label,
         schedule: reset,
       });
       // find value for now (boot)

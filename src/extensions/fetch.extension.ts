@@ -12,19 +12,15 @@ import {
   FetchWith,
   FIRST,
   MaybeHttpError,
-  TContext,
   TFetchBody,
   TServiceParams,
 } from "..";
 import { is } from ".";
 
 const streamPipeline = promisify(pipeline);
+const MS_PRECISION = 2;
 
-export function Fetch({
-  logger,
-  context: parentContext,
-  internal,
-}: TServiceParams) {
+export function Fetch({ logger, context: parentContext }: TServiceParams) {
   return ({
     headers: base_headers,
     baseUrl: base_url,
@@ -103,74 +99,43 @@ export function Fetch({
       return out;
     }
 
-    // #MARK: MeasureRequest
-    async function MeasureRequest<T>(
-      label: string,
-      context: TContext,
-      exec: () => Promise<T>,
-    ): Promise<T> {
-      try {
-        const out = await exec();
-        if (!is.empty(label)) {
-          internal.boilerplate.metrics.FETCH_REQUESTS_SUCCESSFUL.labels(
-            context,
-            label,
-          ).inc();
-        }
-        return out;
-      } catch (error) {
-        logger.error({ error, name: logContext }, `request failed`);
-        if (!is.empty(label)) {
-          internal.boilerplate.metrics.FETCH_REQUESTS_FAILED.labels(
-            context,
-            label,
-          ).inc();
-        }
-        throw error;
-      }
-    }
-
     // #MARK: execFetch
     async function execFetch<T, BODY extends TFetchBody = undefined>({
       body,
       headers = {},
       method = "get",
       process,
-      label,
       context = logContext || parentContext,
       ...fetchWith
     }: Partial<FetchArguments<BODY>>) {
-      const out = await MeasureRequest(label, context, async () => {
-        const contentType = is.object(body)
-          ? { "Content-Type": "application/json" }
-          : {};
-        const result = await fetch(fetchCreateUrl(fetchWith), {
-          body: is.object(body) ? JSON.stringify(body) : body,
-          headers: {
-            ...contentType,
-            ...fetchWrapper.base_headers,
-            ...headers,
-          },
-          method,
-        });
-        return await fetchHandleResponse<T>(process, result);
+      const contentType = is.object(body)
+        ? { "Content-Type": "application/json" }
+        : {};
+
+      const start = performance.now();
+      const result = await fetch(fetchCreateUrl(fetchWith), {
+        body: is.object(body) ? JSON.stringify(body) : body,
+        headers: {
+          ...contentType,
+          ...fetchWrapper.base_headers,
+          ...headers,
+        },
+        method,
       });
-      internal.boilerplate.metrics.FETCH_REQUESTS_SUCCESSFUL.labels(
-        context,
-        label,
-      ).inc();
-      return out;
+      const ms = Number((performance.now() - start).toFixed(MS_PRECISION));
+      logger.trace({ context, ms }, "request complete");
+      return await fetchHandleResponse<T>(process, result);
     }
 
     async function download({
       destination,
       body,
       headers = {},
-      label,
       context = logContext || parentContext,
       method = "get",
       ...fetchWith
     }: DownloadOptions) {
+      const start = performance.now();
       const url: string = await fetchCreateUrl(fetchWith);
       const response = await fetch(url, {
         body: is.object(body) ? JSON.stringify(body) : body,
@@ -180,12 +145,8 @@ export function Fetch({
 
       const stream = createWriteStream(destination);
       await streamPipeline(response.body, stream);
-      if (!is.empty(label)) {
-        internal.boilerplate.metrics.FETCH_DOWNLOAD_REQUESTS_SUCCESSFUL.labels(
-          context,
-          label,
-        ).inc();
-      }
+      const ms = Number((performance.now() - start).toFixed(MS_PRECISION));
+      logger.trace({ context, ms }, "download complete");
     }
 
     // #MARK: return object

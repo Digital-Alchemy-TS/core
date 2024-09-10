@@ -33,7 +33,6 @@ describe("Fetch Extension", () => {
 
         scheduler.cron({
           exec: execMock,
-          label: "testLabel",
           schedule: "*/5 * * * *",
         });
 

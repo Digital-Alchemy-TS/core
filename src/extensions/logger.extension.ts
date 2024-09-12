@@ -1,3 +1,4 @@
+import chalk from "chalk";
 import dayjs from "dayjs";
 import { format, inspect } from "util";
 
@@ -71,7 +72,6 @@ const LEVEL_MAX = 7;
 
 // #region Service definition
 export async function Logger({ lifecycle, config, internal }: TServiceParams) {
-  const chalk = (await import("chalk")).default;
   const timestampFormat =
     internal.boot.options.loggerOptions?.timestamp_format ?? "ddd HH:mm:ss.SSS";
 

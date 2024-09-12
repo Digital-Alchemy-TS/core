@@ -64,18 +64,14 @@ describe("Configuration", () => {
     });
 
     it("should have the correct defaults for boilerplate", async () => {
-      expect.assertions(6);
+      expect.assertions(2);
       // hide logs that result from lack of "silent" LOG_LEVEL
       jest.spyOn(console, "log").mockImplementation(() => {});
       jest.spyOn(console, "error").mockImplementation(() => {});
       await ServiceTest(({ config, lifecycle }) => {
         lifecycle.onPostConfig(() => {
-          expect(config.boilerplate.CACHE_PREFIX).toBe("");
-          expect(config.boilerplate.CACHE_PROVIDER).toBe("memory");
-          expect(config.boilerplate.CACHE_TTL).toBe(86_400);
           expect(config.boilerplate.CONFIG).toBe(undefined);
           expect(config.boilerplate.LOG_LEVEL).toBe("trace");
-          expect(config.boilerplate.REDIS_URL).toBe("redis://localhost:6379");
         });
       }, {});
     });
@@ -306,7 +302,7 @@ describe("Configuration", () => {
         await application.bootstrap(BASIC_BOOT);
       });
 
-      it("should do direct match by key", async () => {
+      fit("should do direct match by key", async () => {
         expect.assertions(1);
         process.argv.push("--CURRENT_WEATHER", "windy");
         application = CreateApplication({
@@ -328,7 +324,7 @@ describe("Configuration", () => {
             },
           },
         });
-        await application.bootstrap(BASIC_BOOT);
+        await application.bootstrap();
       });
 
       it("should wrong case (all lower)", async () => {

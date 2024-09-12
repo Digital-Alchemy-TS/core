@@ -270,19 +270,13 @@ export type LibraryConfigurationOptions<
    * - warnings will be emitted if this library utilizes a different version of a dependency than what the app uses
    * - version provided by app will be substituted
    */
-  depends?: LibraryConfigurationOptions<
-    ServiceMap,
-    OptionalModuleConfiguration
-  >[];
+  depends?: TLibrary[];
   /**
    * Same as depends, but will not error if library is not provided at app level
    *
    * **note**: related variables may come in as undefined, code needs to be built to allow for this
    */
-  optionalDepends?: LibraryConfigurationOptions<
-    ServiceMap,
-    OptionalModuleConfiguration
-  >[];
+  optionalDepends?: TLibrary[];
   configuration?: C;
   /**
    * Define which services should be initialized first. Any remaining services are done at the end in no set order
@@ -398,7 +392,10 @@ export type ApplicationDefinition<
     bootstrap: (options?: BootstrapOptions) => Promise<void>;
     teardown: () => Promise<void>;
   };
-type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration>;
+export type TLibrary = LibraryDefinition<
+  ServiceMap,
+  OptionalModuleConfiguration
+>;
 
 export function BuildSortOrder<
   S extends ServiceMap,

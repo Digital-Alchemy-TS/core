@@ -128,7 +128,7 @@
       "**/?(*.)+(spec|test).ts"
     ],
     "setupFiles": [
-      "<rootDir>/src/testing/helpers/test-setup.ts"
+      "<rootDir>/src/testing/internal/test-setup.ts"
     ],
     "transform": {
       "^.+\\.ts$": [

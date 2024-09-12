@@ -286,7 +286,6 @@ async function bootstrap<
   options: BootstrapOptions,
   internal: InternalDefinition,
 ) {
-  // const
   internal.boot = {
     application,
     completedLifecycleEvents: new Set(),

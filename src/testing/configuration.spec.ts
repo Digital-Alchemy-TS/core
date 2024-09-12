@@ -12,7 +12,6 @@ import {
   CreateApplication,
   CreateLibrary,
   ILogger,
-  INITIALIZE,
   InternalConfig,
   InternalDefinition,
   loadDotenv,
@@ -22,8 +21,8 @@ import {
   TServiceParams,
 } from "..";
 import { ConfigTesting } from "./config-testing.extension";
-import { createMockLogger } from "./helpers";
-import { BASIC_BOOT, ServiceTest } from "./testing.helper";
+import { createMockLogger, TestRunner } from "./helpers";
+import { BASIC_BOOT } from "./testing.helper";
 
 describe("Configuration", () => {
   let application: ApplicationDefinition<
@@ -43,22 +42,29 @@ describe("Configuration", () => {
   describe("Initialization", () => {
     it("should be configured at the correct time in the lifecycle", async () => {
       expect.assertions(2);
-      await ServiceTest(({ internal, lifecycle }) => {
-        const spy = jest.spyOn(internal.boilerplate.configuration, INITIALIZE);
-        lifecycle.onPreInit(() => {
-          expect(spy).not.toHaveBeenCalled();
+      const spy = jest.fn();
+      await TestRunner()
+        .configure({
+          configLoader: async () => {
+            spy();
+            return {};
+          },
+        })
+        .run(({ lifecycle }) => {
+          lifecycle.onPreInit(() => {
+            expect(spy).not.toHaveBeenCalled();
+          });
+          lifecycle.onPostConfig(() => {
+            expect(spy).toHaveBeenCalled();
+          });
         });
-        lifecycle.onPostConfig(() => {
-          expect(spy).toHaveBeenCalled();
-        });
-      });
     });
 
     it("should prioritize bootstrap config over defaults", async () => {
       expect.assertions(1);
-      await ServiceTest(({ config, lifecycle }) => {
+      await TestRunner().run(({ config, lifecycle }) => {
         lifecycle.onPostConfig(() => {
-          expect(config.boilerplate.LOG_LEVEL).toBe("silent");
+          expect(config.boilerplate.LOG_LEVEL).toBe("info");
         });
       });
     });
@@ -68,71 +74,50 @@ describe("Configuration", () => {
       // hide logs that result from lack of "silent" LOG_LEVEL
       jest.spyOn(console, "log").mockImplementation(() => {});
       jest.spyOn(console, "error").mockImplementation(() => {});
-      await ServiceTest(({ config, lifecycle }) => {
+      await TestRunner().run(({ config, lifecycle, internal }) => {
         lifecycle.onPostConfig(() => {
           expect(config.boilerplate.CONFIG).toBe(undefined);
-          expect(config.boilerplate.LOG_LEVEL).toBe("trace");
+          expect(
+            internal.boilerplate.configuration
+              .getDefinitions()
+              .get("boilerplate").LOG_LEVEL.default,
+          ).toBe("trace");
         });
-      }, {});
+      });
     });
 
     it("should generate the correct structure for applications", async () => {
       expect.assertions(1);
-      application = CreateApplication({
-        configuration: {
-          FOO: {
-            default: "bar",
-            type: "string",
+      await TestRunner()
+        .extras({
+          module_config: {
+            FOO: { default: "bar", type: "string" },
           },
-        },
-        configurationLoaders: [],
-        // @ts-expect-error testing
-        name: "testing",
-        services: {
-          Testing({ config }: TServiceParams) {
-            // @ts-expect-error testing
-            expect(config.testing.FOO).toBe("bar");
-          },
-        },
-      });
-      await application.bootstrap(BASIC_BOOT);
+        })
+        .run(({ config }) => {
+          // @ts-expect-error testing
+          expect(config.testing.FOO).toBe("bar");
+        });
     });
 
     it("should generate the correct structure for libraries", async () => {
       expect.assertions(1);
-      application = CreateApplication({
-        configuration: {
-          FOO: {
-            default: "bar",
-            type: "string",
-          },
-        },
-        configurationLoaders: [],
-        libraries: [
-          CreateLibrary({
-            configuration: {
-              RAINING: {
-                default: false,
-                type: "boolean",
-              },
+      await TestRunner()
+        .extras({
+          module_config: {
+            FOO: {
+              default: "bar",
+              type: "string",
             },
-            // @ts-expect-error testing
-            name: "library",
-            services: {},
-          }),
-        ],
-        // @ts-expect-error testing
-        name: "testing",
-        services: {
-          Testing({ config }: TServiceParams) {
-            // @ts-expect-error testing
-            expect(config.library.RAINING).toBe(false);
           },
-        },
-      });
-      await application.bootstrap(BASIC_BOOT);
+        })
+        .run(({ config }) => {
+          // @ts-expect-error testing
+          expect(config.library.RAINING).toBe(false);
+        });
     });
   });
+
   // #endregion
   // #region Loaders
   describe("Loaders", () => {
@@ -140,6 +125,7 @@ describe("Configuration", () => {
       afterEach(() => {
         delete env["DO_NOT_LOAD"];
       });
+
       it("should not find variables without loaders", async () => {
         expect.assertions(1);
         env["DO_NOT_LOAD"] = "env";

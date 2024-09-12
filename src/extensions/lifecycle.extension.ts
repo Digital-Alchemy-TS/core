@@ -75,7 +75,7 @@ export function CreateLifecycle() {
         // * callbacks with a priority greater than 0
         // high to low (1000 => 0)
         await eachSeries(
-          positive.sort((a, b) => (a.priority < b.priority ? UP : DOWN)),
+          positive.toSorted((a, b) => (a.priority < b.priority ? UP : DOWN)),
           async ({ callback }) => await callback(),
         );
 
@@ -86,7 +86,7 @@ export function CreateLifecycle() {
         // * callbacks with a priority less than 0
         // high to low (-1 => -1000)
         await eachSeries(
-          negative.sort((a, b) => (a.priority < b.priority ? UP : DOWN)),
+          negative.toSorted((a, b) => (a.priority < b.priority ? UP : DOWN)),
           async ({ callback }) => await callback(),
         );
       }

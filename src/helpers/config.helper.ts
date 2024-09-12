@@ -187,14 +187,12 @@ export function findKey<T extends string>(source: T[], find: T[]) {
 }
 
 export function iSearchKey(target: string, source: string[]) {
-  return source.find((key) =>
-    key.match(
-      new RegExp(
-        `^${target.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
-        "gi",
-      ),
-    ),
+  const regex = new RegExp(
+    `^${target.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
+    "gi",
   );
+
+  return source.find((key) => regex.exec(key) !== null);
 }
 
 /**

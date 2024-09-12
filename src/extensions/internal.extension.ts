@@ -47,7 +47,7 @@ export class InternalUtils {
    */
   public event = new EventEmitter();
 
-  public TitleCase(input: string): string {
+  public titleCase(input: string): string {
     const matches = input.match(new RegExp("[a-z][A-Z]", "g"));
     if (matches) {
       matches.forEach((i) => (input = input.replace(i, [...i].join(" "))));

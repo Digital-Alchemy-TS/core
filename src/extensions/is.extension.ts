@@ -1,3 +1,4 @@
+import { randomBytes } from "crypto";
 import dayjs, { Dayjs } from "dayjs";
 import { isDeepStrictEqual, types } from "util";
 
@@ -93,7 +94,8 @@ export class IsIt {
   }
 
   public random<T>(list: T[]): T {
-    return list[Math.floor(Math.random() * list.length)];
+    // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+    return list[Math.floor(randomBytes(1)[0] % list.length)];
   }
 
   public string(test: unknown): test is string {

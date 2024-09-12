@@ -1,4 +1,5 @@
-import { is } from "../extensions/is.extension";
+/* eslint-disable sonarjs/no-redundant-type-constituents */
+import { is } from "../extensions";
 import { ARRAY_OFFSET, SINGLE, START } from "./utilities.helper";
 
 // ? Functions written to be similar to the offerings from the async library
@@ -8,9 +9,12 @@ import { ARRAY_OFFSET, SINGLE, START } from "./utilities.helper";
 
 // #MARK: each
 export async function each<T = unknown>(
-  item: T[] = [],
+  item: T[] | Set<T>,
   callback: (item: T) => Promise<void | unknown>,
 ): Promise<void> {
+  if (item instanceof Set) {
+    item = [...item.values()];
+  }
   await Promise.all(item.map(async (i) => await callback(i)));
 }
 

@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/slow-regex */
 import chalk from "chalk";
 import dayjs from "dayjs";
 import { format, inspect } from "util";

@@ -17,6 +17,7 @@ function cloneSpecificValue(value: unknown) {
 export function deepCloneArray<TYPE = unknown>(
   array: Array<TYPE>,
 ): Array<TYPE> {
+  // eslint-disable-next-line sonarjs/function-return-type
   return array.map((item) => {
     if (is.object(item)) {
       if (is.array(item)) {

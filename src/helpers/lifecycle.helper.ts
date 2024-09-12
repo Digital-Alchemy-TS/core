@@ -53,8 +53,6 @@ export type TParentLifecycle = TLifecycleBase & {
   child: () => TLifecycleBase;
 };
 
-export type TChildLifecycle = TLifecycleBase;
-
 // ! This is a sorted array! Don't change the order
 export const LIFECYCLE_STAGES = [
   "PreInit",

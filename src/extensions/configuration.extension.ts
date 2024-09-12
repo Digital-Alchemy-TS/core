@@ -85,7 +85,7 @@ export function Configuration({
   async function Initialize<
     S extends ServiceMap,
     C extends OptionalModuleConfiguration,
-  >(application: ApplicationDefinition<S, C>): Promise<string | never> {
+  >(application: ApplicationDefinition<S, C>): Promise<string> {
     const configLoaders =
       internal.boot.application.configurationLoaders ??
       ([ConfigLoaderEnvironment, ConfigLoaderFile] as ConfigLoader[]);

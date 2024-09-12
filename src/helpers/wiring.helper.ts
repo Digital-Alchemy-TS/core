@@ -24,7 +24,7 @@ import {
   StringArrayConfig,
   StringConfig,
 } from "./config.helper";
-import { TChildLifecycle, TLifecycleBase } from "./lifecycle.helper";
+import { TLifecycleBase } from "./lifecycle.helper";
 
 export type TServiceReturn<OBJECT extends object = object> = void | OBJECT;
 
@@ -363,7 +363,7 @@ type Wire = {
       lifecycle: TLifecycleBase,
       internal: InternalDefinition,
     ) => Promise<TServiceReturn<object>>,
-  ) => Promise<TChildLifecycle>;
+  ) => Promise<TLifecycleBase>;
 };
 
 export type LibraryDefinition<
@@ -468,7 +468,7 @@ export const COERCE_CONTEXT = (context: string): TContext =>
   context as TContext;
 export const WIRING_CONTEXT = COERCE_CONTEXT("boilerplate:wiring");
 
-export function ValidateLibrary<S extends ServiceMap>(
+export function validateLibrary<S extends ServiceMap>(
   project: string,
   serviceList: S,
 ): void | never {
@@ -495,7 +495,7 @@ export function ValidateLibrary<S extends ServiceMap>(
   }
 }
 
-export function WireOrder<T extends string>(priority: T[], list: T[]): T[] {
+export function wireOrder<T extends string>(priority: T[], list: T[]): T[] {
   const out = [...(priority || [])];
   if (!is.empty(priority)) {
     const check = is.unique(priority);
@@ -521,7 +521,7 @@ export function CreateLibrary<
   depends,
   optionalDepends,
 }: LibraryConfigurationOptions<S, C>): LibraryDefinition<S, C> {
-  ValidateLibrary(libraryName, services);
+  validateLibrary(libraryName, services);
 
   const serviceApis = {} as GetApisResult<ServiceMap>;
 
@@ -541,7 +541,7 @@ export function CreateLibrary<
       const config = internal?.boilerplate.configuration as ConfigManager;
       config?.[LOAD_PROJECT](libraryName as keyof LoadedModules, configuration);
       await eachSeries(
-        WireOrder(priorityInit, Object.keys(services)),
+        wireOrder(priorityInit, Object.keys(services)),
         async (service) => {
           serviceApis[service] = await WireService(
             libraryName,

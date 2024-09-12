@@ -1,4 +1,4 @@
-import _import from "eslint-plugin-import";
+import importPlugin from "eslint-plugin-import";
 import jsonc from "eslint-plugin-jsonc";
 import noUnsanitized from "eslint-plugin-no-unsanitized";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
@@ -23,12 +23,12 @@ const compat = new FlatCompat({
 });
 
 export default [
+  sonarjs.configs.recommended,
   {
     plugins: {
-      import: fixupPluginRules(_import),
+      import: fixupPluginRules(importPlugin),
       jsonc,
       "no-unsanitized": noUnsanitized,
-      sonarjs,
       "simple-import-sort": simpleImportSort,
       "sort-keys-fix": sortKeysFix,
       unicorn,
@@ -46,10 +46,7 @@ export default [
       "plugin:prettier/recommended",
       "plugin:@cspell/recommended",
     )
-    .map((config) => ({
-      ...config,
-      files: ["src/**/*.ts"],
-    })),
+    .map((config) => ({ ...config, files: ["src/**/*.ts"] })),
   {
     files: ["src/**/*.ts"],
     languageOptions: {
@@ -69,9 +66,12 @@ export default [
       "@cspell/spellchecker": ["warn", { checkComments: false, autoFix: true }],
       "unicorn/no-null": "off",
       "unicorn/no-empty-file": "off",
+      "sonarjs/sonar-no-fallthrough": "off",
       "sonarjs/prefer-single-boolean-return": "off",
       "unicorn/no-array-callback-reference": "off",
+      "sonarjs/prefer-nullish-coalescing": "off",
       "unicorn/no-await-expression-member": "off",
+      "sonarjs/no-nested-functions": "off",
       "unicorn/no-useless-undefined": "off",
       "@typescript-eslint/unbound-method": "error",
       "import/no-extraneous-dependencies": ["error", { packageDir: "./" }],
@@ -99,6 +99,9 @@ export default [
       "sort-keys-fix/sort-keys-fix": "warn",
       "unicorn/prefer-event-target": "off",
       "simple-import-sort/imports": "warn",
+      "sonarjs/no-misused-promises": "off",
+      "sonarjs/no-commented-code": "off",
+      "sonarjs/todo-tag": "off",
       "simple-import-sort/exports": "warn",
       "no-console": ["error"],
       "@typescript-eslint/no-unnecessary-type-constraint": "off",
@@ -125,6 +128,8 @@ export default [
       "@typescript-eslint/unbound-method": "off",
       "@typescript-eslint/no-magic-numbers": "off",
       "sonarjs/no-duplicate-string": "off",
+      "sonarjs/no-commented-code": "off",
+      "sonarjs/no-dead-store": "off",
       "sonarjs/no-unused-collection": "warn",
       "unicorn/consistent-function-scoping": "off",
     },

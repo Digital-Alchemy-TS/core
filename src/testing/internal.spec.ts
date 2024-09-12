@@ -17,14 +17,14 @@ describe("Fetch Extension", () => {
     test("converts single word to title case", async () => {
       expect.assertions(1);
       await ServiceTest(({ internal }) => {
-        expect(internal.utils.TitleCase("word")).toBe("Word");
+        expect(internal.utils.titleCase("word")).toBe("Word");
       });
     });
 
     test("converts multiple words separated by spaces to title case", async () => {
       expect.assertions(1);
       await ServiceTest(({ internal }) => {
-        expect(internal.utils.TitleCase("multiple words here")).toBe(
+        expect(internal.utils.titleCase("multiple words here")).toBe(
           "Multiple Words Here",
         );
       });
@@ -33,7 +33,7 @@ describe("Fetch Extension", () => {
     test("converts multiple words separated by underscores to title case", async () => {
       expect.assertions(1);
       await ServiceTest(({ internal }) => {
-        expect(internal.utils.TitleCase("multiple_words_here")).toBe(
+        expect(internal.utils.titleCase("multiple_words_here")).toBe(
           "Multiple Words Here",
         );
       });
@@ -42,7 +42,7 @@ describe("Fetch Extension", () => {
     test("converts multiple words separated by hyphens to title case", async () => {
       expect.assertions(1);
       await ServiceTest(({ internal }) => {
-        expect(internal.utils.TitleCase("multiple-words-here")).toBe(
+        expect(internal.utils.titleCase("multiple-words-here")).toBe(
           "Multiple Words Here",
         );
       });
@@ -51,7 +51,7 @@ describe("Fetch Extension", () => {
     test("inserts spaces between camel case words and converts to title case", async () => {
       expect.assertions(1);
       await ServiceTest(({ internal }) => {
-        expect(internal.utils.TitleCase("camelCaseWordsHere")).toBe(
+        expect(internal.utils.titleCase("camelCaseWordsHere")).toBe(
           "Camel Case Words Here",
         );
       });
@@ -60,21 +60,21 @@ describe("Fetch Extension", () => {
     test("handles empty string input", async () => {
       expect.assertions(1);
       await ServiceTest(({ internal }) => {
-        expect(internal.utils.TitleCase("")).toBe("");
+        expect(internal.utils.titleCase("")).toBe("");
       });
     });
 
     test("handles single character input", async () => {
       expect.assertions(1);
       await ServiceTest(({ internal }) => {
-        expect(internal.utils.TitleCase("a")).toBe("A");
+        expect(internal.utils.titleCase("a")).toBe("A");
       });
     });
 
     test("handles input with mixed delimiters", async () => {
       expect.assertions(1);
       await ServiceTest(({ internal }) => {
-        expect(internal.utils.TitleCase("mixed_delimiters-here now")).toBe(
+        expect(internal.utils.titleCase("mixed_delimiters-here now")).toBe(
           "Mixed Delimiters Here Now",
         );
       });

@@ -118,7 +118,7 @@ export async function debounce(
   timeout: number,
 ): Promise<void> {
   const current = ACTIVE_DEBOUNCE.get(identifier);
-  if (current) {
+  if (!is.undefined(current)) {
     current.kill("stop");
   }
   const delay = sleep(timeout);
@@ -141,5 +141,6 @@ export function PEAT<T = number>(length: number, fill?: T): T[] {
   );
 }
 
+// eslint-disable-next-line sonarjs/no-redundant-type-constituents
 export type TBlackHole = unknown | void | Promise<void>;
 export type TAnyFunction = (...data: unknown[]) => TBlackHole;

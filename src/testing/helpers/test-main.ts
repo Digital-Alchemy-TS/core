@@ -33,8 +33,8 @@ export const HOME_AUTOMATION = CreateApplication({
   },
 });
 
-setImmediate(async () => {
-  await HOME_AUTOMATION.bootstrap({
+setImmediate(() => {
+  HOME_AUTOMATION.bootstrap({
     // bootLibrariesFirst: true,
     configuration: {
       //

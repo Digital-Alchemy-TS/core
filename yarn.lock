@@ -2205,14 +2205,6 @@ __metadata:
     type-fest: "npm:^4.26.1"
     typescript: "npm:^5.6.2"
     uuid: "npm:^10.0.0"
-  peerDependencies:
-    chalk: ^5
-    dayjs: ^1
-    dotenv: ^16
-    ini: ^4
-    js-yaml: ^4
-    minimist: ^1
-    node-cron: ^3
   languageName: unknown
   linkType: soft
 

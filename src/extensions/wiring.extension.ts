@@ -59,6 +59,7 @@ function createBoilerplate() {
       } satisfies StringConfig<TConfigLogLevel>,
     },
     name: "boilerplate",
+    priorityInit: ["configuration", "logger", "als", "scheduler"],
     services: {
       als: ALS,
       configuration: Configuration,
@@ -233,6 +234,7 @@ async function wireService(
 
     loaded[service] = (await definition({
       ...inject,
+      als: boilerplate.als,
       config: boilerplate?.configuration?.[INJECTED_DEFINITIONS](),
       context,
       event: internal?.utils?.event,

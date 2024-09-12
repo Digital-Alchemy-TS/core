@@ -70,6 +70,7 @@ const frontDash = " - ";
 const SYMBOL_START = 1;
 const SYMBOL_END = -1;
 const LEVEL_MAX = 7;
+type MergeDataCallback = () => object;
 
 // #region Service definition
 export async function Logger({ lifecycle, config, internal }: TServiceParams) {
@@ -81,6 +82,14 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   const BLUE_TICK = chalk.blue(`>`);
   let prettyFormat = true;
   const shouldILog = {} as Record<TConfigLogLevel, boolean>;
+  const mergeCallbacks = new Set<MergeDataCallback>();
+  function mergeData<T extends object>(data: T): T {
+    let out = { ...data };
+    mergeCallbacks.forEach((i) => {
+      out = { ...out, ...i() };
+    });
+    return out;
+  }
 
   // #MARK: pretty logger
   const prettyFormatMessage = (message: string): string => {
@@ -118,14 +127,17 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
         context: TContext,
         ...parameters: Parameters<TLoggerFunction>
       ) => {
-        const data = is.object(parameters[FIRST])
-          ? (parameters.shift() as {
-              context?: TContext;
-              error?: Error | string;
-              name?: string | { name: string };
-              stack?: string | string[];
-            })
-          : {};
+        const data = mergeData(
+          is.object(parameters[FIRST])
+            ? (parameters.shift() as {
+                context?: TContext;
+                error?: Error | string;
+                name?: string | { name: string };
+                stack?: string | string[];
+              })
+            : {},
+        );
+
         const highlighted = chalk.bold[METHOD_COLORS.get(key)](
           `[${data.context || context}]`,
         );
@@ -242,6 +254,10 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
      * for testing
      */
     getShouldILog: () => ({ ...shouldILog }),
+
+    merge: (callback: MergeDataCallback) => {
+      mergeCallbacks.add(callback);
+    },
 
     /**
      * exposed for testing

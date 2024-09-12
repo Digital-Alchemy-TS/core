@@ -1,3 +1,4 @@
+export * from "./als.extension";
 export * from "./configuration.extension";
 export * from "./internal.extension";
 export * from "./is.extension";

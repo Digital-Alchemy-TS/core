@@ -1,3 +1,4 @@
+import { AsyncLocalStorage } from "async_hooks";
 import { Dayjs } from "dayjs";
 import { EventEmitter } from "events";
 
@@ -138,6 +139,17 @@ type CastConfigResult<T extends AnyConfig> =
 export type TInjectedConfig = {
   [ModuleName in keyof ModuleConfigs]: ConfigTypes<ModuleConfigs[ModuleName]>;
 };
+
+export interface AsyncLocalData {
+  id: string;
+}
+
+export type AlsExtension = {
+  getStorage: () => AsyncLocalStorage<AsyncLocalData>;
+  init(callback: () => TBlackHole): void;
+  register(callback: AlsHook): void;
+};
+export type AlsHook = () => object;
 
 // #MARK: TServiceParams
 export type TServiceParams = {

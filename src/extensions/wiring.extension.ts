@@ -26,7 +26,7 @@ import {
   wireOrder,
   WIRING_CONTEXT,
 } from "../helpers";
-import { InternalDefinition, is } from ".";
+import { ALS, InternalDefinition, is } from ".";
 import {
   Configuration,
   INITIALIZE,
@@ -60,6 +60,7 @@ function createBoilerplate() {
     },
     name: "boilerplate",
     services: {
+      als: ALS,
       configuration: Configuration,
       logger: Logger,
       scheduler: Scheduler,

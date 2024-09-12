@@ -12,7 +12,6 @@ import {
   LIB_BOILERPLATE,
   LOAD_PROJECT,
   TBlackHole,
-  TCache,
   TContext,
 } from "..";
 import {
@@ -142,12 +141,6 @@ export type TInjectedConfig = {
 
 // #MARK: TServiceParams
 export type TServiceParams = {
-  /**
-   * provided by boilerplate library
-   *
-   * contains basic caching methods
-   */
-  cache: TCache;
   /**
    * string describing how this service is wired into the main application
    */

@@ -1,6 +1,4 @@
-export * from "./cache.extension";
 export * from "./configuration.extension";
-export * from "./fetch.extension";
 export * from "./internal.extension";
 export * from "./is.extension";
 export * from "./logger.extension";

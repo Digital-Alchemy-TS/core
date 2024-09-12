@@ -7,7 +7,6 @@ import {
   BootstrapException,
   BootstrapOptions,
   BuildSortOrder,
-  CacheProviders,
   COERCE_CONTEXT,
   CreateLibrary,
   each,
@@ -28,14 +27,12 @@ import {
   WIRING_CONTEXT,
 } from "../helpers";
 import { InternalDefinition, is } from ".";
-import { Cache } from "./cache.extension";
 import {
   Configuration,
   INITIALIZE,
   INJECTED_DEFINITIONS,
   LOAD_PROJECT,
 } from "./configuration.extension";
-import { Fetch } from "./fetch.extension";
 import { CreateLifecycle } from "./lifecycle.extension";
 import { ILogger, Logger, TConfigLogLevel } from "./logger.extension";
 import { Scheduler } from "./scheduler.extension";
@@ -46,25 +43,6 @@ function CreateBoilerplate() {
   // While it SEEMS LIKE this can be safely moved, it causes code init race conditions.
   return CreateLibrary({
     configuration: {
-      CACHE_PREFIX: {
-        default: "",
-        description: [
-          "Use a prefix with all cache keys",
-          "If blank, then application name is used",
-        ].join(`. `),
-        type: "string",
-      },
-      CACHE_PROVIDER: {
-        default: "memory",
-        description: "Redis is preferred if available",
-        enum: ["redis", "memory"],
-        type: "string",
-      } satisfies StringConfig<`${CacheProviders}`>,
-      CACHE_TTL: {
-        default: 86_400,
-        description: "Configuration property for cache provider, in seconds",
-        type: "number",
-      },
       CONFIG: {
         description: [
           "Consumable as CLI switch only",
@@ -79,21 +57,10 @@ function CreateBoilerplate() {
         enum: ["silent", "trace", "info", "warn", "debug", "error"],
         type: "string",
       } satisfies StringConfig<TConfigLogLevel>,
-      REDIS_URL: {
-        default: "redis://localhost:6379",
-        description:
-          "Configuration property for cache provider, does not apply to memory caching",
-        type: "string",
-      },
     },
     name: "boilerplate",
-    // > 🐔 🥚 dependencies
-    // config system internally resolves this via lifecycle events
-    priorityInit: ["configuration", "logger"],
     services: {
-      cache: Cache,
       configuration: Configuration,
-      fetch: Fetch,
       logger: Logger,
       scheduler: Scheduler,
     },
@@ -265,7 +232,6 @@ async function WireService(
 
     loaded[service] = (await definition({
       ...inject,
-      cache: boilerplate?.cache,
       config: boilerplate?.configuration?.[INJECTED_DEFINITIONS](),
       context,
       event: internal?.utils?.event,

@@ -1,11 +1,5 @@
 import { TContext } from "..";
 
-export type MaybeHttpError = {
-  error: string;
-  message: string;
-  statusCode: number;
-};
-
 export class BootstrapException extends Error {
   context: TContext;
   override cause: string;

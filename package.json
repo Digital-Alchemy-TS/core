@@ -34,14 +34,11 @@
     {
       "url": "https://github.com/sponsors/zoe-codez",
       "type": "GitHub"
-    },
-    {
-      "url": "https://ko-fi.com/zoe_codez",
-      "type": "ko-fi"
     }
   ],
   "exports": {
-    ".": "./dist/index.js"
+    ".": "./dist/index.js",
+    "./testing": "./dist/testing/helpers/index.js"
   },
   "files": [
     "dist/**/*"
@@ -49,7 +46,7 @@
   "engines": {
     "node": ">=20"
   },
-  "dependencies": {
+  "peerDependencies": {
     "chalk": "^5",
     "dayjs": "^1",
     "dotenv": "^16",

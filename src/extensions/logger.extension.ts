@@ -74,7 +74,8 @@ const LEVEL_MAX = 7;
 // #region Service definition
 export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   const timestampFormat =
-    internal.boot.options.loggerOptions?.timestamp_format ?? "ddd HH:mm:ss.SSS";
+    internal.boot.options?.loggerOptions?.timestamp_format ??
+    "ddd HH:mm:ss.SSS";
 
   const YELLOW_DASH = chalk.yellowBright(frontDash);
   const BLUE_TICK = chalk.blue(`>`);
@@ -109,7 +110,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
     return message;
   };
 
-  if (is.empty(internal.boot.options.customLogger)) {
+  if (is.empty(internal.boot.options?.customLogger)) {
     // #region formatter
     [...METHOD_COLORS.keys()].forEach((key) => {
       const level = `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ");

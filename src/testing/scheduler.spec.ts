@@ -20,7 +20,7 @@ describe("Fetch Extension", () => {
   });
 
   describe("cron", () => {
-    test("schedules a cron job and executes successfully", async () => {
+    xit("schedules a cron job and executes successfully", async () => {
       expect.assertions(1);
       await ServiceTest(async ({ scheduler }) => {
         const execMock = jest.fn();

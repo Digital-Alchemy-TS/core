@@ -109,7 +109,6 @@ export default [
         "warn",
         { varsIgnorePattern: "_|logger" },
       ],
-
       "@typescript-eslint/no-explicit-any": "error",
     },
   },

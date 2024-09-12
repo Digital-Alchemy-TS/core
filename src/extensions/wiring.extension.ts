@@ -1,5 +1,5 @@
+/* eslint-disable unicorn/no-process-exit */
 import { EventEmitter } from "events";
-import { exit } from "process";
 
 import {
   ApplicationConfigurationOptions,
@@ -90,14 +90,14 @@ const processEvents = new Map([
     "SIGTERM",
     async () => {
       await quickShutdown("SIGTERM");
-      exit();
+      process.exit();
     },
   ],
   [
     "SIGINT",
     async () => {
       await quickShutdown("SIGINT");
-      exit();
+      process.exit();
     },
   ],
   // ["uncaughtException", () => {}],
@@ -246,7 +246,7 @@ async function wireService(
     // Init errors at this level are considered blocking / fatal
     // eslint-disable-next-line no-console
     console.error("initialization error", error);
-    exit();
+    process.exit();
   }
 }
 
@@ -339,7 +339,7 @@ async function bootstrap<
     // * Add in libraries
     application.libraries ??= [];
 
-    if (!is.undefined(options.appendLibrary)) {
+    if (!is.undefined(options?.appendLibrary)) {
       const list = is.array(options.appendLibrary)
         ? options.appendLibrary
         : [options.appendLibrary];
@@ -370,7 +370,7 @@ async function bootstrap<
     logger.trace({ name: bootstrap }, `library wiring complete`);
 
     // * Finally the application
-    if (options.bootLibrariesFirst) {
+    if (options?.bootLibrariesFirst) {
       logger.warn({ name: bootstrap }, `bootLibrariesFirst`);
     } else {
       logger.info({ name: bootstrap }, `init application`);
@@ -404,7 +404,7 @@ async function bootstrap<
     );
     STATS.Bootstrap = await runBootstrap(internal);
 
-    if (options.bootLibrariesFirst) {
+    if (options?.bootLibrariesFirst) {
       // * mental note
       // running between bootstrap & ready seems most appropriate
       // resources are expected to *technically* be ready at this point, but not finalized
@@ -436,7 +436,8 @@ async function bootstrap<
       // eslint-disable-next-line no-console
       console.error("bootstrap failed", error);
     }
-    exit();
+
+    process.exit();
   }
 }
 

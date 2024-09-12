@@ -1,5 +1,5 @@
 import minimist from "minimist";
-import { argv, env } from "process";
+import { env } from "process";
 
 import { is, ServiceMap } from "..";
 import {
@@ -17,7 +17,7 @@ export async function ConfigLoaderEnvironment<
   S extends ServiceMap = ServiceMap,
   C extends ModuleConfiguration = ModuleConfiguration,
 >({ configs, internal, logger }: ConfigLoaderParams<S, C>): ConfigLoaderReturn {
-  const CLI_SWITCHES = minimist(argv);
+  const CLI_SWITCHES = minimist(process.argv);
   const switchKeys = Object.keys(CLI_SWITCHES);
   const out: Partial<AbstractConfig> = {};
 

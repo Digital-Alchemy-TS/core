@@ -302,7 +302,7 @@ describe("Configuration", () => {
         await application.bootstrap(BASIC_BOOT);
       });
 
-      fit("should do direct match by key", async () => {
+      it("should do direct match by key", async () => {
         expect.assertions(1);
         process.argv.push("--CURRENT_WEATHER", "windy");
         application = CreateApplication({

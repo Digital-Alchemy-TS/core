@@ -1,5 +1,5 @@
-import { config } from "dotenv";
-import { existsSync } from "fs";
+import dotenv from "dotenv";
+import fs from "fs";
 import { ParsedArgs } from "minimist";
 import { isAbsolute, join, normalize } from "path";
 import { cwd } from "process";
@@ -206,7 +206,7 @@ export function loadDotenv(
   CLI_SWITCHES: ParsedArgs,
   logger: ILogger,
 ) {
-  let { envFile } = internal.boot.options;
+  let { envFile } = internal.boot.options ?? {};
   const switchKeys = Object.keys(CLI_SWITCHES);
   const searched = iSearchKey("env-file", switchKeys);
 
@@ -222,7 +222,7 @@ export function loadDotenv(
     const checkFile = isAbsolute(envFile)
       ? normalize(envFile)
       : join(cwd(), envFile);
-    if (existsSync(checkFile)) {
+    if (fs.existsSync(checkFile)) {
       file = checkFile;
     } else {
       logger.warn(
@@ -235,7 +235,7 @@ export function loadDotenv(
   // * attempt default file
   if (is.empty(file)) {
     const defaultFile = join(cwd(), ".env");
-    if (existsSync(defaultFile)) {
+    if (fs.existsSync(defaultFile)) {
       file = defaultFile;
     } else {
       logger.debug({ name: loadDotenv }, "no .env found");
@@ -245,7 +245,7 @@ export function loadDotenv(
   // ? each of the steps above verified the path as valid
   if (!is.empty(file)) {
     logger.trace({ file, name: loadDotenv }, `loading env file`);
-    config({ override: true, path: file });
+    dotenv.config({ override: true, path: file });
   }
 }
 

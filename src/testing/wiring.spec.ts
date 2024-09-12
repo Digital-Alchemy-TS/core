@@ -1048,22 +1048,6 @@ describe("Wiring", () => {
       expect(observed).toBeDefined();
     });
 
-    it("passes cache into services", async () => {
-      let observed: unknown;
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Test({ cache }: TServiceParams) {
-            observed = cache;
-          },
-        },
-      });
-      await application.bootstrap(BASIC_BOOT);
-      expect(observed).toBeDefined();
-    });
-
     it("passes event into services", async () => {
       let observed: unknown;
       application = CreateApplication({

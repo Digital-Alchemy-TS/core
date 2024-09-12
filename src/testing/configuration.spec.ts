@@ -1,12 +1,9 @@
 import { faker } from "@faker-js/faker";
-import { error } from "console";
 import dotenv from "dotenv";
 import fs from "fs";
 import { ParsedArgs } from "minimist";
 import { join } from "path";
 import { cwd, env } from "process";
-import { inspect } from "util";
-import { v4 } from "uuid";
 
 import {
   ApplicationDefinition,

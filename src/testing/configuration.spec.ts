@@ -1,13 +1,15 @@
 import { faker } from "@faker-js/faker";
+import { error } from "console";
 import dotenv from "dotenv";
 import fs from "fs";
 import { ParsedArgs } from "minimist";
 import { join } from "path";
 import { cwd, env } from "process";
+import { inspect } from "util";
+import { v4 } from "uuid";
 
 import {
   ApplicationDefinition,
-  ConfigLoaderEnvironment,
   ConfigLoaderFile,
   CreateApplication,
   CreateLibrary,
@@ -42,13 +44,10 @@ describe("Configuration", () => {
   describe("Initialization", () => {
     it("should be configured at the correct time in the lifecycle", async () => {
       expect.assertions(2);
-      const spy = jest.fn();
+      const spy = jest.fn().mockReturnValue({});
       await TestRunner()
         .configure({
-          configLoader: async () => {
-            spy();
-            return {};
-          },
+          configLoader: async () => spy(),
         })
         .run(({ lifecycle }) => {
           lifecycle.onPreInit(() => {
@@ -71,9 +70,6 @@ describe("Configuration", () => {
 
     it("should have the correct defaults for boilerplate", async () => {
       expect.assertions(2);
-      // hide logs that result from lack of "silent" LOG_LEVEL
-      jest.spyOn(console, "log").mockImplementation(() => {});
-      jest.spyOn(console, "error").mockImplementation(() => {});
       await TestRunner().run(({ config, lifecycle, internal }) => {
         lifecycle.onPostConfig(() => {
           expect(config.boilerplate.CONFIG).toBe(undefined);
@@ -103,17 +99,24 @@ describe("Configuration", () => {
     it("should generate the correct structure for libraries", async () => {
       expect.assertions(1);
       await TestRunner()
-        .extras({
-          module_config: {
-            FOO: {
-              default: "bar",
-              type: "string",
+        .appendLibrary(
+          CreateLibrary({
+            configuration: {
+              RAINING: {
+                default: false,
+                type: "boolean",
+              },
             },
-          },
-        })
-        .run(({ config }) => {
-          // @ts-expect-error testing
-          expect(config.library.RAINING).toBe(false);
+            // @ts-expect-error testing
+            name: "library",
+            services: {},
+          }),
+        )
+        .run(({ config, lifecycle }) => {
+          lifecycle.onBootstrap(() => {
+            // @ts-expect-error testing
+            expect(config.library.RAINING).toBe(false);
+          });
         });
     });
   });
@@ -126,30 +129,49 @@ describe("Configuration", () => {
         delete env["DO_NOT_LOAD"];
       });
 
+      it("cannot set whole objects", async () => {
+        expect.assertions(1);
+        await TestRunner().run(({ config }) => {
+          expect(() => {
+            // @ts-expect-error testing
+            config.boilerplate = {};
+          }).toThrow();
+        });
+      });
+
+      it("can list available keys", async () => {
+        expect.assertions(1);
+        await TestRunner().run(({ config }) => {
+          const key = Object.keys(config);
+          expect(key).toEqual(expect.arrayContaining(["boilerplate"]));
+        });
+      });
+
+      it("does has operator", async () => {
+        expect.assertions(1);
+        await TestRunner().run(({ config }) => {
+          expect("boilerplate" in config).toBe(true);
+        });
+      });
+
       it("should not find variables without loaders", async () => {
         expect.assertions(1);
         env["DO_NOT_LOAD"] = "env";
-        // process.argv.push("--current_WEATHER=hail");
-        application = CreateApplication({
-          configuration: {
-            DO_NOT_LOAD: {
-              default: "unloaded",
-              type: "string",
+        await TestRunner()
+          .extras({
+            module_config: {
+              DO_NOT_LOAD: {
+                default: "unloaded",
+                type: "string",
+              },
             },
-          },
-          configurationLoaders: [],
-          // @ts-expect-error testing
-          name: "testing",
-          services: {
-            Testing({ config, lifecycle }: TServiceParams) {
-              lifecycle.onPostConfig(() => {
-                // @ts-expect-error testing
-                expect(config.testing.DO_NOT_LOAD).toBe("unloaded");
-              });
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.DO_NOT_LOAD).toBe("unloaded");
+            });
+          });
       });
     });
 
@@ -160,102 +182,88 @@ describe("Configuration", () => {
         delete env["current_WEATHER"];
         delete env["CURRENT_WEATHER"];
       });
+
       it("should default properly if environment variables do not exist", async () => {
         expect.assertions(1);
-        application = CreateApplication({
-          configuration: {
-            CURRENT_WEATHER: {
-              default: "raining",
-              type: "string",
+        await TestRunner()
+          .configure({ loadConfigs: true })
+          .extras({
+            module_config: {
+              CURRENT_WEATHER: {
+                default: "raining",
+                type: "string",
+              },
             },
-          },
-          // @ts-expect-error testing
-          name: "testing",
-          services: {
-            Testing({ config, lifecycle }: TServiceParams) {
-              lifecycle.onPostConfig(() => {
-                // @ts-expect-error testing
-                expect(config.testing.CURRENT_WEATHER).toBe("raining");
-              });
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.CURRENT_WEATHER).toBe("raining");
+            });
+          });
       });
 
       it("should do direct match by key", async () => {
         expect.assertions(1);
         env["CURRENT_WEATHER"] = "windy";
-        application = CreateApplication({
-          configuration: {
-            CURRENT_WEATHER: {
-              default: "raining",
-              type: "string",
+        await TestRunner()
+          .configure({ loadConfigs: true })
+          .extras({
+            module_config: {
+              CURRENT_WEATHER: {
+                default: "raining",
+                type: "string",
+              },
             },
-          },
-          configurationLoaders: [ConfigLoaderEnvironment],
-          // @ts-expect-error testing
-          name: "testing",
-          services: {
-            Testing({ config, lifecycle }: TServiceParams) {
-              lifecycle.onPostConfig(() => {
-                // @ts-expect-error testing
-                expect(config.testing.CURRENT_WEATHER).toBe("windy");
-              });
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.CURRENT_WEATHER).toBe("windy");
+            });
+          });
       });
 
       it("should wrong case (all lower)", async () => {
         expect.assertions(1);
         env["current_weather"] = "sunny";
-        application = CreateApplication({
-          configuration: {
-            CURRENT_WEATHER: {
-              default: "raining",
-              type: "string",
+        await TestRunner()
+          .configure({ loadConfigs: true })
+          .extras({
+            module_config: {
+              CURRENT_WEATHER: {
+                default: "raining",
+                type: "string",
+              },
             },
-          },
-          configurationLoaders: [ConfigLoaderEnvironment],
-          // @ts-expect-error testing
-          name: "testing",
-          services: {
-            Testing({ config, lifecycle }: TServiceParams) {
-              lifecycle.onPostConfig(() => {
-                // @ts-expect-error testing
-                expect(config.testing.CURRENT_WEATHER).toBe("sunny");
-              });
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.CURRENT_WEATHER).toBe("sunny");
+            });
+          });
       });
 
       it("should wrong case (mixed)", async () => {
         expect.assertions(1);
         env["current_WEATHER"] = "hail";
-        application = CreateApplication({
-          configuration: {
-            CURRENT_WEATHER: {
-              default: "raining",
-              type: "string",
+        await TestRunner()
+          .configure({ loadConfigs: true })
+          .extras({
+            module_config: {
+              CURRENT_WEATHER: {
+                default: "raining",
+                type: "string",
+              },
             },
-          },
-          configurationLoaders: [ConfigLoaderEnvironment],
-          // @ts-expect-error testing
-          name: "testing",
-          services: {
-            Testing({ config, lifecycle }: TServiceParams) {
-              lifecycle.onPostConfig(() => {
-                // @ts-expect-error testing
-                expect(config.testing.CURRENT_WEATHER).toBe("hail");
-              });
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.CURRENT_WEATHER).toBe("hail");
+            });
+          });
       });
     });
 
@@ -267,125 +275,106 @@ describe("Configuration", () => {
 
       it("should default properly if environment variables do not exist", async () => {
         expect.assertions(1);
-        application = CreateApplication({
-          configuration: {
-            CURRENT_WEATHER: {
-              default: "raining",
-              type: "string",
+        await TestRunner()
+          .configure({ loadConfigs: true })
+          .extras({
+            module_config: {
+              CURRENT_WEATHER: {
+                default: "raining",
+                type: "string",
+              },
             },
-          },
-          // @ts-expect-error testing
-          name: "testing",
-          services: {
-            Testing({ config, lifecycle }: TServiceParams) {
-              lifecycle.onPostConfig(() => {
-                // @ts-expect-error testing
-                expect(config.testing.CURRENT_WEATHER).toBe("raining");
-              });
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.CURRENT_WEATHER).toBe("raining");
+            });
+          });
       });
 
       it("should do direct match by key", async () => {
         expect.assertions(1);
         process.argv.push("--CURRENT_WEATHER", "windy");
-        application = CreateApplication({
-          configuration: {
-            CURRENT_WEATHER: {
-              default: "raining",
-              type: "string",
+        await TestRunner()
+          .configure({ loadConfigs: true })
+          .extras({
+            module_config: {
+              CURRENT_WEATHER: {
+                default: "raining",
+                type: "string",
+              },
             },
-          },
-          configurationLoaders: [ConfigLoaderEnvironment],
-          // @ts-expect-error testing
-          name: "testing",
-          services: {
-            Testing({ config, lifecycle }: TServiceParams) {
-              lifecycle.onPostConfig(() => {
-                // @ts-expect-error testing
-                expect(config.testing.CURRENT_WEATHER).toBe("windy");
-              });
-            },
-          },
-        });
-        await application.bootstrap();
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.CURRENT_WEATHER).toBe("windy");
+            });
+          });
       });
 
       it("should wrong case (all lower)", async () => {
         expect.assertions(1);
         process.argv.push("--current_weather", "sunny");
-        application = CreateApplication({
-          configuration: {
-            CURRENT_WEATHER: {
-              default: "raining",
-              type: "string",
+        await TestRunner()
+          .configure({ loadConfigs: true })
+          .extras({
+            module_config: {
+              CURRENT_WEATHER: {
+                default: "raining",
+                type: "string",
+              },
             },
-          },
-          configurationLoaders: [ConfigLoaderEnvironment],
-          // @ts-expect-error testing
-          name: "testing",
-          services: {
-            Testing({ config, lifecycle }: TServiceParams) {
-              lifecycle.onPostConfig(() => {
-                // @ts-expect-error testing
-                expect(config.testing.CURRENT_WEATHER).toBe("sunny");
-              });
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.CURRENT_WEATHER).toBe("sunny");
+            });
+          });
       });
 
       it("should wrong case (mixed)", async () => {
         expect.assertions(1);
         process.argv.push("--current_WEATHER", "hail");
-        application = CreateApplication({
-          configuration: {
-            CURRENT_WEATHER: {
-              default: "raining",
-              type: "string",
+        await TestRunner()
+          .configure({ loadConfigs: true })
+          .extras({
+            module_config: {
+              CURRENT_WEATHER: {
+                default: "raining",
+                type: "string",
+              },
             },
-          },
-          configurationLoaders: [ConfigLoaderEnvironment],
-          // @ts-expect-error testing
-          name: "testing",
-          services: {
-            Testing({ config, lifecycle }: TServiceParams) {
-              lifecycle.onPostConfig(() => {
-                // @ts-expect-error testing
-                expect(config.testing.CURRENT_WEATHER).toBe("hail");
-              });
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.CURRENT_WEATHER).toBe("hail");
+            });
+          });
       });
 
       it("is valid with equals signs", async () => {
         expect.assertions(1);
         process.argv.push("--current_WEATHER=hail");
-        application = CreateApplication({
-          configuration: {
-            CURRENT_WEATHER: {
-              default: "raining",
-              type: "string",
+        await TestRunner()
+          .configure({ loadConfigs: true })
+          .extras({
+            module_config: {
+              CURRENT_WEATHER: {
+                default: "raining",
+                type: "string",
+              },
             },
-          },
-          configurationLoaders: [ConfigLoaderEnvironment],
-          // @ts-expect-error testing
-          name: "testing",
-          services: {
-            Testing({ config, lifecycle }: TServiceParams) {
-              lifecycle.onPostConfig(() => {
-                // @ts-expect-error testing
-                expect(config.testing.CURRENT_WEATHER).toBe("hail");
-              });
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.CURRENT_WEATHER).toBe("hail");
+            });
+          });
       });
     });
 
@@ -625,6 +614,82 @@ describe("Configuration", () => {
 
         loadDotenv(mockInternal, CLI_SWITCHES, logger);
         expect(config).not.toHaveBeenCalled();
+      });
+    });
+  });
+
+  describe("Interactions", () => {
+    it("throws errors for missing required config", async () => {
+      expect.assertions(2);
+      const spy = jest
+        .spyOn(global.console, "error")
+        .mockImplementation(() => undefined);
+      // @ts-expect-error i don't care
+      const exitSpy = jest.spyOn(process, "exit").mockImplementation(() => {});
+      try {
+        await TestRunner()
+          .appendLibrary(
+            CreateLibrary({
+              configuration: {
+                REQUIRED_CONFIG: { required: true, type: "string" },
+              },
+              // @ts-expect-error testing
+              name: "library",
+              services: {},
+            }),
+          )
+          .run(() => {});
+      } finally {
+        expect(spy).toHaveBeenCalled();
+        expect(exitSpy).toHaveBeenCalled();
+      }
+    });
+
+    describe("onUpdate", () => {
+      it("calls onUpdate when it changes", async () => {
+        await TestRunner().run(
+          ({
+            internal: {
+              boilerplate: { configuration },
+            },
+          }) => {
+            const spy = jest.fn();
+            configuration.onUpdate(spy);
+            configuration.set("boilerplate", "LOG_LEVEL", "debug");
+            expect(spy).toHaveBeenCalled();
+          },
+        );
+      });
+
+      it("does not call onUpdate when property doesn't match", async () => {
+        await TestRunner().run(
+          ({
+            internal: {
+              boilerplate: { configuration },
+            },
+          }) => {
+            const spy = jest.fn();
+            configuration.onUpdate(spy, "boilerplate", "config");
+            configuration.set("boilerplate", "CONFIG", "debug");
+            expect(spy).not.toHaveBeenCalled();
+          },
+        );
+      });
+
+      it("does not call onUpdate when project doesn't match", async () => {
+        await TestRunner().run(
+          ({
+            internal: {
+              boilerplate: { configuration },
+            },
+          }) => {
+            const spy = jest.fn();
+            configuration.onUpdate(spy, "boilerplate", "config");
+            // @ts-expect-error I got nothing better here
+            configuration.set("test", "CONFIG", "debug");
+            expect(spy).not.toHaveBeenCalled();
+          },
+        );
       });
     });
   });

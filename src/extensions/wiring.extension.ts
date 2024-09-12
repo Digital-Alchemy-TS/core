@@ -391,8 +391,8 @@ async function bootstrap<
     STATS.PreInit = await runPreInit(internal);
     // - Pull in user configurations
     logger.debug({ name: bootstrap }, "loading configuration");
-    STATS.Configure =
-      await BOILERPLATE(internal)?.configuration?.[INITIALIZE](application);
+    const config = BOILERPLATE(internal)?.configuration;
+    STATS.Configure = await config?.[INITIALIZE](application);
     // - Run through other events in order
     logger.debug(
       { name: bootstrap },
@@ -477,7 +477,7 @@ async function teardown(internal: InternalDefinition, logger: ILogger) {
   } catch (error) {
     // ! oof
     // eslint-disable-next-line no-console
-    console.error(
+    global.console.error(
       { error },
       "error occurred during teardown, some lifecycle events may be incomplete",
     );

@@ -45,21 +45,26 @@ export function Configuration({
   > = (project: Project, property: Property) => TBlackHole;
 
   //#region Methods
-  function InjectedDefinitions() {
-    return new Proxy({} as TInjectedConfig, {
+  function InjectedDefinitions(): TInjectedConfig {
+    const out = {} as Record<string, object>;
+    return new Proxy(out as TInjectedConfig, {
       get(_, project: keyof TInjectedConfig) {
         return internal.utils.object.get(configuration, project) ?? {};
       },
-      getOwnPropertyDescriptor(_, project: string) {
-        return {
-          configurable: false,
-          enumerable: true,
-          value: internal.utils.object.get(configuration, project) ?? {},
-          writable: false,
-        };
+      has(_, key: keyof TInjectedConfig) {
+        Object.keys(configuration).forEach(
+          (key) => (out[key as keyof typeof out] ??= {}),
+        );
+        return Object.keys(configuration).includes(key);
       },
       ownKeys() {
+        Object.keys(configuration).forEach(
+          (key) => (out[key as keyof typeof out] ??= {}),
+        );
         return Object.keys(configuration);
+      },
+      set() {
+        return false;
       },
     });
   }
@@ -81,42 +86,7 @@ export function Configuration({
     event.emit(EVENT_CONFIGURATION_UPDATED, project, property);
   }
 
-  // #MARK: Initialize
-  async function Initialize<
-    S extends ServiceMap,
-    C extends OptionalModuleConfiguration,
-  >(application: ApplicationDefinition<S, C>): Promise<string> {
-    const configLoaders =
-      internal.boot.application.configurationLoaders ??
-      ([ConfigLoaderEnvironment, ConfigLoaderFile] as ConfigLoader[]);
-
-    const start = Date.now();
-    // * sanity check
-    if (!application) {
-      throw new BootstrapException(
-        context,
-        "NO_APPLICATION",
-        "Cannot load configuration without having defined an application",
-      );
-    }
-
-    // * were configs disabled?
-    if (is.empty(configLoaders)) {
-      logger.warn({ name: Initialize }, `no config loaders defined`);
-      return `${Date.now() - start}ms`;
-    }
-
-    // * load!
-    await eachSeries(configLoaders, async (loader) => {
-      const merge = await loader({
-        application,
-        configs: configDefinitions,
-        internal,
-        logger,
-      });
-      deepExtend(configuration, merge);
-    });
-
+  function validateConfig() {
     // * validate
     // - ensure all required properties have been defined
     configDefinitions.forEach((definitions, project) => {
@@ -135,6 +105,39 @@ export function Configuration({
         }
       });
     });
+  }
+
+  // #MARK: Initialize
+  async function Initialize<
+    S extends ServiceMap,
+    C extends OptionalModuleConfiguration,
+  >(application: ApplicationDefinition<S, C>): Promise<string> {
+    const configLoaders =
+      internal.boot.application.configurationLoaders ??
+      ([ConfigLoaderEnvironment, ConfigLoaderFile] as ConfigLoader[]);
+
+    const start = Date.now();
+
+    // * were configs disabled?
+    if (is.empty(configLoaders)) {
+      logger.warn({ name: Initialize }, `no config loaders defined`);
+      validateConfig();
+      return `${Date.now() - start}ms`;
+    }
+
+    // * load!
+    await eachSeries(configLoaders, async (loader) => {
+      const merge = await loader({
+        application,
+        configs: configDefinitions,
+        internal,
+        logger,
+      });
+      deepExtend(configuration, merge);
+    });
+
+    validateConfig();
+
     return `${Date.now() - start}ms`;
   }
 

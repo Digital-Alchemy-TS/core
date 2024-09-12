@@ -94,11 +94,11 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
       // ? [A] > [B] > [C] - highlight the >'s in blue
       .replaceAll("] > [", `] ${BLUE_TICK} [`)
       // ? [Text] - strip brackets, highlight magenta
-      .replaceAll(new RegExp("(\\[[^\\]\\[]+\\])", "g"), (i) =>
+      .replaceAll(new RegExp(String.raw`(\[[^\]\[]+\])`, "g"), (i) =>
         chalk.bold.magenta(i.slice(SYMBOL_START, SYMBOL_END)),
       )
       // ? {Text} - strip braces, highlight gray
-      .replaceAll(new RegExp("(\\{[^\\]}]+\\})", "g"), (i) =>
+      .replaceAll(new RegExp(String.raw`(\{[^\]}]+\})`, "g"), (i) =>
         chalk.bold.gray(i.slice(SYMBOL_START, SYMBOL_END)),
       );
     // ? " - Text" (line prefix with dash) - highlight dash

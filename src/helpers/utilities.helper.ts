@@ -81,8 +81,8 @@ export function sleep(target: number | Date = SECOND): SleepReturn {
   // You can await as normal, or call the function
   const out = new Promise<void>((i) => (done = i)) as SleepReturn;
   out.kill = (execute = "stop") => {
-    if (execute === "continue") {
-      done && done();
+    if (execute === "continue" && done) {
+      done();
     }
     clearTimeout(timeout);
     done = undefined;

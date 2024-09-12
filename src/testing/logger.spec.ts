@@ -1,5 +1,3 @@
-/* eslint-disable unicorn/escape-case */
-/* eslint-disable unicorn/no-hex-escape */
 // magic import, do not remove / put anything above
 import "..";
 

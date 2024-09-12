@@ -116,6 +116,7 @@ export interface ConfigTypeDTO<METADATA extends AnyConfig = AnyConfig> {
  * Extends the global common config, adding a section for the top level application to chuck in data without affecting things
  * Also provides dedicated sections for libraries to store their own configuration options
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AbstractConfig {}
 export type ConfigLoaderReturn = Promise<Partial<AbstractConfig>>;
 

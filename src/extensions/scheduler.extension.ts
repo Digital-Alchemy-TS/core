@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/cognitive-complexity */
 import dayjs, { Dayjs } from "dayjs";
 import { schedule } from "node-cron";
 

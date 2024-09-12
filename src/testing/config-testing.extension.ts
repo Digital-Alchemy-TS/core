@@ -62,14 +62,18 @@ export function ConfigTesting({ lifecycle }: TServiceParams) {
   function unlink(path?: string) {
     if (path) {
       if (testDataMap.has(path)) {
-        existsSync(path) && unlinkSync(path);
+        if (existsSync(path)) {
+          unlinkSync(path);
+        }
         testDataMap.delete(path);
         return;
       }
       return;
     }
     testDataMap.forEach((_, filePath) => {
-      existsSync(filePath) && unlinkSync(filePath);
+      if (existsSync(filePath)) {
+        unlinkSync(filePath);
+      }
     });
   }
 

@@ -7,7 +7,7 @@ import {
   OptionalModuleConfiguration,
   ServiceMap,
 } from "../helpers";
-import { TestRunner } from "./helpers";
+import { createMockLogger, TestRunner } from "./helpers";
 
 describe("Logger", () => {
   let application: ApplicationDefinition<
@@ -32,6 +32,23 @@ describe("Logger", () => {
           false,
         );
       });
+    });
+
+    it("calls the appropriate things based on permission combos", async () => {
+      expect.assertions(1);
+
+      const customLogger = createMockLogger();
+      await TestRunner()
+        .configure({ customLogger })
+        .run(({ internal, logger }) => {
+          internal.boilerplate.configuration.set(
+            "boilerplate",
+            "LOG_LEVEL",
+            "warn",
+          );
+          logger.fatal("HIT");
+          expect(customLogger.fatal).toHaveBeenCalled();
+        });
     });
 
     it("updates onPostConfig", async () => {
@@ -130,6 +147,34 @@ describe("Logger", () => {
   });
 
   describe("Fine Tuning", () => {
+    it("provides access base logger", async () => {
+      expect.assertions(1);
+      const logger = createMockLogger();
+      await TestRunner()
+        .configure({ customLogger: logger })
+        .run(({ internal }) => {
+          expect(internal.boilerplate.logger.getBaseLogger()).toBe(logger);
+        });
+    });
+
+    it("can modify base logger", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const logger = createMockLogger();
+        internal.boilerplate.logger.setBaseLogger(logger);
+        expect(internal.boilerplate.logger.getBaseLogger()).toBe(logger);
+      });
+    });
+
+    it("can modify pretty format", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const logger = createMockLogger();
+        internal.boilerplate.logger.setPrettyFormat(false);
+        expect(internal.boilerplate.logger.getPrettyFormat()).toBe(false);
+      });
+    });
+
     it("allows timestamp format to be configured", async () => {
       const format = "ddd HH:mm:ss";
       jest.spyOn(global.console, "error").mockImplementation(() => {});

@@ -249,6 +249,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
      */
     getBaseLogger: () => logger,
 
+    getPrettyFormat: () => prettyFormat,
     /**
      * for testing
      */

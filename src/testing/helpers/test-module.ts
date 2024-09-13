@@ -1,6 +1,6 @@
 import { v4 } from "uuid";
 
-import { CreateApplication, is } from "../../extensions";
+import { CreateApplication, ILogger, is } from "../../extensions";
 import {
   ApplicationDefinition,
   ConfigLoader,
@@ -48,6 +48,8 @@ type TestingBootstrapOptions = {
    * Should testing apps consider config file / environment variables?
    */
   loadConfigs?: boolean;
+
+  customLogger?: ILogger;
 
   loggerOptions?: LoggerOptions;
 
@@ -191,14 +193,14 @@ export function TestRunner<
         ),
         customLogger: bootOptions?.emitLogs
           ? undefined
-          : {
+          : (bootOptions?.customLogger ?? {
               debug: jest.fn(),
               error: jest.fn(),
               fatal: jest.fn(),
               info: jest.fn(),
               trace: jest.fn(),
               warn: jest.fn(),
-            },
+            }),
         loggerOptions: bootOptions?.loggerOptions,
       });
 

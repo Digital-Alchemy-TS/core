@@ -5,8 +5,6 @@ import {
   LIFECYCLE_STAGES,
   LifecycleCallback,
   LifecycleStages,
-  NONE,
-  sleep,
   TLifecycleBase,
   UP,
 } from "../helpers";
@@ -31,7 +29,7 @@ export function CreateLifecycle() {
     const stageList = events.get(name);
     if (!is.array(stageList)) {
       if (!name.includes("Shutdown")) {
-        setImmediate(async () => await callback());
+        callback();
       }
       return;
     }
@@ -64,6 +62,7 @@ export function CreateLifecycle() {
         const positive = [] as EventMapObject[];
         const negative = [] as EventMapObject[];
 
+        // console.error("HIT 1");
         sorted.forEach((i) => {
           if (i.priority >= PRE_CALLBACKS_START) {
             positive.push(i);
@@ -78,10 +77,12 @@ export function CreateLifecycle() {
           positive.toSorted((a, b) => (a.priority < b.priority ? UP : DOWN)),
           async ({ callback }) => await callback(),
         );
+        // console.error("HIT 2");
 
         // * callbacks without a priority
         // any order
         await each(quick, async ({ callback }) => await callback());
+        // console.error("HIT 3");
 
         // * callbacks with a priority less than 0
         // high to low (-1 => -1000)
@@ -90,9 +91,6 @@ export function CreateLifecycle() {
           async ({ callback }) => await callback(),
         );
       }
-      // TODO Update this comment with why this sleep exists
-      // I forgot why, but it seems on purpose
-      await sleep(NONE);
       return `${Date.now() - start}ms`;
     },
   };

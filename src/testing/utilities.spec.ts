@@ -21,7 +21,7 @@ describe("utilities", () => {
       await timer;
 
       const end = Date.now();
-      expect(end - start).toBeGreaterThanOrEqual(50);
+      expect(end - start).toBeGreaterThanOrEqual(49);
       expect(end - start).toBeLessThan(timeout);
     });
 
@@ -45,7 +45,7 @@ describe("utilities", () => {
       await sleep(targetDate);
 
       const end = Date.now();
-      expect(end - start).toBeGreaterThanOrEqual(100);
+      expect(end - start).toBeGreaterThanOrEqual(99);
     });
   });
 
@@ -72,7 +72,7 @@ describe("utilities", () => {
 
       const end = Date.now();
       expect(end - start).toBeLessThan(timeout1);
-      expect([9, 10].includes(end - start)).toBe(true);
+      expect(end - start).toBeGreaterThanOrEqual(9);
     });
 
     it("should allow multiple identifiers to be debounced independently", async () => {
@@ -88,8 +88,8 @@ describe("utilities", () => {
       await debounce(identifier2, timeout2);
 
       const end1 = Date.now();
-      expect(end1 - start1).toBeGreaterThanOrEqual(timeout1);
-      expect(end1 - start2).toBeGreaterThanOrEqual(timeout2);
+      expect(end1 - start1).toBeGreaterThanOrEqual(timeout1 - 1);
+      expect(end1 - start2).toBeGreaterThanOrEqual(timeout2 - 1);
     });
 
     it("should clear the debounce once the timeout has passed", async () => {

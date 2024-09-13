@@ -450,9 +450,6 @@ async function bootstrap<
 
 // #MARK: Teardown
 async function teardown(internal: InternalDefinition, logger: ILogger) {
-  if (!internal) {
-    return;
-  }
   // * Announce
   logger.warn({ name: teardown }, `received teardown request`);
   internal.boot.phase = "teardown";

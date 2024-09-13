@@ -7,6 +7,7 @@ import {
   CreateLibrary,
   deepExtend,
   LibraryDefinition,
+  LoggerOptions,
   ModuleConfiguration,
   NONE,
   OptionalModuleConfiguration,
@@ -47,6 +48,8 @@ type TestingBootstrapOptions = {
    * Should testing apps consider config file / environment variables?
    */
   loadConfigs?: boolean;
+
+  loggerOptions?: LoggerOptions;
 
   /**
    * matches regular bootstrap options
@@ -196,6 +199,7 @@ export function TestRunner<
               trace: jest.fn(),
               warn: jest.fn(),
             },
+        loggerOptions: bootOptions?.loggerOptions,
       });
 
       if (bootOptions?.forceTeardown) {

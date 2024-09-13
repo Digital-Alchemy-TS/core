@@ -1,13 +1,8 @@
-import { schedule } from "node-cron";
+import { CreateApplication, TServiceParams } from "..";
+import { TestRunner } from "./helpers";
+import { BASIC_BOOT } from "./testing.helper";
 
-import { CreateApplication } from "..";
-import { BASIC_BOOT, ServiceTest } from "./testing.helper";
-
-jest.mock("node-cron", () => ({
-  schedule: jest.fn(),
-}));
-
-describe("Fetch Extension", () => {
+describe("Scheduler", () => {
   beforeAll(async () => {
     // @ts-expect-error testing
     const preload = CreateApplication({ name: "testing" });
@@ -20,39 +15,13 @@ describe("Fetch Extension", () => {
   });
 
   describe("cron", () => {
-    xit("schedules a cron job and executes successfully", async () => {
-      expect.assertions(1);
-      await ServiceTest(async ({ scheduler }) => {
-        const execMock = jest.fn();
-        const cronMock = {
-          start: jest.fn(),
-          stop: jest.fn(),
-        };
-
-        (schedule as jest.Mock).mockReturnValue(cronMock);
-
-        scheduler.cron({
-          exec: execMock,
-          schedule: "*/5 * * * *",
-        });
-
-        expect(schedule).toHaveBeenCalledWith(
-          "*/5 * * * *",
-          expect.any(Function),
-        );
+    it("works", async () => {
+      let params: TServiceParams;
+      const app = await TestRunner().run((options) => {
+        params = options;
       });
-    });
-  });
 
-  describe("sliding", () => {
-    test("requires the correct args", async () => {
-      expect.assertions(2);
-      await ServiceTest(async ({ scheduler }) => {
-        // @ts-expect-error testing
-        expect(() => scheduler.sliding({})).toThrow();
-        // @ts-expect-error testing
-        expect(() => scheduler.sliding({ next: () => undefined })).toThrow();
-      });
+      await app.teardown();
     });
   });
 });

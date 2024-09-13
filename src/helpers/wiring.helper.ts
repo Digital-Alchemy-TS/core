@@ -336,12 +336,7 @@ export type BootstrapOptions = {
   /**
    * fine tine the built in logger
    */
-  loggerOptions?: {
-    /**
-     * > default: ddd HH:mm:ss.SSS
-     */
-    timestamp_format?: string;
-  };
+  loggerOptions?: LoggerOptions;
 
   /**
    * Show detailed boot time statistics
@@ -354,6 +349,13 @@ export type BootstrapOptions = {
    * Default: `.env`
    */
   envFile?: string;
+};
+
+export type LoggerOptions = {
+  /**
+   * > default: ddd HH:mm:ss.SSS
+   */
+  timestamp_format?: string;
 };
 
 export const WIRE_PROJECT = Symbol.for("wire-project");

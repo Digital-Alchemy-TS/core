@@ -178,12 +178,11 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
               .join("\n");
         }
         if (["warn", "error", "fatal"].includes(key)) {
-          // eslint-disable-next-line no-console
-          console.error(message);
+          global.console.error(message);
           return;
         }
-        // eslint-disable-next-line no-console
-        console.log(message);
+
+        global.console.log(message);
       };
     });
     // #endregion

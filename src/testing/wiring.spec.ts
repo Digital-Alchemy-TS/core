@@ -646,6 +646,25 @@ describe("Wiring", () => {
 
   // #region Teardown
   describe("Teardown", () => {
+    it("shouldn't process double teardown", async () => {
+      expect.assertions(1);
+      const spy = jest
+        .spyOn(global.console, "error")
+        .mockImplementation(() => undefined);
+      await TestRunner()
+        .configure({ forceTeardown: true })
+        .run(({ lifecycle }) => {
+          lifecycle.onPreShutdown(() => {
+            throw new Error("test");
+          });
+        });
+
+      expect(spy).toHaveBeenCalledWith(
+        expect.any(Object),
+        "error occurred during teardown, some lifecycle events may be incomplete",
+      );
+    });
+
     it("phase should be teardown after teardown starts", async () => {
       expect.assertions(1);
 

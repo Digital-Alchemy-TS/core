@@ -14,6 +14,7 @@ import {
   LIB_BOILERPLATE,
   LifecycleStages,
   MINUTE,
+  NONE,
   OptionalModuleConfiguration,
   SECOND,
   ServiceMap,
@@ -45,7 +46,11 @@ export class InternalUtils {
    * **NOTE:** bootstrapping process will initialize this at boot, and cleanup at teardown.
    * Making listener changes should only be done from within the context of service functions
    */
-  public event = new EventEmitter();
+  public event: EventEmitter;
+  constructor() {
+    this.event = new EventEmitter();
+    this.event.setMaxListeners(NONE);
+  }
 
   public titleCase(input: string): string {
     const matches = input.match(new RegExp("[a-z][A-Z]", "g"));
@@ -55,7 +60,7 @@ export class InternalUtils {
     return input
       .split(new RegExp("[ _-]"))
       .map(
-        (word = "") =>
+        (word) =>
           `${word.charAt(FIRST).toUpperCase()}${word.slice(EVERYTHING_ELSE)}`,
       )
       .join(" ");
@@ -73,11 +78,16 @@ export class InternalUtils {
       ["minute", MINUTE],
       ["second", SECOND],
     ]);
-
-    if (!pastDate) {
-      return `NOT A DATE ${pastDate} ${JSON.stringify(pastDate)}`;
+    const past = dayjs(pastDate);
+    if (!past.isValid()) {
+      throw new Error("invalid past date " + pastDate);
     }
-    const elapsed = dayjs(pastDate).diff(futureDate, "ms");
+    const future = dayjs(futureDate);
+    if (!future.isValid()) {
+      throw new Error("invalid future date " + pastDate);
+    }
+
+    const elapsed = past.diff(future, "ms");
     let out = "";
 
     [...UNITS.keys()].some((unit) => {

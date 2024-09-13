@@ -1,5 +1,6 @@
 import { CreateApplication } from "..";
-import { BASIC_BOOT, ServiceTest } from "./testing.helper";
+import { TestRunner } from "./helpers";
+import { BASIC_BOOT } from "./testing.helper";
 
 describe("Fetch Extension", () => {
   beforeAll(async () => {
@@ -13,67 +14,109 @@ describe("Fetch Extension", () => {
     jest.restoreAllMocks();
   });
 
-  describe("TitleCase", () => {
-    test("converts single word to title case", async () => {
+  describe("relativeDate", () => {
+    describe("relativeDate", () => {
+      it("should return the correct relative time for a valid past date", async () => {
+        await TestRunner().run(({ internal }) => {
+          const pastDate = "2023-09-01T00:00:00.000Z";
+          const futureDate = "2024-09-01T00:00:00.000Z";
+          const result = internal.utils.relativeDate(pastDate, futureDate);
+          expect(result).toBe("last yr.");
+        });
+      });
+
+      it("should default to current date when futureDate is not provided", async () => {
+        await TestRunner().run(({ internal }) => {
+          const pastDate = new Date(
+            Date.now() - 24 * 60 * 60 * 1000,
+          ).toISOString();
+          const result = internal.utils.relativeDate(pastDate);
+          expect(result).toBe("24 hr. ago");
+        });
+      });
+
+      it("should throw an error for an invalid past date", async () => {
+        await TestRunner().run(({ internal }) => {
+          const invalidPastDate = "invalid-date";
+          expect(() => internal.utils.relativeDate(invalidPastDate)).toThrow(
+            "invalid past date invalid-date",
+          );
+        });
+      });
+
+      it("should throw an error for an invalid future date", async () => {
+        await TestRunner().run(({ internal }) => {
+          const pastDate = "2023-09-01T00:00:00.000Z";
+          const invalidFutureDate = "invalid-date";
+          expect(() =>
+            internal.utils.relativeDate(pastDate, invalidFutureDate),
+          ).toThrow("invalid future date 2023-09-01T00:00:00.000Z");
+        });
+      });
+    });
+  });
+
+  describe("titleCase", () => {
+    it("converts single word to title case", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
         expect(internal.utils.titleCase("word")).toBe("Word");
       });
     });
 
-    test("converts multiple words separated by spaces to title case", async () => {
+    it("converts multiple words separated by spaces to title case", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
         expect(internal.utils.titleCase("multiple words here")).toBe(
           "Multiple Words Here",
         );
       });
     });
 
-    test("converts multiple words separated by underscores to title case", async () => {
+    it("converts multiple words separated by underscores to title case", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
         expect(internal.utils.titleCase("multiple_words_here")).toBe(
           "Multiple Words Here",
         );
       });
     });
 
-    test("converts multiple words separated by hyphens to title case", async () => {
+    it("converts multiple words separated by hyphens to title case", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
         expect(internal.utils.titleCase("multiple-words-here")).toBe(
           "Multiple Words Here",
         );
       });
     });
 
-    test("inserts spaces between camel case words and converts to title case", async () => {
+    it("inserts spaces between camel case words and converts to title case", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
         expect(internal.utils.titleCase("camelCaseWordsHere")).toBe(
           "Camel Case Words Here",
         );
       });
     });
 
-    test("handles empty string input", async () => {
+    it("handles empty string input", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
         expect(internal.utils.titleCase("")).toBe("");
       });
     });
 
-    test("handles single character input", async () => {
+    it("handles single character input", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
         expect(internal.utils.titleCase("a")).toBe("A");
       });
     });
 
-    test("handles input with mixed delimiters", async () => {
+    it("handles input with mixed delimiters", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
         expect(internal.utils.titleCase("mixed_delimiters-here now")).toBe(
           "Mixed Delimiters Here Now",
         );
@@ -81,77 +124,111 @@ describe("Fetch Extension", () => {
     });
   });
 
-  describe("internal.utils.object.del", () => {
-    test("deletes a top-level property", async () => {
+  describe("internal.utils.object.set", () => {
+    it("throws for setting non-objects", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
+        expect(() => {
+          internal.utils.object.set(null, "a", "b");
+        }).toThrow();
+      });
+    });
+
+    it("respects doNotReplace", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const data = { a: { b: { c: false } } };
+        internal.utils.object.set(data, "a", false, true);
+        expect(typeof data.a.b).toBe("object");
+      });
+    });
+  });
+
+  describe("internal.utils.object.del", () => {
+    it("deletes a top-level property", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
         const object = { a: 1, b: 2 };
         internal.utils.object.del(object, "a");
         expect(object).toEqual({ b: 2 });
       });
     });
 
-    test("deletes a nested property", async () => {
+    it("deletes a nested property", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
         const object = { a: { b: { c: 3 } } };
         internal.utils.object.del(object, "a.b.c");
         expect(object).toEqual({ a: { b: {} } });
       });
     });
 
-    test("does nothing if the path does not exist", async () => {
+    it("does nothing if the path does not exist", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
         const object = { a: { b: { c: 3 } } };
         internal.utils.object.del(object, "a.b.x");
         expect(object).toEqual({ a: { b: { c: 3 } } });
       });
     });
 
-    test("handles path to a non-object gracefully", async () => {
+    it("handles path to a non-object gracefully", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
         const object = { a: 1 };
         internal.utils.object.del(object, "a.b.c");
         expect(object).toEqual({ a: 1 });
       });
     });
 
-    test("handles deleting from an empty path", async () => {
+    it("handles deleting from an empty path", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
         const object = { a: 1 };
         internal.utils.object.del(object, "");
         expect(object).toEqual({ a: 1 });
       });
     });
 
-    test("handles null or undefined values in the path", async () => {
+    it("handles null or undefined values in the path", async () => {
       expect.assertions(1);
-      await ServiceTest(({ internal }) => {
+      await TestRunner().run(({ internal }) => {
         const object = { a: { b: null } } as object;
         internal.utils.object.del(object, "a.b.c");
         expect(object).toEqual({ a: { b: null } });
       });
     });
+
+    it("handles null or undefined values in the path", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        expect(() => {
+          internal.utils.object.del(null, "a.b.c");
+        }).not.toThrow();
+      });
+    });
   });
 
   describe("internal.safeExec", () => {
-    test("executes the provided function successfully", async () => {
+    it("executes the provided function successfully", async () => {
       expect.assertions(1);
-      await ServiceTest(async ({ internal }) => {
+      await TestRunner().run(async ({ internal }) => {
         const mockFunction = jest.fn();
-
         await internal.safeExec(mockFunction);
-
         expect(mockFunction).toHaveBeenCalled();
       });
     });
 
-    test("catches and logs errors thrown by the provided function", async () => {
+    it("executes the provided function successfully", async () => {
+      expect.assertions(1);
+      await TestRunner().run(async ({ internal }) => {
+        expect(await internal.safeExec(undefined)).toBeUndefined();
+      });
+    });
+
+    it("catches and logs errors thrown by the provided function", async () => {
       expect.assertions(2);
-      await ServiceTest(async ({ internal }) => {
+      await TestRunner().run(async ({ internal }) => {
         const mockFunction = jest.fn().mockImplementation(() => {
           throw new Error("Test error");
         });

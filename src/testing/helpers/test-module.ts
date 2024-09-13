@@ -7,6 +7,7 @@ import {
   deepExtend,
   LibraryDefinition,
   ModuleConfiguration,
+  NONE,
   OptionalModuleConfiguration,
   PartialConfiguration,
   ServiceFunction,
@@ -55,6 +56,11 @@ type TestingBootstrapOptions = {
    * default values to use for configurations, before user values come in
    */
   configuration?: PartialConfiguration;
+
+  /**
+   * manually call teardown before finishing the test
+   */
+  forceTeardown?: boolean;
 };
 
 type TestExtras = {
@@ -79,6 +85,7 @@ export function TestRunner<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
 >({ library, name }: CreateTestingLibraryOptions<S, C> = {}) {
+  process.setMaxListeners(NONE);
   let bootOptions: TestingBootstrapOptions = {};
   let extra: TestExtras = {};
   const appendLibraries = new Map<string, TLibrary>();
@@ -187,6 +194,10 @@ export function TestRunner<
               warn: jest.fn(),
             },
       });
+
+      if (bootOptions?.forceTeardown) {
+        await app.teardown();
+      }
     },
     setup(service: ServiceFunction) {
       runFirst.add(service);

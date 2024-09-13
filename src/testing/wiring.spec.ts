@@ -12,8 +12,9 @@ import {
   sleep,
   TServiceParams,
 } from "..";
+import { TestRunner } from "./helpers";
 
-const FAKE_EXIT = (() => {}) as () => never;
+export const FAKE_EXIT = (() => {}) as () => never;
 
 const BASIC_BOOT = {
   configuration: { boilerplate: { LOG_LEVEL: "silent" } },
@@ -36,11 +37,13 @@ describe("Wiring", () => {
   // #region CreateLibrary
   describe("CreateLibrary", () => {
     it("should be defined", () => {
+      expect.assertions(2);
       expect(CreateLibrary).toBeDefined();
       expect(CreateApplication).toBeDefined();
     });
 
     it("should create a library without services", () => {
+      expect.assertions(3);
       const library = CreateLibrary({
         // @ts-expect-error For unit testing
         name: "testing",
@@ -53,6 +56,7 @@ describe("Wiring", () => {
     });
 
     it("throws an error with invalid service definition", () => {
+      expect.assertions(1);
       expect(() => {
         CreateLibrary({
           // @ts-expect-error For unit testing
@@ -63,6 +67,7 @@ describe("Wiring", () => {
     });
 
     it("creates multiple libraries with distinct configurations", () => {
+      expect.assertions(1);
       const libraryOne = CreateLibrary({
         // @ts-expect-error For unit testing
         name: "testing",
@@ -77,6 +82,7 @@ describe("Wiring", () => {
     });
 
     it("throws a BootstrapException for an invalid service definition in a library", () => {
+      expect.assertions(1);
       expect(() => {
         CreateLibrary({
           // @ts-expect-error For unit testing
@@ -87,6 +93,7 @@ describe("Wiring", () => {
     });
 
     it("throws a BootstrapException if no name is provided for the library", () => {
+      expect.assertions(1);
       expect(() => {
         // @ts-expect-error that's the test
         CreateLibrary({ name: "", services: {} });
@@ -98,6 +105,7 @@ describe("Wiring", () => {
   // #region CreateApplication
   describe("CreateApplication", () => {
     it("should create an application with specified services and libraries", () => {
+      expect.assertions(5);
       const testService = jest.fn();
       const testLibrary = CreateLibrary({
         // @ts-expect-error For unit testing
@@ -230,35 +238,24 @@ describe("Wiring", () => {
     });
 
     it("should call the lifecycle events in order during application bootstrap", async () => {
-      // Spy on lifecycle event functions
+      expect.assertions(5);
       const spyPreInit = jest.fn();
       const spyPostConfig = jest.fn();
       const spyBootstrap = jest.fn();
       const spyReady = jest.fn();
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error For unit testing
-        name: "testing",
-        services: {
-          spy({ lifecycle }: TServiceParams) {
-            lifecycle.onPreInit(() => spyPreInit());
-            lifecycle.onPostConfig(() => spyPostConfig());
-            lifecycle.onBootstrap(() => spyBootstrap());
-            lifecycle.onReady(() => spyReady());
-          },
-        },
+
+      await TestRunner().run(({ lifecycle }) => {
+        lifecycle.onPreInit(spyPreInit);
+        lifecycle.onPostConfig(spyPostConfig);
+        lifecycle.onBootstrap(spyBootstrap);
+        lifecycle.onReady(spyReady);
       });
 
-      // Bootstrap the application
-      await application.bootstrap(BASIC_BOOT);
-
-      // Check that the lifecycle event functions were called
       expect(spyPreInit).toHaveBeenCalled();
       expect(spyPostConfig).toHaveBeenCalled();
       expect(spyBootstrap).toHaveBeenCalled();
       expect(spyReady).toHaveBeenCalled();
 
-      // Optionally, check the calling order
       const callOrder = [
         spyPreInit.mock.invocationCallOrder[0],
         spyPostConfig.mock.invocationCallOrder[0],
@@ -269,235 +266,139 @@ describe("Wiring", () => {
     });
 
     it("executes lifecycle callbacks in the correct order", async () => {
-      // Mock callbacks for each lifecycle stage
+      expect.assertions(3);
       const mockPreInit = jest.fn();
       const mockPostConfig = jest.fn();
       const mockBootstrap = jest.fn();
       const mockReady = jest.fn();
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error For unit testing
-        name: "testing",
-        services: {
-          spy({ lifecycle }: TServiceParams) {
-            lifecycle.onPreInit(() => mockPreInit());
-            lifecycle.onPostConfig(() => mockPostConfig());
-            lifecycle.onBootstrap(() => mockBootstrap());
-            lifecycle.onReady(() => mockReady());
-          },
-        },
+
+      await TestRunner().run(({ lifecycle }) => {
+        lifecycle.onPreInit(mockPreInit);
+        lifecycle.onPostConfig(mockPostConfig);
+        lifecycle.onBootstrap(mockBootstrap);
+        lifecycle.onReady(mockReady);
       });
 
-      // Bootstrap the application
-      await application.bootstrap(BASIC_BOOT);
-
-      // Retrieve the order in which the mocks were called
       const preInitOrder = mockPreInit.mock.invocationCallOrder[0];
       const postConfigOrder = mockPostConfig.mock.invocationCallOrder[0];
       const bootstrapOrder = mockBootstrap.mock.invocationCallOrder[0];
       const readyOrder = mockReady.mock.invocationCallOrder[0];
 
-      // Verify the order of callback execution
       expect(preInitOrder).toBeLessThan(postConfigOrder);
       expect(postConfigOrder).toBeLessThan(bootstrapOrder);
       expect(bootstrapOrder).toBeLessThan(readyOrder);
     });
 
     it("registers and invokes lifecycle callbacks correctly", async () => {
+      expect.assertions(1);
       const mockCallback = jest.fn();
 
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error For unit testing
-        name: "testing",
-        services: {
-          spy({ lifecycle }: TServiceParams) {
-            lifecycle.onBootstrap(() => mockCallback());
-          },
-        },
+      await TestRunner().run(({ lifecycle }) => {
+        lifecycle.onBootstrap(mockCallback);
       });
 
-      // Bootstrap the application
-      await application.bootstrap(BASIC_BOOT);
-
-      // Check if the mock callback was invoked
       expect(mockCallback).toHaveBeenCalled();
     });
 
     it("exits on catastrophic bootstrap errors", async () => {
-      const errorMock = jest.fn().mockImplementation(() => {
+      expect.assertions(1);
+      const errorMock = jest.fn(() => {
         throw new Error("EXPECTED_UNIT_TESTING_ERROR");
       });
+      jest.spyOn(console, "error").mockImplementation(() => {});
+      const exitSpy = jest.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
 
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error For unit testing
-        name: "testing",
-        services: {
-          spy({ lifecycle }: TServiceParams) {
-            lifecycle.onBootstrap(() => errorMock());
-          },
-        },
+      await TestRunner().run(({ lifecycle }) => {
+        lifecycle.onBootstrap(errorMock);
       });
 
-      jest.spyOn(console, "error").mockImplementation(() => {});
-      const failFastSpy = jest
-        .spyOn(process, "exit")
-        .mockImplementation(FAKE_EXIT);
-
-      // Execute the Bootstrap function
-      await application.bootstrap(BASIC_BOOT);
-
-      // Check if FailFast was called
-      expect(failFastSpy).toHaveBeenCalled();
+      expect(exitSpy).toHaveBeenCalled();
     });
 
     it("higher numbers go first (positive)", async () => {
-      const executionOrder: string[] = [];
+      expect.assertions(1);
+      const order: string[] = [];
 
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error For unit testing
-        name: "testing",
-        services: {
-          spy({ lifecycle }: TServiceParams) {
-            lifecycle.onBootstrap(
-              () => executionOrder.push("LowPriorityBootstrap"),
-              1,
-            );
-            lifecycle.onBootstrap(
-              () => executionOrder.push("HighPriorityBootstrap"),
-              10,
-            );
-          },
-        },
+      await TestRunner().run(({ lifecycle }) => {
+        lifecycle.onBootstrap(() => order.push("LowPriority"), 1);
+        lifecycle.onBootstrap(() => order.push("HighPriority"), 10);
       });
 
-      await application.bootstrap(BASIC_BOOT);
-
-      // Define the expected order based on priorities
-      const expectedOrder = ["HighPriorityBootstrap", "LowPriorityBootstrap"];
-
-      // Compare the actual execution order with the expected order
-      expect(executionOrder).toEqual(expectedOrder);
+      expect(order).toEqual(["HighPriority", "LowPriority"]);
     });
 
     it("lower numbers go later (negative)", async () => {
-      const executionOrder: string[] = [];
+      expect.assertions(1);
+      const order: string[] = [];
 
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error For unit testing
-        name: "testing",
-        services: {
-          spy({ lifecycle }: TServiceParams) {
-            lifecycle.onBootstrap(
-              () => executionOrder.push("LowPriorityBootstrap"),
-              -10,
-            );
-            lifecycle.onBootstrap(
-              () => executionOrder.push("HighPriorityBootstrap"),
-              -1,
-            );
-          },
-        },
+      await TestRunner().run(({ lifecycle }) => {
+        lifecycle.onBootstrap(() => order.push("LowPriority"), -10);
+        lifecycle.onBootstrap(() => order.push("HighPriority"), -1);
       });
 
-      await application.bootstrap(BASIC_BOOT);
-
-      // Define the expected order based on priorities
-      const expectedOrder = ["HighPriorityBootstrap", "LowPriorityBootstrap"];
-
-      // Compare the actual execution order with the expected order
-      expect(executionOrder).toEqual(expectedOrder);
+      expect(order).toEqual(["HighPriority", "LowPriority"]);
     });
 
     describe("Completed events", () => {
       it("starts off empty", async () => {
+        expect.assertions(1);
         let list: LifecycleStages[];
-        application = CreateApplication({
-          configurationLoaders: [],
-          // @ts-expect-error Testing
-          name: "testing",
-          services: {
-            Test({ lifecycle, internal }: TServiceParams) {
-              lifecycle.onPreInit(
-                () => (list = [...internal.boot.completedLifecycleEvents]),
-              );
-            },
-          },
+
+        await TestRunner().run(({ lifecycle, internal }) => {
+          lifecycle.onPreInit(
+            () => (list = [...internal.boot.completedLifecycleEvents]),
+          );
         });
-        await application.bootstrap(BASIC_BOOT);
+
         expect(list).toEqual([]);
       });
 
       it("tracks onPreInit", async () => {
+        expect.assertions(1);
         let list: LifecycleStages[];
-        application = CreateApplication({
-          configurationLoaders: [],
-          // @ts-expect-error Testing
-          name: "testing",
-          services: {
-            Test({ lifecycle, internal }: TServiceParams) {
-              lifecycle.onPostConfig(
-                () => (list = [...internal.boot.completedLifecycleEvents]),
-              );
-            },
-          },
+
+        await TestRunner().run(({ lifecycle, internal }) => {
+          lifecycle.onPostConfig(
+            () => (list = [...internal.boot.completedLifecycleEvents]),
+          );
         });
-        await application.bootstrap(BASIC_BOOT);
+
         expect(list).toEqual(["PreInit"]);
       });
 
       it("tracks onPostConfig", async () => {
+        expect.assertions(1);
         let list: LifecycleStages[];
-        application = CreateApplication({
-          configurationLoaders: [],
-          // @ts-expect-error Testing
-          name: "testing",
-          services: {
-            Test({ lifecycle, internal }: TServiceParams) {
-              lifecycle.onBootstrap(
-                () => (list = [...internal.boot.completedLifecycleEvents]),
-              );
-            },
-          },
+
+        await TestRunner().run(({ lifecycle, internal }) => {
+          lifecycle.onBootstrap(
+            () => (list = [...internal.boot.completedLifecycleEvents]),
+          );
         });
-        await application.bootstrap(BASIC_BOOT);
+
         expect(list).toEqual(["PreInit", "PostConfig"]);
       });
 
       it("tracks onPreInit", async () => {
+        expect.assertions(1);
         let list: LifecycleStages[];
-        application = CreateApplication({
-          configurationLoaders: [],
-          // @ts-expect-error Testing
-          name: "testing",
-          services: {
-            Test({ lifecycle, internal }: TServiceParams) {
-              lifecycle.onReady(
-                () => (list = [...internal.boot.completedLifecycleEvents]),
-              );
-            },
-          },
+
+        await TestRunner().run(({ lifecycle, internal }) => {
+          lifecycle.onReady(
+            () => (list = [...internal.boot.completedLifecycleEvents]),
+          );
         });
-        await application.bootstrap(BASIC_BOOT);
+
         expect(list).toEqual(["PreInit", "PostConfig", "Bootstrap"]);
       });
 
       it("tracks ready", async () => {
         let i: InternalDefinition;
-        application = CreateApplication({
-          configurationLoaders: [],
-          // @ts-expect-error Testing
-          name: "testing",
-          services: {
-            Test({ internal }: TServiceParams) {
-              i = internal;
-            },
-          },
+
+        await TestRunner().run(({ internal }) => {
+          i = internal;
         });
-        await application.bootstrap(BASIC_BOOT);
+
         expect([...i.boot.completedLifecycleEvents.values()]).toEqual([
           "PreInit",
           "PostConfig",
@@ -507,42 +408,33 @@ describe("Wiring", () => {
       });
 
       it("does not change by start of teardown", async () => {
+        expect.assertions(1);
         let list: LifecycleStages[];
-        application = CreateApplication({
-          configurationLoaders: [],
-          // @ts-expect-error Testing
-          name: "testing",
-          services: {
-            Test({ lifecycle, internal }: TServiceParams) {
-              lifecycle.onPreShutdown(
-                () => (list = [...internal.boot.completedLifecycleEvents]),
-              );
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
-        await application.teardown();
+
+        await TestRunner()
+          .configure({ forceTeardown: true })
+          .run(({ lifecycle, internal }) => {
+            lifecycle.onPreShutdown(
+              () => (list = [...internal.boot.completedLifecycleEvents]),
+            );
+          });
+
         application = undefined;
         expect(list).toEqual(["PreInit", "PostConfig", "Bootstrap", "Ready"]);
       });
 
       it("tracks preShutdown", async () => {
+        expect.assertions(1);
         let list: LifecycleStages[];
-        application = CreateApplication({
-          configurationLoaders: [],
-          // @ts-expect-error Testing
-          name: "testing",
-          services: {
-            Test({ lifecycle, internal }: TServiceParams) {
-              lifecycle.onShutdownStart(
-                () => (list = [...internal.boot.completedLifecycleEvents]),
-              );
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
-        await application.teardown();
-        application = undefined;
+
+        await TestRunner()
+          .configure({ forceTeardown: true })
+          .run(({ lifecycle, internal }) => {
+            lifecycle.onShutdownStart(
+              () => (list = [...internal.boot.completedLifecycleEvents]),
+            );
+          });
+
         expect(list).toEqual([
           "PreInit",
           "PostConfig",
@@ -553,22 +445,17 @@ describe("Wiring", () => {
       });
 
       it("tracks shutdownStart", async () => {
+        expect.assertions(1);
         let list: LifecycleStages[];
-        application = CreateApplication({
-          configurationLoaders: [],
-          // @ts-expect-error Testing
-          name: "testing",
-          services: {
-            Test({ lifecycle, internal }: TServiceParams) {
-              lifecycle.onShutdownComplete(
-                () => (list = [...internal.boot.completedLifecycleEvents]),
-              );
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
-        await application.teardown();
-        application = undefined;
+
+        await TestRunner()
+          .configure({ forceTeardown: true })
+          .run(({ lifecycle, internal }) => {
+            lifecycle.onShutdownComplete(
+              () => (list = [...internal.boot.completedLifecycleEvents]),
+            );
+          });
+
         expect(list).toEqual([
           "PreInit",
           "PostConfig",
@@ -580,19 +467,15 @@ describe("Wiring", () => {
       });
 
       it("tracks shutdownComplete", async () => {
+        expect.assertions(1);
         let i: InternalDefinition;
-        application = CreateApplication({
-          configurationLoaders: [],
-          // @ts-expect-error Testing
-          name: "testing",
-          services: {
-            Test({ internal }: TServiceParams) {
-              i = internal;
-            },
-          },
-        });
-        await application.bootstrap(BASIC_BOOT);
-        await application.teardown();
+
+        await TestRunner()
+          .configure({ forceTeardown: true })
+          .run(({ internal }) => {
+            i = internal;
+          });
+
         expect([...i.boot.completedLifecycleEvents.values()]).toEqual([
           "PreInit",
           "PostConfig",
@@ -610,66 +493,65 @@ describe("Wiring", () => {
   // #region Bootstrap
   describe("Bootstrap", () => {
     it("constructs app in between boot and ready for bootLibrariesFirst", async () => {
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Test({ internal }: TServiceParams) {
-            expect(
-              internal.boot.completedLifecycleEvents.has("Bootstrap"),
-            ).toBe(true);
-            expect(internal.boot.completedLifecycleEvents.has("PreInit")).toBe(
-              true,
-            );
-            expect(
-              internal.boot.completedLifecycleEvents.has("PostConfig"),
-            ).toBe(true);
-            expect(internal.boot.completedLifecycleEvents.has("Ready")).toBe(
-              false,
-            );
-          },
-        },
-      });
-      //
-      await application.bootstrap({ ...BASIC_BOOT, bootLibrariesFirst: true });
+      expect.assertions(4);
+      await TestRunner()
+        .configure({ bootLibrariesFirst: true })
+        .run(({ internal }) => {
+          expect(internal.boot.completedLifecycleEvents.has("Bootstrap")).toBe(
+            true,
+          );
+          expect(internal.boot.completedLifecycleEvents.has("PreInit")).toBe(
+            true,
+          );
+          expect(internal.boot.completedLifecycleEvents.has("PostConfig")).toBe(
+            true,
+          );
+          expect(internal.boot.completedLifecycleEvents.has("Ready")).toBe(
+            false,
+          );
+        });
     });
 
     it("should prioritize services with priorityInit", async () => {
+      expect.assertions(1);
       const list = [] as string[];
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        priorityInit: ["First", "Second"],
-        services: {
-          First() {
-            list.push("First");
-          },
-          Second() {
-            list.push("Second");
-          },
-          Third() {
-            list.push("Third");
-          },
-        },
-      });
-      //
-      await application.bootstrap(BASIC_BOOT);
+
+      await TestRunner()
+        .appendLibrary(
+          CreateLibrary({
+            // @ts-expect-error testing
+            name: "library",
+            services: {
+              First() {
+                list.push("First");
+              },
+              Second() {
+                list.push("Second");
+              },
+              Third() {
+                list.push("Third");
+              },
+            },
+          }),
+        )
+        .run(() => undefined);
       expect(list).toStrictEqual(["First", "Second", "Third"]);
     });
 
-    it("throws errors with missing priority services", async () => {
-      expect(() => {
-        CreateApplication({
-          configurationLoaders: [],
-          // @ts-expect-error Testing
-          name: "testing",
-          priorityInit: ["Testing"],
-          services: {
-            NotTesting() {},
-          },
-        });
+    fit("throws errors with missing priority services", async () => {
+      expect.assertions(1);
+      expect(async () => {
+        await TestRunner()
+          .appendLibrary(
+            CreateLibrary({
+              // @ts-expect-error testing
+              name: "library",
+              // @ts-expect-error testing
+              priorityInit: ["missing"],
+              services: {},
+            }),
+          )
+          .run(() => undefined);
       }).toThrow("MISSING_PRIORITY_SERVICE");
     });
 

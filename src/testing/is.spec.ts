@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+
 import { is } from "../extensions";
 
 describe("IsIt class", () => {
@@ -21,6 +23,11 @@ describe("IsIt class", () => {
   test("is.date returns true for Date objects", () => {
     expect(is.date(new Date())).toBe(true);
     expect(is.date("not a date")).toBe(false);
+  });
+
+  test("is.dayjs returns true for dayjs objects", () => {
+    expect(is.dayjs(new Date())).toBe(false);
+    expect(is.dayjs(dayjs())).toBe(true);
   });
 
   describe("is.empty", () => {

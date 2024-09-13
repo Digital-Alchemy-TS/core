@@ -14,6 +14,7 @@ import {
   GetApis,
   GetApisResult,
   LoadedModules,
+  NONE,
   OptionalModuleConfiguration,
   ServiceFunction,
   ServiceMap,
@@ -313,6 +314,7 @@ async function bootstrap<
     STATS.Construct = CONSTRUCT;
     // * Recreate base eventemitter
     internal.utils.event = new EventEmitter();
+    internal.utils.event.setMaxListeners(NONE);
     // ? Some libraries need to be aware of
 
     // * Generate a new boilerplate module

@@ -22,6 +22,7 @@ import {
 import { ConfigTesting } from "./config-testing.extension";
 import { createMockLogger, TestRunner } from "./helpers";
 import { BASIC_BOOT } from "./testing.helper";
+import { FAKE_EXIT } from "./wiring.spec";
 
 describe("Configuration", () => {
   let application: ApplicationDefinition<
@@ -621,8 +622,7 @@ describe("Configuration", () => {
       const spy = jest
         .spyOn(global.console, "error")
         .mockImplementation(() => undefined);
-      // @ts-expect-error i don't care
-      const exitSpy = jest.spyOn(process, "exit").mockImplementation(() => {});
+      const exitSpy = jest.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
       try {
         await TestRunner()
           .appendLibrary(

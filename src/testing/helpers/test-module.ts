@@ -2,6 +2,7 @@ import { v4 } from "uuid";
 
 import { CreateApplication, is } from "../../extensions";
 import {
+  ApplicationDefinition,
   ConfigLoader,
   CreateLibrary,
   deepExtend,
@@ -71,7 +72,9 @@ export type TestingLibrary = {
   extras: (options: TestExtras) => TestingLibrary;
   configure: (options: TestingBootstrapOptions) => TestingLibrary;
   setup: (test: ServiceFunction) => TestingLibrary;
-  run: (test: ServiceFunction) => Promise<void>;
+  run: (
+    test: ServiceFunction,
+  ) => Promise<ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>>;
   appendLibrary: (library: TLibrary) => TestingLibrary;
   appendService: (service: ServiceFunction, name?: string) => TestingLibrary;
   replaceLibrary: (name: string, library: TLibrary) => TestingLibrary;
@@ -198,6 +201,8 @@ export function TestRunner<
       if (bootOptions?.forceTeardown) {
         await app.teardown();
       }
+
+      return app;
     },
     setup(service: ServiceFunction) {
       runFirst.add(service);

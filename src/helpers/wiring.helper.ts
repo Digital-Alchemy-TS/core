@@ -521,7 +521,8 @@ export function wireOrder<T extends string>(priority: T[], list: T[]): T[] {
       );
     }
   }
-  return [...out, ...list.filter((i) => !out.includes(i))];
+  const temporary = [...out, ...list.filter((i) => !out.includes(i))];
+  return temporary;
 }
 
 export function CreateLibrary<
@@ -538,6 +539,18 @@ export function CreateLibrary<
   validateLibrary(libraryName, services);
 
   const serviceApis = {} as GetApisResult<ServiceMap>;
+
+  if (!is.empty(priorityInit)) {
+    priorityInit.forEach((name) => {
+      if (!is.function(services[name])) {
+        throw new BootstrapException(
+          WIRING_CONTEXT,
+          "MISSING_PRIORITY_SERVICE",
+          `${name} was listed as priority init, but was not found in services`,
+        );
+      }
+    });
+  }
 
   const library = {
     [WIRE_PROJECT]: async (

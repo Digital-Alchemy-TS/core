@@ -5,7 +5,6 @@ import {
   CreateApplication,
   CreateLibrary,
   InternalDefinition,
-  LIB_BOILERPLATE,
   LifecycleStages,
   OptionalModuleConfiguration,
   ServiceMap,
@@ -538,36 +537,42 @@ describe("Wiring", () => {
       expect(list).toStrictEqual(["First", "Second", "Third"]);
     });
 
-    fit("throws errors with missing priority services", async () => {
+    it("throws errors with missing priority services in apps", async () => {
       expect.assertions(1);
-      expect(async () => {
-        await TestRunner()
-          .appendLibrary(
-            CreateLibrary({
-              // @ts-expect-error testing
-              name: "library",
-              // @ts-expect-error testing
-              priorityInit: ["missing"],
-              services: {},
-            }),
-          )
-          .run(() => undefined);
+      expect(() => {
+        CreateApplication({
+          // @ts-expect-error testing
+          name: "library",
+          // @ts-expect-error testing
+          priorityInit: ["missing"],
+          services: {},
+        });
+      }).toThrow("MISSING_PRIORITY_SERVICE");
+    });
+
+    it("throws errors with missing priority libraries", async () => {
+      expect.assertions(1);
+      expect(() => {
+        CreateLibrary({
+          // @ts-expect-error testing
+          name: "library",
+          // @ts-expect-error testing
+          priorityInit: ["missing"],
+          services: {},
+        });
       }).toThrow("MISSING_PRIORITY_SERVICE");
     });
 
     it("sets booted after finishing bootstrap", async () => {
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {},
-      });
-      await application.bootstrap(BASIC_BOOT);
+      expect.assertions(1);
 
-      expect(application.booted).toBe(true);
+      const app = await TestRunner().run(() => undefined);
+
+      expect(app.booted).toBe(true);
     });
 
     it("forbids double booting", async () => {
+      expect.assertions(1);
       application = CreateApplication({
         configurationLoaders: [],
         // @ts-expect-error Testing
@@ -577,7 +582,6 @@ describe("Wiring", () => {
       await application.bootstrap(BASIC_BOOT);
 
       // I guess this works 🤷‍♀️
-      expect.assertions(1);
       try {
         await application.bootstrap(BASIC_BOOT);
       } catch (error) {
@@ -590,107 +594,52 @@ describe("Wiring", () => {
   // #region Boot Phase
   describe("Boot Phase", () => {
     it("should exit if service constructor throws error", async () => {
+      expect.assertions(1);
       const spy = jest
         .spyOn(process, "exit")
         .mockImplementation(() => undefined as never);
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Service() {
-            throw new Error("boom");
-          },
-        },
-      });
-      await application.bootstrap(BASIC_BOOT);
+      jest.spyOn(global.console, "error").mockImplementation(() => undefined);
 
+      await TestRunner().run(() => {
+        throw new Error("boom");
+      });
       expect(spy).toHaveBeenCalled();
     });
 
     it("should not have project name in construction complete prior to completion", async () => {
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Service({ internal }: TServiceParams) {
-            expect(internal.boot.constructComplete.has("testing")).toBe(false);
-          },
-        },
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        expect(internal.boot.constructComplete.has("testing")).toBe(false);
       });
-      await application.bootstrap(BASIC_BOOT);
     });
 
     it("should add project name to complete", async () => {
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Service({ internal, lifecycle }: TServiceParams) {
-            lifecycle.onPreInit(() => {
-              expect(internal.boot.constructComplete.has("testing")).toBe(true);
-            });
-          },
-        },
+      expect.assertions(1);
+
+      await TestRunner().run(({ internal, lifecycle }) => {
+        lifecycle.onPreInit(() => {
+          expect(internal.boot.constructComplete.has("testing")).toBe(true);
+        });
       });
-      await application.bootstrap(BASIC_BOOT);
     });
 
     it("phase should be bootstrap during boot", async () => {
-      let i: string;
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Service({ internal }: TServiceParams) {
-            i = internal.boot.phase;
-          },
-        },
-      });
-      await application.bootstrap(BASIC_BOOT);
+      expect.assertions(1);
 
-      expect(i).toBe("bootstrap");
+      await TestRunner().run(({ internal }) => {
+        expect(internal.boot.phase).toBe("bootstrap");
+      });
     });
 
     it("phase should be running when finished booting", async () => {
+      expect.assertions(1);
+
       let i: InternalDefinition;
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Service({ internal }: TServiceParams) {
-            i = internal;
-          },
-        },
+      await TestRunner().run(({ internal }) => {
+        i = internal;
       });
-      await application.bootstrap(BASIC_BOOT);
 
       expect(i.boot.phase).toBe("running");
-    });
-
-    it("phase should be teardown after teardown starts", async () => {
-      let i: string;
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Service({ internal, lifecycle }: TServiceParams) {
-            lifecycle.onPreShutdown(() => {
-              i = internal.boot.phase;
-            });
-          },
-        },
-      });
-      await application.bootstrap(BASIC_BOOT);
-      await application.teardown();
-      application = undefined;
-
-      expect(i).toBe("teardown");
     });
   });
   // #endregion
@@ -698,64 +647,51 @@ describe("Wiring", () => {
   // #region Teardown
   describe("Teardown", () => {
     it("phase should be teardown after teardown starts", async () => {
-      let i: string;
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Service({ internal, lifecycle }: TServiceParams) {
-            lifecycle.onPreShutdown(() => {
-              i = internal.boot.phase;
-            });
-          },
-        },
-      });
-      await application.bootstrap(BASIC_BOOT);
-      await application.teardown();
-      application = undefined;
+      expect.assertions(1);
 
-      expect(i).toBe("teardown");
+      await TestRunner()
+        .configure({ forceTeardown: true })
+        .run(({ internal, lifecycle }) => {
+          lifecycle.onPreShutdown(() => {
+            expect(internal.boot.phase).toBe("teardown");
+          });
+        });
     });
 
     it("should shutdown on SIGTERM", async () => {
-      expect.assertions(1);
+      expect.assertions(2);
       const exit = jest
         .spyOn(process, "exit")
         .mockImplementation(() => undefined as never);
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Service({ lifecycle }: TServiceParams) {
-            lifecycle.onReady(() => process.emit("SIGTERM"));
-          },
-        },
+
+      const spy = jest.fn();
+
+      await TestRunner().run(({ lifecycle }) => {
+        lifecycle.onPreShutdown(spy);
       });
-      await application.bootstrap(BASIC_BOOT);
-      await sleep(10);
+      process.emit("SIGTERM");
+      await sleep(10); // magic sleep
+
+      expect(spy).toHaveBeenCalled();
       expect(exit).toHaveBeenCalled();
       application = undefined;
     });
 
     it("should shutdown on SIGINT", async () => {
-      expect.assertions(1);
+      expect.assertions(2);
       const exit = jest
         .spyOn(process, "exit")
         .mockImplementation(() => undefined as never);
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Service({ lifecycle }: TServiceParams) {
-            lifecycle.onReady(() => process.emit("SIGINT"));
-          },
-        },
+
+      const spy = jest.fn();
+
+      await TestRunner().run(({ lifecycle }) => {
+        lifecycle.onPreShutdown(spy);
       });
-      await application.bootstrap(BASIC_BOOT);
-      await sleep(10);
+      process.emit("SIGINT");
+      await sleep(10); // magic sleep
+
+      expect(spy).toHaveBeenCalled();
       expect(exit).toHaveBeenCalled();
       application = undefined;
     });
@@ -765,20 +701,12 @@ describe("Wiring", () => {
   // #region Internal
   describe("Internal", () => {
     it("populates maps during bootstrap", async () => {
+      expect.assertions(1);
       let i: InternalDefinition;
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Test({ internal }: TServiceParams) {
-            i = internal;
-          },
-        },
+      await TestRunner().run(({ internal }) => {
+        i = internal;
       });
-      await application.bootstrap(BASIC_BOOT);
       expect(i.boot.constructComplete.size).not.toEqual(0);
-      expect(LIB_BOILERPLATE).toBeDefined();
     });
   });
   // #endregion
@@ -786,25 +714,28 @@ describe("Wiring", () => {
   // #region Wiring
   describe("Wiring", () => {
     it("should allow 2 separate apps to boot", async () => {
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Test() {},
-        },
-      });
-      await application.bootstrap(BASIC_BOOT);
-      const secondary = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing_second",
-        services: {
-          Test() {},
-        },
-      });
-      await secondary.bootstrap(BASIC_BOOT);
-      await secondary.teardown();
+      expect.assertions(1);
+      await expect(async () => {
+        application = CreateApplication({
+          configurationLoaders: [],
+          // @ts-expect-error Testing
+          name: "testing",
+          services: {
+            Test() {},
+          },
+        });
+        await application.bootstrap(BASIC_BOOT);
+        const secondary = CreateApplication({
+          configurationLoaders: [],
+          // @ts-expect-error Testing
+          name: "testing_second",
+          services: {
+            Test() {},
+          },
+        });
+        await secondary.bootstrap(BASIC_BOOT);
+        await secondary.teardown();
+      }).not.toThrow();
     });
 
     it("should replace libraries with conflicting names", async () => {
@@ -844,21 +775,10 @@ describe("Wiring", () => {
     });
 
     it("should add library to TServiceParams", async () => {
-      let observed: unknown;
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        priorityInit: ["First"],
-        services: {
-          // @ts-expect-error Testing
-          First({ testing }: TServiceParams) {
-            observed = testing;
-          },
-        },
+      expect.assertions(1);
+      await TestRunner().run((params) => {
+        expect("testing" in params).toBe(true);
       });
-      await application.bootstrap(BASIC_BOOT);
-      expect(observed).toBeDefined();
     });
 
     it("should use service context as keys in assembled api", async () => {
@@ -882,100 +802,18 @@ describe("Wiring", () => {
       expect(foo).toEqual("bar");
     });
 
-    it("passes lifecycle into services", async () => {
-      let observed: unknown;
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Test({ lifecycle }: TServiceParams) {
-            observed = lifecycle;
-          },
+    it("passes standard utils into services", async () => {
+      expect.assertions(6);
+      await TestRunner().run(
+        ({ lifecycle, logger, scheduler, event, config, context }) => {
+          expect(lifecycle).toBeDefined();
+          expect(logger).toBeDefined();
+          expect(scheduler).toBeDefined();
+          expect(event).toBeDefined();
+          expect(config).toBeDefined();
+          expect(context).toBeDefined();
         },
-      });
-      await application.bootstrap(BASIC_BOOT);
-      expect(observed).toBeDefined();
-    });
-
-    it("passes logger into services", async () => {
-      let observed: unknown;
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Test({ logger }: TServiceParams) {
-            observed = logger;
-          },
-        },
-      });
-      await application.bootstrap(BASIC_BOOT);
-      expect(observed).toBeDefined();
-    });
-
-    it("passes scheduler into services", async () => {
-      let observed: unknown;
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Test({ scheduler }: TServiceParams) {
-            observed = scheduler;
-          },
-        },
-      });
-      await application.bootstrap(BASIC_BOOT);
-      expect(observed).toBeDefined();
-    });
-
-    it("passes event into services", async () => {
-      let observed: unknown;
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Test({ event }: TServiceParams) {
-            observed = event;
-          },
-        },
-      });
-      await application.bootstrap(BASIC_BOOT);
-      expect(observed).toBeDefined();
-    });
-
-    it("passes config into services", async () => {
-      let observed: unknown;
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Test({ config }: TServiceParams) {
-            observed = config;
-          },
-        },
-      });
-      await application.bootstrap(BASIC_BOOT);
-      expect(observed).toBeDefined();
-    });
-
-    it("passes context into services", async () => {
-      let observed: unknown;
-      application = CreateApplication({
-        configurationLoaders: [],
-        // @ts-expect-error Testing
-        name: "testing",
-        services: {
-          Test({ context }: TServiceParams) {
-            observed = context;
-          },
-        },
-      });
-      await application.bootstrap(BASIC_BOOT);
-      expect(observed).toBeDefined();
+      );
     });
   });
   // #endregion

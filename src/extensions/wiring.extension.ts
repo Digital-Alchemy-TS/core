@@ -126,15 +126,18 @@ export function CreateApplication<
 }: ApplicationConfigurationOptions<S, C>) {
   let internal: InternalDefinition;
 
-  priorityInit.forEach((name) => {
-    if (!is.function(services[name])) {
-      throw new BootstrapException(
-        WIRING_CONTEXT,
-        "MISSING_PRIORITY_SERVICE",
-        `${name} was listed as priority init, but was not found in services`,
-      );
-    }
-  });
+  if (!is.empty(priorityInit)) {
+    priorityInit.forEach((name) => {
+      if (!is.function(services[name])) {
+        throw new BootstrapException(
+          WIRING_CONTEXT,
+          "MISSING_PRIORITY_SERVICE",
+          `${name} was listed as priority init, but was not found in services`,
+        );
+      }
+    });
+  }
+
   const serviceApis = {} as GetApisResult<ServiceMap>;
   const application = {
     [WIRE_PROJECT]: async (internal: InternalDefinition) => {

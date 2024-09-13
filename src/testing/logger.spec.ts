@@ -169,7 +169,6 @@ describe("Logger", () => {
     it("can modify pretty format", async () => {
       expect.assertions(1);
       await TestRunner().run(({ internal }) => {
-        const logger = createMockLogger();
         internal.boilerplate.logger.setPrettyFormat(false);
         expect(internal.boilerplate.logger.getPrettyFormat()).toBe(false);
       });

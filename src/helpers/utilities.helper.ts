@@ -1,4 +1,4 @@
-import { is } from "../extensions/is.extension";
+import { is } from "../services/is.extension";
 
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 export const EVEN = 2;

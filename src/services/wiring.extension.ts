@@ -73,11 +73,9 @@ function createBoilerplate() {
 // (re)defined at bootstrap
 // unclear if this variable even serves a purpose beyond types
 export let LIB_BOILERPLATE: ReturnType<typeof createBoilerplate>;
+type GenericApp = ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
 
-const RUNNING_APPLICATIONS = new Map<
-  string,
-  ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>
->();
+const RUNNING_APPLICATIONS = new Map<string, GenericApp>();
 
 // #MARK: QuickShutdown
 async function quickShutdown(reason: string) {
@@ -185,7 +183,7 @@ export function CreateApplication<S extends ServiceMap, C extends OptionalModule
     priorityInit,
     serviceApis,
     services,
-    teardown: async () => {
+    async teardown() {
       if (!application.booted) {
         processEvents.forEach((callback, event) => process.removeListener(event, callback));
         return;

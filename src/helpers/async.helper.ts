@@ -1,5 +1,5 @@
 /* eslint-disable sonarjs/no-redundant-type-constituents */
-import { is } from "../extensions";
+import { is } from "../services";
 import { ARRAY_OFFSET, SINGLE, START } from "./utilities.helper";
 
 // ? Functions written to be similar to the offerings from the async library

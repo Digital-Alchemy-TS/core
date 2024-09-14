@@ -1,6 +1,6 @@
 import { v4 } from "uuid";
 
-import { CreateApplication, ILogger, is } from "../extensions";
+import { CreateApplication, ILogger, is } from "../services";
 import {
   ApplicationDefinition,
   ConfigLoader,

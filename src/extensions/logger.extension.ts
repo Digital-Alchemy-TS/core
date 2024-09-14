@@ -74,17 +74,27 @@ type MergeDataCallback = () => object;
 
 // #region Service definition
 export async function Logger({ lifecycle, config, internal }: TServiceParams) {
-  const timestampFormat =
-    internal.boot.options?.loggerOptions?.timestamp_format ??
-    "ddd HH:mm:ss.SSS";
+  let lastMessage = Date.now();
+  let logCounter = START;
+
+  const { loggerOptions = {} } = internal.boot?.options ?? {};
+
+  const timestampFormat = loggerOptions.timestamp_format ?? "ddd HH:mm:ss.SSS";
 
   const YELLOW_DASH = chalk.yellowBright(frontDash);
   const BLUE_TICK = chalk.blue(`>`);
-  let prettyFormat = true;
+  let prettyFormat = !!loggerOptions.pretty;
   const shouldILog = {} as Record<TConfigLogLevel, boolean>;
   const mergeCallbacks = new Set<MergeDataCallback>();
+
   function mergeData<T extends object>(data: T): T {
     let out = { ...data };
+
+    if (loggerOptions.counter) {
+      const counter = data as { logIdx: number };
+      counter.logIdx = logCounter++;
+    }
+
     mergeCallbacks.forEach((i) => {
       out = { ...out, ...i() };
     });
@@ -96,7 +106,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
     if (!message) {
       return ``;
     }
-    if (message.length > MAX_CUTOFF || !prettyFormat) {
+    if (!prettyFormat || message.length > MAX_CUTOFF) {
       return message;
     }
     message = message
@@ -160,9 +170,19 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
         if (!is.empty(name)) {
           message += chalk.blue(` (${name})`);
         }
+
+        if (loggerOptions.ms) {
+          const now = Date.now();
+          const diff = Math.floor(now - lastMessage) + `ms`;
+          lastMessage = now;
+
+          message += prettyFormat ? chalk.green(diff) : diff;
+        }
+
         if (!is.empty(logMessage)) {
           message += `: ${chalk.cyan(logMessage)}`;
         }
+
         if (!is.empty(data)) {
           message +=
             "\n" +

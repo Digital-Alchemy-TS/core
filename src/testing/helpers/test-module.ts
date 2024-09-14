@@ -21,12 +21,11 @@ export type CreateTestingLibraryOptions<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
 > = {
-  library?: LibraryDefinition<S, C>;
-
   /**
    * default: testing
    */
   name?: string;
+  target?: LibraryDefinition<S, C> | ApplicationDefinition<S, C>;
 };
 
 type TestingBootstrapOptions = {
@@ -49,8 +48,16 @@ type TestingBootstrapOptions = {
    */
   loadConfigs?: boolean;
 
+  /**
+   * replacement logger object to use
+   *
+   * default: **NOOP**
+   */
   customLogger?: ILogger;
 
+  /**
+   * pass through to bootstrap params
+   */
   loggerOptions?: LoggerOptions;
 
   /**
@@ -67,42 +74,109 @@ type TestingBootstrapOptions = {
    * manually call teardown before finishing the test
    */
   forceTeardown?: boolean;
-};
 
-type TestExtras = {
+  /**
+   * define a configuration for the unit tests
+   *
+   * > **note**: you probably don't need to do this, it's not even documented
+   */
   module_config?: ModuleConfiguration;
 };
 
-export type TestingLibrary = {
-  extras: (options: TestExtras) => TestingLibrary;
-  configure: (options: TestingBootstrapOptions) => TestingLibrary;
-  setup: (test: ServiceFunction) => TestingLibrary;
+export type iTestRunner = {
+  /**
+   * chained calls deep merge options together
+   */
+  configure: (options: TestingBootstrapOptions) => iTestRunner;
+  setup: (test: ServiceFunction) => iTestRunner;
   run: (
     test: ServiceFunction,
   ) => Promise<ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>>;
-  appendLibrary: (library: TLibrary) => TestingLibrary;
-  appendService: (service: ServiceFunction, name?: string) => TestingLibrary;
-  replaceLibrary: (name: string, library: TLibrary) => TestingLibrary;
-  replaceService: (name: string, service: ServiceFunction) => TestingLibrary;
+  appendLibrary: (library: TLibrary) => iTestRunner;
+  appendService: (service: ServiceFunction, name?: string) => iTestRunner;
+  replaceLibrary: (name: string, library: TLibrary) => iTestRunner;
+  replaceService: (name: string, service: ServiceFunction) => iTestRunner;
+  // pickService: () => iTestRunner;
+  // omitService: () => iTestRunner;
 };
 
 /**
  * library optional
  */
-export function TestRunner<
-  S extends ServiceMap,
-  C extends OptionalModuleConfiguration,
->({ library, name }: CreateTestingLibraryOptions<S, C> = {}) {
+export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfiguration>(
+  options: CreateTestingLibraryOptions<S, C> = {},
+) {
   process.setMaxListeners(NONE);
   let bootOptions: TestingBootstrapOptions = {};
-  let extra: TestExtras = {};
   const appendLibraries = new Map<string, TLibrary>();
   const appendServices = new Map<string, ServiceFunction>();
   const replaceLibrary = new Map<string, TLibrary>();
   const replaceService = new Map<string, ServiceFunction>();
   const runFirst = new Set<ServiceFunction>();
 
-  const libraryTestRunner: TestingLibrary = {
+  function getLibraries(target: LibraryDefinition<S, C> | ApplicationDefinition<S, C>) {
+    if ("depends" in target) {
+      return target.depends;
+    }
+    return "libraries" in target ? target.libraries : [];
+  }
+
+  function buildApp(
+    name: string,
+    target: LibraryDefinition<S, C> | ApplicationDefinition<S, C>,
+    test: ServiceFunction,
+  ) {
+    const optional = "optionalDepends" in target ? target.optionalDepends : [];
+    const depends = [...getLibraries(target)];
+
+    const testLibrary = target
+      ? CreateLibrary({
+          configuration: target.configuration,
+          depends,
+          name: target.name,
+          optionalDepends: optional,
+          priorityInit: target.priorityInit,
+          services: Object.fromEntries(
+            Object.entries(target.services).map(([name, service]) => [
+              name,
+              replaceService.has(name) ? replaceService.get(name) : service,
+            ]),
+          ) as S,
+        })
+      : undefined;
+    let LIB_RUN_FIRST: TLibrary;
+    if (!is.empty(runFirst)) {
+      LIB_RUN_FIRST = CreateLibrary({
+        depends: testLibrary ? [testLibrary, ...depends] : [...depends],
+        // @ts-expect-error nothing useful here
+        name: "run_first",
+        services: Object.fromEntries(
+          [...runFirst.values()].map(
+            service => [service.name || v4(), service] as [string, ServiceFunction],
+          ),
+        ) as ServiceMap,
+      });
+    }
+
+    const customLoader = bootOptions?.configLoader ? [bootOptions?.configLoader] : [];
+    const app = CreateApplication({
+      configuration: bootOptions?.module_config ?? {},
+      configurationLoaders: bootOptions?.loadConfigs ? undefined : customLoader,
+      libraries: [
+        ...(is.empty(depends)
+          ? []
+          : depends.map(i => (replaceLibrary.has(i.name) ? replaceLibrary.get(i.name) : i))),
+        ...(testLibrary ? [testLibrary] : []),
+      ],
+      // @ts-expect-error it's life
+      name,
+      services: { test },
+    });
+
+    return { LIB_RUN_FIRST, app };
+  }
+
+  const libraryTestRunner: iTestRunner = {
     appendLibrary(library: TLibrary) {
       appendLibraries.set(library.name, library);
       return libraryTestRunner;
@@ -115,11 +189,7 @@ export function TestRunner<
       return libraryTestRunner;
     },
     configure(options: TestingBootstrapOptions) {
-      bootOptions = options;
-      return libraryTestRunner;
-    },
-    extras(options) {
-      extra = options;
+      bootOptions = deepExtend(bootOptions, options);
       return libraryTestRunner;
     },
     replaceLibrary(name: string, library: TLibrary) {
@@ -131,66 +201,12 @@ export function TestRunner<
       return libraryTestRunner;
     },
     async run(test: ServiceFunction) {
-      const testLibrary = library
-        ? CreateLibrary({
-            configuration: library.configuration,
-            name: library.name,
-            optionalDepends: library.optionalDepends,
-            priorityInit: library.priorityInit,
-            services: Object.fromEntries(
-              Object.entries(library.services).map(([name, service]) => [
-                name,
-                replaceService.has(name) ? replaceService.get(name) : service,
-              ]),
-            ) as S,
-          })
-        : undefined;
-      let LIB_RUN_FIRST: TLibrary;
-      if (!is.empty(runFirst)) {
-        LIB_RUN_FIRST = CreateLibrary({
-          depends: testLibrary ? [testLibrary] : [],
-          // @ts-expect-error for testing only
-          name: v4(),
-          services: Object.fromEntries(
-            [...runFirst.values()].map(
-              (service) =>
-                [service.name || v4(), service] as [string, ServiceFunction],
-            ),
-          ) as ServiceMap,
-        });
-      }
-
-      const customLoader = bootOptions?.configLoader
-        ? [bootOptions?.configLoader]
-        : [];
-      const app = CreateApplication({
-        configuration: extra?.module_config ?? {},
-        configurationLoaders: bootOptions?.loadConfigs
-          ? undefined
-          : customLoader,
-        libraries: [
-          ...(is.empty(library?.depends)
-            ? []
-            : library.depends.map((i) =>
-                replaceLibrary.has(i.name) ? replaceLibrary.get(i.name) : i,
-              )),
-          ...(testLibrary ? [testLibrary] : []),
-        ],
-        // @ts-expect-error it's life
-        name: name ?? "testing",
-        services: { test },
-      });
+      const { app, LIB_RUN_FIRST } = buildApp(options?.name ?? "testing", options?.target, test);
       await app.bootstrap({
-        appendLibrary: [
-          ...appendLibraries.values(),
-          ...(LIB_RUN_FIRST ? [LIB_RUN_FIRST] : []),
-        ],
+        appendLibrary: [...appendLibraries.values(), ...(LIB_RUN_FIRST ? [LIB_RUN_FIRST] : [])],
         appendService: Object.fromEntries(appendServices.entries()),
         bootLibrariesFirst: !!bootOptions?.bootLibrariesFirst,
-        configuration: deepExtend(
-          { boilerplate: { LOG_LEVEL: "info" } },
-          bootOptions?.configuration,
-        ),
+        configuration: bootOptions?.configuration,
         customLogger: bootOptions?.emitLogs
           ? undefined
           : (bootOptions?.customLogger ?? {

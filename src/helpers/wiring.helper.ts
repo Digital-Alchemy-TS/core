@@ -13,6 +13,7 @@ import {
   LIB_BOILERPLATE,
   LOAD_PROJECT,
   TBlackHole,
+  TConfigLogLevel,
   TContext,
 } from "..";
 import {
@@ -140,8 +141,12 @@ export type TInjectedConfig = {
   [ModuleName in keyof ModuleConfigs]: ConfigTypes<ModuleConfigs[ModuleName]>;
 };
 
-export interface AsyncLocalData {
+export interface AsyncLogData {
   id: string;
+}
+
+export interface AsyncLocalData {
+  logs: AsyncLogData;
 }
 
 export type AlsExtension = {
@@ -218,6 +223,14 @@ type ConfigTypes<Config> = {
     ? CastConfigResult<Config[Key]>
     : never;
 };
+
+export type ServiceNames<T extends LoadedModuleNames = LoadedModuleNames> =
+  LoadedModules[T] extends LibraryDefinition<
+    infer S,
+    OptionalModuleConfiguration
+  >
+    ? `${T}.${Extract<keyof S, string>}`
+    : never;
 
 export type GetApis<T> =
   T extends LibraryDefinition<infer S, OptionalModuleConfiguration>
@@ -353,9 +366,47 @@ export type BootstrapOptions = {
 
 export type LoggerOptions = {
   /**
+   * Adjust the format of the timestamp at the start of the log
+   *
    * > default: ddd HH:mm:ss.SSS
    */
   timestamp_format?: string;
+
+  /**
+   * Pretty format logs
+   *
+   * > default: true
+   */
+  pretty?: boolean;
+
+  /**
+   * prefix messages with ms since last message
+   *
+   * > default: false
+   */
+  ms?: boolean;
+
+  /**
+   * add an incrementing counter to every log.
+   * starts at 0 at boot
+   *
+   * > default: false
+   */
+  counter?: boolean;
+
+  /**
+   * extract details from als module to merge into logs
+   *
+   * > default: false
+   */
+  als?: boolean;
+
+  /**
+   * Override the `LOG_LEVEL` per service or module
+   */
+  levelOverrides?: Partial<
+    Record<LoadedModuleNames | ServiceNames, TConfigLogLevel>
+  >;
 };
 
 export const WIRE_PROJECT = Symbol.for("wire-project");

@@ -10,23 +10,23 @@ import {
 } from "../helpers";
 import { is } from "./is.extension";
 
-export function ALS({ internal }: TServiceParams): AlsExtension {
+export function ALS({}: TServiceParams): AlsExtension {
   const storage = new AsyncLocalStorage<AsyncLocalData>();
   const hooks = new Set<AlsHook>();
 
-  internal.boilerplate.logger.merge(() => {
-    const data = storage.getStore();
-    if (!is.empty(data?.id)) {
-      return { async_id: data.id };
-    }
-    return {};
-  });
+  // internal.boilerplate.logger.merge(() => {
+  //   const data = storage.getStore();
+  //   if (!is.empty(data?.logs?.id)) {
+  //     return { async_id: data?.logs?.id };
+  //   }
+  //   return {};
+  // });
 
   return {
     asyncStorage: () => storage,
     getStore: () => storage.getStore(),
     init(callback: () => TBlackHole) {
-      let data = { id: v4() };
+      let data = { logs: { id: v4() } };
       hooks.forEach((callback) => {
         data = { ...data, ...callback() };
       });

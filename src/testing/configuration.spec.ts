@@ -44,9 +44,7 @@ describe("Configuration", () => {
       expect.assertions(2);
       const spy = jest.fn().mockReturnValue({});
       await TestRunner()
-        .configure({
-          configLoader: async () => spy(),
-        })
+        .configure({ configLoader: async () => spy() })
         .run(({ lifecycle }) => {
           lifecycle.onPreInit(() => {
             expect(spy).not.toHaveBeenCalled();
@@ -83,7 +81,7 @@ describe("Configuration", () => {
     it("should generate the correct structure for applications", async () => {
       expect.assertions(1);
       await TestRunner()
-        .extras({
+        .configure({
           module_config: {
             FOO: { default: "bar", type: "string" },
           },
@@ -156,7 +154,7 @@ describe("Configuration", () => {
         expect.assertions(1);
         env["DO_NOT_LOAD"] = "env";
         await TestRunner()
-          .extras({
+          .configure({
             module_config: {
               DO_NOT_LOAD: {
                 default: "unloaded",
@@ -185,7 +183,7 @@ describe("Configuration", () => {
         expect.assertions(1);
         await TestRunner()
           .configure({ loadConfigs: true })
-          .extras({
+          .configure({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -206,7 +204,7 @@ describe("Configuration", () => {
         env["CURRENT_WEATHER"] = "windy";
         await TestRunner()
           .configure({ loadConfigs: true })
-          .extras({
+          .configure({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -227,7 +225,7 @@ describe("Configuration", () => {
         env["current_weather"] = "sunny";
         await TestRunner()
           .configure({ loadConfigs: true })
-          .extras({
+          .configure({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -248,7 +246,7 @@ describe("Configuration", () => {
         env["current_WEATHER"] = "hail";
         await TestRunner()
           .configure({ loadConfigs: true })
-          .extras({
+          .configure({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -275,7 +273,7 @@ describe("Configuration", () => {
         expect.assertions(1);
         await TestRunner()
           .configure({ loadConfigs: true })
-          .extras({
+          .configure({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -296,7 +294,7 @@ describe("Configuration", () => {
         process.argv.push("--CURRENT_WEATHER", "windy");
         await TestRunner()
           .configure({ loadConfigs: true })
-          .extras({
+          .configure({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -317,7 +315,7 @@ describe("Configuration", () => {
         process.argv.push("--current_weather", "sunny");
         await TestRunner()
           .configure({ loadConfigs: true })
-          .extras({
+          .configure({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -338,7 +336,7 @@ describe("Configuration", () => {
         process.argv.push("--current_WEATHER", "hail");
         await TestRunner()
           .configure({ loadConfigs: true })
-          .extras({
+          .configure({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -359,7 +357,7 @@ describe("Configuration", () => {
         process.argv.push("--current_WEATHER=hail");
         await TestRunner()
           .configure({ loadConfigs: true })
-          .extras({
+          .configure({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",

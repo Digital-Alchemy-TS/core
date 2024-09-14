@@ -60,7 +60,7 @@ function createBoilerplate() {
       } satisfies StringConfig<TConfigLogLevel>,
     },
     name: "boilerplate",
-    priorityInit: ["configuration", "logger", "als", "scheduler"],
+    priorityInit: ["als", "configuration", "logger", "scheduler"],
     services: {
       als: ALS,
       configuration: Configuration,

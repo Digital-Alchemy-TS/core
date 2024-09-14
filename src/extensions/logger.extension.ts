@@ -58,13 +58,7 @@ let logger = {} as Record<
   (context: TContext, ...data: Parameters<TLoggerFunction>) => void
 >;
 
-export type CONTEXT_COLORS =
-  | "grey"
-  | "blue"
-  | "yellow"
-  | "red"
-  | "green"
-  | "magenta";
+export type CONTEXT_COLORS = "grey" | "blue" | "yellow" | "red" | "green" | "magenta";
 const MAX_CUTOFF = 2000;
 const frontDash = " - ";
 const SYMBOL_START = 1;
@@ -83,7 +77,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
 
   const YELLOW_DASH = chalk.yellowBright(frontDash);
   const BLUE_TICK = chalk.blue(`>`);
-  let prettyFormat = !!loggerOptions.pretty;
+  let prettyFormat = is.boolean(loggerOptions.pretty) ? loggerOptions.pretty : true;
   const shouldILog = {} as Record<TConfigLogLevel, boolean>;
   const mergeCallbacks = new Set<MergeDataCallback>();
 
@@ -95,7 +89,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
       counter.logIdx = logCounter++;
     }
 
-    mergeCallbacks.forEach((i) => {
+    mergeCallbacks.forEach(i => {
       out = { ...out, ...i() };
     });
     return out;
@@ -111,15 +105,15 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
     }
     message = message
       // ? partA#partB - highlight it all in yellow
-      .replaceAll(new RegExp("([^ ]+#[^ ]+)", "g"), (i) => chalk.yellow(i))
+      .replaceAll(new RegExp("([^ ]+#[^ ]+)", "g"), i => chalk.yellow(i))
       // ? [A] > [B] > [C] - highlight the >'s in blue
       .replaceAll("] > [", `] ${BLUE_TICK} [`)
       // ? [Text] - strip brackets, highlight magenta
-      .replaceAll(new RegExp(String.raw`(\[[^\]\[]+\])`, "g"), (i) =>
+      .replaceAll(new RegExp(String.raw`(\[[^\]\[]+\])`, "g"), i =>
         chalk.bold.magenta(i.slice(SYMBOL_START, SYMBOL_END)),
       )
       // ? {Text} - strip braces, highlight gray
-      .replaceAll(new RegExp(String.raw`(\{[^\]}]+\})`, "g"), (i) =>
+      .replaceAll(new RegExp(String.raw`(\{[^\]}]+\})`, "g"), i =>
         chalk.bold.gray(i.slice(SYMBOL_START, SYMBOL_END)),
       );
     // ? " - Text" (line prefix with dash) - highlight dash
@@ -131,12 +125,9 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
 
   if (is.empty(internal.boot.options?.customLogger)) {
     // #region formatter
-    [...METHOD_COLORS.keys()].forEach((key) => {
+    [...METHOD_COLORS.keys()].forEach(key => {
       const level = `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ");
-      logger[key] = (
-        context: TContext,
-        ...parameters: Parameters<TLoggerFunction>
-      ) => {
+      logger[key] = (context: TContext, ...parameters: Parameters<TLoggerFunction>) => {
         const data = mergeData(
           is.object(parameters[FIRST])
             ? (parameters.shift() as {
@@ -148,13 +139,8 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
             : {},
         );
 
-        const highlighted = chalk.bold[METHOD_COLORS.get(key)](
-          `[${data.context || context}]`,
-        );
-        const name =
-          is.object(data.name) || is.function(data.name)
-            ? data.name.name
-            : data.name;
+        const highlighted = chalk.bold[METHOD_COLORS.get(key)](`[${data.context || context}]`);
+        const name = is.object(data.name) || is.function(data.name) ? data.name.name : data.name;
         delete data.context;
         delete data.name;
 
@@ -216,10 +202,8 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
   //
   // stored as separate variable to cut down on internal config lookups
   let CURRENT_LOG_LEVEL: TConfigLogLevel =
-    internal.utils.object.get(
-      internal,
-      "boot.options.configuration.boilerplate.LOG_LEVEL",
-    ) || "trace";
+    internal.utils.object.get(internal, "boot.options.configuration.boilerplate.LOG_LEVEL") ||
+    "trace";
 
   function context(context: string | TContext) {
     return {
@@ -243,8 +227,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
       CURRENT_LOG_LEVEL = config.boilerplate.LOG_LEVEL;
     }
     LOG_LEVELS.forEach((key: TConfigLogLevel) => {
-      shouldILog[key] =
-        LOG_LEVEL_PRIORITY[key] >= LOG_LEVEL_PRIORITY[CURRENT_LOG_LEVEL];
+      shouldILog[key] = LOG_LEVEL_PRIORITY[key] >= LOG_LEVEL_PRIORITY[CURRENT_LOG_LEVEL];
     });
   };
 

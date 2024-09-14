@@ -9,8 +9,6 @@
   "exclude": [
     "node_modules",
     "tmp",
-    "dist",
-    "src/**/*.spec.ts",
-    "src/testing"
+    "dist"
   ]
 }

@@ -46,9 +46,11 @@ export default [
       "plugin:prettier/recommended",
       "plugin:@cspell/recommended",
     )
-    .map((config) => ({ ...config, files: ["src/**/*.ts"] })),
+    .map(config => ({ ...config, files: ["src/**/*.ts", "testing/**/*.ts"] })),
+
+  // everything
   {
-    files: ["src/**/*.ts"],
+    files: ["src/**/*.ts", "testing/**/*.ts"],
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 5,
@@ -106,15 +108,13 @@ export default [
       "simple-import-sort/exports": "warn",
       "no-console": ["error"],
       "@typescript-eslint/no-unnecessary-type-constraint": "off",
-      "@typescript-eslint/no-unused-vars": [
-        "warn",
-        { varsIgnorePattern: "_|logger" },
-      ],
+      "@typescript-eslint/no-unused-vars": ["warn", { varsIgnorePattern: "_|logger" }],
       "@typescript-eslint/no-explicit-any": "error",
     },
   },
+  // tests
   {
-    files: ["src/**/*.spec.ts"],
+    files: ["testing/**/*.ts"],
     languageOptions: {
       globals: { ...globals.jest },
       parser: tsParser,
@@ -134,8 +134,9 @@ export default [
       "unicorn/consistent-function-scoping": "off",
     },
   },
+  // module definitions
   {
-    files: ["**/metrics.helper.ts", "**/*.module.ts"],
+    files: ["src/**/*.module.ts"],
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 5,

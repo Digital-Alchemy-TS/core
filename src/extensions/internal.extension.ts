@@ -55,21 +55,15 @@ export class InternalUtils {
   public titleCase(input: string): string {
     const matches = input.match(new RegExp("[a-z][A-Z]", "g"));
     if (matches) {
-      matches.forEach((i) => (input = input.replace(i, [...i].join(" "))));
+      matches.forEach(i => (input = input.replace(i, [...i].join(" "))));
     }
     return input
       .split(new RegExp("[ _-]"))
-      .map(
-        (word) =>
-          `${word.charAt(FIRST).toUpperCase()}${word.slice(EVERYTHING_ELSE)}`,
-      )
+      .map(word => `${word.charAt(FIRST).toUpperCase()}${word.slice(EVERYTHING_ELSE)}`)
       .join(" ");
   }
 
-  public relativeDate(
-    pastDate: inputFormats,
-    futureDate: inputFormats = new Date().toISOString(),
-  ) {
+  public relativeDate(pastDate: inputFormats, futureDate: inputFormats = new Date().toISOString()) {
     const UNITS = new Map<Intl.RelativeTimeFormatUnit, number>([
       ["year", YEAR],
       ["month", YEAR / MONTHS],
@@ -90,7 +84,7 @@ export class InternalUtils {
     const elapsed = past.diff(future, "ms");
     let out = "";
 
-    [...UNITS.keys()].some((unit) => {
+    [...UNITS.keys()].some(unit => {
       const cutoff = UNITS.get(unit);
       if (Math.abs(elapsed) > cutoff || unit == "second") {
         out = formatter.format(Math.round(elapsed / cutoff), unit);
@@ -124,10 +118,7 @@ export class InternalUtils {
           delete safeCurrent[key]; // Delete without checking; non-existent keys are a no-op
         } else {
           // For non-last keys, if the next level doesn't exist or isn't an object, stop processing
-          if (
-            typeof safeCurrent[key] !== "object" ||
-            safeCurrent[key] === null
-          ) {
+          if (typeof safeCurrent[key] !== "object" || safeCurrent[key] === null) {
             return;
           }
           // Move to the next level in the path
@@ -148,12 +139,7 @@ export class InternalUtils {
 
       return current as Get<T, P>;
     },
-    set<T>(
-      object: T,
-      path: string,
-      value: unknown,
-      doNotReplace: boolean = false,
-    ): void {
+    set<T>(object: T, path: string, value: unknown, doNotReplace: boolean = false): void {
       const keys = path.split(".");
       let current = object as unknown; // Starting with the object as an unknown type
 
@@ -203,10 +189,7 @@ export class InternalDefinition {
   /**
    * Utility methods provided by boilerplate
    */
-  public boilerplate: Pick<
-    GetApis<typeof LIB_BOILERPLATE>,
-    "configuration" | "logger"
-  >;
+  public boilerplate: Pick<GetApis<typeof LIB_BOILERPLATE>, "configuration" | "logger">;
   public boot: {
     /**
      * Options that were passed into bootstrap
@@ -252,9 +235,7 @@ export class InternalDefinition {
   public utils = new InternalUtils();
 
   // #MARK: safeExec
-  public async safeExec<T>(
-    options: (() => TBlackHole) | SafeExecOptions,
-  ): Promise<T> {
+  public async safeExec<T>(options: (() => TBlackHole) | SafeExecOptions): Promise<T> {
     const logger = this.boilerplate.logger.systemLogger;
     const context = is.function(options) ? undefined : options?.context;
     const exec = is.function(options) ? options : options?.exec;

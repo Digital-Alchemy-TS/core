@@ -130,10 +130,7 @@ export type ConfigLoaderParams<
   logger: ILogger;
 };
 
-export type ConfigLoader = <
-  S extends ServiceMap,
-  C extends OptionalModuleConfiguration,
->(
+export type ConfigLoader = <S extends ServiceMap, C extends OptionalModuleConfiguration>(
   params: ConfigLoaderParams<S, C>,
 ) => ConfigLoaderReturn;
 
@@ -142,9 +139,7 @@ export function cast<T = unknown>(data: string | string[], type: string): T {
     case "boolean": {
       data ??= "";
       return (
-        is.boolean(data)
-          ? data
-          : ["true", "y", "1"].includes((data as string).toLowerCase())
+        is.boolean(data) ? data : ["true", "y", "1"].includes((data as string).toLowerCase())
       ) as T;
     }
     case "number":
@@ -174,25 +169,19 @@ export type OptionalModuleConfiguration = ModuleConfiguration | undefined;
 export function findKey<T extends string>(source: T[], find: T[]) {
   return (
     // Find an exact match (if available) first
-    source.find((line) => find.includes(line)) ||
+    source.find(line => find.includes(line)) ||
     // Do case insensitive searches
-    source.find((line) => {
-      const match = new RegExp(
-        `^${line.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
-        "gi",
-      );
-      return find.some((item) => item.match(match));
+    source.find(line => {
+      const match = new RegExp(`^${line.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`, "gi");
+      return find.some(item => item.match(match));
     })
   );
 }
 
 export function iSearchKey(target: string, source: string[]) {
-  const regex = new RegExp(
-    `^${target.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`,
-    "gi",
-  );
+  const regex = new RegExp(`^${target.replaceAll(new RegExp("[-_]", "gi"), "[-_]?")}$`, "gi");
 
-  return source.find((key) => regex.exec(key) !== null);
+  return source.find(key => regex.exec(key) !== null);
 }
 
 /**
@@ -219,16 +208,11 @@ export function loadDotenv(
 
   // * was provided an --env-file or something via boot
   if (!is.empty(envFile)) {
-    const checkFile = isAbsolute(envFile)
-      ? normalize(envFile)
-      : join(cwd(), envFile);
+    const checkFile = isAbsolute(envFile) ? normalize(envFile) : join(cwd(), envFile);
     if (fs.existsSync(checkFile)) {
       file = checkFile;
     } else {
-      logger.warn(
-        { checkFile, envFile, name: loadDotenv },
-        "invalid target for dotenv file",
-      );
+      logger.warn({ checkFile, envFile, name: loadDotenv }, "invalid target for dotenv file");
     }
   }
 

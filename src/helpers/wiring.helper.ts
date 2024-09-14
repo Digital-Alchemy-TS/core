@@ -207,10 +207,7 @@ type LoadedModuleNames = Extract<keyof LoadedModules, string>;
 type ExternalLoadedModules = Exclude<LoadedModuleNames, "boilerplate">;
 
 type ModuleConfigs = {
-  [K in LoadedModuleNames]: LoadedModules[K] extends LibraryDefinition<
-    ServiceMap,
-    infer Config
-  >
+  [K in LoadedModuleNames]: LoadedModules[K] extends LibraryDefinition<ServiceMap, infer Config>
     ? Config
     : LoadedModules[K] extends ApplicationDefinition<ServiceMap, infer Config>
       ? Config
@@ -219,16 +216,11 @@ type ModuleConfigs = {
 
 // Now, map these configurations to their respective types using CastConfigResult for each property in the configs
 type ConfigTypes<Config> = {
-  [Key in keyof Config]: Config[Key] extends AnyConfig
-    ? CastConfigResult<Config[Key]>
-    : never;
+  [Key in keyof Config]: Config[Key] extends AnyConfig ? CastConfigResult<Config[Key]> : never;
 };
 
 export type ServiceNames<T extends LoadedModuleNames = LoadedModuleNames> =
-  LoadedModules[T] extends LibraryDefinition<
-    infer S,
-    OptionalModuleConfiguration
-  >
+  LoadedModules[T] extends LibraryDefinition<infer S, OptionalModuleConfiguration>
     ? `${T}.${Extract<keyof S, string>}`
     : never;
 
@@ -254,17 +246,13 @@ export type GetApis<T> =
 //    */
 //   priority?: Extract<keyof S, string>[];
 // };
-export type Loader<PARENT extends TConfigurable> = <
-  K extends keyof PARENT["services"],
->(
+export type Loader<PARENT extends TConfigurable> = <K extends keyof PARENT["services"]>(
   serviceName: K,
 ) => ReturnType<PARENT["services"][K]> extends Promise<infer AsyncResult>
   ? AsyncResult
   : ReturnType<PARENT["services"][K]>;
 
-export type ServiceFunction<R = unknown> = (
-  params: TServiceParams,
-) => R | Promise<R>;
+export type ServiceFunction<R = unknown> = (params: TServiceParams) => R | Promise<R>;
 export type ServiceMap = Record<string, ServiceFunction>;
 
 // #MARK: LibraryConfigurationOptions
@@ -298,9 +286,7 @@ export type LibraryConfigurationOptions<
 };
 
 export type PartialConfiguration = Partial<{
-  [ModuleName in keyof ModuleConfigs]: Partial<
-    ConfigTypes<ModuleConfigs[ModuleName]>
-  >;
+  [ModuleName in keyof ModuleConfigs]: Partial<ConfigTypes<ModuleConfigs[ModuleName]>>;
 }>;
 
 // #MARK: BootstrapOptions
@@ -404,9 +390,7 @@ export type LoggerOptions = {
   /**
    * Override the `LOG_LEVEL` per service or module
    */
-  levelOverrides?: Partial<
-    Record<LoadedModuleNames | ServiceNames, TConfigLogLevel>
-  >;
+  levelOverrides?: Partial<Record<LoadedModuleNames | ServiceNames, TConfigLogLevel>>;
 };
 
 export const WIRE_PROJECT = Symbol.for("wire-project");
@@ -445,30 +429,22 @@ export type ApplicationDefinition<
     bootstrap: (options?: BootstrapOptions) => Promise<void>;
     teardown: () => Promise<void>;
   };
-export type TLibrary = LibraryDefinition<
-  ServiceMap,
-  OptionalModuleConfiguration
->;
+export type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration>;
 
-export function BuildSortOrder<
-  S extends ServiceMap,
-  C extends OptionalModuleConfiguration,
->(app: ApplicationDefinition<S, C>, logger: ILogger) {
+export function BuildSortOrder<S extends ServiceMap, C extends OptionalModuleConfiguration>(
+  app: ApplicationDefinition<S, C>,
+  logger: ILogger,
+) {
   if (is.empty(app.libraries)) {
     return [];
   }
-  const libraryMap = new Map<string, TLibrary>(
-    app.libraries.map((i) => [i.name, i]),
-  );
+  const libraryMap = new Map<string, TLibrary>(app.libraries.map(i => [i.name, i]));
 
   // Recursive function to check for missing dependencies at any depth
   function checkDependencies(library: TLibrary) {
-    const depends = [
-      ...(library?.depends ?? []),
-      ...(library?.optionalDepends ?? []),
-    ];
+    const depends = [...(library?.depends ?? []), ...(library?.optionalDepends ?? [])];
     if (!is.empty(depends)) {
-      depends.forEach((item) => {
+      depends.forEach(item => {
         const loaded = libraryMap.get(item.name);
         if (!loaded) {
           if (library.depends.includes(item)) {
@@ -502,37 +478,32 @@ export function BuildSortOrder<
     return library;
   }
 
-  let starting = app.libraries.map((i) => checkDependencies(i));
+  let starting = app.libraries.map(i => checkDependencies(i));
   const out = [] as TLibrary[];
   while (!is.empty(starting)) {
-    const next = starting.find((library) => {
+    const next = starting.find(library => {
       const depends = [
         ...(library?.depends ?? []),
-        ...(library?.optionalDepends?.filter((i) =>
-          app.libraries.some((index) => i.name === index.name),
+        ...(library?.optionalDepends?.filter(i =>
+          app.libraries.some(index => i.name === index.name),
         ) ?? []),
       ];
       if (is.empty(depends)) {
         return true;
       }
-      return depends.every((depend) => out.some((i) => i.name === depend.name));
+      return depends.every(depend => out.some(i => i.name === depend.name));
     });
     if (!next) {
-      logger.fatal({ current: out.map((i) => i.name), name: BuildSortOrder });
-      throw new BootstrapException(
-        WIRING_CONTEXT,
-        "BAD_SORT",
-        `Cannot find a next lib to load`,
-      );
+      logger.fatal({ current: out.map(i => i.name), name: BuildSortOrder });
+      throw new BootstrapException(WIRING_CONTEXT, "BAD_SORT", `Cannot find a next lib to load`);
     }
-    starting = starting.filter((i) => next.name !== i.name);
+    starting = starting.filter(i => next.name !== i.name);
     out.push(next);
   }
   return out;
 }
 
-export const COERCE_CONTEXT = (context: string): TContext =>
-  context as TContext;
+export const COERCE_CONTEXT = (context: string): TContext => context as TContext;
 export const WIRING_CONTEXT = COERCE_CONTEXT("boilerplate:wiring");
 
 export function validateLibrary<S extends ServiceMap>(
@@ -549,9 +520,7 @@ export function validateLibrary<S extends ServiceMap>(
   const services = Object.entries(serviceList);
 
   // Find the first invalid service
-  const invalidService = services.find(
-    ([, definition]) => typeof definition !== "function",
-  );
+  const invalidService = services.find(([, definition]) => typeof definition !== "function");
   if (invalidService) {
     const [invalidServiceName, service] = invalidService;
     throw new BootstrapException(
@@ -574,14 +543,11 @@ export function wireOrder<T extends string>(priority: T[], list: T[]): T[] {
       );
     }
   }
-  const temporary = [...out, ...list.filter((i) => !out.includes(i))];
+  const temporary = [...out, ...list.filter(i => !out.includes(i))];
   return temporary;
 }
 
-export function CreateLibrary<
-  S extends ServiceMap,
-  C extends OptionalModuleConfiguration,
->({
+export function CreateLibrary<S extends ServiceMap, C extends OptionalModuleConfiguration>({
   name: libraryName,
   configuration = {} as C,
   priorityInit,
@@ -594,7 +560,7 @@ export function CreateLibrary<
   const serviceApis = {} as GetApisResult<ServiceMap>;
 
   if (!is.empty(priorityInit)) {
-    priorityInit.forEach((name) => {
+    priorityInit.forEach(name => {
       if (!is.function(services[name])) {
         throw new BootstrapException(
           WIRING_CONTEXT,
@@ -620,18 +586,15 @@ export function CreateLibrary<
       // manually added inside the bootstrap process
       const config = internal?.boilerplate.configuration as ConfigManager;
       config?.[LOAD_PROJECT](libraryName as keyof LoadedModules, configuration);
-      await eachSeries(
-        wireOrder(priorityInit, Object.keys(services)),
-        async (service) => {
-          serviceApis[service] = await WireService(
-            libraryName,
-            service,
-            services[service],
-            internal.boot.lifecycle.events,
-            internal,
-          );
-        },
-      );
+      await eachSeries(wireOrder(priorityInit, Object.keys(services)), async service => {
+        serviceApis[service] = await WireService(
+          libraryName,
+          service,
+          services[service],
+          internal.boot.lifecycle.events,
+          internal,
+        );
+      });
       internal.boot.constructComplete.add(libraryName);
       // mental note: people should probably do all their lifecycle attachments at the base level function
       // otherwise, it'll happen after this wire() call, and go into a black hole (worst case) or fatal error ("best" case)

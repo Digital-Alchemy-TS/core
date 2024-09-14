@@ -1,11 +1,20 @@
-import { CreateApplication } from "..";
-import { TestRunner } from "./helpers";
-import { BASIC_BOOT } from "./testing.helper";
+import { BootstrapOptions, CreateApplication, TestRunner } from "../src";
+
+export const BASIC_BOOT = {
+  configuration: { boilerplate: { LOG_LEVEL: "silent" } },
+  loggerOptions: {
+    levelOverrides: {
+      boilerplate: "warn",
+    },
+  },
+} as BootstrapOptions;
 
 describe("Fetch Extension", () => {
   beforeAll(async () => {
-    // @ts-expect-error testing
-    const preload = CreateApplication({ name: "testing" });
+    const preload = CreateApplication({
+      // @ts-expect-error testing
+      name: "testing",
+    });
     await preload.bootstrap(BASIC_BOOT);
     await preload.teardown();
   });
@@ -27,9 +36,7 @@ describe("Fetch Extension", () => {
 
       it("should default to current date when futureDate is not provided", async () => {
         await TestRunner().run(({ internal }) => {
-          const pastDate = new Date(
-            Date.now() - 24 * 60 * 60 * 1000,
-          ).toISOString();
+          const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
           const result = internal.utils.relativeDate(pastDate);
           expect(result).toBe("24 hr. ago");
         });
@@ -48,9 +55,9 @@ describe("Fetch Extension", () => {
         await TestRunner().run(({ internal }) => {
           const pastDate = "2023-09-01T00:00:00.000Z";
           const invalidFutureDate = "invalid-date";
-          expect(() =>
-            internal.utils.relativeDate(pastDate, invalidFutureDate),
-          ).toThrow("invalid future date 2023-09-01T00:00:00.000Z");
+          expect(() => internal.utils.relativeDate(pastDate, invalidFutureDate)).toThrow(
+            "invalid future date 2023-09-01T00:00:00.000Z",
+          );
         });
       });
     });
@@ -67,36 +74,28 @@ describe("Fetch Extension", () => {
     it("converts multiple words separated by spaces to title case", async () => {
       expect.assertions(1);
       await TestRunner().run(({ internal }) => {
-        expect(internal.utils.titleCase("multiple words here")).toBe(
-          "Multiple Words Here",
-        );
+        expect(internal.utils.titleCase("multiple words here")).toBe("Multiple Words Here");
       });
     });
 
     it("converts multiple words separated by underscores to title case", async () => {
       expect.assertions(1);
       await TestRunner().run(({ internal }) => {
-        expect(internal.utils.titleCase("multiple_words_here")).toBe(
-          "Multiple Words Here",
-        );
+        expect(internal.utils.titleCase("multiple_words_here")).toBe("Multiple Words Here");
       });
     });
 
     it("converts multiple words separated by hyphens to title case", async () => {
       expect.assertions(1);
       await TestRunner().run(({ internal }) => {
-        expect(internal.utils.titleCase("multiple-words-here")).toBe(
-          "Multiple Words Here",
-        );
+        expect(internal.utils.titleCase("multiple-words-here")).toBe("Multiple Words Here");
       });
     });
 
     it("inserts spaces between camel case words and converts to title case", async () => {
       expect.assertions(1);
       await TestRunner().run(({ internal }) => {
-        expect(internal.utils.titleCase("camelCaseWordsHere")).toBe(
-          "Camel Case Words Here",
-        );
+        expect(internal.utils.titleCase("camelCaseWordsHere")).toBe("Camel Case Words Here");
       });
     });
 
@@ -232,10 +231,7 @@ describe("Fetch Extension", () => {
         const mockFunction = jest.fn().mockImplementation(() => {
           throw new Error("Test error");
         });
-        const mockLogger = jest.spyOn(
-          internal.boilerplate.logger.systemLogger,
-          "error",
-        );
+        const mockLogger = jest.spyOn(internal.boilerplate.logger.systemLogger, "error");
 
         await internal.safeExec(mockFunction);
 

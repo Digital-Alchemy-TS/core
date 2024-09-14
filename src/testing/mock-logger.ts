@@ -1,4 +1,4 @@
-import { ILogger } from "../../extensions";
+import { ILogger } from "../extensions";
 
 export function createMockLogger(): ILogger {
   return {

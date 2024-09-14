@@ -1,12 +1,4 @@
-import {
-  ACTIVE_THROTTLE,
-  debounce,
-  deepExtend,
-  each,
-  eachLimit,
-  eachSeries,
-  sleep,
-} from "../helpers";
+import { ACTIVE_THROTTLE, debounce, deepExtend, each, eachLimit, eachSeries, sleep } from "../src";
 
 describe("utilities", () => {
   describe("sleep", () => {
@@ -39,7 +31,7 @@ describe("utilities", () => {
 
       const timer = sleep(timeout);
       setTimeout(() => timer.kill("stop"), 50);
-      await new Promise((resolve) => setTimeout(resolve, 100)); // Wait for 100 milliseconds to ensure the stop has taken effect
+      await new Promise(resolve => setTimeout(resolve, 100)); // Wait for 100 milliseconds to ensure the stop has taken effect
 
       const end = Date.now();
       expect(end - start).toBeGreaterThanOrEqual(99);
@@ -126,7 +118,7 @@ describe("utilities", () => {
       const activeTasks: number[] = [];
       const callback = jest.fn(async (item: number) => {
         activeTasks.push(item);
-        await new Promise((resolve) => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 100));
         activeTasks.shift(); // Simulate the task being done
       });
 
@@ -143,12 +135,10 @@ describe("utilities", () => {
       const items = [1, 2, 3];
       const callback = jest.fn(async (item: number) => {
         if (item === 2) throw new Error("Error on item 2");
-        await new Promise((resolve) => setTimeout(resolve, 50));
+        await new Promise(resolve => setTimeout(resolve, 50));
       });
 
-      await expect(eachLimit(items, 2, callback)).rejects.toThrow(
-        "Error on item 2",
-      );
+      await expect(eachLimit(items, 2, callback)).rejects.toThrow("Error on item 2");
       expect(callback).toHaveBeenCalledTimes(2); // Callback will be called until error is thrown
     });
   });
@@ -244,9 +234,7 @@ describe("utilities", () => {
         const invalidItem: unknown = {};
 
         // @ts-expect-error testing
-        await expect(eachSeries(invalidItem, mockCallback)).rejects.toThrow(
-          TypeError,
-        );
+        await expect(eachSeries(invalidItem, mockCallback)).rejects.toThrow(TypeError);
         expect(mockCallback).not.toHaveBeenCalled();
       });
 

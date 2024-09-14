@@ -18,14 +18,10 @@ const PRE_CALLBACKS_START = 0;
 
 export function CreateLifecycle() {
   const events = new Map<LifecycleStages, EventMapObject[]>(
-    LIFECYCLE_STAGES.map((event) => [event, []]),
+    LIFECYCLE_STAGES.map(event => [event, []]),
   );
 
-  function attachEvent(
-    callback: LifecycleCallback,
-    name: LifecycleStages,
-    priority?: number,
-  ) {
+  function attachEvent(callback: LifecycleCallback, name: LifecycleStages, priority?: number) {
     const stageList = events.get(name);
     if (!is.array(stageList)) {
       if (!name.includes("Shutdown")) {
@@ -38,19 +34,14 @@ export function CreateLifecycle() {
 
   return {
     events: {
-      onBootstrap: (callback, priority) =>
-        attachEvent(callback, "Bootstrap", priority),
-      onPostConfig: (callback, priority) =>
-        attachEvent(callback, "PostConfig", priority),
-      onPreInit: (callback, priority) =>
-        attachEvent(callback, "PreInit", priority),
-      onPreShutdown: (callback, priority) =>
-        attachEvent(callback, "PreShutdown", priority),
+      onBootstrap: (callback, priority) => attachEvent(callback, "Bootstrap", priority),
+      onPostConfig: (callback, priority) => attachEvent(callback, "PostConfig", priority),
+      onPreInit: (callback, priority) => attachEvent(callback, "PreInit", priority),
+      onPreShutdown: (callback, priority) => attachEvent(callback, "PreShutdown", priority),
       onReady: (callback, priority) => attachEvent(callback, "Ready", priority),
       onShutdownComplete: (callback, priority) =>
         attachEvent(callback, "ShutdownComplete", priority),
-      onShutdownStart: (callback, priority) =>
-        attachEvent(callback, "ShutdownStart", priority),
+      onShutdownStart: (callback, priority) => attachEvent(callback, "ShutdownStart", priority),
     } satisfies TLifecycleBase,
     async exec(stage: LifecycleStages): Promise<string> {
       const start = Date.now();
@@ -63,7 +54,7 @@ export function CreateLifecycle() {
         const negative = [] as EventMapObject[];
 
         // console.error("HIT 1");
-        sorted.forEach((i) => {
+        sorted.forEach(i => {
           if (i.priority >= PRE_CALLBACKS_START) {
             positive.push(i);
             return;

@@ -15,7 +15,7 @@ export async function each<T = unknown>(
   if (item instanceof Set) {
     item = [...item.values()];
   }
-  await Promise.all(item.map(async (i) => await callback(i)));
+  await Promise.all(item.map(async i => await callback(i)));
 }
 
 // #MARK: eachSeries
@@ -55,7 +55,7 @@ export async function eachLimit<T = unknown>(
   }
 
   // Add initial tasks up to the limit
-  const initialTasks = items.slice(SINGLE, limit).map((item) => addTask(item));
+  const initialTasks = items.slice(SINGLE, limit).map(item => addTask(item));
 
   // Wait for the initial set of tasks to start processing
   await Promise.all(initialTasks);

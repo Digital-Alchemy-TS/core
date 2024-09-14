@@ -32,9 +32,7 @@ export function Configuration({
   logger,
 }: TServiceParams) {
   // 🙊 but that's illegal!
-  lifecycle.onPreInit(
-    () => (logger = internal.boilerplate.logger.context(context)),
-  );
+  lifecycle.onPreInit(() => (logger = internal.boilerplate.logger.context(context)));
 
   const configuration: PartialConfiguration = {};
   const configDefinitions: KnownConfigs = new Map();
@@ -52,15 +50,11 @@ export function Configuration({
         return internal.utils.object.get(configuration, project) ?? {};
       },
       has(_, key: keyof TInjectedConfig) {
-        Object.keys(configuration).forEach(
-          (key) => (out[key as keyof typeof out] ??= {}),
-        );
+        Object.keys(configuration).forEach(key => (out[key as keyof typeof out] ??= {}));
         return Object.keys(configuration).includes(key);
       },
       ownKeys() {
-        Object.keys(configuration).forEach(
-          (key) => (out[key as keyof typeof out] ??= {}),
-        );
+        Object.keys(configuration).forEach(key => (out[key as keyof typeof out] ??= {}));
         return Object.keys(configuration);
       },
       set() {
@@ -72,16 +66,8 @@ export function Configuration({
   function SetConfig<
     Project extends keyof TInjectedConfig,
     Property extends keyof TInjectedConfig[Project],
-  >(
-    project: Project,
-    property: Property,
-    value: TInjectedConfig[Project][Property],
-  ): void {
-    internal.utils.object.set(
-      configuration,
-      [project, property].join("."),
-      value,
-    );
+  >(project: Project, property: Property, value: TInjectedConfig[Project][Property]): void {
+    internal.utils.object.set(configuration, [project, property].join("."), value);
     // in case anyone needs a hook
     event.emit(EVENT_CONFIGURATION_UPDATED, project, property);
   }
@@ -90,7 +76,7 @@ export function Configuration({
     // * validate
     // - ensure all required properties have been defined
     configDefinitions.forEach((definitions, project) => {
-      Object.keys(definitions).forEach((key) => {
+      Object.keys(definitions).forEach(key => {
         const config = [project, key].join(".");
         if (
           definitions[key].required &&
@@ -108,10 +94,9 @@ export function Configuration({
   }
 
   // #MARK: Initialize
-  async function Initialize<
-    S extends ServiceMap,
-    C extends OptionalModuleConfiguration,
-  >(application: ApplicationDefinition<S, C>): Promise<string> {
+  async function Initialize<S extends ServiceMap, C extends OptionalModuleConfiguration>(
+    application: ApplicationDefinition<S, C>,
+  ): Promise<string> {
     const configLoaders =
       internal.boot.application.configurationLoaders ??
       ([ConfigLoaderEnvironment, ConfigLoaderFile] as ConfigLoader[]);
@@ -126,7 +111,7 @@ export function Configuration({
     }
 
     // * load!
-    await eachSeries(configLoaders, async (loader) => {
+    await eachSeries(configLoaders, async loader => {
       const merge = await loader({
         application,
         configs: configDefinitions,
@@ -147,12 +132,8 @@ export function Configuration({
 
   function LoadProject(library: string, definitions: CodeConfigDefinition) {
     internal.utils.object.set(configuration, library, {});
-    Object.keys(definitions).forEach((key) => {
-      internal.utils.object.set(
-        configuration,
-        [library, key].join("."),
-        definitions[key].default,
-      );
+    Object.keys(definitions).forEach(key => {
+      internal.utils.object.set(configuration, [library, key].join("."), definitions[key].default);
     });
     return configDefinitions.set(library, definitions);
   }
@@ -184,23 +165,16 @@ export function Configuration({
     onUpdate<
       Project extends keyof TInjectedConfig,
       Property extends Extract<keyof TInjectedConfig[Project], string>,
-    >(
-      callback: OnConfigUpdateCallback<Project, Property>,
-      project?: Project,
-      property?: Property,
-    ) {
-      event.on(
-        EVENT_CONFIGURATION_UPDATED,
-        (updatedProject, updatedProperty) => {
-          if (!is.empty(project) && project !== updatedProject) {
-            return;
-          }
-          if (!is.empty(property) && property !== updatedProperty) {
-            return;
-          }
-          callback(updatedProject, updatedProperty);
-        },
-      );
+    >(callback: OnConfigUpdateCallback<Project, Property>, project?: Project, property?: Property) {
+      event.on(EVENT_CONFIGURATION_UPDATED, (updatedProject, updatedProperty) => {
+        if (!is.empty(project) && project !== updatedProject) {
+          return;
+        }
+        if (!is.empty(property) && property !== updatedProperty) {
+          return;
+        }
+        callback(updatedProject, updatedProperty);
+      });
     },
 
     /**

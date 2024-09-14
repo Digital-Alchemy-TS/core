@@ -81,7 +81,7 @@ const RUNNING_APPLICATIONS = new Map<
 
 // #MARK: QuickShutdown
 async function quickShutdown(reason: string) {
-  await each([...RUNNING_APPLICATIONS.values()], async (application) => {
+  await each([...RUNNING_APPLICATIONS.values()], async application => {
     application.logger.warn({ reason }, `starting shutdown`);
     await application.teardown();
   });
@@ -108,15 +108,10 @@ const processEvents = new Map([
 ]);
 
 const BOILERPLATE = (internal: InternalDefinition) =>
-  internal.boot.loadedModules.get("boilerplate") as GetApis<
-    ReturnType<typeof createBoilerplate>
-  >;
+  internal.boot.loadedModules.get("boilerplate") as GetApis<ReturnType<typeof createBoilerplate>>;
 
 // #MARK: CreateApplication
-export function CreateApplication<
-  S extends ServiceMap,
-  C extends OptionalModuleConfiguration,
->({
+export function CreateApplication<S extends ServiceMap, C extends OptionalModuleConfiguration>({
   name,
   services = {} as S,
   configurationLoaders,
@@ -127,7 +122,7 @@ export function CreateApplication<
   let internal: InternalDefinition;
 
   if (!is.empty(priorityInit)) {
-    priorityInit.forEach((name) => {
+    priorityInit.forEach(name => {
       if (!is.function(services[name])) {
         throw new BootstrapException(
           WIRING_CONTEXT,
@@ -145,21 +140,18 @@ export function CreateApplication<
         name as keyof LoadedModules,
         configuration,
       );
-      await eachSeries(
-        wireOrder(priorityInit, Object.keys(services)),
-        async (service) => {
-          serviceApis[service] = await wireService(
-            name,
-            service,
-            services[service],
-            internal.boot.lifecycle.events,
-            internal,
-          );
-        },
-      );
+      await eachSeries(wireOrder(priorityInit, Object.keys(services)), async service => {
+        serviceApis[service] = await wireService(
+          name,
+          service,
+          services[service],
+          internal.boot.lifecycle.events,
+          internal,
+        );
+      });
       const append = internal.boot.options?.appendService;
       if (!is.empty(append)) {
-        await eachSeries(Object.keys(append), async (service) => {
+        await eachSeries(Object.keys(append), async service => {
           await wireService(
             name,
             service,
@@ -195,9 +187,7 @@ export function CreateApplication<
     services,
     teardown: async () => {
       if (!application.booted) {
-        processEvents.forEach((callback, event) =>
-          process.removeListener(event, callback),
-        );
+        processEvents.forEach((callback, event) => process.removeListener(event, callback));
         return;
       }
       await teardown(internal, application.logger);
@@ -230,7 +220,7 @@ async function wireService(
   try {
     logger?.trace({ name: wireService }, `initializing`);
     const inject = Object.fromEntries(
-      [...internal.boot.loadedModules.keys()].map((project) => [
+      [...internal.boot.loadedModules.keys()].map(project => [
         project as keyof TServiceParams,
         internal.boot.loadedModules.get(project),
       ]),
@@ -282,10 +272,7 @@ const runReady = async (internal: InternalDefinition) => {
 };
 
 // #MARK: Bootstrap
-async function bootstrap<
-  S extends ServiceMap,
-  C extends OptionalModuleConfiguration,
->(
+async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfiguration>(
   application: ApplicationDefinition<S, C>,
   options: BootstrapOptions,
   internal: InternalDefinition,
@@ -329,10 +316,7 @@ async function bootstrap<
 
     CONSTRUCT.boilerplate = `${Date.now() - start}ms`;
     // ~ configuration
-    api.configuration?.[LOAD_PROJECT](
-      LIB_BOILERPLATE.name,
-      LIB_BOILERPLATE.configuration,
-    );
+    api.configuration?.[LOAD_PROJECT](LIB_BOILERPLATE.name, LIB_BOILERPLATE.configuration);
     const logger = api.logger.context(WIRING_CONTEXT);
     application.logger = logger;
     logger.info({ name: bootstrap }, `[boilerplate] wiring complete`);
@@ -350,7 +334,7 @@ async function bootstrap<
       const list = is.array(options.appendLibrary)
         ? options.appendLibrary
         : [options.appendLibrary];
-      list.forEach((append) => {
+      list.forEach(append => {
         application.libraries.some((library, index) => {
           if (append.name === library.name) {
             // remove existing
@@ -367,7 +351,7 @@ async function bootstrap<
     }
 
     const order = BuildSortOrder(application, logger);
-    await eachSeries(order, async (i) => {
+    await eachSeries(order, async i => {
       start = Date.now();
       logger.info({ name: bootstrap }, `[%s] init project`, i.name);
       await i[WIRE_PROJECT](internal, wireService);
@@ -399,16 +383,10 @@ async function bootstrap<
     const config = BOILERPLATE(internal)?.configuration;
     STATS.Configure = await config?.[INITIALIZE](application);
     // - Run through other events in order
-    logger.debug(
-      { name: bootstrap },
-      `[PostConfig] running lifecycle callbacks`,
-    );
+    logger.debug({ name: bootstrap }, `[PostConfig] running lifecycle callbacks`);
 
     STATS.PostConfig = await runPostConfig(internal);
-    logger.debug(
-      { name: bootstrap },
-      `[Bootstrap] running lifecycle callbacks`,
-    );
+    logger.debug({ name: bootstrap }, `[Bootstrap] running lifecycle callbacks`);
     STATS.Bootstrap = await runBootstrap(internal);
 
     if (options?.bootLibrariesFirst) {
@@ -455,25 +433,16 @@ async function teardown(internal: InternalDefinition, logger: ILogger) {
   internal.boot.phase = "teardown";
   try {
     // * PreShutdown
-    logger.debug(
-      { name: teardown },
-      `[PreShutdown] running lifecycle callbacks`,
-    );
+    logger.debug({ name: teardown }, `[PreShutdown] running lifecycle callbacks`);
     await internal.boot.lifecycle.exec("PreShutdown");
     internal.boot.completedLifecycleEvents.add("PreShutdown");
 
     // * Formally shutting down
     logger.info({ name: teardown }, `tearing down application`);
-    logger.debug(
-      { name: teardown },
-      `[ShutdownStart] running lifecycle callbacks`,
-    );
+    logger.debug({ name: teardown }, `[ShutdownStart] running lifecycle callbacks`);
     await internal.boot.lifecycle.exec("ShutdownStart");
     internal.boot.completedLifecycleEvents.add("ShutdownStart");
-    logger.debug(
-      { name: teardown },
-      `[ShutdownComplete] running lifecycle callbacks`,
-    );
+    logger.debug({ name: teardown }, `[ShutdownComplete] running lifecycle callbacks`);
     await internal.boot.lifecycle.exec("ShutdownComplete");
     internal.boot.completedLifecycleEvents.add("ShutdownComplete");
   } catch (error) {
@@ -492,7 +461,5 @@ async function teardown(internal: InternalDefinition, logger: ILogger) {
     },
     `application terminated`,
   );
-  processEvents.forEach((callback, event) =>
-    process.removeListener(event, callback),
-  );
+  processEvents.forEach((callback, event) => process.removeListener(event, callback));
 }

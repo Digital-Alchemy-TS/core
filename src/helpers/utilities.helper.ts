@@ -79,7 +79,7 @@ export function sleep(target: number | Date = SECOND): SleepReturn {
 
   // Take a normal promise, add a `.kill` to it
   // You can await as normal, or call the function
-  const out = new Promise<void>((i) => (done = i)) as SleepReturn;
+  const out = new Promise<void>(i => (done = i)) as SleepReturn;
   out.kill = (execute = "stop") => {
     if (execute === "continue" && done) {
       done();
@@ -96,10 +96,7 @@ export const ACTIVE_DEBOUNCE = new Map<string, SleepReturn>();
 /**
  * allow initial call, then block for a period
  */
-export async function throttle(
-  identifier: string,
-  timeout: number,
-): Promise<void> {
+export async function throttle(identifier: string, timeout: number): Promise<void> {
   if (ACTIVE_THROTTLE.has(identifier)) {
     return;
   }
@@ -113,10 +110,7 @@ export async function throttle(
 /**
  * wait for duration after call before allowing next, extends for calls inside window
  */
-export async function debounce(
-  identifier: string,
-  timeout: number,
-): Promise<void> {
+export async function debounce(identifier: string, timeout: number): Promise<void> {
   const current = ACTIVE_DEBOUNCE.get(identifier);
   if (!is.undefined(current)) {
     current.kill("stop");
@@ -136,9 +130,7 @@ export const noop = () => {};
  * Create an array of length, where the values are filled with a provided fill value, or (index + 1) as default value
  */
 export function PEAT<T = number>(length: number, fill?: T): T[] {
-  return Array.from({ length }).map(
-    (_, index) => fill ?? ((index + ARRAY_OFFSET) as T),
-  );
+  return Array.from({ length }).map((_, index) => fill ?? ((index + ARRAY_OFFSET) as T));
 }
 
 // eslint-disable-next-line sonarjs/no-redundant-type-constituents

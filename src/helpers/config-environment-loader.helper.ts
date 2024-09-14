@@ -31,7 +31,7 @@ export async function ConfigLoaderEnvironment<
     const cleanedProject = project.replaceAll("-", "_");
 
     // * run through each config for module
-    Object.keys(configuration).forEach((key) => {
+    Object.keys(configuration).forEach(key => {
       // > things to search for
       // - MODULE_NAME_CONFIG_KEY (module + key, ex: app_NODE_ENV)
       // - CONFIG_KEY (only key, ex: NODE_ENV)

@@ -9,9 +9,8 @@ import {
   OptionalModuleConfiguration,
   ServiceMap,
   sleep,
-  TServiceParams,
-} from "..";
-import { TestRunner } from "./helpers";
+  TestRunner,
+} from "../src";
 
 export const FAKE_EXIT = (() => {}) as () => never;
 
@@ -20,10 +19,7 @@ const BASIC_BOOT = {
 } as BootstrapOptions;
 
 describe("Wiring", () => {
-  let application: ApplicationDefinition<
-    ServiceMap,
-    OptionalModuleConfiguration
-  >;
+  let application: ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
 
   afterEach(async () => {
     if (application) {
@@ -344,9 +340,7 @@ describe("Wiring", () => {
         let list: LifecycleStages[];
 
         await TestRunner().run(({ lifecycle, internal }) => {
-          lifecycle.onPreInit(
-            () => (list = [...internal.boot.completedLifecycleEvents]),
-          );
+          lifecycle.onPreInit(() => (list = [...internal.boot.completedLifecycleEvents]));
         });
 
         expect(list).toEqual([]);
@@ -357,9 +351,7 @@ describe("Wiring", () => {
         let list: LifecycleStages[];
 
         await TestRunner().run(({ lifecycle, internal }) => {
-          lifecycle.onPostConfig(
-            () => (list = [...internal.boot.completedLifecycleEvents]),
-          );
+          lifecycle.onPostConfig(() => (list = [...internal.boot.completedLifecycleEvents]));
         });
 
         expect(list).toEqual(["PreInit"]);
@@ -370,9 +362,7 @@ describe("Wiring", () => {
         let list: LifecycleStages[];
 
         await TestRunner().run(({ lifecycle, internal }) => {
-          lifecycle.onBootstrap(
-            () => (list = [...internal.boot.completedLifecycleEvents]),
-          );
+          lifecycle.onBootstrap(() => (list = [...internal.boot.completedLifecycleEvents]));
         });
 
         expect(list).toEqual(["PreInit", "PostConfig"]);
@@ -383,9 +373,7 @@ describe("Wiring", () => {
         let list: LifecycleStages[];
 
         await TestRunner().run(({ lifecycle, internal }) => {
-          lifecycle.onReady(
-            () => (list = [...internal.boot.completedLifecycleEvents]),
-          );
+          lifecycle.onReady(() => (list = [...internal.boot.completedLifecycleEvents]));
         });
 
         expect(list).toEqual(["PreInit", "PostConfig", "Bootstrap"]);
@@ -413,9 +401,7 @@ describe("Wiring", () => {
         await TestRunner()
           .configure({ forceTeardown: true })
           .run(({ lifecycle, internal }) => {
-            lifecycle.onPreShutdown(
-              () => (list = [...internal.boot.completedLifecycleEvents]),
-            );
+            lifecycle.onPreShutdown(() => (list = [...internal.boot.completedLifecycleEvents]));
           });
 
         application = undefined;
@@ -429,18 +415,10 @@ describe("Wiring", () => {
         await TestRunner()
           .configure({ forceTeardown: true })
           .run(({ lifecycle, internal }) => {
-            lifecycle.onShutdownStart(
-              () => (list = [...internal.boot.completedLifecycleEvents]),
-            );
+            lifecycle.onShutdownStart(() => (list = [...internal.boot.completedLifecycleEvents]));
           });
 
-        expect(list).toEqual([
-          "PreInit",
-          "PostConfig",
-          "Bootstrap",
-          "Ready",
-          "PreShutdown",
-        ]);
+        expect(list).toEqual(["PreInit", "PostConfig", "Bootstrap", "Ready", "PreShutdown"]);
       });
 
       it("tracks shutdownStart", async () => {
@@ -496,18 +474,10 @@ describe("Wiring", () => {
       await TestRunner()
         .configure({ bootLibrariesFirst: true })
         .run(({ internal }) => {
-          expect(internal.boot.completedLifecycleEvents.has("Bootstrap")).toBe(
-            true,
-          );
-          expect(internal.boot.completedLifecycleEvents.has("PreInit")).toBe(
-            true,
-          );
-          expect(internal.boot.completedLifecycleEvents.has("PostConfig")).toBe(
-            true,
-          );
-          expect(internal.boot.completedLifecycleEvents.has("Ready")).toBe(
-            false,
-          );
+          expect(internal.boot.completedLifecycleEvents.has("Bootstrap")).toBe(true);
+          expect(internal.boot.completedLifecycleEvents.has("PreInit")).toBe(true);
+          expect(internal.boot.completedLifecycleEvents.has("PostConfig")).toBe(true);
+          expect(internal.boot.completedLifecycleEvents.has("Ready")).toBe(false);
         });
     });
 
@@ -595,9 +565,7 @@ describe("Wiring", () => {
   describe("Boot Phase", () => {
     it("should exit if service constructor throws error", async () => {
       expect.assertions(1);
-      const spy = jest
-        .spyOn(process, "exit")
-        .mockImplementation(() => undefined as never);
+      const spy = jest.spyOn(process, "exit").mockImplementation(() => undefined as never);
       jest.spyOn(global.console, "error").mockImplementation(() => undefined);
 
       await TestRunner().run(() => {
@@ -648,9 +616,7 @@ describe("Wiring", () => {
   describe("Teardown", () => {
     it("shouldn't process double teardown", async () => {
       expect.assertions(1);
-      const spy = jest
-        .spyOn(global.console, "error")
-        .mockImplementation(() => undefined);
+      const spy = jest.spyOn(global.console, "error").mockImplementation(() => undefined);
       await TestRunner()
         .configure({ forceTeardown: true })
         .run(({ lifecycle }) => {
@@ -679,9 +645,7 @@ describe("Wiring", () => {
 
     it("should shutdown on SIGTERM", async () => {
       expect.assertions(2);
-      const exit = jest
-        .spyOn(process, "exit")
-        .mockImplementation(() => undefined as never);
+      const exit = jest.spyOn(process, "exit").mockImplementation(() => undefined as never);
 
       const spy = jest.fn();
 
@@ -698,9 +662,7 @@ describe("Wiring", () => {
 
     it("should shutdown on SIGINT", async () => {
       expect.assertions(2);
-      const exit = jest
-        .spyOn(process, "exit")
-        .mockImplementation(() => undefined as never);
+      const exit = jest.spyOn(process, "exit").mockImplementation(() => undefined as never);
 
       const spy = jest.fn();
 
@@ -795,7 +757,7 @@ describe("Wiring", () => {
 
     it("should add library to TServiceParams", async () => {
       expect.assertions(1);
-      await TestRunner().run((params) => {
+      await TestRunner().run(params => {
         expect("testing" in params).toBe(true);
       });
     });
@@ -823,16 +785,14 @@ describe("Wiring", () => {
 
     it("passes standard utils into services", async () => {
       expect.assertions(6);
-      await TestRunner().run(
-        ({ lifecycle, logger, scheduler, event, config, context }) => {
-          expect(lifecycle).toBeDefined();
-          expect(logger).toBeDefined();
-          expect(scheduler).toBeDefined();
-          expect(event).toBeDefined();
-          expect(config).toBeDefined();
-          expect(context).toBeDefined();
-        },
-      );
+      await TestRunner().run(({ lifecycle, logger, scheduler, event, config, context }) => {
+        expect(lifecycle).toBeDefined();
+        expect(logger).toBeDefined();
+        expect(scheduler).toBeDefined();
+        expect(event).toBeDefined();
+        expect(config).toBeDefined();
+        expect(context).toBeDefined();
+      });
     });
   });
   // #endregion
@@ -906,9 +866,7 @@ describe("Wiring", () => {
         name: "testing",
         services: {},
       });
-      const failFastSpy = jest
-        .spyOn(process, "exit")
-        .mockImplementation(FAKE_EXIT);
+      const failFastSpy = jest.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
       expect.assertions(1);
       await application.bootstrap(BASIC_BOOT);
       expect(failFastSpy).toHaveBeenCalled();
@@ -922,9 +880,7 @@ describe("Wiring", () => {
         name: "testing",
         services: {},
       });
-      const failFastSpy = jest
-        .spyOn(process, "exit")
-        .mockImplementation(FAKE_EXIT);
+      const failFastSpy = jest.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
       expect.assertions(1);
       await application.bootstrap(BASIC_BOOT);
       expect(failFastSpy).not.toHaveBeenCalled();
@@ -948,9 +904,7 @@ describe("Wiring", () => {
         name: "testing",
         services: {},
       });
-      const failFastSpy = jest
-        .spyOn(process, "exit")
-        .mockImplementation(FAKE_EXIT);
+      const failFastSpy = jest.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
       await application.bootstrap(BASIC_BOOT);
       expect(list).toEqual(["A", "B", "C"]);
       expect(failFastSpy).not.toHaveBeenCalled();

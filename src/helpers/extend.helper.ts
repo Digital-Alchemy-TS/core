@@ -14,11 +14,9 @@ function cloneSpecificValue(value: unknown) {
   throw new TypeError("Unexpected situation");
 }
 
-export function deepCloneArray<TYPE = unknown>(
-  array: Array<TYPE>,
-): Array<TYPE> {
+export function deepCloneArray<TYPE = unknown>(array: Array<TYPE>): Array<TYPE> {
   // eslint-disable-next-line sonarjs/function-return-type
-  return array.map((item) => {
+  return array.map(item => {
     if (is.object(item)) {
       if (is.array(item)) {
         return deepCloneArray(item);
@@ -33,16 +31,14 @@ export function deepCloneArray<TYPE = unknown>(
 }
 
 function safeGetProperty(object: unknown, key: string) {
-  return key === "__proto__"
-    ? undefined
-    : (object as Record<string, unknown>)[key];
+  return key === "__proto__" ? undefined : (object as Record<string, unknown>)[key];
 }
 
 export function deepExtend<A, B>(target: A, object: B): A & B {
   if (typeof object !== "object" || object === null || is.array(object)) {
     return target as A & B;
   }
-  Object.keys(object).forEach((key) => {
+  Object.keys(object).forEach(key => {
     const source = safeGetProperty(target, key);
     const value = safeGetProperty(object, key);
     if (value === target) {

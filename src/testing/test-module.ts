@@ -1,6 +1,6 @@
 import { v4 } from "uuid";
 
-import { CreateApplication, ILogger, is } from "../../extensions";
+import { CreateApplication, ILogger, is } from "../extensions";
 import {
   ApplicationDefinition,
   ConfigLoader,
@@ -15,7 +15,7 @@ import {
   ServiceFunction,
   ServiceMap,
   TLibrary,
-} from "../../helpers";
+} from "../helpers";
 
 export type CreateTestingLibraryOptions<
   S extends ServiceMap,
@@ -83,19 +83,54 @@ type TestingBootstrapOptions = {
   module_config?: ModuleConfiguration;
 };
 
-export type iTestRunner = {
+export type iTestRunner<S extends ServiceMap, C extends OptionalModuleConfiguration> = {
   /**
    * chained calls deep merge options together
    */
-  configure: (options: TestingBootstrapOptions) => iTestRunner;
-  setup: (test: ServiceFunction) => iTestRunner;
+  configure: (options: TestingBootstrapOptions) => iTestRunner<S, C>;
+
+  /**
+   * chained calls add multiple setup functions
+   */
+  setup: (test: ServiceFunction) => iTestRunner<S, C>;
+
+  /**
+   * returns reference to app that was booted
+   */
   run: (
     test: ServiceFunction,
   ) => Promise<ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>>;
-  appendLibrary: (library: TLibrary) => iTestRunner;
-  appendService: (service: ServiceFunction, name?: string) => iTestRunner;
-  replaceLibrary: (name: string, library: TLibrary) => iTestRunner;
-  replaceService: (name: string, service: ServiceFunction) => iTestRunner;
+
+  /**
+   * add a library to the runner beyond what the target module requested
+   */
+  appendLibrary: (library: TLibrary) => iTestRunner<S, C>;
+
+  /**
+   * inject an extra service to your module
+   *
+   * by default will take the function name as context, can optionally provide the name as 2nd param (if it even matters)
+   */
+  appendService: (service: ServiceFunction, name?: string) => iTestRunner<S, C>;
+
+  /**
+   * substitute a library for another by name
+   */
+  replaceLibrary: (name: string, library: TLibrary) => iTestRunner<S, C>;
+
+  /**
+   * substitute a service for another in your module
+   *
+   * does not check if the substitution is valid
+   */
+  replaceService: (name: string, service: ServiceFunction) => iTestRunner<S, C>;
+
+  /**
+   * reference to the app teardown internally
+   *
+   * clean up your testing resources!
+   */
+  teardown: () => Promise<void>;
   // pickService: () => iTestRunner;
   // omitService: () => iTestRunner;
 };
@@ -107,6 +142,7 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
   options: CreateTestingLibraryOptions<S, C> = {},
 ) {
   process.setMaxListeners(NONE);
+  let teardown: () => Promise<void>;
   let bootOptions: TestingBootstrapOptions = {};
   const appendLibraries = new Map<string, TLibrary>();
   const appendServices = new Map<string, ServiceFunction>();
@@ -115,10 +151,10 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
   const runFirst = new Set<ServiceFunction>();
 
   function getLibraries(target: LibraryDefinition<S, C> | ApplicationDefinition<S, C>) {
-    if ("depends" in target) {
-      return target.depends;
+    if (target && "depends" in target) {
+      return target.depends ?? [];
     }
-    return "libraries" in target ? target.libraries : [];
+    return target && "libraries" in target ? target.libraries : [];
   }
 
   function buildApp(
@@ -126,7 +162,7 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
     target: LibraryDefinition<S, C> | ApplicationDefinition<S, C>,
     test: ServiceFunction,
   ) {
-    const optional = "optionalDepends" in target ? target.optionalDepends : [];
+    const optional = target && "optionalDepends" in target ? target.optionalDepends : [];
     const depends = [...getLibraries(target)];
 
     const testLibrary = target
@@ -176,7 +212,7 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
     return { LIB_RUN_FIRST, app };
   }
 
-  const libraryTestRunner: iTestRunner = {
+  const libraryTestRunner: iTestRunner<S, C> = {
     appendLibrary(library: TLibrary) {
       appendLibraries.set(library.name, library);
       return libraryTestRunner;
@@ -222,13 +258,20 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
 
       if (bootOptions?.forceTeardown) {
         await app.teardown();
+      } else {
+        teardown = async () => await app.teardown();
       }
-
       return app;
     },
     setup(service: ServiceFunction) {
       runFirst.add(service);
       return libraryTestRunner;
+    },
+    async teardown() {
+      if (teardown) {
+        await teardown();
+        teardown = undefined;
+      }
     },
   };
   return libraryTestRunner;

@@ -1,19 +1,17 @@
 import chalk from "chalk";
 import dayjs from "dayjs";
 
-import { is } from "../extensions";
 import {
   ApplicationDefinition,
+  createMockLogger,
+  is,
   OptionalModuleConfiguration,
   ServiceMap,
-} from "../helpers";
-import { createMockLogger, TestRunner } from "./helpers";
+  TestRunner,
+} from "../src";
 
 describe("Logger", () => {
-  let application: ApplicationDefinition<
-    ServiceMap,
-    OptionalModuleConfiguration
-  >;
+  let application: ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
 
   afterEach(async () => {
     if (application) {
@@ -28,9 +26,7 @@ describe("Logger", () => {
       expect.assertions(1);
 
       await TestRunner().run(({ internal }) => {
-        expect(is.empty(internal.boilerplate.logger.getShouldILog())).toBe(
-          false,
-        );
+        expect(is.empty(internal.boilerplate.logger.getShouldILog())).toBe(false);
       });
     });
 
@@ -41,11 +37,7 @@ describe("Logger", () => {
       await TestRunner()
         .configure({ customLogger })
         .run(({ internal, logger }) => {
-          internal.boilerplate.configuration.set(
-            "boilerplate",
-            "LOG_LEVEL",
-            "warn",
-          );
+          internal.boilerplate.configuration.set("boilerplate", "LOG_LEVEL", "warn");
           logger.fatal("HIT");
           expect(customLogger.fatal).toHaveBeenCalled();
         });
@@ -67,11 +59,7 @@ describe("Logger", () => {
 
       await TestRunner().run(({ internal }) => {
         const spy = jest.spyOn(internal.boilerplate.logger, "updateShouldLog");
-        internal.boilerplate.configuration.set(
-          "boilerplate",
-          "LOG_LEVEL",
-          "warn",
-        );
+        internal.boilerplate.configuration.set("boilerplate", "LOG_LEVEL", "warn");
         expect(spy).toHaveBeenCalled();
       });
     });
@@ -87,24 +75,19 @@ describe("Logger", () => {
       BLUE_TICK = chalk.blue(`>`);
     });
 
+    it("should default to pretty formatting", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        expect(internal.boilerplate.logger.getPrettyFormat()).toBe(true);
+      });
+    });
+
     it("should return the original message if it exceeds MAX_CUTOFF", async () => {
       expect.assertions(1);
 
       await TestRunner().run(({ internal: { boilerplate } }) => {
         const longMessage = "a".repeat(2001);
-        expect(boilerplate.logger.prettyFormatMessage(longMessage)).toBe(
-          longMessage,
-        );
-      });
-    });
-
-    it("should highlight text with # in yellow", async () => {
-      expect.assertions(1);
-
-      await TestRunner().run(({ internal: { boilerplate } }) => {
-        const message = "partA#partB";
-        const expected = chalk.yellow("partA#partB");
-        expect(boilerplate.logger.prettyFormatMessage(message)).toBe(expected);
+        expect(boilerplate.logger.prettyFormatMessage(longMessage)).toBe(longMessage);
       });
     });
 
@@ -153,7 +136,7 @@ describe("Logger", () => {
       await TestRunner()
         .configure({ customLogger: logger })
         .run(({ internal }) => {
-          expect(internal.boilerplate.logger.getBaseLogger()).toBe(logger);
+          expect(internal.boilerplate.logger.getBaseLogger()).toStrictEqual(logger);
         });
     });
 
@@ -185,9 +168,7 @@ describe("Logger", () => {
           loggerOptions: { timestamp_format: format },
         })
         .run(({ logger }) => {
-          const spy = jest
-            .spyOn(dayjs.prototype, "format")
-            .mockImplementation(() => "timestamp");
+          const spy = jest.spyOn(dayjs.prototype, "format").mockImplementation(() => "timestamp");
           logger.info(`test`);
           expect(spy).toHaveBeenCalledWith(format);
         });

@@ -36,12 +36,7 @@ export class FetchRequestError extends Error {
   timestamp: Date;
   context: TContext;
 
-  constructor(
-    context: TContext,
-    statusCode: number,
-    error: string,
-    message: string,
-  ) {
+  constructor(context: TContext, statusCode: number, error: string, message: string) {
     super();
     this.context = context;
     this.name = "FetchRequestError";

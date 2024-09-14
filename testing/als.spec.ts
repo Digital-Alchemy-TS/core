@@ -1,4 +1,4 @@
-import { TestRunner } from "./helpers";
+import { TestRunner } from "../src";
 
 describe("ALS", () => {
   it("exists", async () => {

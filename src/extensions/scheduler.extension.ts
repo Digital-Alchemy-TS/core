@@ -2,12 +2,7 @@ import dayjs, { Dayjs } from "dayjs";
 import { schedule } from "node-cron";
 
 import { is, TBlackHole, TContext } from "..";
-import {
-  BootstrapException,
-  Schedule,
-  SchedulerOptions,
-  TServiceParams,
-} from "../helpers";
+import { BootstrapException, Schedule, SchedulerOptions, TServiceParams } from "../helpers";
 
 export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
   const stop = new Set<() => TBlackHole>();
@@ -17,12 +12,8 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
     if (is.empty(stop)) {
       return;
     }
-    logger.info(
-      { name: "onPreShutdown" },
-      `removing [%s] schedules`,
-      stop.size,
-    );
-    stop.forEach((stopFunctions) => {
+    logger.info({ name: "onPreShutdown" }, `removing [%s] schedules`, stop.size);
+    stop.forEach(stopFunctions => {
       stopFunctions();
       stop.delete(stopFunctions);
     });
@@ -35,25 +26,16 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
       schedule: scheduleList,
     }: SchedulerOptions & { schedule: Schedule | Schedule[] }) {
       const stopFunctions: (() => TBlackHole)[] = [];
-      [scheduleList].flat().forEach((cronSchedule) => {
+      [scheduleList].flat().forEach(cronSchedule => {
         logger.trace({ context, name: cron, schedule: cronSchedule }, `init`);
-        const cronJob = schedule(
-          cronSchedule,
-          async () => await internal.safeExec(exec),
-        );
+        const cronJob = schedule(cronSchedule, async () => await internal.safeExec(exec));
         lifecycle.onReady(() => {
-          logger.trace(
-            { context, name: cron, schedule: cronSchedule },
-            "starting",
-          );
+          logger.trace({ context, name: cron, schedule: cronSchedule }, "starting");
           cronJob.start();
         });
 
         const stopFunction = () => {
-          logger.trace(
-            { context, name: cron, schedule: cronSchedule },
-            `stopping`,
-          );
+          logger.trace({ context, name: cron, schedule: cronSchedule }, `stopping`);
           cronJob.stop();
         };
 
@@ -62,22 +44,16 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
         return stopFunction;
       });
 
-      return () => stopFunctions.forEach((stop) => stop());
+      return () => stopFunctions.forEach(stop => stop());
     }
 
     // #MARK: setInterval
-    function interval({
-      exec,
-      interval,
-    }: SchedulerOptions & { interval: number }) {
+    function interval({ exec, interval }: SchedulerOptions & { interval: number }) {
       let runningInterval: ReturnType<typeof setInterval>;
       lifecycle.onReady(() => {
         logger.trace({ context, name: "interval" }, "starting");
 
-        runningInterval = setInterval(
-          async () => await internal.safeExec(exec),
-          interval,
-        );
+        runningInterval = setInterval(async () => await internal.safeExec(exec), interval);
       });
       const stopFunction = () => {
         if (runningInterval) {

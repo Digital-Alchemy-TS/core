@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import { is } from "../extensions";
+import { is } from "../src";
 
 describe("IsIt class", () => {
   test("is.array returns true for arrays", () => {
@@ -96,9 +96,7 @@ describe("IsIt class", () => {
 
     test("throws an error for unsupported types like symbol", () => {
       // @ts-expect-error that's the test
-      expect(() => is.empty(Symbol.for("test"))).toThrow(
-        "Unsupported type symbol",
-      );
+      expect(() => is.empty(Symbol.for("test"))).toThrow("Unsupported type symbol");
     });
   });
 

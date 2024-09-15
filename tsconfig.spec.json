@@ -1,17 +1,18 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "./dist-tests",
+    "alwaysStrict": false,
+    "esModuleInterop": true,
     "noEmit": false,
+    "noImplicitAny": false,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noImplicitAny": false,
-    "esModuleInterop": true
+    "outDir": "./dist-tests",
+    "strictNullChecks": false,
   },
   "include": [
     "src/**/*.ts",
-    "src/**/*.spec.ts",
-    "testing/**/*ts"
+    "testing/**/*.ts"
   ],
   "exclude": [
     "node_modules",

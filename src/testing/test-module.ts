@@ -1,6 +1,5 @@
 import { v4 } from "uuid";
 
-import { CreateApplication, ILogger, is } from "../services";
 import {
   ApplicationDefinition,
   ConfigLoader,
@@ -16,6 +15,7 @@ import {
   ServiceMap,
   TLibrary,
 } from "../helpers";
+import { CreateApplication, ILogger, is } from "../services";
 
 export type CreateTestingLibraryOptions<
   S extends ServiceMap,
@@ -82,6 +82,11 @@ type TestingBootstrapOptions = {
    */
   module_config?: ModuleConfiguration;
 };
+
+export type LibraryTestRunner<T> =
+  T extends LibraryDefinition<infer S, infer C> ? iTestRunner<S, C> : never;
+export type ApplicationTestRunner<T> =
+  T extends ApplicationDefinition<infer S, infer C> ? iTestRunner<S, C> : never;
 
 export type iTestRunner<S extends ServiceMap, C extends OptionalModuleConfiguration> = {
   /**

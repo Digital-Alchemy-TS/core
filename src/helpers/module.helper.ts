@@ -14,7 +14,7 @@ import {
 } from "./wiring.helper";
 
 export type ExtendOptions = {
-  name: string;
+  name?: string;
   /**
    * default: true
    */
@@ -28,7 +28,7 @@ export type DigitalAlchemyModule<S extends ServiceMap, C extends OptionalModuleC
   depends: TLibrary[];
   optionalDepends?: TLibrary[];
   priorityInit: string[];
-  extend: (options: ExtendOptions) => ModuleExtension<S, C>;
+  extend: (options?: ExtendOptions) => ModuleExtension<S, C>;
 };
 
 export type CreateModuleOptions<S extends ServiceMap, C extends OptionalModuleConfiguration> = {
@@ -170,7 +170,7 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
           configuration: deepExtend({}, workingModule.configuration),
           libraries: Object.values(depends),
           // @ts-expect-error wrapper problems
-          name: extendOptions,
+          name: extendOptions?.name || options.name,
           // @ts-expect-error wrapper problems
           priorityInit: [...workingModule.priorityInit],
           services,
@@ -185,7 +185,7 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
           configuration: deepExtend({}, workingModule.configuration),
           depends: Object.values(depends),
           // @ts-expect-error wrapper problems
-          name: extendOptions,
+          name: extendOptions?.name || options.name,
           optionalDepends: workingModule.optionalDepends,
           // @ts-expect-error wrapper problems
           priorityInit: [...workingModule.priorityInit],
@@ -214,25 +214,25 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
 createModule.fromApplication = <S extends ServiceMap, C extends OptionalModuleConfiguration>(
   application: ApplicationDefinition<S, C>,
 ) => {
-  return createModule({
-    configuration: application.configuration,
-    depends: application.libraries,
+  return createModule<S, C>({
+    configuration: application.configuration || ({} as C),
+    depends: application.libraries || [],
     name: application.name,
     optionalDepends: [],
-    priorityInit: application.priorityInit,
-    services: application.services,
+    priorityInit: application.priorityInit || [],
+    services: application.services || ({} as S),
   });
 };
 
 createModule.fromLibrary = <S extends ServiceMap, C extends OptionalModuleConfiguration>(
   library: LibraryDefinition<S, C>,
 ) => {
-  return createModule({
-    configuration: library.configuration,
-    depends: library.depends,
+  return createModule<S, C>({
+    configuration: library.configuration || ({} as C),
+    depends: library.depends || [],
     name: library.name,
-    optionalDepends: library.optionalDepends,
-    priorityInit: library.priorityInit,
-    services: library.services,
+    optionalDepends: library.optionalDepends || [],
+    priorityInit: library.priorityInit || [],
+    services: library.services || ({} as S),
   });
 };

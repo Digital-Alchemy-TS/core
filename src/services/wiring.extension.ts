@@ -2,6 +2,7 @@
 import { EventEmitter } from "events";
 
 import {
+  ACTIVE_SLEEPS,
   ApplicationConfigurationOptions,
   ApplicationDefinition,
   BootstrapException,
@@ -440,6 +441,10 @@ async function teardown(internal: InternalDefinition, logger: ILogger) {
     logger.debug({ name: teardown }, `[ShutdownStart] running lifecycle callbacks`);
     await internal.boot.lifecycle.exec("ShutdownStart");
     internal.boot.completedLifecycleEvents.add("ShutdownStart");
+
+    // - clean up active `sleep` calls (can keep tests open and stuff)
+    ACTIVE_SLEEPS.forEach(i => i.kill("stop"));
+
     logger.debug({ name: teardown }, `[ShutdownComplete] running lifecycle callbacks`);
     await internal.boot.lifecycle.exec("ShutdownComplete");
     internal.boot.completedLifecycleEvents.add("ShutdownComplete");

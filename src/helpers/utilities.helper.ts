@@ -45,6 +45,8 @@ export const SECOND = 1000;
 export const PERCENT = 100;
 export const YEAR = 365 * DAY;
 
+export const ACTIVE_SLEEPS = new Set<SleepReturn>();
+
 type SleepReturn = Promise<void> & {
   kill: (execute: "stop" | "continue") => void;
 };
@@ -73,14 +75,21 @@ export function sleep(target: number | Date = SECOND): SleepReturn {
   let done: undefined | (() => void);
 
   const timeout = setTimeout(
-    () => done && done(),
+    () => {
+      if (done) {
+        done();
+      }
+      ACTIVE_SLEEPS.delete(out);
+    },
     is.date(target) ? target.getTime() - Date.now() : target,
   );
 
   // Take a normal promise, add a `.kill` to it
   // You can await as normal, or call the function
   const out = new Promise<void>(i => (done = i)) as SleepReturn;
+  ACTIVE_SLEEPS.add(out);
   out.kill = (execute = "stop") => {
+    ACTIVE_SLEEPS.delete(out);
     if (execute === "continue" && done) {
       done();
     }

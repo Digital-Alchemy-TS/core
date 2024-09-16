@@ -217,11 +217,11 @@ export async function Logger({
         let target = LOG_LEVEL_PRIORITY[key];
 
         // override directly
-        if (loggerOptions.levelOverrides[name]) {
-          target = LOG_LEVEL_PRIORITY[loggerOptions.levelOverrides[name]];
+        if (loggerOptions?.levelOverrides?.[name]) {
+          target = LOG_LEVEL_PRIORITY[loggerOptions?.levelOverrides?.[name]];
           // module level override
-        } else if (loggerOptions.levelOverrides[prefix]) {
-          target = LOG_LEVEL_PRIORITY[loggerOptions.levelOverrides[prefix]];
+        } else if (loggerOptions?.levelOverrides?.[prefix]) {
+          target = LOG_LEVEL_PRIORITY[loggerOptions?.levelOverrides?.[prefix]];
         }
         shouldILog[key] = target >= LOG_LEVEL_PRIORITY[CURRENT_LOG_LEVEL];
       });

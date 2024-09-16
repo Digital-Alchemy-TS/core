@@ -112,7 +112,7 @@ function createBoilerplate() {
        * Emit no logs at all
        */
       LOG_LEVEL: {
-        default: "fatal",
+        default: "trace",
         description: "Minimum log level to process",
         enum: ["silent", "trace", "info", "warn", "debug", "error", "fatal"],
         type: "string",

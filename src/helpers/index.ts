@@ -8,6 +8,7 @@ export * from "./errors.helper";
 export * from "./events.helper";
 export * from "./extend.helper";
 export * from "./lifecycle.helper";
+export * from "./logger.helper";
 export * from "./module.helper";
 export * from "./utilities.helper";
 export * from "./wiring.helper";

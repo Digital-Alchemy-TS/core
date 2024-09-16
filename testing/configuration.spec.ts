@@ -184,7 +184,7 @@ describe("Configuration", () => {
       expect.assertions(2);
       const spy = jest.fn().mockReturnValue({});
       await TestRunner()
-        .configure({ configLoader: async () => spy() })
+        .setOptions({ configLoader: async () => spy() })
         .run(({ lifecycle }) => {
           lifecycle.onPreInit(() => {
             expect(spy).not.toHaveBeenCalled();
@@ -198,7 +198,7 @@ describe("Configuration", () => {
     it("should prioritize bootstrap config over defaults", async () => {
       expect.assertions(1);
       await TestRunner()
-        .configure({ configuration: { boilerplate: { LOG_LEVEL: "info" } } })
+        .setOptions({ configuration: { boilerplate: { LOG_LEVEL: "info" } } })
         .run(({ config, lifecycle }) => {
           lifecycle.onPostConfig(() => {
             expect(config.boilerplate.LOG_LEVEL).toBe("info");
@@ -218,7 +218,7 @@ describe("Configuration", () => {
     it("should generate the correct structure for applications", async () => {
       expect.assertions(1);
       await TestRunner()
-        .configure({
+        .setOptions({
           module_config: {
             FOO: { default: "bar", type: "string" },
           },
@@ -291,7 +291,7 @@ describe("Configuration", () => {
         expect.assertions(1);
         env["DO_NOT_LOAD"] = "env";
         await TestRunner()
-          .configure({
+          .setOptions({
             module_config: {
               DO_NOT_LOAD: {
                 default: "unloaded",
@@ -319,8 +319,8 @@ describe("Configuration", () => {
       it("should default properly if environment variables do not exist", async () => {
         expect.assertions(1);
         await TestRunner()
-          .configure({ loadConfigs: true })
-          .configure({
+          .setOptions({ loadConfigs: true })
+          .setOptions({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -340,8 +340,8 @@ describe("Configuration", () => {
         expect.assertions(1);
         env["CURRENT_WEATHER"] = "windy";
         await TestRunner()
-          .configure({ loadConfigs: true })
-          .configure({
+          .setOptions({ loadConfigs: true })
+          .setOptions({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -361,8 +361,8 @@ describe("Configuration", () => {
         expect.assertions(1);
         env["current_weather"] = "sunny";
         await TestRunner()
-          .configure({ loadConfigs: true })
-          .configure({
+          .setOptions({ loadConfigs: true })
+          .setOptions({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -382,8 +382,8 @@ describe("Configuration", () => {
         expect.assertions(1);
         env["current_WEATHER"] = "hail";
         await TestRunner()
-          .configure({ loadConfigs: true })
-          .configure({
+          .setOptions({ loadConfigs: true })
+          .setOptions({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -409,8 +409,8 @@ describe("Configuration", () => {
       it("should default properly if environment variables do not exist", async () => {
         expect.assertions(1);
         await TestRunner()
-          .configure({ loadConfigs: true })
-          .configure({
+          .setOptions({ loadConfigs: true })
+          .setOptions({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -430,8 +430,8 @@ describe("Configuration", () => {
         expect.assertions(1);
         process.argv.push("--CURRENT_WEATHER", "windy");
         await TestRunner()
-          .configure({ loadConfigs: true })
-          .configure({
+          .setOptions({ loadConfigs: true })
+          .setOptions({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -451,8 +451,8 @@ describe("Configuration", () => {
         expect.assertions(1);
         process.argv.push("--current_weather", "sunny");
         await TestRunner()
-          .configure({ loadConfigs: true })
-          .configure({
+          .setOptions({ loadConfigs: true })
+          .setOptions({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -472,8 +472,8 @@ describe("Configuration", () => {
         expect.assertions(1);
         process.argv.push("--current_WEATHER", "hail");
         await TestRunner()
-          .configure({ loadConfigs: true })
-          .configure({
+          .setOptions({ loadConfigs: true })
+          .setOptions({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",
@@ -493,8 +493,8 @@ describe("Configuration", () => {
         expect.assertions(1);
         process.argv.push("--current_WEATHER=hail");
         await TestRunner()
-          .configure({ loadConfigs: true })
-          .configure({
+          .setOptions({ loadConfigs: true })
+          .setOptions({
             module_config: {
               CURRENT_WEATHER: {
                 default: "raining",

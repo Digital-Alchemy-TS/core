@@ -7,13 +7,14 @@ import {
   ApplicationDefinition,
   BootstrapException,
   BootstrapOptions,
-  BuildSortOrder,
+  buildSortOrder,
   COERCE_CONTEXT,
   CreateLibrary,
   each,
   eachSeries,
   GetApis,
   GetApisResult,
+  ILogger,
   LoadedModules,
   NONE,
   OptionalModuleConfiguration,
@@ -21,6 +22,7 @@ import {
   ServiceMap,
   SINGLE,
   StringConfig,
+  TConfigLogLevel,
   TLifecycleBase,
   TServiceParams,
   TServiceReturn,
@@ -36,7 +38,7 @@ import {
   LOAD_PROJECT,
 } from "./configuration.extension";
 import { CreateLifecycle } from "./lifecycle.extension";
-import { ILogger, Logger, TConfigLogLevel } from "./logger.extension";
+import { Logger } from "./logger.extension";
 import { Scheduler } from "./scheduler.extension";
 
 // #MARK: CreateBoilerplate
@@ -45,6 +47,14 @@ function createBoilerplate() {
   // While it SEEMS LIKE this can be safely moved, it causes code init race conditions.
   return CreateLibrary({
     configuration: {
+      /**
+       * Only usable by **cli switch**.
+       * Pass path to a config file for loader
+       *
+       * ```bash
+       * node dist/app.js --config ~/.config/my_app.ini
+       * ```
+       */
       CONFIG: {
         description: [
           "Consumable as CLI switch only",
@@ -53,10 +63,58 @@ function createBoilerplate() {
         ].join(". "),
         type: "string",
       },
+      /**
+       * > by default true when:
+       *
+       * ```typescript
+       * NODE_ENV === "test*"
+       * ```
+       *
+       * ---
+       *
+       * When set
+       */
+      IS_TEST: {
+        // test | testing
+        default: process.env.NODE_ENV.startsWith("test"),
+        description: "Quick reference for if this app is currently running with test mode",
+        type: "boolean",
+      },
+      /**
+       * ### `trace`
+       *
+       * Very noisy, contains extra details about what's going on in the internals.
+       *
+       * ### `debug`
+       *
+       * Additional diagnostic information about operations being form. `"did a thing w/ {name}"` is common.
+       *
+       * ### `info`
+       *
+       * Notifications for high level events, and app code.
+       *
+       * ### `warn`
+       *
+       * Notification that an non-critical issue happened.
+       *
+       * ### `error`
+       *
+       * Error logs are produced from unexpected situations.
+       *
+       * When an external API sends back an error messages, or tools are being used in a detectably wrong way.
+       *
+       * ### `fatal`
+       *
+       * Produce a log at the highest importance level, not common
+       *
+       * ### `silent`
+       *
+       * Emit no logs at all
+       */
       LOG_LEVEL: {
-        default: "trace",
+        default: "fatal",
         description: "Minimum log level to process",
-        enum: ["silent", "trace", "info", "warn", "debug", "error"],
+        enum: ["silent", "trace", "info", "warn", "debug", "error", "fatal"],
         type: "string",
       } satisfies StringConfig<TConfigLogLevel>,
     },
@@ -349,7 +407,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       });
     }
 
-    const order = BuildSortOrder(application, logger);
+    const order = buildSortOrder(application, logger);
     await eachSeries(order, async i => {
       start = Date.now();
       logger.info({ name: bootstrap }, `[%s] init project`, i.name);

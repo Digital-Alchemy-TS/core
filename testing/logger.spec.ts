@@ -4,7 +4,6 @@ import dayjs from "dayjs";
 import {
   ApplicationDefinition,
   createMockLogger,
-  is,
   OptionalModuleConfiguration,
   ServiceMap,
   TestRunner,
@@ -22,20 +21,12 @@ describe("Logger", () => {
   });
 
   describe("Configuration Interactions", () => {
-    it("can log stuff by default", async () => {
-      expect.assertions(1);
-
-      await TestRunner().run(({ internal }) => {
-        expect(is.empty(internal.boilerplate.logger.getShouldILog())).toBe(false);
-      });
-    });
-
     it("calls the appropriate things based on permission combos", async () => {
       expect.assertions(1);
 
       const customLogger = createMockLogger();
       await TestRunner()
-        .configure({ customLogger })
+        .setOptions({ customLogger })
         .run(({ internal, logger }) => {
           internal.boilerplate.configuration.set("boilerplate", "LOG_LEVEL", "warn");
           logger.fatal("HIT");
@@ -134,7 +125,7 @@ describe("Logger", () => {
       expect.assertions(1);
       const logger = createMockLogger();
       await TestRunner()
-        .configure({ customLogger: logger })
+        .setOptions({ customLogger: logger })
         .run(({ internal }) => {
           expect(internal.boilerplate.logger.getBaseLogger()).toStrictEqual(logger);
         });
@@ -163,9 +154,9 @@ describe("Logger", () => {
       jest.spyOn(global.console, "log").mockImplementation(() => {});
 
       await TestRunner()
-        .configure({
+        .setOptions({
           emitLogs: true,
-          loggerOptions: { timestamp_format: format },
+          loggerOptions: { timestampFormat: format },
         })
         .run(({ logger }) => {
           const spy = jest.spyOn(dayjs.prototype, "format").mockImplementation(() => "timestamp");

@@ -4,8 +4,21 @@ import { ParsedArgs } from "minimist";
 import { isAbsolute, join, normalize } from "path";
 import { cwd } from "process";
 
-import { ILogger, InternalDefinition, is } from "..";
-import { ApplicationDefinition, ServiceMap } from "./wiring.helper";
+import {
+  ILogger,
+  INITIALIZE,
+  INJECTED_DEFINITIONS,
+  InternalDefinition,
+  is,
+  LOAD_PROJECT,
+  TBlackHole,
+} from "..";
+import {
+  ApplicationDefinition,
+  PartialConfiguration,
+  ServiceMap,
+  TInjectedConfig,
+} from "./wiring.helper";
 
 export type CodeConfigDefinition = Record<string, AnyConfig>;
 export type ProjectConfigTypes =
@@ -251,3 +264,46 @@ export function parseConfig(config: AnyConfig, value: string) {
     }
   }
 }
+
+export type DigitalAlchemyConfiguration = {
+  [INITIALIZE]: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
+    application: ApplicationDefinition<S, C>,
+  ) => Promise<string>;
+  [INJECTED_DEFINITIONS]: () => TInjectedConfig;
+  [LOAD_PROJECT]: (library: string, definitions: CodeConfigDefinition) => KnownConfigs;
+  getDefinitions: () => KnownConfigs;
+  merge: (incoming: Partial<PartialConfiguration>) => PartialConfiguration;
+  /**
+   * Not a replacement for `onPostConfig`
+   *
+   * Only receives updates from `config.set` calls
+   */
+  onUpdate: <
+    Project extends keyof TInjectedConfig,
+    Property extends Extract<keyof TInjectedConfig[Project], string>,
+  >(
+    callback: OnConfigUpdateCallback<Project, Property>,
+    project?: Project,
+    property?: Property,
+  ) => void;
+  /**
+   * type friendly method of updating a single configuration
+   *
+   * emits update event
+   */
+  set: TSetConfig;
+};
+
+export type TSetConfig = <
+  Project extends keyof TInjectedConfig,
+  Property extends keyof TInjectedConfig[Project],
+>(
+  project: Project,
+  property: Property,
+  value: TInjectedConfig[Project][Property],
+) => void;
+
+export type OnConfigUpdateCallback<
+  Project extends keyof TInjectedConfig,
+  Property extends keyof TInjectedConfig[Project],
+> = (project: Project, property: Property) => TBlackHole;

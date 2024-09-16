@@ -5,6 +5,7 @@ import {
   ConfigLoader,
   CreateLibrary,
   deepExtend,
+  ILogger,
   LibraryDefinition,
   LoggerOptions,
   ModuleConfiguration,
@@ -13,9 +14,10 @@ import {
   PartialConfiguration,
   ServiceFunction,
   ServiceMap,
+  TConfigLogLevel,
   TLibrary,
 } from "../helpers";
-import { CreateApplication, ILogger, is } from "../services";
+import { CreateApplication, is } from "../services";
 
 export type CreateTestingLibraryOptions<
   S extends ServiceMap,
@@ -92,7 +94,16 @@ export type iTestRunner<S extends ServiceMap, C extends OptionalModuleConfigurat
   /**
    * chained calls deep merge options together
    */
-  configure: (options: TestingBootstrapOptions) => iTestRunner<S, C>;
+  configure: (configuration: PartialConfiguration) => iTestRunner<S, C>;
+  /**
+   * chained calls deep merge options together
+   */
+  setOptions: (options: TestingBootstrapOptions) => iTestRunner<S, C>;
+
+  /**
+   * for debugging, single command to enable logging on this test
+   */
+  emitLogs: (log_level?: TConfigLogLevel) => iTestRunner<S, C>;
 
   /**
    * chained calls add multiple setup functions
@@ -229,8 +240,15 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
       appendServices.set(name || v4(), service);
       return libraryTestRunner;
     },
-    configure(options: TestingBootstrapOptions) {
-      bootOptions = deepExtend(bootOptions, options);
+    configure(configuration: PartialConfiguration) {
+      bootOptions = deepExtend(bootOptions, { configuration });
+      return libraryTestRunner;
+    },
+    emitLogs(LOG_LEVEL: TConfigLogLevel) {
+      libraryTestRunner.setOptions({ emitLogs: true });
+      if (!is.empty({ level: LOG_LEVEL })) {
+        libraryTestRunner.configure({ boilerplate: { LOG_LEVEL } });
+      }
       return libraryTestRunner;
     },
     replaceLibrary(name: string, library: TLibrary) {
@@ -267,6 +285,10 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
         teardown = async () => await app.teardown();
       }
       return app;
+    },
+    setOptions(options: TestingBootstrapOptions) {
+      bootOptions = deepExtend(bootOptions, options);
+      return libraryTestRunner;
     },
     setup(service: ServiceFunction) {
       runFirst.add(service);

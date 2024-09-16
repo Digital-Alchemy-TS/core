@@ -6,14 +6,16 @@ import {
   ConfigLoaderEnvironment,
   ConfigLoaderFile,
   deepExtend,
+  DigitalAlchemyConfiguration,
   eachSeries,
   KnownConfigs,
+  OnConfigUpdateCallback,
   OptionalModuleConfiguration,
   PartialConfiguration,
   ServiceMap,
-  TBlackHole,
   TInjectedConfig,
   TServiceParams,
+  TSetConfig,
 } from "..";
 import { is } from ".";
 
@@ -30,20 +32,14 @@ export function Configuration({
   internal,
   // ! THIS DOES NOT EXIST BEFORE PRE INIT
   logger,
-}: TServiceParams) {
-  // 🙊 but that's illegal!
+}: TServiceParams): DigitalAlchemyConfiguration {
+  // modern problems require modern solutions
   lifecycle.onPreInit(() => (logger = internal.boilerplate.logger.context(context)));
 
   const configuration: PartialConfiguration = {};
   const configDefinitions: KnownConfigs = new Map();
 
-  type OnConfigUpdateCallback<
-    Project extends keyof TInjectedConfig,
-    Property extends keyof TInjectedConfig[Project],
-  > = (project: Project, property: Property) => TBlackHole;
-
-  //#region Methods
-  function InjectedDefinitions(): TInjectedConfig {
+  function injectedDefinitions(): TInjectedConfig {
     const out = {} as Record<string, object>;
     return new Proxy(out as TInjectedConfig, {
       get(_, project: keyof TInjectedConfig) {
@@ -63,7 +59,7 @@ export function Configuration({
     });
   }
 
-  function SetConfig<
+  function setConfig<
     Project extends keyof TInjectedConfig,
     Property extends keyof TInjectedConfig[Project],
   >(project: Project, property: Property, value: TInjectedConfig[Project][Property]): void {
@@ -94,7 +90,7 @@ export function Configuration({
   }
 
   // #MARK: Initialize
-  async function Initialize<S extends ServiceMap, C extends OptionalModuleConfiguration>(
+  async function initialize<S extends ServiceMap, C extends OptionalModuleConfiguration>(
     application: ApplicationDefinition<S, C>,
   ): Promise<string> {
     const configLoaders =
@@ -105,8 +101,10 @@ export function Configuration({
 
     // * were configs disabled?
     if (is.empty(configLoaders)) {
-      logger.warn({ name: Initialize }, `no config loaders defined`);
       validateConfig();
+      if (!configuration.boilerplate.IS_TEST) {
+        logger.warn({ name: initialize }, `no config loaders defined`);
+      }
       return `${Date.now() - start}ms`;
     }
 
@@ -126,24 +124,22 @@ export function Configuration({
     return `${Date.now() - start}ms`;
   }
 
-  function Merge(merge: Partial<PartialConfiguration>) {
+  function merge(merge: Partial<PartialConfiguration>) {
     return deepExtend(configuration, merge);
   }
 
-  function LoadProject(library: string, definitions: CodeConfigDefinition) {
+  function loadProject(library: string, definitions: CodeConfigDefinition) {
     internal.utils.object.set(configuration, library, {});
     Object.keys(definitions).forEach(key => {
       internal.utils.object.set(configuration, [library, key].join("."), definitions[key].default);
     });
     return configDefinitions.set(library, definitions);
   }
-  // #endregion
 
-  // #region Return object
   return {
-    [INITIALIZE]: Initialize,
-    [INJECTED_DEFINITIONS]: InjectedDefinitions,
-    [LOAD_PROJECT]: LoadProject,
+    [INITIALIZE]: initialize,
+    [INJECTED_DEFINITIONS]: injectedDefinitions,
+    [LOAD_PROJECT]: loadProject,
 
     /**
      * retrieve the metadata that was originally used to define the configs
@@ -155,13 +151,8 @@ export function Configuration({
      *
      * intended for initial loading workflows
      */
-    merge: Merge,
+    merge: merge,
 
-    /**
-     * Not a replacement for `onPostConfig`
-     *
-     * Only receives updates from `config.set` calls
-     */
     onUpdate<
       Project extends keyof TInjectedConfig,
       Property extends Extract<keyof TInjectedConfig[Project], string>,
@@ -177,21 +168,6 @@ export function Configuration({
       });
     },
 
-    /**
-     * type friendly method of updating a single configuration
-     *
-     * emits update event
-     */
-    set: SetConfig as TSetConfig,
+    set: setConfig as TSetConfig,
   };
-  // #endregion
 }
-
-export type TSetConfig = <
-  Project extends keyof TInjectedConfig,
-  Property extends keyof TInjectedConfig[Project],
->(
-  project: Project,
-  property: Property,
-  value: TInjectedConfig[Project][Property],
-) => void;

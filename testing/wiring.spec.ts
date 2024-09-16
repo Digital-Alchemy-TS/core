@@ -399,7 +399,7 @@ describe("Wiring", () => {
         let list: LifecycleStages[];
 
         await TestRunner()
-          .configure({ forceTeardown: true })
+          .setOptions({ forceTeardown: true })
           .run(({ lifecycle, internal }) => {
             lifecycle.onPreShutdown(() => (list = [...internal.boot.completedLifecycleEvents]));
           });
@@ -413,7 +413,7 @@ describe("Wiring", () => {
         let list: LifecycleStages[];
 
         await TestRunner()
-          .configure({ forceTeardown: true })
+          .setOptions({ forceTeardown: true })
           .run(({ lifecycle, internal }) => {
             lifecycle.onShutdownStart(() => (list = [...internal.boot.completedLifecycleEvents]));
           });
@@ -426,7 +426,7 @@ describe("Wiring", () => {
         let list: LifecycleStages[];
 
         await TestRunner()
-          .configure({ forceTeardown: true })
+          .setOptions({ forceTeardown: true })
           .run(({ lifecycle, internal }) => {
             lifecycle.onShutdownComplete(
               () => (list = [...internal.boot.completedLifecycleEvents]),
@@ -448,7 +448,7 @@ describe("Wiring", () => {
         let i: InternalDefinition;
 
         await TestRunner()
-          .configure({ forceTeardown: true })
+          .setOptions({ forceTeardown: true })
           .run(({ internal }) => {
             i = internal;
           });
@@ -472,7 +472,7 @@ describe("Wiring", () => {
     it("constructs app in between boot and ready for bootLibrariesFirst", async () => {
       expect.assertions(4);
       await TestRunner()
-        .configure({ bootLibrariesFirst: true })
+        .setOptions({ bootLibrariesFirst: true })
         .run(({ internal }) => {
           expect(internal.boot.completedLifecycleEvents.has("Bootstrap")).toBe(true);
           expect(internal.boot.completedLifecycleEvents.has("PreInit")).toBe(true);
@@ -618,7 +618,7 @@ describe("Wiring", () => {
       expect.assertions(1);
       const spy = jest.spyOn(global.console, "error").mockImplementation(() => undefined);
       await TestRunner()
-        .configure({ forceTeardown: true })
+        .setOptions({ forceTeardown: true })
         .run(({ lifecycle }) => {
           lifecycle.onPreShutdown(() => {
             throw new Error("test");
@@ -635,7 +635,7 @@ describe("Wiring", () => {
       expect.assertions(1);
 
       await TestRunner()
-        .configure({ forceTeardown: true })
+        .setOptions({ forceTeardown: true })
         .run(({ internal, lifecycle }) => {
           lifecycle.onPreShutdown(() => {
             expect(internal.boot.phase).toBe("teardown");

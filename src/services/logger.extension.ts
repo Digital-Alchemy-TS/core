@@ -3,33 +3,21 @@ import chalk from "chalk";
 import dayjs from "dayjs";
 import { format, inspect } from "util";
 
-import { FIRST, is, START, TContext } from "..";
-import { TServiceParams } from "..";
-
-export type TLoggerFunction =
-  | ((message: string, ...arguments_: unknown[]) => void)
-  | ((object: object, message?: string, ...arguments_: unknown[]) => void);
-
-export interface ILogger {
-  debug(...arguments_: Parameters<TLoggerFunction>): void;
-  debug(message: string, ...arguments_: unknown[]): void;
-  debug(object: object, message?: string, ...arguments_: unknown[]): void;
-  error(...arguments_: Parameters<TLoggerFunction>): void;
-  error(message: string, ...arguments_: unknown[]): void;
-  error(object: object, message?: string, ...arguments_: unknown[]): void;
-  fatal(...arguments_: Parameters<TLoggerFunction>): void;
-  fatal(message: string, ...arguments_: unknown[]): void;
-  fatal(object: object, message?: string, ...arguments_: unknown[]): void;
-  info(...arguments_: Parameters<TLoggerFunction>): void;
-  info(message: string, ...arguments_: unknown[]): void;
-  info(object: object, message?: string, ...arguments_: unknown[]): void;
-  trace(...arguments_: Parameters<TLoggerFunction>): void;
-  trace(message: string, ...arguments_: unknown[]): void;
-  trace(object: object, message?: string, ...arguments_: unknown[]): void;
-  warn(...arguments_: Parameters<TLoggerFunction>): void;
-  warn(message: string, ...arguments_: unknown[]): void;
-  warn(object: object, message?: string, ...arguments_: unknown[]): void;
-}
+import {
+  DigitalAlchemyLogger,
+  EVENT_UPDATE_LOG_LEVELS,
+  FIRST,
+  ILogger,
+  is,
+  LoadedModuleNames,
+  METHOD_COLORS,
+  ServiceNames,
+  START,
+  TConfigLogLevel,
+  TContext,
+  TLoggerFunction,
+  TServiceParams,
+} from "..";
 
 const LOG_LEVEL_PRIORITY = {
   debug: 20,
@@ -42,60 +30,65 @@ const LOG_LEVEL_PRIORITY = {
 };
 const LOG_LEVELS = Object.keys(LOG_LEVEL_PRIORITY) as TConfigLogLevel[];
 
-export type TConfigLogLevel = keyof ILogger | "silent";
-
-export const METHOD_COLORS = new Map<keyof ILogger, CONTEXT_COLORS>([
-  ["trace", "grey"],
-  ["debug", "blue"],
-  ["warn", "yellow"],
-  ["error", "red"],
-  ["info", "green"],
-  ["fatal", "magenta"],
-]);
-
 let logger = {} as Record<
   keyof ILogger,
   (context: TContext, ...data: Parameters<TLoggerFunction>) => void
 >;
 
-export type CONTEXT_COLORS = "grey" | "blue" | "yellow" | "red" | "green" | "magenta";
 const MAX_CUTOFF = 2000;
 const frontDash = " - ";
 const SYMBOL_START = 1;
 const SYMBOL_END = -1;
 const LEVEL_MAX = 7;
-type MergeDataCallback = () => object;
 
-// #region Service definition
-export async function Logger({ lifecycle, config, internal }: TServiceParams) {
+export async function Logger({
+  lifecycle,
+  config,
+  event,
+  internal,
+  als,
+}: TServiceParams): Promise<DigitalAlchemyLogger> {
   let lastMessage = Date.now();
   let logCounter = START;
+  let httpLogTarget: string;
 
   const { loggerOptions = {} } = internal.boot?.options ?? {};
 
-  const timestampFormat = loggerOptions.timestamp_format ?? "ddd HH:mm:ss.SSS";
+  const timestampFormat = loggerOptions.timestampFormat ?? "ddd HH:mm:ss.SSS";
+  loggerOptions.mergeData ??= {};
 
   const YELLOW_DASH = chalk.yellowBright(frontDash);
   const BLUE_TICK = chalk.blue(`>`);
   let prettyFormat = is.boolean(loggerOptions.pretty) ? loggerOptions.pretty : true;
-  const shouldILog = {} as Record<TConfigLogLevel, boolean>;
-  const mergeCallbacks = new Set<MergeDataCallback>();
+
+  function emitHttpLogs(data: object) {
+    if (is.empty(httpLogTarget)) {
+      return;
+    }
+    // validated with datadog, probably is fine elsewhere too
+    // https://http-intake.logs.datadoghq.com/v1/input/{API_KEY}
+    fetch(httpLogTarget, {
+      body: JSON.stringify(data),
+      headers: { "Content-Type": "application/json" },
+      method: "POST",
+    });
+  }
 
   function mergeData<T extends object>(data: T): T {
-    let out = { ...data };
+    let out = { ...data, ...loggerOptions.mergeData };
 
     if (loggerOptions.counter) {
       const counter = data as { logIdx: number };
       counter.logIdx = logCounter++;
     }
 
-    mergeCallbacks.forEach(i => {
-      out = { ...out, ...i() };
-    });
+    if (loggerOptions.als) {
+      out = { ...out, ...als.getLogData() };
+    }
+
     return out;
   }
 
-  // #MARK: pretty logger
   const prettyFormatMessage = (message: string): string => {
     if (!message) {
       return ``;
@@ -139,16 +132,23 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
             : {},
         );
 
+        const rawData = {
+          ...data,
+          level: key,
+          timestamp: Date.now(),
+        } as Record<string, unknown>;
+
         const highlighted = chalk.bold[METHOD_COLORS.get(key)](`[${data.context || context}]`);
         const name = is.object(data.name) || is.function(data.name) ? data.name.name : data.name;
         delete data.context;
         delete data.name;
 
         const timestamp = chalk.white(`[${dayjs().format(timestampFormat)}]`);
-        let logMessage: string;
+        let prettyMessage: string;
         if (!is.empty(parameters)) {
           const text = parameters.shift() as string;
-          logMessage = format(prettyFormatMessage(text), ...parameters);
+          rawData.msg = format(text, ...parameters);
+          prettyMessage = format(prettyFormatMessage(text), ...parameters);
         }
 
         let message = `${timestamp} ${level}${highlighted}`;
@@ -161,12 +161,14 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
           const now = Date.now();
           const diff = Math.floor(now - lastMessage) + `ms`;
           lastMessage = now;
+          rawData.ms = diff;
 
           message += prettyFormat ? chalk.green(diff) : diff;
         }
+        emitHttpLogs(rawData);
 
-        if (!is.empty(logMessage)) {
-          message += `: ${chalk.cyan(logMessage)}`;
+        if (!is.empty(prettyMessage)) {
+          message += `: ${chalk.cyan(prettyMessage)}`;
         }
 
         if (!is.empty(data)) {
@@ -206,6 +208,27 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
     "trace";
 
   function context(context: string | TContext) {
+    const name = context as ServiceNames;
+    const shouldILog = {} as Record<TConfigLogLevel, boolean>;
+    const [prefix] = context.split(".") as [LoadedModuleNames];
+    const update = () =>
+      LOG_LEVELS.forEach((key: TConfigLogLevel) => {
+        // global level
+        let target = LOG_LEVEL_PRIORITY[key];
+
+        // override directly
+        if (loggerOptions.levelOverrides[name]) {
+          target = LOG_LEVEL_PRIORITY[loggerOptions.levelOverrides[name]];
+          // module level override
+        } else if (loggerOptions.levelOverrides[prefix]) {
+          target = LOG_LEVEL_PRIORITY[loggerOptions.levelOverrides[prefix]];
+        }
+        shouldILog[key] = target >= LOG_LEVEL_PRIORITY[CURRENT_LOG_LEVEL];
+      });
+
+    event.on(EVENT_UPDATE_LOG_LEVELS, update);
+    update();
+
     return {
       debug: (...params: Parameters<TLoggerFunction>) =>
         shouldILog.debug && logger.debug(context as TContext, ...params),
@@ -226,9 +249,7 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
     if (!is.empty(config.boilerplate.LOG_LEVEL)) {
       CURRENT_LOG_LEVEL = config.boilerplate.LOG_LEVEL;
     }
-    LOG_LEVELS.forEach((key: TConfigLogLevel) => {
-      shouldILog[key] = LOG_LEVEL_PRIORITY[key] >= LOG_LEVEL_PRIORITY[CURRENT_LOG_LEVEL];
-    });
+    event.emit(EVENT_UPDATE_LOG_LEVELS);
   };
 
   // #MARK: lifecycle
@@ -238,56 +259,17 @@ export async function Logger({ lifecycle, config, internal }: TServiceParams) {
     "boilerplate",
     "LOG_LEVEL",
   );
-  updateShouldLog();
 
   // #MARK: return object
   return {
-    /**
-     * Create a new logger instance for a given context
-     */
     context,
-
-    /**
-     * Retrieve a reference to the base logger used to emit from
-     */
     getBaseLogger: () => logger,
-
     getPrettyFormat: () => prettyFormat,
-    /**
-     * for testing
-     */
-    getShouldILog: () => ({ ...shouldILog }),
-
-    merge: (callback: MergeDataCallback) => {
-      mergeCallbacks.add(callback);
-    },
-
-    /**
-     * exposed for testing
-     */
     prettyFormatMessage,
-
-    /**
-     * Modify the base logger
-     *
-     * Note: Extension still handles LOG_LEVEL logic
-     */
-    setBaseLogger: (base: ILogger) => (logger = base),
-
-    /**
-     * Set the enabled/disabled state of the message pretty formatting logic
-     */
-    setPrettyFormat: (state: boolean) => (prettyFormat = state),
-
-    /**
-     * Logger instance of last resort
-     */
+    setBaseLogger: base => (logger = base),
+    setHttpLogs: url => (httpLogTarget = url),
+    setPrettyFormat: state => (prettyFormat = state),
     systemLogger: context("digital-alchemy:system-logger"),
-
-    /**
-     * exposed for testing
-     */
     updateShouldLog,
   };
 }
-// #endregion

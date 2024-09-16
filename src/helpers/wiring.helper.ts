@@ -152,8 +152,9 @@ export interface AsyncLocalData {
 export type AlsExtension = {
   asyncStorage: () => AsyncLocalStorage<AsyncLocalData>;
   getStore: () => AsyncLocalData;
-  init(callback: () => TBlackHole): void;
-  register(callback: AlsHook): void;
+  init(source: object, callback: () => TBlackHole): void;
+  getLogData: () => AsyncLogData;
+  // register(callback: AlsHook): void;
 };
 export type AlsHook = () => object;
 
@@ -202,7 +203,7 @@ export type TServiceParams = {
   [K in ExternalLoadedModules]: GetApis<LoadedModules[K]>;
 };
 
-type LoadedModuleNames = Extract<keyof LoadedModules, string>;
+export type LoadedModuleNames = Extract<keyof LoadedModules, string>;
 
 type ExternalLoadedModules = Exclude<LoadedModuleNames, "boilerplate">;
 
@@ -352,11 +353,17 @@ export type BootstrapOptions = {
 
 export type LoggerOptions = {
   /**
+   * Generic data to include as data payload for all logs
+   *
+   * Can be used to provide application tags when using a log aggregator
+   */
+  mergeData?: object;
+  /**
    * Adjust the format of the timestamp at the start of the log
    *
    * > default: ddd HH:mm:ss.SSS
    */
-  timestamp_format?: string;
+  timestampFormat?: string;
 
   /**
    * Pretty format logs
@@ -431,7 +438,7 @@ export type ApplicationDefinition<
   };
 export type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration>;
 
-export function BuildSortOrder<S extends ServiceMap, C extends OptionalModuleConfiguration>(
+export function buildSortOrder<S extends ServiceMap, C extends OptionalModuleConfiguration>(
   app: ApplicationDefinition<S, C>,
   logger: ILogger,
 ) {
@@ -465,9 +472,9 @@ export function BuildSortOrder<S extends ServiceMap, C extends OptionalModuleCon
         // just "are they the same object reference?" as the test
         // you get a warning, and the one the app asks for
         // hopefully there is no breaking changes
-        if (loaded !== item) {
+        if (loaded !== item && !process.env.NODE_ENV.startsWith("test")) {
           logger.warn(
-            { name: BuildSortOrder },
+            { name: buildSortOrder },
             "[%s] depends different version {%s}",
             library.name,
             item.name,
@@ -494,7 +501,7 @@ export function BuildSortOrder<S extends ServiceMap, C extends OptionalModuleCon
       return depends.every(depend => out.some(i => i.name === depend.name));
     });
     if (!next) {
-      logger.fatal({ current: out.map(i => i.name), name: BuildSortOrder });
+      logger.fatal({ current: out.map(i => i.name), name: buildSortOrder });
       throw new BootstrapException(WIRING_CONTEXT, "BAD_SORT", `Cannot find a next lib to load`);
     }
     starting = starting.filter(i => next.name !== i.name);

@@ -1,35 +1,20 @@
 import { AsyncLocalStorage } from "async_hooks";
 import { v4 } from "uuid";
 
-import { AlsExtension, AlsHook, AsyncLocalData, TBlackHole, TServiceParams } from "../helpers";
-import { is } from "./is.extension";
+import { AlsExtension, AsyncLocalData, AsyncLogData, TBlackHole } from "../helpers";
 
-export function ALS({ internal }: TServiceParams): AlsExtension {
+export function ALS(): AlsExtension {
   const storage = new AsyncLocalStorage<AsyncLocalData>();
-  const hooks = new Set<AlsHook>();
-
-  // internal.boilerplate.logger.merge(() => {
-  //   const data = storage.getStore();
-  //   if (!is.empty(data?.logs?.id)) {
-  //     return { async_id: data?.logs?.id };
-  //   }
-  //   return {};
-  // });
 
   return {
     asyncStorage: () => storage,
+    getLogData: () => storage.getStore()?.logs ?? ({} as AsyncLogData),
     getStore: () => storage.getStore(),
-    init(callback: () => TBlackHole) {
-      let data = { logs: { id: v4() } };
-      hooks.forEach(callback => {
-        data = { ...data, ...callback() };
-      });
+    init(source: object, callback: () => TBlackHole) {
+      const data = { logs: { id: v4(), ...source } };
       storage.run(data as AsyncLocalData, () => {
         callback();
       });
-    },
-    register(callback: AlsHook) {
-      hooks.add(callback);
     },
   };
 }

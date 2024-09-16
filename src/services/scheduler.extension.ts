@@ -1,18 +1,26 @@
-import dayjs, { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { schedule } from "node-cron";
 
-import { is, TBlackHole, TContext } from "..";
-import { BootstrapException, Schedule, SchedulerOptions, TServiceParams } from "../helpers";
+import { is, TContext } from "..";
+import {
+  BootstrapException,
+  SchedulerBuilder,
+  SchedulerCronOptions,
+  ScheduleRemove,
+  SchedulerIntervalOptions,
+  SchedulerSlidingOptions,
+  TServiceParams,
+} from "../helpers";
 
-export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
-  const stop = new Set<() => TBlackHole>();
+export function Scheduler({ logger, lifecycle, internal }: TServiceParams): SchedulerBuilder {
+  const stop = new Set<ScheduleRemove>();
 
   // #MARK: lifecycle events
-  lifecycle.onPreShutdown(() => {
+  lifecycle.onPreShutdown(function onPreShutdown() {
     if (is.empty(stop)) {
       return;
     }
-    logger.info({ name: "onPreShutdown" }, `removing [%s] schedules`, stop.size);
+    logger.info({ name: onPreShutdown }, `removing [%s] schedules`, stop.size);
     stop.forEach(stopFunctions => {
       stopFunctions();
       stop.delete(stopFunctions);
@@ -20,12 +28,9 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
   });
 
   return (context: TContext) => {
-    // #MARK: node-cron
-    function cron({
-      exec,
-      schedule: scheduleList,
-    }: SchedulerOptions & { schedule: Schedule | Schedule[] }) {
-      const stopFunctions: (() => TBlackHole)[] = [];
+    // #MARK: cron
+    function cron({ exec, schedule: scheduleList }: SchedulerCronOptions) {
+      const stopFunctions: ScheduleRemove[] = [];
       [scheduleList].flat().forEach(cronSchedule => {
         logger.trace({ context, name: cron, schedule: cronSchedule }, `init`);
         const cronJob = schedule(cronSchedule, async () => await internal.safeExec(exec));
@@ -47,11 +52,11 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
       return () => stopFunctions.forEach(stop => stop());
     }
 
-    // #MARK: setInterval
-    function interval({ exec, interval }: SchedulerOptions & { interval: number }) {
+    // #MARK: interval
+    function interval({ exec, interval }: SchedulerIntervalOptions) {
       let runningInterval: ReturnType<typeof setInterval>;
       lifecycle.onReady(() => {
-        logger.trace({ context, name: "interval" }, "starting");
+        logger.trace({ context, name: interval }, "starting");
 
         runningInterval = setInterval(async () => await internal.safeExec(exec), interval);
       });
@@ -65,20 +70,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
     }
 
     // #MARK: sliding
-    function sliding({
-      exec,
-      reset,
-      next,
-    }: SchedulerOptions & {
-      /**
-       * How often to run the `next` method, to retrieve the next scheduled execution time
-       */
-      reset: Schedule;
-      /**
-       * Return something time like. undefined = skip next
-       */
-      next: () => Dayjs | string | number | Date | undefined;
-    }) {
+    function sliding({ exec, reset, next }: SchedulerSlidingOptions) {
       if (!is.function(next)) {
         throw new BootstrapException(
           context,
@@ -141,7 +133,6 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams) {
       };
     }
 
-    // #MARK: return object
     return {
       cron,
       interval,

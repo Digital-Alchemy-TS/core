@@ -28,6 +28,7 @@ const LOG_LEVEL_PRIORITY = {
   trace: 10,
   warn: 40,
 };
+const DECIMALS = 2;
 const LOG_LEVELS = Object.keys(LOG_LEVEL_PRIORITY) as TConfigLogLevel[];
 
 let logger = {} as Record<
@@ -48,7 +49,7 @@ export async function Logger({
   internal,
   als,
 }: TServiceParams): Promise<DigitalAlchemyLogger> {
-  let lastMessage = Date.now();
+  let lastMessage = performance.now();
   let logCounter = START;
   let httpLogTarget: string;
 
@@ -158,8 +159,8 @@ export async function Logger({
         }
 
         if (loggerOptions.ms) {
-          const now = Date.now();
-          const diff = Math.floor(now - lastMessage) + `ms`;
+          const now = performance.now();
+          const diff = (now - lastMessage).toFixed(DECIMALS) + `ms`;
           lastMessage = now;
           rawData.ms = diff;
 

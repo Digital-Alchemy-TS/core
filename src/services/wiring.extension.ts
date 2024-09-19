@@ -164,6 +164,7 @@ const processEvents = new Map([
   // ["unhandledRejection", (reason, promise) => {}],
 ]);
 
+const DECIMALS = 2;
 const BOILERPLATE = (internal: InternalDefinition) =>
   internal.boot.loadedModules.get("boilerplate") as GetApis<ReturnType<typeof createBoilerplate>>;
 
@@ -368,10 +369,10 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
     LIB_BOILERPLATE = createBoilerplate();
 
     // * Wire it
-    let start = Date.now();
+    let start = performance.now();
     await LIB_BOILERPLATE[WIRE_PROJECT](internal, wireService);
 
-    CONSTRUCT.boilerplate = `${Date.now() - start}ms`;
+    CONSTRUCT.boilerplate = `${(performance.now() - start).toFixed(DECIMALS)}ms`;
     // ~ configuration
     api.configuration?.[LOAD_PROJECT](LIB_BOILERPLATE.name, LIB_BOILERPLATE.configuration);
     const logger = api.logger.context(WIRING_CONTEXT);
@@ -409,10 +410,10 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
 
     const order = buildSortOrder(application, logger);
     await eachSeries(order, async i => {
-      start = Date.now();
+      start = performance.now();
       logger.info({ name: bootstrap }, `[%s] init project`, i.name);
       await i[WIRE_PROJECT](internal, wireService);
-      CONSTRUCT[i.name] = `${Date.now() - start}ms`;
+      CONSTRUCT[i.name] = `${(performance.now() - start).toFixed(DECIMALS)}ms`;
     });
 
     logger.trace({ name: bootstrap }, `library wiring complete`);
@@ -422,9 +423,9 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       logger.warn({ name: bootstrap }, `bootLibrariesFirst`);
     } else {
       logger.info({ name: bootstrap }, `init application`);
-      start = Date.now();
+      start = performance.now();
       await application[WIRE_PROJECT](internal, wireService);
-      CONSTRUCT[application.name] = `${Date.now() - start}ms`;
+      CONSTRUCT[application.name] = `${(performance.now() - start).toFixed(DECIMALS)}ms`;
     }
 
     // ? Configuration values provided bootstrap take priority over module level
@@ -455,15 +456,15 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       // - fastify: bindings are available but port isn't listening
 
       logger.info({ name: bootstrap }, `late init application`);
-      start = Date.now();
+      start = performance.now();
       await application[WIRE_PROJECT](internal, wireService);
-      CONSTRUCT[application.name] = `${Date.now() - start}ms`;
+      CONSTRUCT[application.name] = `${(performance.now() - start).toFixed(DECIMALS)}ms`;
     }
 
     logger.debug({ name: bootstrap }, `[Ready] running lifecycle callbacks`);
     STATS.Ready = await runReady(internal);
 
-    STATS.Total = `${Date.now() - internal.boot.startup.getTime()}ms`;
+    STATS.Total = `${performance.now() - internal.boot.startup.getTime()}ms`;
     // * App is ready!
     logger.info(
       options?.showExtraBootStats

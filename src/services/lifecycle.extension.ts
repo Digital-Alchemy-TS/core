@@ -15,6 +15,7 @@ type EventMapObject = {
   priority: number;
 };
 const PRE_CALLBACKS_START = 0;
+const DECIMALS = 2;
 
 export function CreateLifecycle() {
   const events = new Map<LifecycleStages, EventMapObject[]>(
@@ -44,7 +45,7 @@ export function CreateLifecycle() {
       onShutdownStart: (callback, priority) => attachEvent(callback, "ShutdownStart", priority),
     } satisfies TLifecycleBase,
     async exec(stage: LifecycleStages): Promise<string> {
-      const start = Date.now();
+      const start = performance.now();
       const list = events.get(stage);
       events.delete(stage);
       if (!is.empty(list)) {
@@ -82,7 +83,7 @@ export function CreateLifecycle() {
           async ({ callback }) => await callback(),
         );
       }
-      return `${Date.now() - start}ms`;
+      return `${(performance.now() - start).toFixed(DECIMALS)}ms`;
     },
   };
 }

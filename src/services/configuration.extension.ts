@@ -25,6 +25,8 @@ export const EVENT_CONFIGURATION_UPDATED = "event_configuration_updated";
 export const INJECTED_DEFINITIONS = Symbol.for("injected-config");
 export type ConfigManager = ReturnType<typeof Configuration>;
 
+const DECIMALS = 2;
+
 export function Configuration({
   context,
   event,
@@ -97,7 +99,7 @@ export function Configuration({
       internal.boot.application.configurationLoaders ??
       ([ConfigLoaderEnvironment, ConfigLoaderFile] as ConfigLoader[]);
 
-    const start = Date.now();
+    const start = performance.now();
 
     // * were configs disabled?
     if (is.empty(configLoaders)) {
@@ -105,7 +107,7 @@ export function Configuration({
       if (!configuration.boilerplate.IS_TEST) {
         logger.warn({ name: initialize }, `no config loaders defined`);
       }
-      return `${Date.now() - start}ms`;
+      return `${(performance.now() - start).toFixed(DECIMALS)}ms`;
     }
 
     // * load!
@@ -121,7 +123,7 @@ export function Configuration({
 
     validateConfig();
 
-    return `${Date.now() - start}ms`;
+    return `${performance.now() - start}ms`;
   }
 
   function merge(merge: Partial<PartialConfiguration>) {

@@ -121,9 +121,36 @@ function createBoilerplate() {
     name: "boilerplate",
     priorityInit: ["als", "configuration", "logger", "scheduler"],
     services: {
+      /**
+       * [AsyncLocalStorage](https://nodejs.org/api/async_context.html) hooks
+       *
+       * Use to pass data around bypassing business logic and insert data into logs
+       */
       als: ALS,
+
+      /**
+       * @internal
+       *
+       * Exposed via `internal.boilerplate.configuration`
+       *
+       * Used to directly modify application configuration
+       */
       configuration: Configuration,
+
+      /**
+       * @internal
+       *
+       * Exposed via `internal.boilerplate.logger`
+       *
+       * Used to modify the way the logger works at runtime
+       */
       logger: Logger,
+
+      /**
+       * @internal
+       *
+       * Used to generate the scheduler that will get injected into other services
+       */
       scheduler: Scheduler,
     },
   });

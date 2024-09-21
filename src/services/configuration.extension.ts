@@ -123,7 +123,7 @@ export function Configuration({
 
     validateConfig();
 
-    return `${performance.now() - start}ms`;
+    return `${(performance.now() - start).toFixed(DECIMALS)}ms`;
   }
 
   function merge(merge: Partial<PartialConfiguration>) {

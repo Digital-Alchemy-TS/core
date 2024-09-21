@@ -76,7 +76,7 @@ function createBoilerplate() {
        */
       IS_TEST: {
         // test | testing
-        default: process.env.NODE_ENV.startsWith("test"),
+        default: process.env.NODE_ENV?.startsWith("test"),
         description: "Quick reference for if this app is currently running with test mode",
         type: "boolean",
       },
@@ -362,6 +362,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
   options: BootstrapOptions,
   internal: InternalDefinition,
 ) {
+  const initTime = performance.now();
   internal.boot = {
     application,
     completedLifecycleEvents: new Set(),
@@ -491,7 +492,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
     logger.debug({ name: bootstrap }, `[Ready] running lifecycle callbacks`);
     STATS.Ready = await runReady(internal);
 
-    STATS.Total = `${performance.now() - internal.boot.startup.getTime()}ms`;
+    STATS.Total = `${(performance.now() - initTime).toFixed(DECIMALS)}ms`;
     // * App is ready!
     logger.info(
       options?.showExtraBootStats

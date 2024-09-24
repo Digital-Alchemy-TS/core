@@ -403,9 +403,8 @@ describe("Wiring", () => {
         });
 
         application = undefined;
-        expect(list).toEqual(["PreInit", "PostConfig", "Bootstrap", "Ready"]);
-
         await app.teardown();
+        expect(list).toEqual(["PreInit", "PostConfig", "Bootstrap", "Ready"]);
       });
 
       it("tracks preShutdown", async () => {
@@ -416,9 +415,8 @@ describe("Wiring", () => {
           lifecycle.onShutdownStart(() => (list = [...internal.boot.completedLifecycleEvents]));
         });
 
-        expect(list).toEqual(["PreInit", "PostConfig", "Bootstrap", "Ready", "PreShutdown"]);
-
         await app.teardown();
+        expect(list).toEqual(["PreInit", "PostConfig", "Bootstrap", "Ready", "PreShutdown"]);
       });
 
       it("tracks shutdownStart", async () => {
@@ -428,6 +426,7 @@ describe("Wiring", () => {
         const app = await TestRunner().run(({ lifecycle, internal }) => {
           lifecycle.onShutdownComplete(() => (list = [...internal.boot.completedLifecycleEvents]));
         });
+        await app.teardown();
 
         expect(list).toEqual([
           "PreInit",
@@ -437,8 +436,6 @@ describe("Wiring", () => {
           "PreShutdown",
           "ShutdownStart",
         ]);
-
-        await app.teardown();
       });
 
       it("tracks shutdownComplete", async () => {
@@ -449,6 +446,7 @@ describe("Wiring", () => {
           i = internal;
         });
 
+        await app.teardown();
         expect([...i.boot.completedLifecycleEvents.values()]).toEqual([
           "PreInit",
           "PostConfig",
@@ -458,8 +456,6 @@ describe("Wiring", () => {
           "ShutdownStart",
           "ShutdownComplete",
         ]);
-
-        await app.teardown();
       });
     });
   });

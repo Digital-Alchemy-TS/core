@@ -73,7 +73,9 @@ export type ModuleExtension<S extends ServiceMap, C extends OptionalModuleConfig
   /**
    * build api compatible replacement (potentially adding)
    */
-  rebuild: <REPLACEMENTS extends S>(services: REPLACEMENTS) => ModuleExtension<REPLACEMENTS, C>;
+  rebuild: <REPLACEMENTS extends S>(
+    services: Partial<REPLACEMENTS>,
+  ) => ModuleExtension<REPLACEMENTS, C>;
 
   /**
    * export as application
@@ -132,8 +134,8 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
         });
         return extend as unknown as ModuleExtension<Pick<S, PICK>, C>;
       },
-      rebuild: <REPLACEMENTS extends S>(incoming: REPLACEMENTS) => {
-        services = incoming;
+      rebuild: <REPLACEMENTS extends S>(incoming: Partial<REPLACEMENTS>) => {
+        services = incoming as REPLACEMENTS;
         return extend as unknown as ModuleExtension<REPLACEMENTS, C>;
       },
       replaceLibrary: (library: TLibrary) => {

@@ -398,40 +398,36 @@ describe("Wiring", () => {
         expect.assertions(1);
         let list: LifecycleStages[];
 
-        await TestRunner()
-          .setOptions({ forceTeardown: true })
-          .run(({ lifecycle, internal }) => {
-            lifecycle.onPreShutdown(() => (list = [...internal.boot.completedLifecycleEvents]));
-          });
+        const app = await TestRunner().run(({ lifecycle, internal }) => {
+          lifecycle.onPreShutdown(() => (list = [...internal.boot.completedLifecycleEvents]));
+        });
 
         application = undefined;
         expect(list).toEqual(["PreInit", "PostConfig", "Bootstrap", "Ready"]);
+
+        await app.teardown();
       });
 
       it("tracks preShutdown", async () => {
         expect.assertions(1);
         let list: LifecycleStages[];
 
-        await TestRunner()
-          .setOptions({ forceTeardown: true })
-          .run(({ lifecycle, internal }) => {
-            lifecycle.onShutdownStart(() => (list = [...internal.boot.completedLifecycleEvents]));
-          });
+        const app = await TestRunner().run(({ lifecycle, internal }) => {
+          lifecycle.onShutdownStart(() => (list = [...internal.boot.completedLifecycleEvents]));
+        });
 
         expect(list).toEqual(["PreInit", "PostConfig", "Bootstrap", "Ready", "PreShutdown"]);
+
+        await app.teardown();
       });
 
       it("tracks shutdownStart", async () => {
         expect.assertions(1);
         let list: LifecycleStages[];
 
-        await TestRunner()
-          .setOptions({ forceTeardown: true })
-          .run(({ lifecycle, internal }) => {
-            lifecycle.onShutdownComplete(
-              () => (list = [...internal.boot.completedLifecycleEvents]),
-            );
-          });
+        const app = await TestRunner().run(({ lifecycle, internal }) => {
+          lifecycle.onShutdownComplete(() => (list = [...internal.boot.completedLifecycleEvents]));
+        });
 
         expect(list).toEqual([
           "PreInit",
@@ -441,17 +437,17 @@ describe("Wiring", () => {
           "PreShutdown",
           "ShutdownStart",
         ]);
+
+        await app.teardown();
       });
 
       it("tracks shutdownComplete", async () => {
         expect.assertions(1);
         let i: InternalDefinition;
 
-        await TestRunner()
-          .setOptions({ forceTeardown: true })
-          .run(({ internal }) => {
-            i = internal;
-          });
+        const app = await TestRunner().run(({ internal }) => {
+          i = internal;
+        });
 
         expect([...i.boot.completedLifecycleEvents.values()]).toEqual([
           "PreInit",
@@ -462,6 +458,8 @@ describe("Wiring", () => {
           "ShutdownStart",
           "ShutdownComplete",
         ]);
+
+        await app.teardown();
       });
     });
   });
@@ -617,13 +615,12 @@ describe("Wiring", () => {
     it("shouldn't process double teardown", async () => {
       expect.assertions(1);
       const spy = jest.spyOn(global.console, "error").mockImplementation(() => undefined);
-      await TestRunner()
-        .setOptions({ forceTeardown: true })
-        .run(({ lifecycle }) => {
-          lifecycle.onPreShutdown(() => {
-            throw new Error("test");
-          });
+      const app = await TestRunner().run(({ lifecycle }) => {
+        lifecycle.onPreShutdown(() => {
+          throw new Error("test");
         });
+      });
+      await app.teardown();
 
       expect(spy).toHaveBeenCalledWith(
         expect.any(Object),
@@ -634,13 +631,12 @@ describe("Wiring", () => {
     it("phase should be teardown after teardown starts", async () => {
       expect.assertions(1);
 
-      await TestRunner()
-        .setOptions({ forceTeardown: true })
-        .run(({ internal, lifecycle }) => {
-          lifecycle.onPreShutdown(() => {
-            expect(internal.boot.phase).toBe("teardown");
-          });
+      const app = await TestRunner().run(({ internal, lifecycle }) => {
+        lifecycle.onPreShutdown(() => {
+          expect(internal.boot.phase).toBe("teardown");
         });
+      });
+      await app.teardown();
     });
 
     xit("should shutdown on SIGTERM", async () => {

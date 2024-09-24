@@ -44,6 +44,11 @@ type TestingBootstrapOptions = {
   configLoader?: ConfigLoader;
 
   /**
+   * pass through to bootstrap params
+   */
+  loggerOptions?: LoggerOptions;
+
+  /**
    * default: false
    *
    * Should testing apps consider config file / environment variables?
@@ -58,11 +63,6 @@ type TestingBootstrapOptions = {
   customLogger?: ILogger;
 
   /**
-   * pass through to bootstrap params
-   */
-  loggerOptions?: LoggerOptions;
-
-  /**
    * matches regular bootstrap options
    */
   bootLibrariesFirst?: boolean;
@@ -73,11 +73,8 @@ type TestingBootstrapOptions = {
   configuration?: PartialConfiguration;
 
   /**
-   * manually call teardown before finishing the test
-   */
-  forceTeardown?: boolean;
-
-  /**
+   * @internal
+   *
    * define a configuration for the unit tests
    *
    * > **note**: you probably don't need to do this, it's not even documented
@@ -95,10 +92,16 @@ export type iTestRunner<S extends ServiceMap, C extends OptionalModuleConfigurat
    * chained calls deep merge options together
    */
   configure: (configuration: PartialConfiguration) => iTestRunner<S, C>;
+
   /**
    * chained calls deep merge options together
    */
   setOptions: (options: TestingBootstrapOptions) => iTestRunner<S, C>;
+
+  /**
+   * sets flag to true
+   */
+  bootLibrariesFirst: () => iTestRunner<S, C>;
 
   /**
    * for debugging, single command to enable logging on this test
@@ -147,8 +150,6 @@ export type iTestRunner<S extends ServiceMap, C extends OptionalModuleConfigurat
    * clean up your testing resources!
    */
   teardown: () => Promise<void>;
-  // pickService: () => iTestRunner;
-  // omitService: () => iTestRunner;
 };
 
 /**
@@ -240,6 +241,10 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
       appendServices.set(name || v4(), service);
       return libraryTestRunner;
     },
+    bootLibrariesFirst() {
+      bootOptions.bootLibrariesFirst = true;
+      return libraryTestRunner;
+    },
     configure(configuration: PartialConfiguration) {
       bootOptions = deepExtend(bootOptions, { configuration });
       return libraryTestRunner;
@@ -279,11 +284,7 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
         loggerOptions: bootOptions?.loggerOptions,
       });
 
-      if (bootOptions?.forceTeardown) {
-        await app.teardown();
-      } else {
-        teardown = async () => await app.teardown();
-      }
+      teardown = async () => await app.teardown();
       return app;
     },
     setOptions(options: TestingBootstrapOptions) {

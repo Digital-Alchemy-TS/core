@@ -41,12 +41,21 @@ import { CreateLifecycle } from "./lifecycle.extension";
 import { Logger } from "./logger.extension";
 import { Scheduler } from "./scheduler.extension";
 
+export interface DeclaredEnvironments {
+  prod: true;
+  test: true;
+  local: true;
+}
+
 // #MARK: CreateBoilerplate
 function createBoilerplate() {
   // ! DO NOT MOVE TO ANOTHER FILE !
   // While it SEEMS LIKE this can be safely moved, it causes code init race conditions.
   return CreateLibrary({
     configuration: {
+      ALS_ENABLED: {
+        type: "string",
+      },
       /**
        * Only usable by **cli switch**.
        * Pass path to a config file for loader
@@ -116,7 +125,14 @@ function createBoilerplate() {
         description: "Minimum log level to process",
         enum: ["silent", "trace", "info", "warn", "debug", "error", "fatal"],
         type: "string",
-      } satisfies StringConfig<TConfigLogLevel>,
+      } satisfies StringConfig<TConfigLogLevel> as StringConfig<TConfigLogLevel>,
+      /**
+       * Reference to `process.env.NODE_ENV` by default, `"local"` if not provided
+       */
+      NODE_ENV: {
+        default: process.env.NODE_ENV || "local",
+        type: "string",
+      } as StringConfig<keyof DeclaredEnvironments>,
     },
     name: "boilerplate",
     priorityInit: ["als", "configuration", "logger", "scheduler"],

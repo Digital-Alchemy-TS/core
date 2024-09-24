@@ -141,13 +141,18 @@ export type TInjectedConfig = {
   [ModuleName in keyof ModuleConfigs]: ConfigTypes<ModuleConfigs[ModuleName]>;
 };
 
+// #region
+// SEE DOCS http://docs.digital-alchemy.app/docs/core/declaration-merging
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AsyncLogData {
-  id: string;
+  // No data by default
+  // Intended to have declaration merges happen to be useful
 }
 
 export interface AsyncLocalData {
   logs: AsyncLogData;
 }
+// #endregion
 
 export type AlsExtension = {
   asyncStorage: () => AsyncLocalStorage<AsyncLocalData>;

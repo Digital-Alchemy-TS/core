@@ -29,20 +29,3 @@ export class InternalError extends Error {
     this.timestamp = new Date();
   }
 }
-
-export class FetchRequestError extends Error {
-  statusCode: number;
-  error: string;
-  timestamp: Date;
-  context: TContext;
-
-  constructor(context: TContext, statusCode: number, error: string, message: string) {
-    super();
-    this.context = context;
-    this.name = "FetchRequestError";
-    this.message = message;
-    this.statusCode = statusCode;
-    this.error = error;
-    this.timestamp = new Date();
-  }
-}

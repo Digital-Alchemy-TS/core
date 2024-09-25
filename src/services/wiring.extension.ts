@@ -296,6 +296,7 @@ export function CreateApplication<S extends ServiceMap, C extends OptionalModule
       application.booted = false;
       internal = undefined;
     },
+    type: "application",
   } as unknown as ApplicationDefinition<S, C>;
   return application;
 }

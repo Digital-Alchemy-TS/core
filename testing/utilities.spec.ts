@@ -1,4 +1,14 @@
-import { ACTIVE_THROTTLE, debounce, deepExtend, each, eachLimit, eachSeries, sleep } from "../src";
+import {
+  ACTIVE_THROTTLE,
+  debounce,
+  deepExtend,
+  each,
+  eachLimit,
+  eachSeries,
+  InternalError,
+  sleep,
+  TContext,
+} from "../src";
 
 describe("utilities", () => {
   describe("sleep", () => {
@@ -112,14 +122,12 @@ describe("utilities", () => {
       expect(callback).not.toHaveBeenCalled();
     });
 
-    xit("respects the concurrency limit", async () => {
-      const items = [1, 2, 3, 4, 5];
+    it("respects the concurrency limit", async () => {
+      const repeat = 20;
+      const items = [...".".repeat(repeat)].map((_, i) => i);
       const limit = 2;
-      const activeTasks: number[] = [];
-      const callback = jest.fn(async (item: number) => {
-        activeTasks.push(item);
-        await new Promise(resolve => setTimeout(resolve, 100));
-        activeTasks.shift(); // Simulate the task being done
+      const callback = jest.fn(async () => {
+        await sleep(100);
       });
 
       const startTime = Date.now();
@@ -127,7 +135,7 @@ describe("utilities", () => {
       const endTime = Date.now();
       const duration = endTime - startTime;
 
-      expect(callback).toHaveBeenCalledTimes(5);
+      expect(callback).toHaveBeenCalledTimes(repeat);
       expect(duration).toBeGreaterThanOrEqual(200); // 5 tasks with a 2-task limit should take ~200ms
     });
 
@@ -256,5 +264,14 @@ describe("utilities", () => {
       r: new RegExp("[a-z]", "g"),
     } as Record<string, unknown>;
     expect(deepExtend({}, data)).toEqual(data);
+  });
+
+  it("InternalError", () => {
+    const error = new InternalError("" as TContext, "asdf", "qwerty");
+    expect(error.name).toBe("InternalError");
+  });
+  it("InternalError", () => {
+    const error = new InternalError("" as TContext, "asdf", "qwerty");
+    expect(error.name).toBe("InternalError");
   });
 });

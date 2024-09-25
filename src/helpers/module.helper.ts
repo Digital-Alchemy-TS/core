@@ -122,16 +122,15 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
         return extend;
       },
       omitService: <OMIT extends keyof S>(...keys: OMIT[]) => {
-        keys.forEach(key => delete services[key]);
+        services = Object.fromEntries(
+          Object.entries(services).filter(([i]) => !keys.includes(i as OMIT)),
+        ) as typeof services;
         return extend as unknown as ModuleExtension<Except<S, OMIT>, C>;
       },
       pickService: <PICK extends keyof S>(...keys: PICK[]) => {
-        const avail = Object.keys(services) as PICK[];
-        avail.forEach(key => {
-          if (!keys.includes(key)) {
-            delete services[key];
-          }
-        });
+        services = Object.fromEntries(
+          Object.entries(services).filter(([i]) => keys.includes(i as PICK)),
+        ) as typeof services;
         return extend as unknown as ModuleExtension<Pick<S, PICK>, C>;
       },
       rebuild: <REPLACEMENTS extends S>(incoming: Partial<REPLACEMENTS>) => {
@@ -195,7 +194,7 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
         });
       },
       toTest: () => {
-        return TestRunner({ target: extend.toLibrary() });
+        return TestRunner({ target: extend.toApplication() });
       },
     };
     return extend;
@@ -208,7 +207,7 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
     name: options.name,
     optionalDepends: options.optionalDepends ?? [],
     priorityInit: options.priorityInit,
-    services: options.services,
+    services: options.services ?? ({} as S),
   };
   return workingModule;
 }
@@ -222,7 +221,7 @@ createModule.fromApplication = <S extends ServiceMap, C extends OptionalModuleCo
     name: application.name,
     optionalDepends: [],
     priorityInit: application.priorityInit || [],
-    services: application.services || ({} as S),
+    services: application.services,
   });
 };
 
@@ -235,6 +234,6 @@ createModule.fromLibrary = <S extends ServiceMap, C extends OptionalModuleConfig
     name: library.name,
     optionalDepends: library.optionalDepends || [],
     priorityInit: library.priorityInit || [],
-    services: library.services || ({} as S),
+    services: library.services,
   });
 };

@@ -150,6 +150,8 @@ export type iTestRunner<S extends ServiceMap, C extends OptionalModuleConfigurat
    * clean up your testing resources!
    */
   teardown: () => Promise<void>;
+
+  type: "test";
 };
 
 /**
@@ -301,6 +303,7 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
         teardown = undefined;
       }
     },
+    type: "test",
   };
   return libraryTestRunner;
 }

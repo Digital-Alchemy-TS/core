@@ -429,7 +429,10 @@ type Wire = {
 export type LibraryDefinition<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
-> = LibraryConfigurationOptions<S, C> & Wire;
+> = LibraryConfigurationOptions<S, C> &
+  Wire & {
+    type: "library";
+  };
 
 export type ApplicationDefinition<
   S extends ServiceMap,
@@ -437,6 +440,7 @@ export type ApplicationDefinition<
 > = ApplicationConfigurationOptions<S, C> &
   Wire & {
     logger: ILogger;
+    type: "application";
     booted: boolean;
     bootstrap: (options?: BootstrapOptions) => Promise<void>;
     teardown: () => Promise<void>;
@@ -618,6 +622,7 @@ export function CreateLibrary<S extends ServiceMap, C extends OptionalModuleConf
     priorityInit,
     serviceApis,
     services,
+    type: "library",
   } as unknown as LibraryDefinition<S, C>;
   return library;
 }

@@ -61,7 +61,7 @@ export async function eachLimit<T = unknown>(
   await Promise.all(initialTasks);
 
   // Process the remaining items, ensuring the limit is respected
-  for (let i = limit; i < items.length; i++) {
+  for (let i = limit - ARRAY_OFFSET; i < items.length; i++) {
     await addTask(items[i]);
   }
 

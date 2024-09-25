@@ -1,5 +1,8 @@
-[![codecov](https://codecov.io/github/Digital-Alchemy-TS/core/graph/badge.svg?token=IBGLY3RY68)](https://codecov.io/github/Digital-Alchemy-TS/core)
+[![stars](https://img.shields.io/github/stars/Digital-Alchemy-TS/core)](https://github.com/Digital-Alchemy-TS/core)
+![discord](https://img.shields.io/discord/1219758743848489147?label=Discord&logo=discord)
 
+[![codecov](https://codecov.io/github/Digital-Alchemy-TS/core/graph/badge.svg?token=IBGLY3RY68)](https://codecov.io/github/Digital-Alchemy-TS/core)
+[![version](https://img.shields.io/github/package-json/version/Digital-Alchemy-TS/core)](https://www.npmjs.com/package/@digital-alchemy/core)
 ---
 
 # 🚀 Project Overview - Digital Alchemy TypeScript Libraries

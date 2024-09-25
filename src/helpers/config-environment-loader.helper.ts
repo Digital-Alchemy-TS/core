@@ -1,5 +1,5 @@
 import minimist from "minimist";
-import { argv, env } from "process";
+import { env } from "process";
 
 import { is, ServiceMap } from "..";
 import {
@@ -17,7 +17,7 @@ export async function ConfigLoaderEnvironment<
   S extends ServiceMap = ServiceMap,
   C extends ModuleConfiguration = ModuleConfiguration,
 >({ configs, internal, logger }: ConfigLoaderParams<S, C>): ConfigLoaderReturn {
-  const CLI_SWITCHES = minimist(argv);
+  const CLI_SWITCHES = minimist(process.argv);
   const switchKeys = Object.keys(CLI_SWITCHES);
   const out: Partial<AbstractConfig> = {};
 
@@ -31,7 +31,7 @@ export async function ConfigLoaderEnvironment<
     const cleanedProject = project.replaceAll("-", "_");
 
     // * run through each config for module
-    Object.keys(configuration).forEach((key) => {
+    Object.keys(configuration).forEach(key => {
       // > things to search for
       // - MODULE_NAME_CONFIG_KEY (module + key, ex: app_NODE_ENV)
       // - CONFIG_KEY (only key, ex: NODE_ENV)

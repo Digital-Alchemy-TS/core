@@ -1,11 +1,5 @@
 import { TContext } from "..";
 
-export type MaybeHttpError = {
-  error: string;
-  message: string;
-  statusCode: number;
-};
-
 export class BootstrapException extends Error {
   context: TContext;
   override cause: string;
@@ -32,28 +26,6 @@ export class InternalError extends Error {
     this.message = cause;
     this.context = context;
     this.cause = message;
-    this.timestamp = new Date();
-  }
-}
-
-export class FetchRequestError extends Error {
-  statusCode: number;
-  error: string;
-  timestamp: Date;
-  context: TContext;
-
-  constructor(
-    context: TContext,
-    statusCode: number,
-    error: string,
-    message: string,
-  ) {
-    super();
-    this.context = context;
-    this.name = "FetchRequestError";
-    this.message = message;
-    this.statusCode = statusCode;
-    this.error = error;
     this.timestamp = new Date();
   }
 }

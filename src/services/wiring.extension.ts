@@ -1,70 +1,69 @@
+/* eslint-disable unicorn/no-process-exit */
 import { EventEmitter } from "events";
-import { exit } from "process";
 
 import {
+  ACTIVE_SLEEPS,
   ApplicationConfigurationOptions,
   ApplicationDefinition,
   BootstrapException,
   BootstrapOptions,
-  BuildSortOrder,
-  CacheProviders,
+  buildSortOrder,
   COERCE_CONTEXT,
   CreateLibrary,
   each,
   eachSeries,
   GetApis,
   GetApisResult,
+  ILogger,
   LoadedModules,
+  NONE,
   OptionalModuleConfiguration,
   ServiceFunction,
   ServiceMap,
   SINGLE,
   StringConfig,
+  TConfigLogLevel,
   TLifecycleBase,
   TServiceParams,
   TServiceReturn,
   WIRE_PROJECT,
-  WireOrder,
+  wireOrder,
   WIRING_CONTEXT,
 } from "../helpers";
-import { InternalDefinition, is, Metrics } from ".";
-import { Cache } from "./cache.extension";
+import { ALS, InternalDefinition, is } from ".";
 import {
   Configuration,
   INITIALIZE,
   INJECTED_DEFINITIONS,
   LOAD_PROJECT,
 } from "./configuration.extension";
-import { Fetch } from "./fetch.extension";
 import { CreateLifecycle } from "./lifecycle.extension";
-import { ILogger, Logger, TConfigLogLevel } from "./logger.extension";
+import { Logger } from "./logger.extension";
 import { Scheduler } from "./scheduler.extension";
 
+export interface DeclaredEnvironments {
+  prod: true;
+  test: true;
+  local: true;
+}
+
 // #MARK: CreateBoilerplate
-function CreateBoilerplate() {
+function createBoilerplate() {
   // ! DO NOT MOVE TO ANOTHER FILE !
   // While it SEEMS LIKE this can be safely moved, it causes code init race conditions.
   return CreateLibrary({
     configuration: {
-      CACHE_PREFIX: {
-        default: "",
-        description: [
-          "Use a prefix with all cache keys",
-          "If blank, then application name is used",
-        ].join(`. `),
+      ALS_ENABLED: {
         type: "string",
       },
-      CACHE_PROVIDER: {
-        default: "memory",
-        description: "Redis is preferred if available",
-        enum: ["redis", "memory"],
-        type: "string",
-      } satisfies StringConfig<`${CacheProviders}`>,
-      CACHE_TTL: {
-        default: 86_400,
-        description: "Configuration property for cache provider, in seconds",
-        type: "number",
-      },
+      /**
+       * Only usable by **cli switch**.
+       * Pass path to a config file for loader
+       *
+       * ```bash
+       * node dist/app.js --config ~/.config/my_app.ini
+       * ```
+       */
       CONFIG: {
         description: [
           "Consumable as CLI switch only",
@@ -73,29 +72,101 @@ function CreateBoilerplate() {
         ].join(". "),
         type: "string",
       },
+      /**
+       * > by default true when:
+       *
+       * ```typescript
+       * NODE_ENV === "test*"
+       * ```
+       *
+       * ---
+       *
+       * When set
+       */
+      IS_TEST: {
+        // test | testing
+        default: process.env.NODE_ENV?.startsWith("test"),
+        description: "Quick reference for if this app is currently running with test mode",
+        type: "boolean",
+      },
+      /**
+       * ### `trace`
+       *
+       * Very noisy, contains extra details about what's going on in the internals.
+       *
+       * ### `debug`
+       *
+       * Additional diagnostic information about operations being form. `"did a thing w/ {name}"` is common.
+       *
+       * ### `info`
+       *
+       * Notifications for high level events, and app code.
+       *
+       * ### `warn`
+       *
+       * Notification that an non-critical issue happened.
+       *
+       * ### `error`
+       *
+       * Error logs are produced from unexpected situations.
+       *
+       * When an external API sends back an error messages, or tools are being used in a detectably wrong way.
+       *
+       * ### `fatal`
+       *
+       * Produce a log at the highest importance level, not common
+       *
+       * ### `silent`
+       *
+       * Emit no logs at all
+       */
       LOG_LEVEL: {
         default: "trace",
         description: "Minimum log level to process",
-        enum: ["silent", "trace", "info", "warn", "debug", "error"],
+        enum: ["silent", "trace", "info", "warn", "debug", "error", "fatal"],
         type: "string",
-      } satisfies StringConfig<TConfigLogLevel>,
-      REDIS_URL: {
-        default: "redis://localhost:6379",
-        description:
-          "Configuration property for cache provider, does not apply to memory caching",
+      } satisfies StringConfig<TConfigLogLevel> as StringConfig<TConfigLogLevel>,
+      /**
+       * Reference to `process.env.NODE_ENV` by default, `"local"` if not provided
+       */
+      NODE_ENV: {
+        default: process.env.NODE_ENV || "local",
         type: "string",
-      },
+      } as StringConfig<keyof DeclaredEnvironments>,
     },
     name: "boilerplate",
-    // > 🐔 🥚 dependencies
-    // config system internally resolves this via lifecycle events
-    priorityInit: ["metrics", "configuration", "logger"],
+    priorityInit: ["als", "configuration", "logger", "scheduler"],
     services: {
-      cache: Cache,
+      /**
+       * [AsyncLocalStorage](https://nodejs.org/api/async_context.html) hooks
+       *
+       * Use to pass data around bypassing business logic and insert data into logs
+       */
+      als: ALS,
+
+      /**
+       * @internal
+       *
+       * Exposed via `internal.boilerplate.configuration`
+       *
+       * Used to directly modify application configuration
+       */
       configuration: Configuration,
-      fetch: Fetch,
+
+      /**
+       * @internal
+       *
+       * Exposed via `internal.boilerplate.logger`
+       *
+       * Used to modify the way the logger works at runtime
+       */
       logger: Logger,
-      metrics: Metrics,
+
+      /**
+       * @internal
+       *
+       * Used to generate the scheduler that will get injected into other services
+       */
       scheduler: Scheduler,
     },
   });
@@ -103,16 +174,14 @@ function CreateBoilerplate() {
 
 // (re)defined at bootstrap
 // unclear if this variable even serves a purpose beyond types
-export let LIB_BOILERPLATE: ReturnType<typeof CreateBoilerplate>;
+export let LIB_BOILERPLATE: ReturnType<typeof createBoilerplate>;
+type GenericApp = ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
 
-const RUNNING_APPLICATIONS = new Map<
-  string,
-  ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>
->();
+const RUNNING_APPLICATIONS = new Map<string, GenericApp>();
 
 // #MARK: QuickShutdown
-async function QuickShutdown(reason: string) {
-  await each([...RUNNING_APPLICATIONS.values()], async (application) => {
+async function quickShutdown(reason: string) {
+  await each([...RUNNING_APPLICATIONS.values()], async application => {
     application.logger.warn({ reason }, `starting shutdown`);
     await application.teardown();
   });
@@ -123,31 +192,27 @@ const processEvents = new Map([
   [
     "SIGTERM",
     async () => {
-      await QuickShutdown("SIGTERM");
-      exit();
+      await quickShutdown("SIGTERM");
+      process.exit();
     },
   ],
   [
     "SIGINT",
     async () => {
-      await QuickShutdown("SIGINT");
-      exit();
+      await quickShutdown("SIGINT");
+      process.exit();
     },
   ],
   // ["uncaughtException", () => {}],
   // ["unhandledRejection", (reason, promise) => {}],
 ]);
 
+const DECIMALS = 2;
 const BOILERPLATE = (internal: InternalDefinition) =>
-  internal.boot.loadedModules.get("boilerplate") as GetApis<
-    ReturnType<typeof CreateBoilerplate>
-  >;
+  internal.boot.loadedModules.get("boilerplate") as GetApis<ReturnType<typeof createBoilerplate>>;
 
 // #MARK: CreateApplication
-export function CreateApplication<
-  S extends ServiceMap,
-  C extends OptionalModuleConfiguration,
->({
+export function CreateApplication<S extends ServiceMap, C extends OptionalModuleConfiguration>({
   name,
   services = {} as S,
   configurationLoaders,
@@ -157,15 +222,18 @@ export function CreateApplication<
 }: ApplicationConfigurationOptions<S, C>) {
   let internal: InternalDefinition;
 
-  priorityInit.forEach((name) => {
-    if (!is.function(services[name])) {
-      throw new BootstrapException(
-        WIRING_CONTEXT,
-        "MISSING_PRIORITY_SERVICE",
-        `${name} was listed as priority init, but was not found in services`,
-      );
-    }
-  });
+  if (!is.empty(priorityInit)) {
+    priorityInit.forEach(name => {
+      if (!is.function(services[name])) {
+        throw new BootstrapException(
+          WIRING_CONTEXT,
+          "MISSING_PRIORITY_SERVICE",
+          `${name} was listed as priority init, but was not found in services`,
+        );
+      }
+    });
+  }
+
   const serviceApis = {} as GetApisResult<ServiceMap>;
   const application = {
     [WIRE_PROJECT]: async (internal: InternalDefinition) => {
@@ -173,22 +241,19 @@ export function CreateApplication<
         name as keyof LoadedModules,
         configuration,
       );
-      await eachSeries(
-        WireOrder(priorityInit, Object.keys(services)),
-        async (service) => {
-          serviceApis[service] = await WireService(
-            name,
-            service,
-            services[service],
-            internal.boot.lifecycle.events,
-            internal,
-          );
-        },
-      );
+      await eachSeries(wireOrder(priorityInit, Object.keys(services)), async service => {
+        serviceApis[service] = await wireService(
+          name,
+          service,
+          services[service],
+          internal.boot.lifecycle.events,
+          internal,
+        );
+      });
       const append = internal.boot.options?.appendService;
       if (!is.empty(append)) {
-        await eachSeries(Object.keys(append), async (service) => {
-          await WireService(
+        await eachSeries(Object.keys(append), async service => {
+          await wireService(
             name,
             service,
             append[service],
@@ -209,7 +274,7 @@ export function CreateApplication<
         );
       }
       internal = new InternalDefinition();
-      await Bootstrap(application, options, internal);
+      await bootstrap(application, options, internal);
       application.booted = true;
       RUNNING_APPLICATIONS.set(name, application);
     },
@@ -221,24 +286,23 @@ export function CreateApplication<
     priorityInit,
     serviceApis,
     services,
-    teardown: async () => {
+    async teardown() {
       if (!application.booted) {
-        processEvents.forEach((callback, event) =>
-          process.removeListener(event, callback),
-        );
+        processEvents.forEach((callback, event) => process.removeListener(event, callback));
         return;
       }
-      await Teardown(internal, application.logger);
+      await teardown(internal, application.logger);
       internal?.utils?.event?.removeAllListeners?.();
       application.booted = false;
       internal = undefined;
     },
+    type: "application",
   } as unknown as ApplicationDefinition<S, C>;
   return application;
 }
 
 // #MARK: WireService
-async function WireService(
+async function wireService(
   project: string,
   service: string,
   definition: ServiceFunction,
@@ -256,9 +320,9 @@ async function WireService(
   const loaded = internal.boot.loadedModules.get(project) ?? {};
   internal.boot.loadedModules.set(project, loaded);
   try {
-    logger?.trace({ name: WireService }, `initializing`);
+    logger?.trace({ name: wireService }, `initializing`);
     const inject = Object.fromEntries(
-      [...internal.boot.loadedModules.keys()].map((project) => [
+      [...internal.boot.loadedModules.keys()].map(project => [
         project as keyof TServiceParams,
         internal.boot.loadedModules.get(project),
       ]),
@@ -266,7 +330,7 @@ async function WireService(
 
     loaded[service] = (await definition({
       ...inject,
-      cache: boilerplate?.cache,
+      als: boilerplate.als,
       config: boilerplate?.configuration?.[INJECTED_DEFINITIONS](),
       context,
       event: internal?.utils?.event,
@@ -281,7 +345,7 @@ async function WireService(
     // Init errors at this level are considered blocking / fatal
     // eslint-disable-next-line no-console
     console.error("initialization error", error);
-    exit();
+    process.exit();
   }
 }
 
@@ -310,15 +374,12 @@ const runReady = async (internal: InternalDefinition) => {
 };
 
 // #MARK: Bootstrap
-async function Bootstrap<
-  S extends ServiceMap,
-  C extends OptionalModuleConfiguration,
->(
+async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfiguration>(
   application: ApplicationDefinition<S, C>,
-  options: BootstrapOptions = {},
+  options: BootstrapOptions,
   internal: InternalDefinition,
 ) {
-  // const
+  const initTime = performance.now();
   internal.boot = {
     application,
     completedLifecycleEvents: new Set(),
@@ -339,46 +400,44 @@ async function Bootstrap<
     // pre-create loaded module for boilerplate, so it can be attached to `internal`
     // this allows it to be used as part of `internal` during boilerplate construction
     // otherwise it'd only be there for everyone else
-    const api = {} as GetApis<ReturnType<typeof CreateBoilerplate>>;
+    const api = {} as GetApis<ReturnType<typeof createBoilerplate>>;
     internal.boilerplate = api;
     internal.boot.loadedModules.set("boilerplate", api);
 
     STATS.Construct = CONSTRUCT;
     // * Recreate base eventemitter
     internal.utils.event = new EventEmitter();
+    internal.utils.event.setMaxListeners(NONE);
     // ? Some libraries need to be aware of
 
     // * Generate a new boilerplate module
-    LIB_BOILERPLATE = CreateBoilerplate();
+    LIB_BOILERPLATE = createBoilerplate();
 
     // * Wire it
-    let start = Date.now();
-    await LIB_BOILERPLATE[WIRE_PROJECT](internal, WireService);
+    let start = performance.now();
+    await LIB_BOILERPLATE[WIRE_PROJECT](internal, wireService);
 
-    CONSTRUCT.boilerplate = `${Date.now() - start}ms`;
+    CONSTRUCT.boilerplate = `${(performance.now() - start).toFixed(DECIMALS)}ms`;
     // ~ configuration
-    api.configuration?.[LOAD_PROJECT](
-      LIB_BOILERPLATE.name,
-      LIB_BOILERPLATE.configuration,
-    );
+    api.configuration?.[LOAD_PROJECT](LIB_BOILERPLATE.name, LIB_BOILERPLATE.configuration);
     const logger = api.logger.context(WIRING_CONTEXT);
     application.logger = logger;
-    logger.info({ name: Bootstrap }, `[boilerplate] wiring complete`);
+    logger.info({ name: bootstrap }, `[boilerplate] wiring complete`);
 
     // * Wire in various shutdown events
     processEvents.forEach((callback, event) => {
       process.on(event, callback);
-      logger.trace({ event, name: Bootstrap }, "register shutdown event");
+      logger.trace({ event, name: bootstrap }, "register shutdown event");
     });
 
     // * Add in libraries
     application.libraries ??= [];
 
-    if (!is.undefined(options.appendLibrary)) {
+    if (!is.undefined(options?.appendLibrary)) {
       const list = is.array(options.appendLibrary)
         ? options.appendLibrary
         : [options.appendLibrary];
-      list.forEach((append) => {
+      list.forEach(append => {
         application.libraries.some((library, index) => {
           if (append.name === library.name) {
             // remove existing
@@ -394,24 +453,24 @@ async function Bootstrap<
       });
     }
 
-    const order = BuildSortOrder(application, logger);
-    await eachSeries(order, async (i) => {
-      start = Date.now();
-      logger.info({ name: Bootstrap }, `[%s] init project`, i.name);
-      await i[WIRE_PROJECT](internal, WireService);
-      CONSTRUCT[i.name] = `${Date.now() - start}ms`;
+    const order = buildSortOrder(application, logger);
+    await eachSeries(order, async i => {
+      start = performance.now();
+      logger.info({ name: bootstrap }, `[%s] init project`, i.name);
+      await i[WIRE_PROJECT](internal, wireService);
+      CONSTRUCT[i.name] = `${(performance.now() - start).toFixed(DECIMALS)}ms`;
     });
 
-    logger.trace({ name: Bootstrap }, `library wiring complete`);
+    logger.trace({ name: bootstrap }, `library wiring complete`);
 
     // * Finally the application
-    if (options.bootLibrariesFirst) {
-      logger.warn({ name: Bootstrap }, `bootLibrariesFirst`);
+    if (options?.bootLibrariesFirst) {
+      logger.warn({ name: bootstrap }, `bootLibrariesFirst`);
     } else {
-      logger.info({ name: Bootstrap }, `init application`);
-      start = Date.now();
-      await application[WIRE_PROJECT](internal, WireService);
-      CONSTRUCT[application.name] = `${Date.now() - start}ms`;
+      logger.info({ name: bootstrap }, `init application`);
+      start = performance.now();
+      await application[WIRE_PROJECT](internal, wireService);
+      CONSTRUCT[application.name] = `${(performance.now() - start).toFixed(DECIMALS)}ms`;
     }
 
     // ? Configuration values provided bootstrap take priority over module level
@@ -420,26 +479,20 @@ async function Bootstrap<
     }
 
     // - Kick off lifecycle
-    logger.debug({ name: Bootstrap }, `[PreInit] running lifecycle callbacks`);
+    logger.debug({ name: bootstrap }, `[PreInit] running lifecycle callbacks`);
     STATS.PreInit = await runPreInit(internal);
     // - Pull in user configurations
-    logger.debug({ name: Bootstrap }, "loading configuration");
-    STATS.Configure =
-      await BOILERPLATE(internal)?.configuration?.[INITIALIZE](application);
+    logger.debug({ name: bootstrap }, "loading configuration");
+    const config = BOILERPLATE(internal)?.configuration;
+    STATS.Configure = await config?.[INITIALIZE](application);
     // - Run through other events in order
-    logger.debug(
-      { name: Bootstrap },
-      `[PostConfig] running lifecycle callbacks`,
-    );
+    logger.debug({ name: bootstrap }, `[PostConfig] running lifecycle callbacks`);
 
     STATS.PostConfig = await runPostConfig(internal);
-    logger.debug(
-      { name: Bootstrap },
-      `[Bootstrap] running lifecycle callbacks`,
-    );
+    logger.debug({ name: bootstrap }, `[Bootstrap] running lifecycle callbacks`);
     STATS.Bootstrap = await runBootstrap(internal);
 
-    if (options.bootLibrariesFirst) {
+    if (options?.bootLibrariesFirst) {
       // * mental note
       // running between bootstrap & ready seems most appropriate
       // resources are expected to *technically* be ready at this point, but not finalized
@@ -447,21 +500,21 @@ async function Bootstrap<
       // - hass: socket is open & resources are ready
       // - fastify: bindings are available but port isn't listening
 
-      logger.info({ name: Bootstrap }, `late init application`);
-      start = Date.now();
-      await application[WIRE_PROJECT](internal, WireService);
-      CONSTRUCT[application.name] = `${Date.now() - start}ms`;
+      logger.info({ name: bootstrap }, `late init application`);
+      start = performance.now();
+      await application[WIRE_PROJECT](internal, wireService);
+      CONSTRUCT[application.name] = `${(performance.now() - start).toFixed(DECIMALS)}ms`;
     }
 
-    logger.debug({ name: Bootstrap }, `[Ready] running lifecycle callbacks`);
+    logger.debug({ name: bootstrap }, `[Ready] running lifecycle callbacks`);
     STATS.Ready = await runReady(internal);
 
-    STATS.Total = `${Date.now() - internal.boot.startup.getTime()}ms`;
+    STATS.Total = `${(performance.now() - initTime).toFixed(DECIMALS)}ms`;
     // * App is ready!
     logger.info(
       options?.showExtraBootStats
-        ? { ...STATS, name: Bootstrap }
-        : { Total: STATS.Total, name: Bootstrap },
+        ? { ...STATS, name: bootstrap }
+        : { Total: STATS.Total, name: bootstrap },
       `[%s] application bootstrapped`,
       application.name,
     );
@@ -471,45 +524,37 @@ async function Bootstrap<
       // eslint-disable-next-line no-console
       console.error("bootstrap failed", error);
     }
-    exit();
+
+    process.exit();
   }
 }
 
 // #MARK: Teardown
-async function Teardown(internal: InternalDefinition, logger: ILogger) {
-  if (!internal) {
-    return;
-  }
+async function teardown(internal: InternalDefinition, logger: ILogger) {
   // * Announce
-  logger.warn({ name: Teardown }, `received teardown request`);
+  logger.warn({ name: teardown }, `received teardown request`);
   internal.boot.phase = "teardown";
   try {
     // * PreShutdown
-    logger.debug(
-      { name: Teardown },
-      `[PreShutdown] running lifecycle callbacks`,
-    );
+    logger.debug({ name: teardown }, `[PreShutdown] running lifecycle callbacks`);
     await internal.boot.lifecycle.exec("PreShutdown");
     internal.boot.completedLifecycleEvents.add("PreShutdown");
 
     // * Formally shutting down
-    logger.info({ name: Teardown }, `tearing down application`);
-    logger.debug(
-      { name: Teardown },
-      `[ShutdownStart] running lifecycle callbacks`,
-    );
+    logger.info({ name: teardown }, `tearing down application`);
+    logger.debug({ name: teardown }, `[ShutdownStart] running lifecycle callbacks`);
     await internal.boot.lifecycle.exec("ShutdownStart");
     internal.boot.completedLifecycleEvents.add("ShutdownStart");
-    logger.debug(
-      { name: Teardown },
-      `[ShutdownComplete] running lifecycle callbacks`,
-    );
+
+    // - clean up active `sleep` calls (can keep tests open and stuff)
+    ACTIVE_SLEEPS.forEach(i => i.kill("stop"));
+
+    logger.debug({ name: teardown }, `[ShutdownComplete] running lifecycle callbacks`);
     await internal.boot.lifecycle.exec("ShutdownComplete");
     internal.boot.completedLifecycleEvents.add("ShutdownComplete");
   } catch (error) {
     // ! oof
-    // eslint-disable-next-line no-console
-    console.error(
+    global.console.error(
       { error },
       "error occurred during teardown, some lifecycle events may be incomplete",
     );
@@ -518,12 +563,10 @@ async function Teardown(internal: InternalDefinition, logger: ILogger) {
 
   logger.info(
     {
-      name: Teardown,
+      name: teardown,
       started_at: internal.utils.relativeDate(internal.boot.startup),
     },
     `application terminated`,
   );
-  processEvents.forEach((callback, event) =>
-    process.removeListener(event, callback),
-  );
+  processEvents.forEach((callback, event) => process.removeListener(event, callback));
 }

@@ -1,3 +1,9 @@
+import { Dayjs } from "dayjs";
+
+import { TContext } from "./context.helper";
+import { TBlackHole } from "./utilities.helper";
+import { Schedule, SchedulerOptions } from "./wiring.helper";
+
 export enum CronExpression {
   EVERY_SECOND = "* * * * * *",
   EVERY_5_SECONDS = "*/5 * * * * *",
@@ -85,3 +91,30 @@ export enum CronExpression {
 }
 export const CRON_SCHEDULE = "CRON_SCHEDULE";
 export const INTERVAL_SCHEDULE = "INTERVAL_SCHEDULE";
+
+export type SchedulerCronOptions = SchedulerOptions & {
+  schedule: Schedule | Schedule[];
+};
+export type SchedulerIntervalOptions = SchedulerOptions & {
+  interval: number;
+};
+export type SchedulerSlidingOptions = SchedulerOptions & {
+  /**
+   * How often to run the `next` method, to retrieve the next scheduled execution time
+   */
+  reset: Schedule;
+  /**
+   * Return something time like. undefined = skip next
+   */
+  next: () => Dayjs | string | number | Date | undefined;
+};
+
+export type ScheduleRemove = () => TBlackHole;
+
+export type DigitalAlchemyScheduler = {
+  cron: (options: SchedulerCronOptions) => ScheduleRemove;
+  interval: (options: SchedulerIntervalOptions) => ScheduleRemove;
+  sliding: (options: SchedulerSlidingOptions) => ScheduleRemove;
+};
+
+export type SchedulerBuilder = (context: TContext) => DigitalAlchemyScheduler;

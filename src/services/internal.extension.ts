@@ -1,6 +1,5 @@
 import dayjs, { Dayjs } from "dayjs";
 import { EventEmitter } from "events";
-import { Counter, Summary } from "prom-client";
 import { Get } from "type-fest";
 
 import {
@@ -15,6 +14,7 @@ import {
   LIB_BOILERPLATE,
   LifecycleStages,
   MINUTE,
+  NONE,
   OptionalModuleConfiguration,
   SECOND,
   ServiceMap,
@@ -46,26 +46,24 @@ export class InternalUtils {
    * **NOTE:** bootstrapping process will initialize this at boot, and cleanup at teardown.
    * Making listener changes should only be done from within the context of service functions
    */
-  public event = new EventEmitter();
+  public event: EventEmitter;
+  constructor() {
+    this.event = new EventEmitter();
+    this.event.setMaxListeners(NONE);
+  }
 
-  public TitleCase(input: string): string {
+  public titleCase(input: string): string {
     const matches = input.match(new RegExp("[a-z][A-Z]", "g"));
     if (matches) {
-      matches.forEach((i) => (input = input.replace(i, [...i].join(" "))));
+      matches.forEach(i => (input = input.replace(i, [...i].join(" "))));
     }
     return input
       .split(new RegExp("[ _-]"))
-      .map(
-        (word = "") =>
-          `${word.charAt(FIRST).toUpperCase()}${word.slice(EVERYTHING_ELSE)}`,
-      )
+      .map(word => `${word.charAt(FIRST).toUpperCase()}${word.slice(EVERYTHING_ELSE)}`)
       .join(" ");
   }
 
-  public relativeDate(
-    pastDate: inputFormats,
-    futureDate: inputFormats = new Date().toISOString(),
-  ) {
+  public relativeDate(pastDate: inputFormats, futureDate: inputFormats = new Date().toISOString()) {
     const UNITS = new Map<Intl.RelativeTimeFormatUnit, number>([
       ["year", YEAR],
       ["month", YEAR / MONTHS],
@@ -74,14 +72,19 @@ export class InternalUtils {
       ["minute", MINUTE],
       ["second", SECOND],
     ]);
-
-    if (!pastDate) {
-      return `NOT A DATE ${pastDate} ${JSON.stringify(pastDate)}`;
+    const past = dayjs(pastDate);
+    if (!past.isValid()) {
+      throw new Error("invalid past date " + pastDate);
     }
-    const elapsed = dayjs(pastDate).diff(futureDate, "ms");
+    const future = dayjs(futureDate);
+    if (!future.isValid()) {
+      throw new Error("invalid future date " + pastDate);
+    }
+
+    const elapsed = past.diff(future, "ms");
     let out = "";
 
-    [...UNITS.keys()].some((unit) => {
+    [...UNITS.keys()].some(unit => {
       const cutoff = UNITS.get(unit);
       if (Math.abs(elapsed) > cutoff || unit == "second") {
         out = formatter.format(Math.round(elapsed / cutoff), unit);
@@ -115,10 +118,7 @@ export class InternalUtils {
           delete safeCurrent[key]; // Delete without checking; non-existent keys are a no-op
         } else {
           // For non-last keys, if the next level doesn't exist or isn't an object, stop processing
-          if (
-            typeof safeCurrent[key] !== "object" ||
-            safeCurrent[key] === null
-          ) {
+          if (typeof safeCurrent[key] !== "object" || safeCurrent[key] === null) {
             return;
           }
           // Move to the next level in the path
@@ -139,12 +139,7 @@ export class InternalUtils {
 
       return current as Get<T, P>;
     },
-    set<T>(
-      object: T,
-      path: string,
-      value: unknown,
-      doNotReplace: boolean = false,
-    ): void {
+    set<T>(object: T, path: string, value: unknown, doNotReplace: boolean = false): void {
       const keys = path.split(".");
       let current = object as unknown; // Starting with the object as an unknown type
 
@@ -182,34 +177,9 @@ export class InternalUtils {
   // #endregion
 }
 
-/**
- * ugh, really prom?
- */
-type LabelFixer<LABELS extends BaseLabels> = Record<
-  Extract<keyof LABELS, string>,
-  string | number
->;
-
-type SafeExecOptions<LABELS extends BaseLabels> = {
+type SafeExecOptions = {
+  context?: TContext;
   exec: () => TBlackHole;
-  labels: LABELS;
-  duration: Summary<Extract<keyof LABELS, string>>;
-  executions: Counter<Extract<keyof LABELS, string>>;
-  errors: Counter<Extract<keyof LABELS, string>>;
-};
-
-type BaseLabels = {
-  context: TContext;
-  /**
-   * ! if provided, specific metrics will be kept
-   *
-   * do not pass label if you do not want metrics to be kept, you may not want / need metrics to be kept on all instances
-   *
-   * - execution count
-   * - error count
-   * - summary of execution time
-   */
-  label?: string;
 };
 
 type Phase = "bootstrap" | "teardown" | "running";
@@ -219,10 +189,7 @@ export class InternalDefinition {
   /**
    * Utility methods provided by boilerplate
    */
-  public boilerplate: Pick<
-    GetApis<typeof LIB_BOILERPLATE>,
-    "configuration" | "fetch" | "logger" | "metrics"
-  >;
+  public boilerplate: Pick<GetApis<typeof LIB_BOILERPLATE>, "configuration" | "logger">;
   public boot: {
     /**
      * Options that were passed into bootstrap
@@ -268,38 +235,19 @@ export class InternalDefinition {
   public utils = new InternalUtils();
 
   // #MARK: safeExec
-  public async safeExec<LABELS extends BaseLabels>(
-    options: (() => TBlackHole) | SafeExecOptions<LABELS>,
-  ) {
-    let labels = {} as BaseLabels;
-    let errorMetric: Counter<Extract<keyof LABELS, string>>;
+  public async safeExec<T>(options: (() => TBlackHole) | SafeExecOptions): Promise<T> {
+    const logger = this.boilerplate.logger.systemLogger;
+    const context = is.function(options) ? undefined : options?.context;
+    const exec = is.function(options) ? options : options?.exec;
+    if (!is.function(exec)) {
+      logger.error({ context }, `received non-function callback to [safeExec]`);
+      return undefined;
+    }
     try {
-      if (is.function(options)) {
-        await options();
-        return;
-      }
-      const opt = options as SafeExecOptions<LABELS>;
-      labels = opt.labels;
-      errorMetric = opt.errors;
-      const { exec, duration, executions } = opt;
-      if (is.empty(labels.label)) {
-        await exec();
-        return;
-      }
-      executions?.inc(labels as LabelFixer<LABELS>);
-      const end = duration?.startTimer();
-      await exec();
-      if (end) {
-        end(labels as LabelFixer<LABELS>);
-      }
+      return (await exec()) as T;
     } catch (error) {
-      this.boilerplate.logger.systemLogger.error(
-        { error, ...labels },
-        `callback threw error`,
-      );
-      if (!is.empty(labels.label)) {
-        errorMetric?.inc(labels as LabelFixer<LABELS>);
-      }
+      logger.error({ context, error }, `callback threw error`);
+      return undefined;
     }
   }
 }

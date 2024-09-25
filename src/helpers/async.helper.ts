@@ -1,4 +1,5 @@
-import { is } from "../extensions/is.extension";
+/* eslint-disable sonarjs/no-redundant-type-constituents */
+import { is } from "../services";
 import { ARRAY_OFFSET, SINGLE, START } from "./utilities.helper";
 
 // ? Functions written to be similar to the offerings from the async library
@@ -8,10 +9,13 @@ import { ARRAY_OFFSET, SINGLE, START } from "./utilities.helper";
 
 // #MARK: each
 export async function each<T = unknown>(
-  item: T[] = [],
+  item: T[] | Set<T>,
   callback: (item: T) => Promise<void | unknown>,
 ): Promise<void> {
-  await Promise.all(item.map(async (i) => await callback(i)));
+  if (item instanceof Set) {
+    item = [...item.values()];
+  }
+  await Promise.all(item.map(async i => await callback(i)));
 }
 
 // #MARK: eachSeries
@@ -51,13 +55,13 @@ export async function eachLimit<T = unknown>(
   }
 
   // Add initial tasks up to the limit
-  const initialTasks = items.slice(SINGLE, limit).map((item) => addTask(item));
+  const initialTasks = items.slice(SINGLE, limit).map(item => addTask(item));
 
   // Wait for the initial set of tasks to start processing
   await Promise.all(initialTasks);
 
   // Process the remaining items, ensuring the limit is respected
-  for (let i = limit; i < items.length; i++) {
+  for (let i = limit - ARRAY_OFFSET; i < items.length; i++) {
     await addTask(items[i]);
   }
 

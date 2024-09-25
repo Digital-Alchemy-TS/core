@@ -1,7 +1,4 @@
 export * from "./async.helper";
-export * from "./cache.helper";
-export * from "./cache-memory.helper";
-export * from "./cache-redis.helper";
 export * from "./config.helper";
 export * from "./config-environment-loader.helper";
 export * from "./config-file-loader.helper";
@@ -10,7 +7,8 @@ export * from "./cron.helper";
 export * from "./errors.helper";
 export * from "./events.helper";
 export * from "./extend.helper";
-export * from "./fetch.helper";
 export * from "./lifecycle.helper";
+export * from "./logger.helper";
+export * from "./module.helper";
 export * from "./utilities.helper";
 export * from "./wiring.helper";

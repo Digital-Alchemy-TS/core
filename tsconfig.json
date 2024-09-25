@@ -6,9 +6,11 @@
     "esModuleInterop": true,
     "importHelpers": true,
     "isolatedModules": true,
-    "lib": ["ESNext"],
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "lib": [
+      "ESNext"
+    ],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "noImplicitAny": true,
     "declaration": true,
     "noImplicitReturns": true,
@@ -19,12 +21,18 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "strict": false,
     "strictBindCallApply": true,
     "strictFunctionTypes": true,
     "target": "ESNext",
     "allowSyntheticDefaultImports": true
   },
-  "include": ["src/**/*.ts"],
-  "exclude": ["node_modules", "tmp", "dist"]
+  "include": [
+    "src/**/*.ts",
+    "testing/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "tmp",
+    "dist"
+  ]
 }

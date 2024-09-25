@@ -1,4 +1,6 @@
-import { is } from "../extensions";
+import dayjs from "dayjs";
+
+import { is } from "../src";
 
 describe("IsIt class", () => {
   test("is.array returns true for arrays", () => {
@@ -21,6 +23,11 @@ describe("IsIt class", () => {
   test("is.date returns true for Date objects", () => {
     expect(is.date(new Date())).toBe(true);
     expect(is.date("not a date")).toBe(false);
+  });
+
+  test("is.dayjs returns true for dayjs objects", () => {
+    expect(is.dayjs(new Date())).toBe(false);
+    expect(is.dayjs(dayjs())).toBe(true);
   });
 
   describe("is.empty", () => {
@@ -89,9 +96,7 @@ describe("IsIt class", () => {
 
     test("throws an error for unsupported types like symbol", () => {
       // @ts-expect-error that's the test
-      expect(() => is.empty(Symbol.for("test"))).toThrow(
-        "Unsupported type symbol",
-      );
+      expect(() => is.empty(Symbol.for("test"))).toThrow("Unsupported type symbol");
     });
   });
 

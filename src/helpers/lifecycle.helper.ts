@@ -1,16 +1,10 @@
 import { TBlackHole } from "..";
 
 export type LifecycleCallback = () => TBlackHole;
-export type LifecyclePrioritizedCallback = [
-  callback: LifecycleCallback,
-  priority: number,
-];
+export type LifecyclePrioritizedCallback = [callback: LifecycleCallback, priority: number];
 export type CallbackList = LifecyclePrioritizedCallback[];
 
-export type TLifeCycleRegister = (
-  callback: LifecycleCallback,
-  priority?: number,
-) => void;
+export type TLifeCycleRegister = (callback: LifecycleCallback, priority?: number) => void;
 
 export type TLifecycleBase = {
   /**
@@ -52,8 +46,6 @@ export type TLifecycleBase = {
 export type TParentLifecycle = TLifecycleBase & {
   child: () => TLifecycleBase;
 };
-
-export type TChildLifecycle = TLifecycleBase;
 
 // ! This is a sorted array! Don't change the order
 export const LIFECYCLE_STAGES = [

@@ -393,7 +393,7 @@ describe("Logger", () => {
           .emitLogs("info")
           .run(({ logger, internal }) => {
             internal.boilerplate.logger.setHttpLogs("https://hello.world");
-            jest.spyOn(global, "fetch").mockImplementation((a, { body }) => {
+            jest.spyOn(global, "fetch").mockImplementation((_, { body }) => {
               const data = JSON.parse(String(body));
               spy(data);
               return undefined;
@@ -417,7 +417,7 @@ describe("Logger", () => {
           .emitLogs("info")
           .run(({ logger, internal }) => {
             internal.boilerplate.logger.setHttpLogs("https://hello.world");
-            jest.spyOn(global, "fetch").mockImplementation((a, { body }) => {
+            jest.spyOn(global, "fetch").mockImplementation((_, { body }) => {
               const data = JSON.parse(String(body));
               spy(data);
               return undefined;
@@ -445,7 +445,7 @@ describe("Logger", () => {
           .emitLogs("info")
           .run(({ logger, internal }) => {
             internal.boilerplate.logger.setHttpLogs("https://hello.world");
-            jest.spyOn(global, "fetch").mockImplementation((a, { body }) => {
+            jest.spyOn(global, "fetch").mockImplementation((_, { body }) => {
               const data = JSON.parse(String(body));
               spy(data);
               return undefined;
@@ -469,7 +469,7 @@ describe("Logger", () => {
           .emitLogs("info")
           .run(({ logger, internal }) => {
             internal.boilerplate.logger.setHttpLogs("https://hello.world");
-            jest.spyOn(global, "fetch").mockImplementation((a, { body }) => {
+            jest.spyOn(global, "fetch").mockImplementation((_, { body }) => {
               const data = JSON.parse(String(body));
               spy(data);
               return undefined;
@@ -502,7 +502,7 @@ describe("Logger", () => {
               };
             };
             internal.boilerplate.logger.setHttpLogs("https://hello.world");
-            jest.spyOn(global, "fetch").mockImplementation((a, { body }) => {
+            jest.spyOn(global, "fetch").mockImplementation((_, { body }) => {
               const data = JSON.parse(String(body));
               spy(data);
               return undefined;
@@ -531,7 +531,7 @@ describe("Logger", () => {
               };
             };
             internal.boilerplate.logger.setHttpLogs("https://hello.world");
-            jest.spyOn(global, "fetch").mockImplementation((a, { body }) => {
+            jest.spyOn(global, "fetch").mockImplementation((_, { body }) => {
               const data = JSON.parse(String(body));
               spy(data);
               return undefined;

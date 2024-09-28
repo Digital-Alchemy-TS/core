@@ -55,6 +55,19 @@ describe("utilities", () => {
       expect(end - start).toBeLessThan(timeout - 1);
     });
 
+    it("should not resolve if kill() is called before timeout", async () => {
+      const timeout = 200;
+      const start = Date.now();
+
+      const timer = sleep(timeout);
+      setTimeout(() => timer.kill(), 50);
+      await new Promise(resolve => setTimeout(resolve, 100)); // Wait for 100 milliseconds to ensure the stop has taken effect
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(99);
+      expect(end - start).toBeLessThan(timeout - 1);
+    });
+
     it("should handle date object correctly", async () => {
       const targetDate = new Date(Date.now() + 100);
       const start = Date.now();

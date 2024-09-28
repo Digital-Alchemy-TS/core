@@ -2,6 +2,7 @@ import {
   ApplicationDefinition,
   BootstrapException,
   BootstrapOptions,
+  buildSortOrder,
   CreateApplication,
   CreateLibrary,
   createMockLogger,
@@ -11,6 +12,7 @@ import {
   OptionalModuleConfiguration,
   ServiceMap,
   TestRunner,
+  wireOrder,
 } from "../src";
 
 export const FAKE_EXIT = (() => {}) as () => never;
@@ -466,6 +468,12 @@ describe("Wiring", () => {
 
   // #MARK: Bootstrap
   describe("Bootstrap", () => {
+    it("wireOrder throws errors for duplicates", () => {
+      expect(() => {
+        wireOrder(["a", "a", "b"], []);
+      }).toThrow();
+    });
+
     it("constructs app in between boot and ready for bootLibrariesFirst", async () => {
       expect.assertions(4);
       await TestRunner()
@@ -893,8 +901,46 @@ describe("Wiring", () => {
       },
     });
 
+    const LIBRARY_E = CreateLibrary({
+      // depends: [LIBRARY_F],
+      // @ts-expect-error testing
+      name: "E",
+
+      optionalDepends: [LIBRARY_B],
+      services: {
+        AddToList: () => list.push("C"),
+      },
+    });
+
+    const LIBRARY_F = CreateLibrary({
+      depends: [LIBRARY_E],
+      // @ts-expect-error testing
+      name: "F",
+
+      optionalDepends: [LIBRARY_B],
+      services: {
+        AddToList: () => list.push("C"),
+      },
+    });
+    LIBRARY_E.depends = [LIBRARY_F];
+
     beforeEach(() => {
       list = [];
+    });
+
+    it("buildSortOrder", () => {
+      const logger = createMockLogger();
+      expect(() => {
+        buildSortOrder(
+          CreateApplication({
+            libraries: [LIBRARY_E, LIBRARY_F],
+            // @ts-expect-error testing
+            name: "test",
+            services: {},
+          }),
+          logger,
+        );
+      }).toThrow(BootstrapException);
     });
 
     it("should pass through optionalDepends", () => {

@@ -460,6 +460,45 @@ describe("Logger", () => {
         );
       });
 
+      it("can emit ms in green", async () => {
+        expect.assertions(1);
+        jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(console, "log").mockImplementation(() => undefined);
+        const spy = jest.fn();
+        await TestRunner()
+          .setOptions({ loggerOptions: { ms: true } })
+          .emitLogs("info")
+          .run(({ logger, internal }) => {
+            internal.boilerplate.logger.setHttpLogs("https://hello.world");
+            jest.spyOn(global, "fetch").mockImplementation((_, { body }) => {
+              const data = JSON.parse(String(body));
+              spy(data);
+              return undefined;
+            });
+            logger.info("hello world");
+          });
+
+        expect(spy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            ms: expect.stringMatching(/^\+[\d.]*ms$/),
+          }),
+        );
+      });
+
+      it("prepends ms number", async () => {
+        expect.assertions(1);
+        jest.spyOn(console, "error").mockImplementation(() => undefined);
+        const spy = jest.spyOn(console, "log").mockImplementation(() => undefined);
+        await TestRunner()
+          .emitLogs("info")
+          .setOptions({ loggerOptions: { ms: true, pretty: false } })
+          .run(({ logger }) => {
+            jest.clearAllMocks();
+            logger.info("hello world");
+            expect(spy).toHaveBeenCalledWith(expect.stringMatching(/^\+[\d.]*ms/));
+          });
+      });
+
       it("does not emit ms by default", async () => {
         expect.assertions(1);
         jest.spyOn(console, "error").mockImplementation(() => undefined);

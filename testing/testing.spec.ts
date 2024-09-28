@@ -75,6 +75,7 @@ describe("Testing", () => {
     },
   });
 
+  // #MARK: Basics
   describe("Basics", () => {
     it("makes assertions against a provided library", async () => {
       expect.assertions(3);
@@ -102,29 +103,33 @@ describe("Testing", () => {
     });
   });
 
-  it("can build a generic module from libraries", async () => {
-    expect.assertions(11);
-    const generic = createModule.fromLibrary(testingLibrary);
-    expect(generic).toBeDefined();
-    const rebuild = generic.extend();
-    expect(rebuild.appendLibrary).toBeDefined();
-    expect(rebuild.appendService).toBeDefined();
-    expect(rebuild.replaceLibrary).toBeDefined();
-    expect(rebuild.replaceService).toBeDefined();
-    expect(rebuild.pickService).toBeDefined();
-    expect(rebuild.omitService).toBeDefined();
-    expect(rebuild.rebuild).toBeDefined();
-    expect(rebuild.toApplication).toBeDefined();
-    expect(rebuild.toLibrary).toBeDefined();
-    expect(rebuild.toTest).toBeDefined();
+  // #MARK: reformat
+  describe("reformat", () => {
+    it("can build a generic module from libraries", async () => {
+      expect.assertions(11);
+      const generic = createModule.fromLibrary(testingLibrary);
+      expect(generic).toBeDefined();
+      const rebuild = generic.extend();
+      expect(rebuild.appendLibrary).toBeDefined();
+      expect(rebuild.appendService).toBeDefined();
+      expect(rebuild.replaceLibrary).toBeDefined();
+      expect(rebuild.replaceService).toBeDefined();
+      expect(rebuild.pickService).toBeDefined();
+      expect(rebuild.omitService).toBeDefined();
+      expect(rebuild.rebuild).toBeDefined();
+      expect(rebuild.toApplication).toBeDefined();
+      expect(rebuild.toLibrary).toBeDefined();
+      expect(rebuild.toTest).toBeDefined();
+    });
+
+    it("builds a test from generic", async () => {
+      expect.assertions(1);
+      const test = createModule.fromLibrary(testingLibrary).extend().toTest();
+      expect(test.type).toBe("test");
+    });
   });
 
-  it("builds a test from generic", async () => {
-    expect.assertions(1);
-    const test = createModule.fromLibrary(testingLibrary).extend().toTest();
-    expect(test.type).toBe("test");
-  });
-
+  // #MARK: appendLibrary
   describe("appendLibrary", () => {
     it("can append libraries", async () => {
       expect.assertions(1);
@@ -160,6 +165,7 @@ describe("Testing", () => {
     });
   });
 
+  // #MARK: appendService
   describe("appendService", () => {
     it("cannot append an existing service", () => {
       expect.assertions(1);
@@ -179,6 +185,7 @@ describe("Testing", () => {
     });
   });
 
+  // #MARK: quick
   describe("quick replacements", () => {
     it("omitService", () => {
       expect.assertions(1);
@@ -214,6 +221,7 @@ describe("Testing", () => {
     });
   });
 
+  // #MARK: replaceLibrary
   describe("replaceLibrary", () => {
     it("can replace libraries", async () => {
       expect.assertions(1);
@@ -255,6 +263,7 @@ describe("Testing", () => {
     });
   });
 
+  // #MARK: replaceService
   describe("replaceService", () => {
     it("can replace libraries", async () => {
       expect.assertions(1);
@@ -277,6 +286,7 @@ describe("Testing", () => {
     });
   });
 
+  // #MARK: Outputs
   describe("Outputs", () => {
     it("can create application modules", () => {
       expect.assertions(1);

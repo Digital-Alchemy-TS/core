@@ -53,7 +53,8 @@ export async function Logger({
   let logCounter = START;
   let httpLogTarget: string;
 
-  const { loggerOptions = {} } = internal.boot?.options ?? {};
+  internal.boot.options ??= {};
+  const { loggerOptions = {} } = internal.boot.options;
 
   const timestampFormat = loggerOptions.timestampFormat ?? "ddd HH:mm:ss.SSS";
   loggerOptions.mergeData ??= {};
@@ -151,20 +152,19 @@ export async function Logger({
           prettyMessage = format(prettyFormatMessage(text), ...parameters);
         }
 
-        let message = `${timestamp} ${level}${highlighted}`;
+        let ms = "";
+        if (loggerOptions.ms) {
+          const now = performance.now();
+          ms = "+" + (now - lastMessage).toFixed(DECIMALS) + `ms`;
+          lastMessage = now;
+          rawData.ms = ms;
+        }
+        let message = `${ms}${timestamp} ${level}${highlighted}`;
 
         if (!is.empty(name)) {
           message += chalk.blue(` (${name})`);
         }
 
-        if (loggerOptions.ms) {
-          const now = performance.now();
-          const diff = (now - lastMessage).toFixed(DECIMALS) + `ms`;
-          lastMessage = now;
-          rawData.ms = diff;
-
-          message += prettyFormat ? chalk.green(diff) : diff;
-        }
         emitHttpLogs(rawData);
 
         if (!is.empty(prettyMessage)) {

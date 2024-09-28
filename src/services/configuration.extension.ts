@@ -4,7 +4,7 @@ import {
   CodeConfigDefinition,
   ConfigLoader,
   ConfigLoaderEnvironment,
-  ConfigLoaderFile,
+  configLoaderFile,
   deepExtend,
   DigitalAlchemyConfiguration,
   eachSeries,
@@ -97,7 +97,7 @@ export function Configuration({
   ): Promise<string> {
     const configLoaders =
       internal.boot.application.configurationLoaders ??
-      ([ConfigLoaderEnvironment, ConfigLoaderFile] as ConfigLoader[]);
+      ([ConfigLoaderEnvironment, configLoaderFile] as ConfigLoader[]);
 
     const start = performance.now();
 

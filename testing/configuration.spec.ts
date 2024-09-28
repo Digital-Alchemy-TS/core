@@ -12,7 +12,7 @@ import { v4 } from "uuid";
 import {
   ApplicationDefinition,
   BootstrapOptions,
-  ConfigLoaderFile,
+  configLoaderFile,
   CreateApplication,
   CreateLibrary,
   createMockLogger,
@@ -20,9 +20,11 @@ import {
   InternalConfig,
   InternalDefinition,
   is,
+  loadConfigFromFile,
   loadDotenv,
   OptionalModuleConfiguration,
   parseConfig,
+  PartialConfiguration,
   ServiceMap,
   SINGLE,
   TestRunner,
@@ -565,7 +567,7 @@ describe("Configuration", () => {
                 type: "string",
               },
             },
-            configurationLoaders: [ConfigLoaderFile],
+            configurationLoaders: [configLoaderFile],
             // @ts-expect-error Testing
             name: "testing",
             services: {
@@ -583,6 +585,141 @@ describe("Configuration", () => {
           testFiles.unlink(filePath);
           sortedFiles = testFiles.sort([...testFiles.dataMap.keys()]);
         }
+      });
+
+      // #MARK: --config
+      describe("--config", () => {
+        it("does not like missing files", async () => {
+          expect.assertions(1);
+          process.argv = ["", "--config=./missing_file"];
+          const error = new Error("HIT");
+          jest.spyOn(process, "exit").mockImplementation(() => {
+            throw error;
+          });
+          const logger = createMockLogger();
+          try {
+            await configLoaderFile({
+              // @ts-expect-error not needed for test
+              application: {},
+              logger,
+            });
+          } catch (error) {
+            expect(error).toBeDefined();
+          }
+        });
+
+        it("will attempt to load existing files", async () => {
+          jest.spyOn(fs, "existsSync").mockImplementation(() => true);
+
+          const readSpy = jest.spyOn(fs, "readFileSync").mockImplementation(() => ``);
+          const logger = createMockLogger();
+          process.argv = ["", "--config=./config_file"];
+          await configLoaderFile({
+            // @ts-expect-error not needed for test
+            application: {},
+            logger,
+          });
+
+          expect(readSpy).toHaveBeenCalledWith("./config_file", "utf8");
+        });
+      });
+
+      // #MARK: loadConfigFromFile
+      describe("loadConfigFromFile", () => {
+        describe("with extension", () => {
+          it("detects ini extension", async () => {
+            const data = {} as PartialConfiguration;
+            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+              iniEncode({
+                boilerplate: {
+                  LOG_LEVEL: "trace",
+                },
+              } satisfies PartialConfiguration),
+            );
+            loadConfigFromFile(data, "/path/to/file.ini");
+            expect(data.boilerplate.LOG_LEVEL).toBe("trace");
+          });
+
+          it("detects yaml extension", async () => {
+            const data = {} as PartialConfiguration;
+            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+              yamlDump({
+                boilerplate: {
+                  LOG_LEVEL: "trace",
+                },
+              } satisfies PartialConfiguration),
+            );
+            loadConfigFromFile(data, "/path/to/file.yaml");
+            expect(data.boilerplate.LOG_LEVEL).toBe("trace");
+          });
+
+          it("detects yml extension", async () => {
+            const data = {} as PartialConfiguration;
+            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+              yamlDump({
+                boilerplate: {
+                  LOG_LEVEL: "trace",
+                },
+              } satisfies PartialConfiguration),
+            );
+            loadConfigFromFile(data, "/path/to/file.yml");
+            expect(data.boilerplate.LOG_LEVEL).toBe("trace");
+          });
+
+          it("detects json extension", async () => {
+            const data = {} as PartialConfiguration;
+            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+              JSON.stringify({
+                boilerplate: {
+                  LOG_LEVEL: "trace",
+                },
+              } satisfies PartialConfiguration),
+            );
+            loadConfigFromFile(data, "/path/to/file.json");
+            expect(data.boilerplate.LOG_LEVEL).toBe("trace");
+          });
+        });
+
+        describe("without extension", () => {
+          it("detects json data", async () => {
+            const data = {} as PartialConfiguration;
+            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+              JSON.stringify({
+                boilerplate: {
+                  LOG_LEVEL: "trace",
+                },
+              } satisfies PartialConfiguration),
+            );
+            loadConfigFromFile(data, "/path/to/file");
+            expect(data.boilerplate.LOG_LEVEL).toBe("trace");
+          });
+
+          it("detects ini data", async () => {
+            const data = {} as PartialConfiguration;
+            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+              iniEncode({
+                boilerplate: {
+                  LOG_LEVEL: "trace",
+                },
+              } satisfies PartialConfiguration),
+            );
+            loadConfigFromFile(data, "/path/to/file");
+            expect(data.boilerplate.LOG_LEVEL).toBe("trace");
+          });
+
+          it("detects yaml data", async () => {
+            const data = {} as PartialConfiguration;
+            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+              yamlDump({
+                boilerplate: {
+                  LOG_LEVEL: "trace",
+                },
+              } satisfies PartialConfiguration),
+            );
+            loadConfigFromFile(data, "/path/to/file");
+            expect(data.boilerplate.LOG_LEVEL).toBe("trace");
+          });
+        });
       });
     });
   });

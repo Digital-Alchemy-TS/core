@@ -64,6 +64,7 @@ export default [
       "unicorn/switch-case-braces": "off",
       "unicorn/prefer-module": "off",
       "@typescript-eslint/no-magic-numbers": "warn",
+      "unicorn/no-process-exit": "off",
       "unicorn/no-object-as-default-parameter": "off",
       "@cspell/spellchecker": ["warn", { checkComments: false, autoFix: true }],
       "unicorn/no-null": "off",

@@ -1,30 +1,25 @@
-import { existsSync, readFileSync, statSync } from "fs";
-import { decode } from "ini";
-import { load } from "js-yaml";
+import fs from "fs";
+import ini from "ini";
+import yaml from "js-yaml";
 import minimist from "minimist";
 import { homedir } from "os";
 import { join } from "path";
-import { cwd, exit, platform } from "process";
+import { cwd, platform } from "process";
 
-import { deepExtend, INVERT_VALUE, is, ServiceMap, START } from "..";
-import {
-  AbstractConfig,
-  ConfigLoaderParams,
-  ConfigLoaderReturn,
-  ModuleConfiguration,
-} from "./config.helper";
+import { deepExtend, INVERT_VALUE, is, PartialConfiguration, ServiceMap, START } from "..";
+import { ConfigLoaderParams, ConfigLoaderReturn, ModuleConfiguration } from "./config.helper";
 
 const isWindows = platform === "win32";
 
 export const SUPPORTED_CONFIG_EXTENSIONS = ["json", "ini", "yaml", "yml"];
-function withExtensions(path: string): string[] {
+export function withExtensions(path: string): string[] {
   return [path, join(path, "config")].flatMap(path => [
     path,
     ...SUPPORTED_CONFIG_EXTENSIONS.map(i => `${path}.${i}`),
   ]);
 }
 
-export function configFilePaths(name = "digital-alchemy"): string[] {
+export function configFilePaths(name: string): string[] {
   const out: string[] = [];
   if (!isWindows) {
     out.push(...withExtensions(join(`/etc`, `${name}`)));
@@ -40,10 +35,10 @@ export function configFilePaths(name = "digital-alchemy"): string[] {
     current = next;
   }
   out.push(...withExtensions(join(homedir(), ".config", name)));
-  return out.filter(filePath => existsSync(filePath) && statSync(filePath).isFile());
+  return out.filter(filePath => fs.existsSync(filePath) && fs.statSync(filePath).isFile());
 }
 
-export async function ConfigLoaderFile<
+export async function configLoaderFile<
   S extends ServiceMap = ServiceMap,
   C extends ModuleConfiguration = ModuleConfiguration,
 >({ application, logger }: ConfigLoaderParams<S, C>): ConfigLoaderReturn {
@@ -52,18 +47,18 @@ export async function ConfigLoaderFile<
   let files: string[];
   if (is.empty(configFile)) {
     files = configFilePaths(application.name);
-    logger.trace({ files, name: ConfigLoaderFile }, `identified config files`);
+    logger.trace({ files, name: configLoaderFile }, `identified config files`);
   } else {
-    if (!existsSync(configFile)) {
+    if (!fs.existsSync(configFile)) {
       logger.fatal(
-        { configFile, name: ConfigLoaderFile },
+        { configFile, name: configLoaderFile },
         `used {--config} to specify path that does not exist`,
       );
-      exit();
+      process.exit();
     }
     files = [configFile];
     logger.debug(
-      { configFile, name: ConfigLoaderFile },
+      { configFile, name: configLoaderFile },
       `used {--config}, loading from target file`,
     );
   }
@@ -71,26 +66,26 @@ export async function ConfigLoaderFile<
   if (is.empty(files)) {
     return {};
   }
-  const out: Partial<AbstractConfig> = {};
-  logger.trace({ files, name: ConfigLoaderFile }, `loading configuration files`);
+  const out: Partial<PartialConfiguration> = {};
+  logger.trace({ files, name: configLoaderFile }, `loading configuration files`);
   files.forEach(file => loadConfigFromFile(out, file));
   return out;
 }
 
-function loadConfigFromFile(out: Partial<AbstractConfig>, filePath: string) {
-  const fileContent = readFileSync(filePath, "utf8").trim();
+export function loadConfigFromFile(out: PartialConfiguration, filePath: string) {
+  const fileContent = fs.readFileSync(filePath, "utf8").trim();
   const hasExtension = SUPPORTED_CONFIG_EXTENSIONS.some(extension => {
     if (filePath.slice(extension.length * INVERT_VALUE).toLowerCase() === extension) {
       switch (extension) {
         case "ini":
-          deepExtend(out, decode(fileContent) as unknown as AbstractConfig);
+          deepExtend(out, ini.decode(fileContent) as PartialConfiguration);
           return true;
         case "yaml":
         case "yml":
-          deepExtend(out, load(fileContent) as AbstractConfig);
+          deepExtend(out, yaml.load(fileContent) as PartialConfiguration);
           return true;
         case "json":
-          deepExtend(out, JSON.parse(fileContent) as unknown as AbstractConfig);
+          deepExtend(out, JSON.parse(fileContent) as PartialConfiguration);
           return true;
       }
     }
@@ -101,19 +96,19 @@ function loadConfigFromFile(out: Partial<AbstractConfig>, filePath: string) {
   }
   // Guessing JSON
   if (fileContent[START] === "{") {
-    deepExtend(out, JSON.parse(fileContent) as unknown as AbstractConfig);
+    deepExtend(out, JSON.parse(fileContent) as PartialConfiguration);
     return;
   }
   // Guessing yaml
   try {
-    const content = load(fileContent);
+    const content = yaml.load(fileContent);
     if (is.object(content)) {
-      deepExtend(out, content as unknown as AbstractConfig);
+      deepExtend(out, content as PartialConfiguration);
       return;
     }
   } catch {
     // Is not a yaml file
   }
   // Final fallback: INI
-  deepExtend(out, decode(fileContent) as unknown as AbstractConfig);
+  deepExtend(out, ini.decode(fileContent) as PartialConfiguration);
 }

@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 
 import {
   ApplicationDefinition,
+  CreateLibrary,
   createMockLogger,
   OptionalModuleConfiguration,
   ServiceMap,
@@ -20,6 +21,7 @@ describe("Logger", () => {
     jest.restoreAllMocks();
   });
 
+  // #MARK: configuration
   describe("Configuration Interactions", () => {
     it("calls the appropriate things based on permission combos", async () => {
       expect.assertions(1);
@@ -54,8 +56,80 @@ describe("Logger", () => {
         expect(spy).toHaveBeenCalled();
       });
     });
+
+    describe("Level overrides", () => {
+      it("allows module level overrides", async () => {
+        expect.assertions(1);
+
+        jest.spyOn(global.console, "error").mockImplementation(() => {});
+        const spy = jest.spyOn(global.console, "log").mockImplementation(() => {});
+
+        await TestRunner()
+          .emitLogs("warn")
+          .setOptions({
+            loggerOptions: {
+              levelOverrides: {
+                // @ts-expect-error testing
+                trace_library: "trace",
+              },
+            },
+          })
+          .appendLibrary(
+            CreateLibrary({
+              // @ts-expect-error testing
+              name: "trace_library",
+              services: {
+                test({ logger }) {
+                  spy.mockClear();
+                  logger.trace("test");
+                  expect(spy).toHaveBeenCalled();
+                },
+              },
+            }),
+          )
+          .run(() => {});
+      });
+
+      it("allows service level overrides", async () => {
+        expect.assertions(2);
+
+        jest.spyOn(global.console, "error").mockImplementation(() => {});
+        const spy = jest.spyOn(global.console, "log").mockImplementation(() => {});
+
+        await TestRunner()
+          .emitLogs("warn")
+          .setOptions({
+            loggerOptions: {
+              levelOverrides: {
+                // @ts-expect-error testing
+                "trace_library:test": "trace",
+              },
+            },
+          })
+          .appendLibrary(
+            CreateLibrary({
+              // @ts-expect-error testing
+              name: "trace_library",
+              services: {
+                second({ logger }) {
+                  spy.mockClear();
+                  logger.trace("test");
+                  expect(spy).not.toHaveBeenCalled();
+                },
+                test({ logger }) {
+                  spy.mockClear();
+                  logger.trace("test");
+                  expect(spy).toHaveBeenCalled();
+                },
+              },
+            }),
+          )
+          .run(() => {});
+      });
+    });
   });
 
+  // #MARK: pretty
   describe("Pretty Formatting", () => {
     const frontDash = " - ";
     let YELLOW_DASH: string;
@@ -118,9 +192,47 @@ describe("Logger", () => {
         expect(boilerplate.logger.prettyFormatMessage(message)).toBe(expected);
       });
     });
+
+    it("always provides strings back", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal: { boilerplate } }) => {
+        expect(boilerplate.logger.prettyFormatMessage(undefined)).toBe("");
+      });
+    });
+
+    it("passes through boot configs", async () => {
+      expect.assertions(1);
+      await TestRunner()
+        .setOptions({
+          loggerOptions: {
+            pretty: true,
+          },
+        })
+        .run(({ internal: { boilerplate } }) => {
+          const testString = "{testing}";
+          const result = boilerplate.logger.prettyFormatMessage(testString);
+          expect(result).not.toBe(testString);
+        });
+    });
+
+    it("passes through boot configs", async () => {
+      expect.assertions(1);
+      await TestRunner()
+        .setOptions({
+          loggerOptions: {
+            pretty: false,
+          },
+        })
+        .run(({ internal: { boilerplate } }) => {
+          const testString = "{testing}";
+          const result = boilerplate.logger.prettyFormatMessage(testString);
+          expect(result).toBe(testString);
+        });
+    });
   });
 
-  describe("Fine Tuning", () => {
+  // #MARK: Details
+  describe("Details", () => {
     it("provides access base logger", async () => {
       expect.assertions(1);
       const logger = createMockLogger();
@@ -130,7 +242,6 @@ describe("Logger", () => {
           expect(internal.boilerplate.logger.getBaseLogger()).toStrictEqual(logger);
         });
     });
-
     it("can modify base logger", async () => {
       expect.assertions(1);
       await TestRunner().run(({ internal }) => {
@@ -163,6 +274,277 @@ describe("Logger", () => {
           logger.info(`test`);
           expect(spy).toHaveBeenCalledWith(format);
         });
+    });
+
+    // #MARK: level matching
+    describe("level matching", () => {
+      it("warn uses error", async () => {
+        const spy = jest.spyOn(global.console, "error").mockImplementation(() => {});
+        jest.spyOn(global.console, "log").mockImplementation(() => {});
+        await TestRunner()
+          .emitLogs()
+          .run(({ logger }) => {
+            jest.clearAllMocks();
+            logger.warn(`test`);
+            expect(spy).toHaveBeenCalled();
+          });
+      });
+
+      it("error uses error", async () => {
+        const spy = jest.spyOn(global.console, "error").mockImplementation(() => {});
+        jest.spyOn(global.console, "log").mockImplementation(() => {});
+        await TestRunner()
+          .emitLogs()
+          .run(({ logger }) => {
+            jest.clearAllMocks();
+            logger.error(`test`);
+            expect(spy).toHaveBeenCalled();
+          });
+      });
+
+      it("fatal uses error", async () => {
+        const spy = jest.spyOn(global.console, "error").mockImplementation(() => {});
+        jest.spyOn(global.console, "log").mockImplementation(() => {});
+        await TestRunner()
+          .emitLogs()
+          .run(({ logger }) => {
+            jest.clearAllMocks();
+            logger.fatal(`test`);
+            expect(spy).toHaveBeenCalled();
+          });
+      });
+
+      it("trace uses log", async () => {
+        jest.spyOn(global.console, "error").mockImplementation(() => {});
+        const spy = jest.spyOn(global.console, "log").mockImplementation(() => {});
+        await TestRunner()
+          .emitLogs()
+          .run(({ logger }) => {
+            jest.clearAllMocks();
+            logger.trace(`test`);
+            expect(spy).toHaveBeenCalled();
+          });
+      });
+
+      it("trace uses debug", async () => {
+        jest.spyOn(global.console, "error").mockImplementation(() => {});
+        const spy = jest.spyOn(global.console, "log").mockImplementation(() => {});
+        await TestRunner()
+          .emitLogs()
+          .run(({ logger }) => {
+            jest.clearAllMocks();
+            logger.debug(`test`);
+            expect(spy).toHaveBeenCalled();
+          });
+      });
+
+      it("trace uses info", async () => {
+        jest.spyOn(global.console, "error").mockImplementation(() => {});
+        const spy = jest.spyOn(global.console, "log").mockImplementation(() => {});
+        await TestRunner()
+          .emitLogs()
+          .run(({ logger }) => {
+            jest.clearAllMocks();
+            logger.info(`test`);
+            expect(spy).toHaveBeenCalled();
+          });
+      });
+    });
+
+    // #MARK: http logs
+    describe("http logs", () => {
+      it("does not emit http logs by default", async () => {
+        expect.assertions(1);
+        await TestRunner().run(({ logger }) => {
+          const spy = jest.spyOn(global, "fetch").mockImplementation(() => undefined);
+          logger.info("hello world");
+          expect(spy).not.toHaveBeenCalled();
+        });
+      });
+
+      it("emits http logs when url is set", async () => {
+        expect.assertions(1);
+        jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(console, "log").mockImplementation(() => undefined);
+        await TestRunner()
+          .emitLogs("info")
+          .run(({ logger, internal }) => {
+            internal.boilerplate.logger.setHttpLogs("https://hello.world");
+            const spy = jest.spyOn(global, "fetch").mockImplementation(() => undefined);
+            logger.info("hello world");
+            expect(spy).toHaveBeenCalledWith("https://hello.world", {
+              body: expect.any(String),
+              headers: { "Content-Type": "application/json" },
+              method: "POST",
+            });
+          });
+      });
+    });
+
+    // #MARK: logIdx
+    describe("logIdx", () => {
+      it("can emit logIdx", async () => {
+        expect.assertions(1);
+        jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(console, "log").mockImplementation(() => undefined);
+        const spy = jest.fn();
+        await TestRunner()
+          .setOptions({ loggerOptions: { counter: true } })
+          .emitLogs("info")
+          .run(({ logger, internal }) => {
+            internal.boilerplate.logger.setHttpLogs("https://hello.world");
+            jest.spyOn(global, "fetch").mockImplementation((a, { body }) => {
+              const data = JSON.parse(String(body));
+              spy(data);
+              return undefined;
+            });
+            logger.info("hello world");
+          });
+
+        expect(spy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            logIdx: expect.any(Number),
+          }),
+        );
+      });
+
+      it("does not emit logIdx by default", async () => {
+        expect.assertions(1);
+        jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(console, "log").mockImplementation(() => undefined);
+        const spy = jest.fn();
+        await TestRunner()
+          .emitLogs("info")
+          .run(({ logger, internal }) => {
+            internal.boilerplate.logger.setHttpLogs("https://hello.world");
+            jest.spyOn(global, "fetch").mockImplementation((a, { body }) => {
+              const data = JSON.parse(String(body));
+              spy(data);
+              return undefined;
+            });
+            logger.info("hello world");
+          });
+
+        expect(spy).not.toHaveBeenCalledWith(
+          expect.objectContaining({
+            logIdx: expect.any(Number),
+          }),
+        );
+      });
+    });
+
+    // #MARK: ms
+    describe("ms", () => {
+      it("can emit ms", async () => {
+        expect.assertions(1);
+        jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(console, "log").mockImplementation(() => undefined);
+        const spy = jest.fn();
+        await TestRunner()
+          .setOptions({ loggerOptions: { ms: true } })
+          .emitLogs("info")
+          .run(({ logger, internal }) => {
+            internal.boilerplate.logger.setHttpLogs("https://hello.world");
+            jest.spyOn(global, "fetch").mockImplementation((a, { body }) => {
+              const data = JSON.parse(String(body));
+              spy(data);
+              return undefined;
+            });
+            logger.info("hello world");
+          });
+
+        expect(spy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            ms: expect.any(String),
+          }),
+        );
+      });
+
+      it("does not emit ms by default", async () => {
+        expect.assertions(1);
+        jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(console, "log").mockImplementation(() => undefined);
+        const spy = jest.fn();
+        await TestRunner()
+          .emitLogs("info")
+          .run(({ logger, internal }) => {
+            internal.boilerplate.logger.setHttpLogs("https://hello.world");
+            jest.spyOn(global, "fetch").mockImplementation((a, { body }) => {
+              const data = JSON.parse(String(body));
+              spy(data);
+              return undefined;
+            });
+            logger.info("hello world");
+          });
+
+        expect(spy).not.toHaveBeenCalledWith(
+          expect.objectContaining({
+            ms: expect.any(String),
+          }),
+        );
+      });
+    });
+
+    // #MARK: als
+    describe("als", () => {
+      it("will merge als data if enabled", async () => {
+        expect.assertions(1);
+        jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(console, "log").mockImplementation(() => undefined);
+        const spy = jest.fn();
+        await TestRunner()
+          .setOptions({ loggerOptions: { als: true } })
+          .emitLogs("info")
+          .run(({ logger, internal, als }) => {
+            als.getLogData = () => {
+              return {
+                hit: true,
+              };
+            };
+            internal.boilerplate.logger.setHttpLogs("https://hello.world");
+            jest.spyOn(global, "fetch").mockImplementation((a, { body }) => {
+              const data = JSON.parse(String(body));
+              spy(data);
+              return undefined;
+            });
+            logger.info("hello world");
+          });
+
+        expect(spy).toHaveBeenCalledWith(
+          expect.objectContaining({
+            hit: true,
+          }),
+        );
+      });
+
+      it("does not merge als data if disabled", async () => {
+        expect.assertions(1);
+        jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(console, "log").mockImplementation(() => undefined);
+        const spy = jest.fn();
+        await TestRunner()
+          .emitLogs("info")
+          .run(({ logger, internal, als }) => {
+            als.getLogData = () => {
+              return {
+                hit: true,
+              };
+            };
+            internal.boilerplate.logger.setHttpLogs("https://hello.world");
+            jest.spyOn(global, "fetch").mockImplementation((a, { body }) => {
+              const data = JSON.parse(String(body));
+              spy(data);
+              return undefined;
+            });
+            logger.info("hello world");
+          });
+
+        expect(spy).not.toHaveBeenCalledWith(
+          expect.objectContaining({
+            hit: true,
+          }),
+        );
+      });
     });
   });
 });

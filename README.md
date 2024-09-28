@@ -3,49 +3,36 @@
 
 [![codecov](https://codecov.io/github/Digital-Alchemy-TS/core/graph/badge.svg?token=IBGLY3RY68)](https://codecov.io/github/Digital-Alchemy-TS/core)
 [![version](https://img.shields.io/github/package-json/version/Digital-Alchemy-TS/core)](https://www.npmjs.com/package/@digital-alchemy/core)
+
 ---
 
 # 🚀 Project Overview - Digital Alchemy TypeScript Libraries
 
-Welcome to `@digital-alchemy/core`!
-This repository contains the boilerplate code for building applications and wiring logic.
+Welcome to `@digital-alchemy/core`
 
-- [Extended docs](https://docs.digital-alchemy.app/docs/core/)
-- [Discord](https://discord.gg/JkZ35Gv97Y)
+The core library is a minimal dependency framework for building Typescript based applications and libraries.
+It aims to provide some basic workflows and tools that can be used to create a variety of different types of projects.
 
-## 🌐 Core Library Overview
+> 📚 [Extended docs](https://docs.digital-alchemy.app/docs/core/)
 
-### 🗃️ Cache
+## 🌐 Tools Overview
 
-Flexible caching solutions with support for memory and Redis cache drivers.
+### ⚙️ [Configuration](https://docs.digital-alchemy.app/docs/core/configuration)
 
-### ⚙️ Configuration
+Define and load structured configuration data from files, merge data from environment variables, and more.
 
-Dynamic application settings management, prioritizing configuration from multiple sources for maximum flexibility.
-
-### 🌍 Fetch Wrapper
-
-Simplifies RESTful service integration, streamlining the development of verbose adapters.
-
-### 📝 Logger
+### 📝 [Logger](https://docs.digital-alchemy.app/docs/core/logger/api)
 
 Advanced logging interface for detailed and customizable output, compatible with external libraries for specialized logging needs.
 
-### ⏲️ Scheduler
+### ⏲️ [Scheduler](https://docs.digital-alchemy.app/docs/core/scheduler)
 
 Lifecycle-aware task scheduling, featuring flexible timing functions and robust error handling.
 
-### 🔄 Application Lifecycle Management
+### 🔄 [Lifecycle Hooks](https://docs.digital-alchemy.app/docs/core/lifecycle)
 
-Comprehensive support for managing the application's lifecycle, from initialization to shutdown.
+Run commands at a variety of predetermined times during your application's boot or shutdown sequence.
 
-## 📚 Explore Our Libraries and Applications
+### ⁉️ [Testing Utilities](https://docs.digital-alchemy.app/docs/testing/)
 
-Dive deeper into the ecosystem by exploring related libraries and applications published under the Digital Alchemy organization.
-Each is designed to extend the capabilities the core library, offering specialized functionalities for a wide range of use cases.
-
-| Library/Application | Description                                                                     | GitHub                                                     | npm                                                                    |
-| ------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------- | ---------------------------------------------------------------------- |
-| `hass`              | Home Assistant integration for smart home automation.                           | [GitHub](https://github.com/Digital-Alchemy-TS/hass)       | [npm](https://www.npmjs.com/package/@digital-alchemy/hass)             |
-| `synapse`           | Tools for generating entities within home assistant                             | [GitHub](https://github.com/Digital-Alchemy-TS/synapse)    | [npm](https://www.npmjs.com/package/@digital-alchemy/synapse)          |
-| `automation`        | Advanced automation tools for creating dynamic workflows.                       | [GitHub](https://github.com/Digital-Alchemy-TS/automation) | [npm](https://www.npmjs.com/package/@digital-alchemy/automation)       |
+Convert your application into a testing module - append extra libraries and reconfigure modules to get the coverage you're looking for.

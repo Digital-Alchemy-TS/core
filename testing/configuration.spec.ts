@@ -7,6 +7,7 @@ import { ParsedArgs } from "minimist";
 import { homedir } from "os";
 import { extname, join } from "path";
 import { cwd, env } from "process";
+import { v4 } from "uuid";
 
 import {
   ApplicationDefinition,
@@ -28,7 +29,6 @@ import {
   TServiceParams,
 } from "../src";
 
-const FAKE_EXIT = (() => {}) as () => never;
 const BASIC_BOOT = {
   configuration: { boilerplate: { LOG_LEVEL: "silent" } },
   loggerOptions: {
@@ -178,7 +178,7 @@ describe("Configuration", () => {
     jest.restoreAllMocks();
   });
 
-  // #region Initialization
+  // #MARK: Initialization
   describe("Initialization", () => {
     it("should be configured at the correct time in the lifecycle", async () => {
       expect.assertions(2);
@@ -193,6 +193,27 @@ describe("Configuration", () => {
             expect(spy).toHaveBeenCalled();
           });
         });
+    });
+
+    it("defaults NODE_ENV to local", async () => {
+      expect.assertions(1);
+      env.NODE_ENV = "";
+      await TestRunner().run(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          expect(config.boilerplate.NODE_ENV).toBe("local");
+        });
+      });
+    });
+
+    it("uses NODE_ENV if set", async () => {
+      expect.assertions(1);
+      const id = v4();
+      env.NODE_ENV = id;
+      await TestRunner().run(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          expect(config.boilerplate.NODE_ENV).toBe(id);
+        });
+      });
     });
 
     it("should prioritize bootstrap config over defaults", async () => {
@@ -254,8 +275,7 @@ describe("Configuration", () => {
     });
   });
 
-  // #endregion
-  // #region Loaders
+  // #MARK: Loaders
   describe("Loaders", () => {
     describe("General", () => {
       afterEach(() => {
@@ -515,6 +535,9 @@ describe("Configuration", () => {
     describe("File", () => {
       it("resolves files in the correct order", async () => {
         let testFiles: ReturnType<typeof ConfigTesting> = undefined;
+
+        jest.spyOn(global.console, "error").mockImplementation(() => {});
+        jest.spyOn(global.console, "log").mockImplementation(() => {});
         const helper = CreateApplication({
           configurationLoaders: [],
           // @ts-expect-error Testing
@@ -563,7 +586,6 @@ describe("Configuration", () => {
       });
     });
   });
-  // #endregion
 
   describe("Support functions", () => {
     // #MARK: parseConfig
@@ -630,6 +652,7 @@ describe("Configuration", () => {
       });
     });
 
+    // #MARK: loadDotenv
     describe("loadDotenv", () => {
       let mockInternal: InternalDefinition;
       let logger: ILogger;
@@ -745,30 +768,63 @@ describe("Configuration", () => {
     });
   });
 
+  // #MARK: Interactions
   describe("Interactions", () => {
-    it("throws errors for missing required config", async () => {
-      expect.assertions(2);
-      const spy = jest.spyOn(global.console, "error").mockImplementation(() => undefined);
-      const exitSpy = jest.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
-      try {
-        await TestRunner()
-          .appendLibrary(
-            CreateLibrary({
-              configuration: {
-                REQUIRED_CONFIG: { required: true, type: "string" },
-              },
-              // @ts-expect-error testing
-              name: "library",
-              services: {},
-            }),
-          )
-          .run(() => {});
-      } finally {
-        expect(spy).toHaveBeenCalled();
-        expect(exitSpy).toHaveBeenCalled();
-      }
+    it("calls onUpdate when it changes", async () => {
+      await TestRunner().run(
+        ({
+          internal: {
+            boilerplate: { configuration },
+          },
+        }) => {
+          const spy = jest.fn();
+          configuration.onUpdate(spy);
+          configuration.set("boilerplate", "LOG_LEVEL", "debug");
+          expect(spy).toHaveBeenCalled();
+        },
+      );
     });
 
+    it("can retrieve original config definitions", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        expect(internal.boilerplate.configuration.getDefinitions()).toBeDefined();
+      });
+    });
+
+    it("returns objects for unknown projects", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ config }) => {
+        // @ts-expect-error test
+        expect(config.thing).toEqual({});
+      });
+    });
+
+    it("throws errors during boot for missing required configs", async () => {
+      expect.assertions(2);
+      const spy = jest.spyOn(console, "error").mockImplementation(() => undefined);
+      const exitSpy = jest.spyOn(process, "exit").mockImplementation(() => undefined as never);
+
+      await TestRunner()
+        .appendLibrary(
+          CreateLibrary({
+            configuration: {
+              TEST_CONFIG: {
+                required: true,
+                type: "string",
+              },
+            },
+            // @ts-expect-error testing
+            name: "test_library",
+            services: {},
+          }),
+        )
+        .run(() => {});
+      expect(spy).toHaveBeenCalled();
+      expect(exitSpy).toHaveBeenCalled();
+    });
+
+    // #MARK: onUpdate
     describe("onUpdate", () => {
       it("calls onUpdate when it changes", async () => {
         await TestRunner().run(

@@ -4,11 +4,12 @@ import {
   BootstrapOptions,
   CreateApplication,
   CreateLibrary,
+  createMockLogger,
+  createModule,
   InternalDefinition,
   LifecycleStages,
   OptionalModuleConfiguration,
   ServiceMap,
-  sleep,
   TestRunner,
 } from "../src";
 
@@ -29,7 +30,7 @@ describe("Wiring", () => {
     jest.restoreAllMocks();
   });
 
-  // #region CreateLibrary
+  // #MARK: CreateLibrary
   describe("CreateLibrary", () => {
     it("should be defined", () => {
       expect.assertions(2);
@@ -95,9 +96,8 @@ describe("Wiring", () => {
       }).toThrow(BootstrapException);
     });
   });
-  // #endregion
 
-  // #region CreateApplication
+  // #MARK: CreateApplication
   describe("CreateApplication", () => {
     it("should create an application with specified services and libraries", () => {
       expect.assertions(5);
@@ -219,9 +219,8 @@ describe("Wiring", () => {
       });
     });
   });
-  // #endregion
 
-  // #region Lifecycle
+  // #MARK: Lifecycle
   describe("Lifecycle", () => {
     beforeEach(() => {
       application = CreateApplication({
@@ -315,11 +314,14 @@ describe("Wiring", () => {
       const order: string[] = [];
 
       await TestRunner().run(({ lifecycle }) => {
-        lifecycle.onBootstrap(() => order.push("LowPriority"), 1);
-        lifecycle.onBootstrap(() => order.push("HighPriority"), 10);
+        lifecycle.onBootstrap(() => order.push("7"), 7);
+        lifecycle.onBootstrap(() => order.push("5"), 5);
+        lifecycle.onBootstrap(() => order.push("3"), 3);
+        lifecycle.onBootstrap(() => order.push("9"), 9);
+        lifecycle.onBootstrap(() => order.push("1"), 1);
       });
 
-      expect(order).toEqual(["HighPriority", "LowPriority"]);
+      expect(order).toEqual([..."97531"]);
     });
 
     it("lower numbers go later (negative)", async () => {
@@ -327,11 +329,13 @@ describe("Wiring", () => {
       const order: string[] = [];
 
       await TestRunner().run(({ lifecycle }) => {
-        lifecycle.onBootstrap(() => order.push("LowPriority"), -10);
-        lifecycle.onBootstrap(() => order.push("HighPriority"), -1);
+        lifecycle.onBootstrap(() => order.push("7"), -7);
+        lifecycle.onBootstrap(() => order.push("5"), -5);
+        lifecycle.onBootstrap(() => order.push("3"), -3);
+        lifecycle.onBootstrap(() => order.push("9"), -9);
+        lifecycle.onBootstrap(() => order.push("1"), -1);
       });
-
-      expect(order).toEqual(["HighPriority", "LowPriority"]);
+      expect(order).toEqual([..."13579"]);
     });
 
     describe("Completed events", () => {
@@ -459,9 +463,8 @@ describe("Wiring", () => {
       });
     });
   });
-  // #endregion
 
-  // #region Bootstrap
+  // #MARK: Bootstrap
   describe("Bootstrap", () => {
     it("constructs app in between boot and ready for bootLibrariesFirst", async () => {
       expect.assertions(4);
@@ -501,6 +504,62 @@ describe("Wiring", () => {
       expect(list).toStrictEqual(["First", "Second", "Third"]);
     });
 
+    it("includes extended stats with switch", async () => {
+      const mockLogger = createMockLogger();
+      expect.assertions(1);
+      const app = CreateApplication({
+        // @ts-expect-error testing
+        name: "app",
+        services: {},
+      });
+      await app.bootstrap({
+        customLogger: mockLogger,
+        showExtraBootStats: true,
+      });
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        "boilerplate:wiring",
+        expect.objectContaining({
+          Bootstrap: expect.any(String),
+          Configure: expect.any(String),
+          PostConfig: expect.any(String),
+          PreInit: expect.any(String),
+          Ready: expect.any(String),
+          Total: expect.any(String),
+        }),
+        "[%s] application bootstrapped",
+        "app",
+      );
+    });
+
+    it("does not log extended boot stats by default", async () => {
+      const mockLogger = createMockLogger();
+      expect.assertions(2);
+      const app = CreateApplication({
+        // @ts-expect-error testing
+        name: "app",
+        services: {},
+      });
+      await app.bootstrap({
+        customLogger: mockLogger,
+      });
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        "boilerplate:wiring",
+        expect.objectContaining({
+          Total: expect.any(String),
+        }),
+        "[%s] application bootstrapped",
+        "app",
+      );
+      expect(mockLogger.info).not.toHaveBeenCalledWith(
+        "boilerplate:wiring",
+        expect.objectContaining({
+          Ready: expect.any(String),
+        }),
+        "[%s] application bootstrapped",
+        "app",
+      );
+    });
+
     it("throws errors with missing priority services in apps", async () => {
       expect.assertions(1);
       expect(() => {
@@ -531,7 +590,6 @@ describe("Wiring", () => {
       expect.assertions(1);
 
       const app = await TestRunner().run(() => undefined);
-
       expect(app.booted).toBe(true);
     });
 
@@ -553,9 +611,8 @@ describe("Wiring", () => {
       }
     });
   });
-  // #endregion
 
-  // #region Boot Phase
+  // #MARK: Boot Phase
   describe("Boot Phase", () => {
     it("should exit if service constructor throws error", async () => {
       expect.assertions(1);
@@ -603,10 +660,22 @@ describe("Wiring", () => {
 
       expect(i.boot.phase).toBe("running");
     });
-  });
-  // #endregion
 
-  // #region Teardown
+    it("runs hooks automatically if provided late", async () => {
+      expect.assertions(1);
+
+      await TestRunner().run(({ lifecycle }) => {
+        const spy = jest.fn();
+        lifecycle.onReady(() => {
+          lifecycle.onBootstrap(spy);
+          // run immediately
+          expect(spy).toHaveBeenCalled();
+        });
+      });
+    });
+  });
+
+  // #MARK: Teardown
   describe("Teardown", () => {
     it("shouldn't process double teardown", async () => {
       expect.assertions(1);
@@ -635,24 +704,23 @@ describe("Wiring", () => {
       await app.teardown();
     });
 
-    xit("should shutdown on SIGTERM", async () => {
+    it("should shutdown on SIGTERM", async () => {
       expect.assertions(2);
       const exit = jest.spyOn(process, "exit").mockImplementation(() => undefined as never);
 
       const spy = jest.fn();
-
       await TestRunner().run(({ lifecycle }) => {
         lifecycle.onPreShutdown(spy);
       });
       process.emit("SIGTERM");
-      await sleep(10); // magic sleep
+      await new Promise<void>(done => setTimeout(done, 10));
 
       expect(spy).toHaveBeenCalled();
       expect(exit).toHaveBeenCalled();
       application = undefined;
     });
 
-    xit("should shutdown on SIGINT", async () => {
+    it("should shutdown on SIGINT", async () => {
       expect.assertions(2);
       const exit = jest.spyOn(process, "exit").mockImplementation(() => undefined as never);
 
@@ -662,16 +730,15 @@ describe("Wiring", () => {
         lifecycle.onPreShutdown(spy);
       });
       process.emit("SIGINT");
-      await sleep(10); // magic sleep
+      await new Promise<void>(done => setTimeout(done, 10));
 
       expect(spy).toHaveBeenCalled();
       expect(exit).toHaveBeenCalled();
       application = undefined;
     });
   });
-  // #endregion
 
-  // #region Internal
+  // #MARK: Internal
   describe("Internal", () => {
     it("populates maps during bootstrap", async () => {
       expect.assertions(1);
@@ -682,9 +749,8 @@ describe("Wiring", () => {
       expect(i.boot.constructComplete.size).not.toEqual(0);
     });
   });
-  // #endregion
 
-  // #region Wiring
+  // #MARK: Wiring
   describe("Wiring", () => {
     it("should allow 2 separate apps to boot", async () => {
       expect.assertions(1);
@@ -787,9 +853,8 @@ describe("Wiring", () => {
       });
     });
   });
-  // #endregion
 
-  // #region Mixing
+  // #MARK: Mixing
   describe("Application + Library interactions", () => {
     let list: string[];
     const LIBRARY_A = CreateLibrary({
@@ -900,6 +965,44 @@ describe("Wiring", () => {
       await application.bootstrap(BASIC_BOOT);
       expect(list).toEqual(["A", "B", "C"]);
       expect(failFastSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("Debug features", () => {
+    it("emits warnings for library version mismatches", async () => {
+      expect.assertions(1);
+      process.env.NODE_ENV = "not_test";
+      // @ts-expect-error testing
+      const a = CreateLibrary({ name: "A", services: {} });
+      // @ts-expect-error testing
+      const b = CreateLibrary({ depends: [a], name: "B", services: {} });
+      // @ts-expect-error testing
+      const other_a = CreateLibrary({ name: "A", services: {} });
+
+      let hit = false;
+      jest.spyOn(global.console, "log").mockImplementation(() => {});
+      jest.spyOn(global.console, "error").mockImplementation((text: string) => {
+        hit ||= text?.includes("depends different version");
+      });
+      const customLogger = createMockLogger();
+      const runner = await createModule
+        .fromApplication(
+          CreateApplication({
+            libraries: [b, other_a],
+            // @ts-expect-error testing
+            name: "test_app",
+          }),
+        )
+        .extend()
+        .toTest()
+        .emitLogs()
+        .setOptions({ customLogger });
+
+      await runner.run(({ lifecycle }) => {
+        lifecycle.onReady(() => {
+          expect(hit).toBe(true);
+        });
+      });
     });
   });
 });

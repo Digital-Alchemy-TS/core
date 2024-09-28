@@ -68,7 +68,7 @@ export async function Logger({
     }
     // validated with datadog, probably is fine elsewhere too
     // https://http-intake.logs.datadoghq.com/v1/input/{API_KEY}
-    fetch(httpLogTarget, {
+    global.fetch(httpLogTarget, {
       body: JSON.stringify(data),
       headers: { "Content-Type": "application/json" },
       method: "POST",
@@ -79,7 +79,7 @@ export async function Logger({
     let out = { ...data, ...loggerOptions.mergeData };
 
     if (loggerOptions.counter) {
-      const counter = data as { logIdx: number };
+      const counter = out as { logIdx: number };
       counter.logIdx = logCounter++;
     }
 
@@ -97,19 +97,18 @@ export async function Logger({
     if (!prettyFormat || message.length > MAX_CUTOFF) {
       return message;
     }
-    message = message
-      // ? partA#partB - highlight it all in yellow
-      .replaceAll(new RegExp("([^ ]+#[^ ]+)", "g"), i => chalk.yellow(i))
-      // ? [A] > [B] > [C] - highlight the >'s in blue
-      .replaceAll("] > [", `] ${BLUE_TICK} [`)
-      // ? [Text] - strip brackets, highlight magenta
-      .replaceAll(new RegExp(String.raw`(\[[^\]\[]+\])`, "g"), i =>
-        chalk.bold.magenta(i.slice(SYMBOL_START, SYMBOL_END)),
-      )
-      // ? {Text} - strip braces, highlight gray
-      .replaceAll(new RegExp(String.raw`(\{[^\]}]+\})`, "g"), i =>
-        chalk.bold.gray(i.slice(SYMBOL_START, SYMBOL_END)),
-      );
+    // ? partA#partB - highlight it all in yellow
+    message = message.replaceAll(new RegExp("([^ ]+#[^ ]+)", "g"), i => chalk.yellow(i));
+    // ? [A] > [B] > [C] - highlight the >'s in blue
+    message = message.replaceAll("] > [", `] ${BLUE_TICK} [`);
+    // ? [Text] - strip brackets, highlight magenta
+    message = message.replaceAll(new RegExp(String.raw`(\[[^\]\[]+\])`, "g"), i =>
+      chalk.bold.magenta(i.slice(SYMBOL_START, SYMBOL_END)),
+    );
+    // ? {Text} - strip braces, highlight gray
+    message = message.replaceAll(new RegExp(String.raw`(\{[^\]}]+\})`, "g"), i =>
+      chalk.bold.gray(i.slice(SYMBOL_START, SYMBOL_END)),
+    );
     // ? " - Text" (line prefix with dash) - highlight dash
     if (message.slice(START, frontDash.length) === frontDash) {
       message = `${YELLOW_DASH}${message.slice(frontDash.length)}`;
@@ -118,7 +117,7 @@ export async function Logger({
   };
 
   if (is.empty(internal.boot.options?.customLogger)) {
-    // #region formatter
+    // #MARK: formatter
     [...METHOD_COLORS.keys()].forEach(key => {
       const level = `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ");
       logger[key] = (context: TContext, ...parameters: Parameters<TLoggerFunction>) => {
@@ -194,12 +193,11 @@ export async function Logger({
         global.console.log(message);
       };
     });
-    // #endregion
   } else {
     logger = internal.boot.options.customLogger;
   }
 
-  // #region instance creation
+  // #MARK: instances
   // if bootstrap hard coded something specific, then start there
   // otherwise, be noisy until config loads a user preference
   //
@@ -211,11 +209,11 @@ export async function Logger({
   function context(context: string | TContext) {
     const name = context as ServiceNames;
     const shouldILog = {} as Record<TConfigLogLevel, boolean>;
-    const [prefix] = context.split(".") as [LoadedModuleNames];
-    const update = () =>
+    const [prefix] = context.split(":") as [LoadedModuleNames];
+    const update = () => {
       LOG_LEVELS.forEach((key: TConfigLogLevel) => {
         // global level
-        let target = LOG_LEVEL_PRIORITY[key];
+        let target = LOG_LEVEL_PRIORITY[CURRENT_LOG_LEVEL];
 
         // override directly
         if (loggerOptions?.levelOverrides?.[name]) {
@@ -224,8 +222,9 @@ export async function Logger({
         } else if (loggerOptions?.levelOverrides?.[prefix]) {
           target = LOG_LEVEL_PRIORITY[loggerOptions?.levelOverrides?.[prefix]];
         }
-        shouldILog[key] = target >= LOG_LEVEL_PRIORITY[CURRENT_LOG_LEVEL];
+        shouldILog[key] = LOG_LEVEL_PRIORITY[key] >= target;
       });
+    };
 
     event.on(EVENT_UPDATE_LOG_LEVELS, update);
     update();

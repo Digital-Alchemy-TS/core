@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
 import fs from "fs";
 import { ParsedArgs } from "minimist";
-import { isAbsolute, join, normalize } from "path";
+import path from "path";
 import { cwd } from "process";
 
 import {
@@ -147,7 +147,7 @@ export type ConfigLoader = <S extends ServiceMap, C extends OptionalModuleConfig
   params: ConfigLoaderParams<S, C>,
 ) => ConfigLoaderReturn;
 
-export function cast<T = unknown>(data: string | string[], type: string): T {
+export function cast<T = unknown>(data: boolean | number[] | string | string[], type: string): T {
   switch (type) {
     case "boolean": {
       data ??= "";
@@ -208,7 +208,8 @@ export function loadDotenv(
   CLI_SWITCHES: ParsedArgs,
   logger: ILogger,
 ) {
-  let { envFile } = internal.boot.options ?? {};
+  internal.boot.options ??= {};
+  let { envFile } = internal.boot.options;
   const switchKeys = Object.keys(CLI_SWITCHES);
   const searched = iSearchKey("env-file", switchKeys);
 
@@ -221,7 +222,9 @@ export function loadDotenv(
 
   // * was provided an --env-file or something via boot
   if (!is.empty(envFile)) {
-    const checkFile = isAbsolute(envFile) ? normalize(envFile) : join(cwd(), envFile);
+    const checkFile = path.isAbsolute(envFile)
+      ? path.normalize(envFile)
+      : path.join(cwd(), envFile);
     if (fs.existsSync(checkFile)) {
       file = checkFile;
     } else {
@@ -231,7 +234,7 @@ export function loadDotenv(
 
   // * attempt default file
   if (is.empty(file)) {
-    const defaultFile = join(cwd(), ".env");
+    const defaultFile = path.join(cwd(), ".env");
     if (fs.existsSync(defaultFile)) {
       file = defaultFile;
     } else {

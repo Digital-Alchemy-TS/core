@@ -12,6 +12,8 @@ import { v4 } from "uuid";
 import {
   ApplicationDefinition,
   BootstrapOptions,
+  cast,
+  configFilePaths,
   configLoaderFile,
   CreateApplication,
   CreateLibrary,
@@ -274,6 +276,43 @@ describe("Configuration", () => {
             expect(config.library.RAINING).toBe(false);
           });
         });
+    });
+  });
+
+  // #MARK: cast
+  describe("cast", () => {
+    it("should cast to boolean", () => {
+      expect(cast("true", "boolean")).toBe(true);
+      expect(cast("false", "boolean")).toBe(false);
+      expect(cast("y", "boolean")).toBe(true);
+      expect(cast("n", "boolean")).toBe(false);
+      expect(cast("1", "boolean")).toBe(true);
+      expect(cast("0", "boolean")).toBe(false);
+      expect(cast(undefined, "boolean")).toBe(false);
+      expect(cast(null, "boolean")).toBe(false);
+      expect(cast(true, "boolean")).toBe(true);
+      expect(cast(false, "boolean")).toBe(false);
+    });
+
+    it("should cast to number", () => {
+      expect(cast("123", "number")).toBe(123);
+      expect(cast("0", "number")).toBe(0);
+      expect(cast("12.34", "number")).toBe(12.34);
+      expect(cast("invalid", "number")).toBeNaN();
+      expect(cast(undefined, "number")).toBeNaN();
+    });
+
+    it("should cast to string[]", () => {
+      expect(cast("foo", "string[]")).toEqual(["foo"]);
+      expect(cast(["foo", "bar"], "string[]")).toEqual(["foo", "bar"]);
+      expect(cast(undefined, "string[]")).toEqual([]);
+      expect(cast(null, "string[]")).toEqual(["null"]);
+      expect(cast("123", "string[]")).toEqual(["123"]);
+    });
+
+    it("should return data unchanged if type is not handled", () => {
+      expect(cast("unchanged", "unknown")).toBe("unchanged");
+      expect(cast([1, 2, 3], "unknown")).toEqual([1, 2, 3]);
     });
   });
 
@@ -626,6 +665,29 @@ describe("Configuration", () => {
 
       // #MARK: loadConfigFromFile
       describe("loadConfigFromFile", () => {
+        it("configFilePaths returns empty array for all missing files", async () => {
+          jest.spyOn(fs, "existsSync").mockImplementation(() => false);
+          const out = configFilePaths("test");
+          expect(out).toEqual([]);
+        });
+
+        it("configFilePaths does not return non-files", async () => {
+          jest.spyOn(fs, "existsSync").mockImplementation(() => true);
+          // @ts-expect-error rest isn't needed
+          jest.spyOn(fs, "statSync").mockImplementation(() => ({ isFile: () => false }));
+          const out = configFilePaths("test");
+          expect(out).toEqual([]);
+        });
+
+        it("configFilePaths returns paths to files", async () => {
+          jest.spyOn(fs, "existsSync").mockImplementation(() => true);
+          // @ts-expect-error rest isn't needed
+          jest.spyOn(fs, "statSync").mockImplementation(() => ({ isFile: () => true }));
+          const out = configFilePaths("test");
+          expect(out).not.toEqual([]);
+        });
+
+        // #MARK: with ext
         describe("with extension", () => {
           it("detects ini extension", async () => {
             const data = {} as PartialConfiguration;
@@ -680,6 +742,7 @@ describe("Configuration", () => {
           });
         });
 
+        // #MARK: no ext
         describe("without extension", () => {
           it("detects json data", async () => {
             const data = {} as PartialConfiguration;
@@ -842,6 +905,27 @@ describe("Configuration", () => {
         expect(config).toHaveBeenCalledWith({
           override: true,
           path: join(cwd(), "path/to/bootstrap-env-file"),
+        });
+      });
+
+      it("should load env file from bootstrap if CLI switch is not provided (absolute)", () => {
+        const config = jest
+          .spyOn(dotenv, "config")
+          // @ts-expect-error idc
+          .mockReturnValue(() => undefined);
+        jest.spyOn(fs, "existsSync").mockReturnValue(true);
+        mockInternal.boot.options.envFile = "/path/to/bootstrap-env-file";
+
+        const CLI_SWITCHES = {
+          _: [],
+          "env-file": "",
+        } as ParsedArgs;
+
+        loadDotenv(mockInternal, CLI_SWITCHES, logger);
+
+        expect(config).toHaveBeenCalledWith({
+          override: true,
+          path: "/path/to/bootstrap-env-file",
         });
       });
 

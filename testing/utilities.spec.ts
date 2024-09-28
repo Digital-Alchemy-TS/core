@@ -1,16 +1,23 @@
+import dayjs from "dayjs";
+
 import {
   ACTIVE_THROTTLE,
+  cloneSpecificValue,
   debounce,
+  deepCloneArray,
   deepExtend,
+  DIGITAL_ALCHEMY_LIBRARY_ERROR,
   each,
   eachLimit,
   eachSeries,
   InternalError,
+  safeGetProperty,
   sleep,
   TContext,
 } from "../src";
 
 describe("utilities", () => {
+  // #MARK: sleep
   describe("sleep", () => {
     it("should delay execution by the specified timeout", async () => {
       const timeout = 100;
@@ -59,6 +66,7 @@ describe("utilities", () => {
     });
   });
 
+  // #MARK: debounce
   describe("debounce", () => {
     it("should delay execution by the specified timeout", async () => {
       const identifier = "test-id";
@@ -112,6 +120,7 @@ describe("utilities", () => {
     });
   });
 
+  // #MARK: eachLimit
   describe("eachLimit", () => {
     it("handles an empty array", async () => {
       const items: number[] = [];
@@ -151,7 +160,8 @@ describe("utilities", () => {
     });
   });
 
-  describe("each function", () => {
+  // #MARK: each
+  describe("each", () => {
     it("should call the callback for each item in an array", async () => {
       expect.assertions(4);
       const items = [1, 2, 3];
@@ -256,22 +266,69 @@ describe("utilities", () => {
     });
   });
 
+  // #MARK: cloneDeep
   describe("cloneDeep", () => {
-    const data = {
-      a: { b: { c: false }, d: [1, 2, 3, 4, { a: 1 }] },
-      d: new Date(),
-      e: null as unknown,
-      r: new RegExp("[a-z]", "g"),
-    } as Record<string, unknown>;
-    expect(deepExtend({}, data)).toEqual(data);
+    it("basics", () => {
+      const data = {
+        a: { b: { c: false }, d: [1, 2, 3, 4, { a: 1 }] },
+        d: new Date(),
+        e: null as unknown,
+        r: new RegExp("[a-z]", "g"),
+      } as Record<string, unknown>;
+      expect(deepExtend({}, data)).toEqual(data);
+    });
+
+    it("cloneSpecificValue throws for unexpected situations", () => {
+      expect(() => {
+        cloneSpecificValue(dayjs());
+      }).toThrow();
+    });
+
+    it("deep clones arrays", () => {
+      const list = [{ data: [[true]] }, new Date()];
+      const out = deepCloneArray(list);
+      expect(list).toEqual(out);
+      expect(list).not.toBe(out);
+    });
+
+    it("does not extend non-objects", () => {
+      let out: unknown = [];
+      const ref = {};
+      expect(deepExtend(ref, out)).toBe(ref);
+      out = false;
+      expect(deepExtend(ref, out)).toBe(ref);
+    });
+
+    it("doesn't try when both things are the same object", () => {
+      const data = {} as Record<string, unknown>;
+      const ref = {};
+      data.tmp = ref;
+      expect(deepExtend(ref, data)).toBe(ref);
+      expect(deepExtend(ref, data)).toBe(ref);
+    });
+
+    it("safeGetProperty", () => {
+      const data = { hello: "world" };
+      expect(safeGetProperty(data, "__proto__")).not.toBeDefined();
+      expect(safeGetProperty(data, "hello")).toBe("world");
+    });
   });
 
-  it("InternalError", () => {
-    const error = new InternalError("" as TContext, "asdf", "qwerty");
-    expect(error.name).toBe("InternalError");
-  });
-  it("InternalError", () => {
-    const error = new InternalError("" as TContext, "asdf", "qwerty");
-    expect(error.name).toBe("InternalError");
+  // #MARK: errors
+  describe("errors", () => {
+    it("InternalError", () => {
+      const error = new InternalError("" as TContext, "asdf", "qwerty");
+      expect(error.name).toBe("InternalError");
+    });
+
+    it("InternalError", () => {
+      const error = new InternalError("" as TContext, "asdf", "qwerty");
+      expect(error.name).toBe("InternalError");
+    });
+
+    it("DIGITAL_ALCHEMY_LIBRARY_ERROR", () => {
+      expect(DIGITAL_ALCHEMY_LIBRARY_ERROR()).toBe("DIGITAL_ALCHEMY_LIBRARY_ERROR");
+      expect(DIGITAL_ALCHEMY_LIBRARY_ERROR("test")).toBe("DIGITAL_ALCHEMY_LIBRARY_ERROR:test");
+    });
   });
 });

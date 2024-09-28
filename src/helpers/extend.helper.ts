@@ -4,7 +4,7 @@ function isSpecificValue(value: unknown) {
   return value instanceof Date || value instanceof RegExp;
 }
 
-function cloneSpecificValue(value: unknown) {
+export function cloneSpecificValue(value: unknown) {
   if (value instanceof Date) {
     return new Date(value.getTime());
   }
@@ -17,25 +17,25 @@ function cloneSpecificValue(value: unknown) {
 export function deepCloneArray<TYPE = unknown>(array: Array<TYPE>): Array<TYPE> {
   // eslint-disable-next-line sonarjs/function-return-type
   return array.map(item => {
+    if (is.array(item)) {
+      return deepCloneArray(item);
+    }
+    if (isSpecificValue(item)) {
+      return cloneSpecificValue(item);
+    }
     if (is.object(item)) {
-      if (is.array(item)) {
-        return deepCloneArray(item);
-      }
-      if (isSpecificValue(item)) {
-        return cloneSpecificValue(item);
-      }
       return deepExtend({}, item);
     }
     return item;
   }) as Array<TYPE>;
 }
 
-function safeGetProperty(object: unknown, key: string) {
+export function safeGetProperty(object: unknown, key: string) {
   return key === "__proto__" ? undefined : (object as Record<string, unknown>)[key];
 }
 
 export function deepExtend<A, B>(target: A, object: B): A & B {
-  if (typeof object !== "object" || object === null || is.array(object)) {
+  if (!is.object(object)) {
     return target as A & B;
   }
   Object.keys(object).forEach(key => {

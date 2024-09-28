@@ -11,6 +11,8 @@ export const BASIC_BOOT = {
 
 describe("Fetch Extension", () => {
   beforeAll(async () => {
+    jest.spyOn(global.console, "error").mockImplementation(() => {});
+    jest.spyOn(global.console, "log").mockImplementation(() => {});
     const preload = CreateApplication({
       // @ts-expect-error testing
       name: "testing",

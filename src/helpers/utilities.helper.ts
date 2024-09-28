@@ -48,11 +48,9 @@ export const YEAR = 365 * DAY;
 export const ACTIVE_SLEEPS = new Set<SleepReturn>();
 
 type SleepReturn = Promise<void> & {
-  kill: (execute: "stop" | "continue") => void;
+  kill: (execute?: "stop" | "continue") => void;
 };
 /**
- * Defaults to 1000 (1 second).
- *
  * #MARK: Simple usage
  *
  * ```typescript
@@ -70,7 +68,7 @@ type SleepReturn = Promise<void> & {
  * console.log(end - start); // 1000, because we stopped it early and executed
  * ```
  */
-export function sleep(target: number | Date = SECOND): SleepReturn {
+export function sleep(target: number | Date): SleepReturn {
   // done function from promise
   let done: undefined | (() => void);
 
@@ -103,20 +101,6 @@ export const ACTIVE_THROTTLE = new Set<string>();
 export const ACTIVE_DEBOUNCE = new Map<string, SleepReturn>();
 
 /**
- * allow initial call, then block for a period
- */
-export async function throttle(identifier: string, timeout: number): Promise<void> {
-  if (ACTIVE_THROTTLE.has(identifier)) {
-    return;
-  }
-
-  ACTIVE_THROTTLE.add(identifier);
-
-  await sleep(timeout);
-  ACTIVE_THROTTLE.delete(identifier);
-}
-
-/**
  * wait for duration after call before allowing next, extends for calls inside window
  */
 export async function debounce(identifier: string, timeout: number): Promise<void> {
@@ -132,15 +116,6 @@ export async function debounce(identifier: string, timeout: number): Promise<voi
 
 export const asyncNoop = async () => await sleep(NONE);
 export const noop = () => {};
-
-/**
- * #MARK: (re)peat
- *
- * Create an array of length, where the values are filled with a provided fill value, or (index + 1) as default value
- */
-export function PEAT<T = number>(length: number, fill?: T): T[] {
-  return Array.from({ length }).map((_, index) => fill ?? ((index + ARRAY_OFFSET) as T));
-}
 
 // eslint-disable-next-line sonarjs/no-redundant-type-constituents
 export type TBlackHole = unknown | void | Promise<void>;

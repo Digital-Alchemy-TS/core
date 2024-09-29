@@ -273,7 +273,7 @@ export type DigitalAlchemyConfiguration = {
     application: ApplicationDefinition<S, C>,
   ) => Promise<string>;
   [INJECTED_DEFINITIONS]: () => TInjectedConfig;
-  [LOAD_PROJECT]: (library: string, definitions: CodeConfigDefinition) => KnownConfigs;
+  [LOAD_PROJECT]: (library: string, definitions: CodeConfigDefinition) => void;
   getDefinitions: () => KnownConfigs;
   merge: (incoming: Partial<PartialConfiguration>) => PartialConfiguration;
   /**

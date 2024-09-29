@@ -1001,6 +1001,8 @@ describe("Configuration", () => {
             type: "string",
           },
         },
+
+        configurationLoaders: [],
         // @ts-expect-error test
         name: "test",
         services: {
@@ -1010,7 +1012,9 @@ describe("Configuration", () => {
           },
         },
       });
-      await app.bootstrap({ configuration: { boilerplate: { LOG_LEVEL: "silent" } } });
+      await app.bootstrap({
+        configuration: { boilerplate: { LOG_LEVEL: "silent" } },
+      });
     });
 
     it("calls onUpdate when it changes", async () => {

@@ -11,6 +11,7 @@ import {
   LifecycleStages,
   OptionalModuleConfiguration,
   ServiceMap,
+  sleep,
   TestRunner,
   wireOrder,
 } from "../src";
@@ -685,6 +686,58 @@ describe("Wiring", () => {
 
   // #MARK: Teardown
   describe("Teardown", () => {
+    describe("async shutdown hooks", () => {
+      it("happy path", async () => {
+        expect.assertions(1);
+        const list: string[] = [];
+        const app = await TestRunner().run(({ lifecycle }) => {
+          lifecycle.onPreShutdown(async () => {
+            list.push("1");
+            await sleep(5);
+            list.push("2");
+          });
+          lifecycle.onShutdownStart(async () => {
+            list.push("3");
+            await sleep(5);
+            list.push("4");
+          });
+          lifecycle.onShutdownComplete(async () => {
+            list.push("5");
+            await sleep(5);
+            list.push("6");
+          });
+        });
+        await app.teardown();
+
+        expect(list).toEqual([..."123456"]);
+      });
+
+      it("unhappy path", async () => {
+        expect.assertions(1);
+        const list: string[] = [];
+        const app = await TestRunner().run(({ lifecycle }) => {
+          lifecycle.onPreShutdown(async () => {
+            list.push("1");
+            await sleep(5);
+            list.push("2");
+          });
+          lifecycle.onShutdownStart(async () => {
+            list.push("3");
+            throw new Error("test");
+            // list.push("4");
+          });
+          lifecycle.onShutdownComplete(async () => {
+            list.push("5");
+            await sleep(5);
+            list.push("6");
+          });
+        });
+        await app.teardown();
+
+        expect(list).toEqual([..."123"]);
+      });
+    });
+
     it("shouldn't process double teardown", async () => {
       expect.assertions(1);
       const spy = jest.spyOn(global.console, "error").mockImplementation(() => undefined);

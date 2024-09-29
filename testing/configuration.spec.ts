@@ -175,6 +175,7 @@ describe("Configuration", () => {
   let application: ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
 
   afterEach(async () => {
+    process.argv = [""];
     if (application) {
       await application.teardown();
       application = undefined;
@@ -991,6 +992,27 @@ describe("Configuration", () => {
 
   // #MARK: Interactions
   describe("Interactions", () => {
+    it("loads app configs with bootLibrariesFirst", async () => {
+      expect.assertions(1);
+      const app = CreateApplication({
+        configuration: {
+          EXAMPLE_CONFIG: {
+            default: "example",
+            type: "string",
+          },
+        },
+        // @ts-expect-error test
+        name: "test",
+        services: {
+          Test({ config }) {
+            // @ts-expect-error test
+            expect(config.test.EXAMPLE_CONFIG).toBe("example");
+          },
+        },
+      });
+      await app.bootstrap({ configuration: { boilerplate: { LOG_LEVEL: "silent" } } });
+    });
+
     it("calls onUpdate when it changes", async () => {
       await TestRunner().run(
         ({

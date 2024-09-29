@@ -130,12 +130,18 @@ export function Configuration({
     return deepExtend(configuration, merge);
   }
 
+  const loaded = new Set<string>();
+
   function loadProject(library: string, definitions: CodeConfigDefinition) {
+    if (loaded.has(library)) {
+      return;
+    }
+    loaded.add(library);
     internal.utils.object.set(configuration, library, {});
     Object.keys(definitions).forEach(key => {
       internal.utils.object.set(configuration, [library, key].join("."), definitions[key].default);
     });
-    return configDefinitions.set(library, definitions);
+    configDefinitions.set(library, definitions);
   }
 
   return {

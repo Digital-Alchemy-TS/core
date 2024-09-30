@@ -4753,11 +4753,11 @@ __metadata:
   linkType: hard
 
 "eslint-plugin-no-unsanitized@npm:^4.1.1":
-  version: 4.1.1
-  resolution: "eslint-plugin-no-unsanitized@npm:4.1.1"
+  version: 4.1.2
+  resolution: "eslint-plugin-no-unsanitized@npm:4.1.2"
   peerDependencies:
     eslint: ^8 || ^9
-  checksum: 10/bc80ddb1d49ebb690cf79d5beee1804a0c89c9d5c21a1d9e53a1a8355e9f0c239c68b3f028fc635c5cb4e8f136beb1fe45ee63f40b79fb144e503f61d8d7f445
+  checksum: 10/868d143e46645d1c3abc127dbb0f4a3bd281c5fb74f7f7c82dcea5f67193517b28f2b88f66a9446ad986d5afc61367268d689ed33052af4f0323584039a4984d
   languageName: node
   linkType: hard
 

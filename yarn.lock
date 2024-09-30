@@ -2016,7 +2016,6 @@ __metadata:
     "@types/minimist": "npm:^1.2.5"
     "@types/node": "npm:^22.7.3"
     "@types/node-cron": "npm:^3.0.11"
-    "@types/semver": "npm:^7.5.8"
     "@types/sinonjs__fake-timers": "npm:^8.1.5"
     "@types/uuid": "npm:^10.0.0"
     "@typescript-eslint/eslint-plugin": "npm:8.7.0"
@@ -2885,11 +2884,11 @@ __metadata:
   linkType: hard
 
 "@types/node@npm:*, @types/node@npm:^22.7.3":
-  version: 22.7.3
-  resolution: "@types/node@npm:22.7.3"
+  version: 22.7.4
+  resolution: "@types/node@npm:22.7.4"
   dependencies:
     undici-types: "npm:~6.19.2"
-  checksum: 10/f5e450c8c0588506698c6dd5fb9617cc516e2bd35417d853c96378533bc45b69219715ecc5d78667a194387647e69a10852b348b52e2d45f41ec75985cd3ef88
+  checksum: 10/19ddab80c4eba2253c855ed67c9bbc47417183049d01e59010a738bd80d47338bab79fd1f44ae51516bd63a1db4bf21ddb38b16bf6401a2e93252068ec52e88b
   languageName: node
   linkType: hard
 
@@ -2897,13 +2896,6 @@ __metadata:
   version: 2.4.4
   resolution: "@types/normalize-package-data@npm:2.4.4"
   checksum: 10/65dff72b543997b7be8b0265eca7ace0e34b75c3e5fee31de11179d08fa7124a7a5587265d53d0409532ecb7f7fba662c2012807963e1f9b059653ec2c83ee05
-  languageName: node
-  linkType: hard
-
-"@types/semver@npm:^7.5.8":
-  version: 7.5.8
-  resolution: "@types/semver@npm:7.5.8"
-  checksum: 10/3496808818ddb36deabfe4974fd343a78101fa242c4690044ccdc3b95dcf8785b494f5d628f2f47f38a702f8db9c53c67f47d7818f2be1b79f2efb09692e1178
   languageName: node
   linkType: hard
 

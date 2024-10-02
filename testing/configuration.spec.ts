@@ -629,6 +629,25 @@ describe("Configuration", () => {
 
       // #MARK: --config
       describe("--config", () => {
+        it("handles bad parsing", async () => {
+          expect.assertions(1);
+          process.argv = ["", "--config"];
+          const error = new Error("HIT");
+          jest.spyOn(process, "exit").mockImplementation(() => {
+            throw error;
+          });
+          const logger = createMockLogger();
+          try {
+            await configLoaderFile({
+              // @ts-expect-error not needed for test
+              application: {},
+              logger,
+            });
+          } catch (error) {
+            expect(error).toBeDefined();
+          }
+        });
+
         it("does not like missing files", async () => {
           expect.assertions(1);
           process.argv = ["", "--config=./missing_file"];

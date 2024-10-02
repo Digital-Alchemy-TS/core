@@ -714,6 +714,7 @@ describe("Wiring", () => {
 
       it("unhappy path", async () => {
         expect.assertions(1);
+        jest.spyOn(console, "error").mockImplementation(() => {});
         const list: string[] = [];
         const app = await TestRunner().run(({ lifecycle }) => {
           lifecycle.onPreShutdown(async () => {

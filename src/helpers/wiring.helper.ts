@@ -12,6 +12,7 @@ import {
   is,
   LIB_BOILERPLATE,
   LOAD_PROJECT,
+  ScheduleRemove,
   TBlackHole,
   TConfigLogLevel,
   TContext,
@@ -96,15 +97,17 @@ export type TScheduler = {
     options: SchedulerOptions & {
       schedule: Schedule | Schedule[];
     },
-  ) => () => TBlackHole;
+  ) => ScheduleRemove;
   /**
    * Run code on a regular periodic interval
+   *
+   * @deprecated use `scheduler.setInterval`
    */
   interval: (
     options: SchedulerOptions & {
       interval: number;
     },
-  ) => () => void;
+  ) => ScheduleRemove;
   /**
    * Run code at a different time every {period}
    *
@@ -117,7 +120,21 @@ export type TScheduler = {
       reset: Schedule;
       next: () => Dayjs;
     },
-  ) => () => TBlackHole;
+  ) => ScheduleRemove;
+  /**
+   * Same as setInterval but:
+   *
+   * - handles shutdown events properly
+   * - won't crash app for errors
+   */
+  setInterval: (callback: () => TBlackHole, ms: number) => ScheduleRemove;
+  /**
+   * Same as setTimeout but:
+   *
+   * - handles shutdown events properly
+   * - won't crash app for errors
+   */
+  setTimeout: (callback: () => TBlackHole, ms: number) => ScheduleRemove;
 };
 
 export interface LoadedModules {

@@ -9,6 +9,7 @@ import {
   ScheduleRemove,
   SchedulerIntervalOptions,
   SchedulerSlidingOptions,
+  TBlackHole,
   TServiceParams,
 } from "../helpers";
 
@@ -136,6 +137,21 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
     return {
       cron,
       interval,
+      setInterval: (callback: () => TBlackHole, ms: number) => {
+        const timer = setInterval(async () => await internal.safeExec(callback), ms);
+        const remove = () => clearTimeout(timer);
+        stop.add(remove);
+        return remove;
+      },
+      setTimeout: (callback: () => TBlackHole, ms: number) => {
+        const timer = setTimeout(async () => {
+          stop.delete(remove);
+          await internal.safeExec(callback);
+        }, ms);
+        const remove = () => clearTimeout(timer);
+        stop.add(remove);
+        return remove;
+      },
       sliding,
     };
   };

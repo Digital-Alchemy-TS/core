@@ -45,7 +45,10 @@ export async function configLoaderFile<
   const CLI_SWITCHES = minimist(process.argv);
   const configFile = CLI_SWITCHES.config;
   let files: string[];
-  if (is.empty(configFile)) {
+  if (is.boolean(configFile)) {
+    logger.fatal({ argv: process.argv }, "system failed to parse argv");
+    process.exit();
+  } else if (is.empty(configFile)) {
     files = configFilePaths(application.name);
     logger.trace({ files, name: configLoaderFile }, `identified config files`);
   } else {

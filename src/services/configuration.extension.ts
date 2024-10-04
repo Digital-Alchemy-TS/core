@@ -142,6 +142,18 @@ export function Configuration({
       internal.utils.object.set(configuration, [library, key].join("."), definitions[key].default);
     });
     configDefinitions.set(library, definitions);
+    const bootConfig = internal.boot.options?.configuration ?? {};
+    if (library in bootConfig) {
+      const project = library as keyof typeof bootConfig;
+      const config = bootConfig[project];
+      Object.keys(config).forEach(key => {
+        internal.utils.object.set(
+          configuration,
+          [project, key].join("."),
+          config[key as keyof typeof config],
+        );
+      });
+    }
   }
 
   return {

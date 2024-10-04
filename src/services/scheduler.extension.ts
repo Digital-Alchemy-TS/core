@@ -138,17 +138,43 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
       cron,
       interval,
       setInterval: (callback: () => TBlackHole, ms: number) => {
-        const timer = setInterval(async () => await internal.safeExec(callback), ms);
-        const remove = () => clearTimeout(timer);
+        let timer: ReturnType<typeof setInterval>;
+        let stopped = false;
+        lifecycle.onReady(() => {
+          if (stopped) {
+            return;
+          }
+          timer = setInterval(async () => await internal.safeExec(callback), ms);
+        });
+        const remove = () => {
+          stopped = true;
+          stop.delete(remove);
+          if (timer) {
+            clearInterval(timer);
+          }
+        };
         stop.add(remove);
         return remove;
       },
       setTimeout: (callback: () => TBlackHole, ms: number) => {
-        const timer = setTimeout(async () => {
+        let timer: ReturnType<typeof setTimeout>;
+        let stopped = false;
+        lifecycle.onReady(() => {
+          if (stopped) {
+            return;
+          }
+          timer = setTimeout(async () => {
+            stop.delete(remove);
+            await internal.safeExec(callback);
+          }, ms);
+        });
+        const remove = () => {
+          stopped = true;
           stop.delete(remove);
-          await internal.safeExec(callback);
-        }, ms);
-        const remove = () => clearTimeout(timer);
+          if (timer) {
+            clearTimeout(timer);
+          }
+        };
         stop.add(remove);
         return remove;
       },

@@ -58,13 +58,26 @@ describe("Scheduler", () => {
     it("stops", async () => {
       jest.useFakeTimers();
       const spy = jest.fn();
-      const app = await TestRunner().run(({ scheduler }) => {
+      const app = await TestRunner().run(({ scheduler, lifecycle }) => {
         const remove = scheduler.setInterval(spy, MINUTE);
-        setTimeout(() => remove(), 30 * MINUTE);
+        lifecycle.onReady(() => {
+          setTimeout(() => remove(), 30 * MINUTE);
+        });
       });
       jest.advanceTimersByTime(60 * MINUTE);
       expect(spy).toHaveBeenCalledTimes(30);
       jest.useRealTimers();
+      await app.teardown();
+    });
+
+    it("stops early", async () => {
+      const spy = jest.fn();
+      const intervalSpy = jest.spyOn(global, "setInterval");
+      const app = await TestRunner().run(({ scheduler }) => {
+        const remove = scheduler.setInterval(spy, MINUTE);
+        remove();
+      });
+      expect(intervalSpy).not.toHaveBeenCalled();
       await app.teardown();
     });
   });
@@ -94,6 +107,17 @@ describe("Scheduler", () => {
       jest.advanceTimersByTime(5 * MINUTE);
       expect(spy).not.toHaveBeenCalled();
       jest.useRealTimers();
+      await app.teardown();
+    });
+
+    it("stops early", async () => {
+      const spy = jest.fn();
+      const intervalSpy = jest.spyOn(global, "setTimeout");
+      const app = await TestRunner().run(({ scheduler }) => {
+        const remove = scheduler.setTimeout(spy, MINUTE);
+        remove();
+      });
+      expect(intervalSpy).not.toHaveBeenCalled();
       await app.teardown();
     });
   });

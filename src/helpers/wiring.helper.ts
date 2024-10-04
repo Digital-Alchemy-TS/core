@@ -174,10 +174,11 @@ export interface AsyncLocalData {
 export type AlsExtension = {
   asyncStorage: () => AsyncLocalStorage<AsyncLocalData>;
   getStore: () => AsyncLocalData;
-  init(source: object, callback: () => TBlackHole): void;
+  run(data: AsyncLocalData, callback: () => TBlackHole): void;
+  enterWith(data: AsyncLocalData): void;
   getLogData: () => AsyncLogData;
-  // register(callback: AlsHook): void;
 };
+
 export type AlsHook = () => object;
 
 // #MARK: TServiceParams

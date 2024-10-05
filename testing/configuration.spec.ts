@@ -579,6 +579,7 @@ describe("Configuration", () => {
         let testFiles: ReturnType<typeof ConfigTesting> = undefined;
 
         jest.spyOn(global.console, "error").mockImplementation(() => {});
+        jest.spyOn(global.console, "warn").mockImplementation(() => {});
         jest.spyOn(global.console, "log").mockImplementation(() => {});
         const helper = CreateApplication({
           configurationLoaders: [],

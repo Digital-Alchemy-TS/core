@@ -185,12 +185,24 @@ export async function Logger({
               .slice(SYMBOL_START, SYMBOL_END)
               .join("\n");
         }
-        if (["warn", "error", "fatal"].includes(key)) {
-          global.console.error(message);
-          return;
+        switch (key) {
+          case "warn": {
+            global.console.warn(message);
+            return;
+          }
+          case "debug": {
+            global.console.debug(message);
+            return;
+          }
+          case "error":
+          case "fatal": {
+            global.console.error(message);
+            return;
+          }
+          default: {
+            global.console.log(message);
+          }
         }
-
-        global.console.log(message);
       };
     });
   } else {

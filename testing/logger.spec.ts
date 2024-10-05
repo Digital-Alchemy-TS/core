@@ -27,12 +27,13 @@ describe("Logger", () => {
       expect.assertions(1);
 
       const customLogger = createMockLogger();
+      const spy = jest.spyOn(customLogger, "fatal");
       await TestRunner()
         .setOptions({ customLogger })
         .run(({ internal, logger }) => {
           internal.boilerplate.configuration.set("boilerplate", "LOG_LEVEL", "warn");
           logger.fatal("HIT");
-          expect(customLogger.fatal).toHaveBeenCalled();
+          expect(spy).toHaveBeenCalled();
         });
     });
 
@@ -262,6 +263,7 @@ describe("Logger", () => {
     it("allows timestamp format to be configured", async () => {
       const format = "ddd HH:mm:ss";
       jest.spyOn(global.console, "error").mockImplementation(() => {});
+      jest.spyOn(global.console, "debug").mockImplementation(() => {});
       jest.spyOn(global.console, "log").mockImplementation(() => {});
 
       await TestRunner()
@@ -279,8 +281,10 @@ describe("Logger", () => {
     // #MARK: level matching
     describe("level matching", () => {
       it("warn uses error", async () => {
-        const spy = jest.spyOn(global.console, "error").mockImplementation(() => {});
+        const spy = jest.spyOn(global.console, "warn").mockImplementation(() => {});
         jest.spyOn(global.console, "log").mockImplementation(() => {});
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
+        jest.spyOn(global.console, "error").mockImplementation(() => {});
         await TestRunner()
           .emitLogs()
           .run(({ logger }) => {
@@ -292,6 +296,7 @@ describe("Logger", () => {
 
       it("error uses error", async () => {
         const spy = jest.spyOn(global.console, "error").mockImplementation(() => {});
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
         jest.spyOn(global.console, "log").mockImplementation(() => {});
         await TestRunner()
           .emitLogs()
@@ -304,6 +309,7 @@ describe("Logger", () => {
 
       it("fatal uses error", async () => {
         const spy = jest.spyOn(global.console, "error").mockImplementation(() => {});
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
         jest.spyOn(global.console, "log").mockImplementation(() => {});
         await TestRunner()
           .emitLogs()
@@ -316,6 +322,7 @@ describe("Logger", () => {
 
       it("trace uses log", async () => {
         jest.spyOn(global.console, "error").mockImplementation(() => {});
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
         const spy = jest.spyOn(global.console, "log").mockImplementation(() => {});
         await TestRunner()
           .emitLogs()
@@ -328,7 +335,8 @@ describe("Logger", () => {
 
       it("trace uses debug", async () => {
         jest.spyOn(global.console, "error").mockImplementation(() => {});
-        const spy = jest.spyOn(global.console, "log").mockImplementation(() => {});
+        jest.spyOn(global.console, "log").mockImplementation(() => {});
+        const spy = jest.spyOn(global.console, "debug").mockImplementation(() => {});
         await TestRunner()
           .emitLogs()
           .run(({ logger }) => {
@@ -340,6 +348,7 @@ describe("Logger", () => {
 
       it("trace uses info", async () => {
         jest.spyOn(global.console, "error").mockImplementation(() => {});
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
         const spy = jest.spyOn(global.console, "log").mockImplementation(() => {});
         await TestRunner()
           .emitLogs()
@@ -365,6 +374,7 @@ describe("Logger", () => {
       it("emits http logs when url is set", async () => {
         expect.assertions(1);
         jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
         jest.spyOn(console, "log").mockImplementation(() => undefined);
         await TestRunner()
           .emitLogs("info")
@@ -386,6 +396,7 @@ describe("Logger", () => {
       it("can emit logIdx", async () => {
         expect.assertions(1);
         jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
         jest.spyOn(console, "log").mockImplementation(() => undefined);
         const spy = jest.fn();
         await TestRunner()
@@ -411,6 +422,7 @@ describe("Logger", () => {
       it("does not emit logIdx by default", async () => {
         expect.assertions(1);
         jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
         jest.spyOn(console, "log").mockImplementation(() => undefined);
         const spy = jest.fn();
         await TestRunner()
@@ -438,6 +450,7 @@ describe("Logger", () => {
       it("can emit ms", async () => {
         expect.assertions(1);
         jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
         jest.spyOn(console, "log").mockImplementation(() => undefined);
         const spy = jest.fn();
         await TestRunner()
@@ -463,6 +476,7 @@ describe("Logger", () => {
       it("can emit ms in green", async () => {
         expect.assertions(1);
         jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
         jest.spyOn(console, "log").mockImplementation(() => undefined);
         const spy = jest.fn();
         await TestRunner()
@@ -488,6 +502,7 @@ describe("Logger", () => {
       it("prepends ms number", async () => {
         expect.assertions(1);
         jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
         const spy = jest.spyOn(console, "log").mockImplementation(() => undefined);
         await TestRunner()
           .emitLogs("info")
@@ -502,6 +517,7 @@ describe("Logger", () => {
       it("does not emit ms by default", async () => {
         expect.assertions(1);
         jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
         jest.spyOn(console, "log").mockImplementation(() => undefined);
         const spy = jest.fn();
         await TestRunner()
@@ -529,6 +545,7 @@ describe("Logger", () => {
       it("will merge als data if enabled", async () => {
         expect.assertions(1);
         jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
         jest.spyOn(console, "log").mockImplementation(() => undefined);
         const spy = jest.fn();
         await TestRunner()
@@ -559,6 +576,7 @@ describe("Logger", () => {
       it("does not merge als data if disabled", async () => {
         expect.assertions(1);
         jest.spyOn(console, "error").mockImplementation(() => undefined);
+        jest.spyOn(global.console, "debug").mockImplementation(() => {});
         jest.spyOn(console, "log").mockImplementation(() => undefined);
         const spy = jest.fn();
         await TestRunner()

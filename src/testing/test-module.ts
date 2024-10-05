@@ -276,12 +276,12 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
         customLogger: bootOptions?.emitLogs
           ? undefined
           : (bootOptions?.customLogger ?? {
-              debug: jest.fn(),
-              error: jest.fn(),
-              fatal: jest.fn(),
-              info: jest.fn(),
-              trace: jest.fn(),
-              warn: jest.fn(),
+              debug: () => {},
+              error: () => {},
+              fatal: () => {},
+              info: () => {},
+              trace: () => {},
+              warn: () => {},
             }),
         loggerOptions: bootOptions?.loggerOptions,
       });

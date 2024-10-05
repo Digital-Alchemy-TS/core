@@ -515,6 +515,7 @@ describe("Wiring", () => {
 
     it("includes extended stats with switch", async () => {
       const mockLogger = createMockLogger();
+      const spy = jest.spyOn(mockLogger, "info");
       expect.assertions(1);
       const app = CreateApplication({
         // @ts-expect-error testing
@@ -525,7 +526,7 @@ describe("Wiring", () => {
         customLogger: mockLogger,
         showExtraBootStats: true,
       });
-      expect(mockLogger.info).toHaveBeenCalledWith(
+      expect(spy).toHaveBeenCalledWith(
         "boilerplate:wiring",
         expect.objectContaining({
           Bootstrap: expect.any(String),
@@ -542,6 +543,7 @@ describe("Wiring", () => {
 
     it("does not log extended boot stats by default", async () => {
       const mockLogger = createMockLogger();
+      const spy = jest.spyOn(mockLogger, "info");
       expect.assertions(2);
       const app = CreateApplication({
         // @ts-expect-error testing
@@ -551,7 +553,7 @@ describe("Wiring", () => {
       await app.bootstrap({
         customLogger: mockLogger,
       });
-      expect(mockLogger.info).toHaveBeenCalledWith(
+      expect(spy).toHaveBeenCalledWith(
         "boilerplate:wiring",
         expect.objectContaining({
           Total: expect.any(String),
@@ -559,7 +561,7 @@ describe("Wiring", () => {
         "[%s] application bootstrapped",
         "app",
       );
-      expect(mockLogger.info).not.toHaveBeenCalledWith(
+      expect(spy).not.toHaveBeenCalledWith(
         "boilerplate:wiring",
         expect.objectContaining({
           Ready: expect.any(String),
@@ -1081,7 +1083,9 @@ describe("Wiring", () => {
 
       let hit = false;
       jest.spyOn(global.console, "log").mockImplementation(() => {});
-      jest.spyOn(global.console, "error").mockImplementation((text: string) => {
+      jest.spyOn(global.console, "error").mockImplementation(() => {});
+      jest.spyOn(global.console, "debug").mockImplementation(() => {});
+      jest.spyOn(global.console, "warn").mockImplementation((text: string) => {
         hit ||= text?.includes("depends different version");
       });
       const customLogger = createMockLogger();

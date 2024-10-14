@@ -555,7 +555,7 @@ async function teardown(internal: InternalDefinition, logger: ILogger) {
     internal.boot.completedLifecycleEvents.add("ShutdownComplete");
   } catch (error) {
     // ! oof
-    global.console.error(
+    globalThis.console.error(
       { error },
       "error occurred during teardown, some lifecycle events may be incomplete",
     );

@@ -69,7 +69,7 @@ export async function Logger({
     }
     // validated with datadog, probably is fine elsewhere too
     // https://http-intake.logs.datadoghq.com/v1/input/{API_KEY}
-    global.fetch(httpLogTarget, {
+    globalThis.fetch(httpLogTarget, {
       body: JSON.stringify(data),
       headers: { "Content-Type": "application/json" },
       method: "POST",
@@ -187,20 +187,20 @@ export async function Logger({
         }
         switch (key) {
           case "warn": {
-            global.console.warn(message);
+            globalThis.console.warn(message);
             return;
           }
           case "debug": {
-            global.console.debug(message);
+            globalThis.console.debug(message);
             return;
           }
           case "error":
           case "fatal": {
-            global.console.error(message);
+            globalThis.console.error(message);
             return;
           }
           default: {
-            global.console.log(message);
+            globalThis.console.log(message);
           }
         }
       };

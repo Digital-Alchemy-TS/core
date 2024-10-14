@@ -417,6 +417,8 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
     await LIB_BOILERPLATE[WIRE_PROJECT](internal, wireService);
 
     CONSTRUCT.boilerplate = `${(performance.now() - start).toFixed(DECIMALS)}ms`;
+    // sync properties for convenience
+    internal.config = api.configuration;
     // ~ configuration
     api.configuration?.[LOAD_PROJECT](LIB_BOILERPLATE.name, LIB_BOILERPLATE.configuration);
     const logger = api.logger.context(WIRING_CONTEXT);

@@ -823,6 +823,13 @@ describe("Wiring", () => {
       });
       expect(i.boot.constructComplete.size).not.toEqual(0);
     });
+
+    it("has config alias", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        expect(internal.config).toBe(internal.boilerplate.configuration);
+      });
+    });
   });
 
   // #MARK: Wiring

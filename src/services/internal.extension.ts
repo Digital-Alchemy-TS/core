@@ -190,6 +190,10 @@ export class InternalDefinition {
    * Utility methods provided by boilerplate
    */
   public boilerplate: Pick<GetApis<typeof LIB_BOILERPLATE>, "configuration" | "logger">;
+  /**
+   * alias for `internal.boilerplate.configuration`
+   */
+  public config: GetApis<typeof LIB_BOILERPLATE>["configuration"];
   public boot: {
     /**
      * Options that were passed into bootstrap

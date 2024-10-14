@@ -532,6 +532,9 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
 
 // #MARK: Teardown
 async function teardown(internal: InternalDefinition, logger: ILogger) {
+  if (internal.boot.phase !== "running") {
+    return;
+  }
   // * Announce
   logger.warn({ name: teardown }, `received teardown request`);
   internal.boot.phase = "teardown";

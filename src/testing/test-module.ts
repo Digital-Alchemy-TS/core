@@ -16,6 +16,7 @@ import {
   ServiceMap,
   TConfigLogLevel,
   TLibrary,
+  TServiceParams,
 } from "../helpers";
 import { CreateApplication, is } from "../services";
 
@@ -114,6 +115,15 @@ export type iTestRunner<S extends ServiceMap, C extends OptionalModuleConfigurat
   setup: (test: ServiceFunction) => iTestRunner<S, C>;
 
   /**
+   * cannot be used with `.run`
+   *
+   * returns params instead of running an inline service
+   */
+  serviceParams: () => Promise<TServiceParams>;
+
+  /**
+   * cannot be used with `.serviceParams`
+   *
    * returns reference to app that was booted
    */
   run: (
@@ -288,6 +298,9 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
 
       teardown = async () => await app.teardown();
       return app;
+    },
+    serviceParams() {
+      return new Promise<TServiceParams>(done => libraryTestRunner.run(done));
     },
     setOptions(options: TestingBootstrapOptions) {
       bootOptions = deepExtend(bootOptions, options);

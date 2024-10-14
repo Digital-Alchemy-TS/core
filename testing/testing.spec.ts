@@ -294,6 +294,14 @@ describe("Testing", () => {
       expect(test.type).toBe("application");
     });
 
+    it("can return params instead of running", async () => {
+      const params = await TestRunner().serviceParams();
+      expect(params.lifecycle).toBeDefined();
+      expect(params.logger).toBeDefined();
+      expect(params.context).toBeDefined();
+      expect(params.config).toBeDefined();
+    });
+
     describe("optionalDepends", () => {
       it("defaults optionalDepends for apps", () => {
         expect.assertions(2);

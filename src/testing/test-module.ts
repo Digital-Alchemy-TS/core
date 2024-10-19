@@ -2,8 +2,8 @@ import { v4 } from "uuid";
 
 import {
   ApplicationDefinition,
-  ConfigLoader,
   CreateLibrary,
+  DataTypes,
   deepExtend,
   ILogger,
   LibraryDefinition,
@@ -38,11 +38,6 @@ type TestingBootstrapOptions = {
    * set to true to have this test emit logs
    */
   emitLogs?: boolean;
-
-  /**
-   * mostly useful for testing deep internals
-   */
-  configLoader?: ConfigLoader;
 
   /**
    * pass through to bootstrap params
@@ -81,6 +76,11 @@ type TestingBootstrapOptions = {
    * > **note**: you probably don't need to do this, it's not even documented
    */
   module_config?: ModuleConfiguration;
+
+  /**
+   * all properties default true if not provided
+   */
+  configSources?: Partial<Record<DataTypes, boolean>>;
 };
 
 export type LibraryTestRunner<T> =
@@ -223,10 +223,9 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
       });
     }
 
-    const customLoader = bootOptions?.configLoader ? [bootOptions?.configLoader] : [];
     const app = CreateApplication({
       configuration: bootOptions?.module_config ?? {},
-      configurationLoaders: bootOptions?.loadConfigs ? undefined : customLoader,
+      configurationLoaders: bootOptions?.configSources,
       libraries: [
         ...(is.empty(depends)
           ? []
@@ -282,6 +281,7 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
         appendLibrary: [...appendLibraries.values(), ...(LIB_RUN_FIRST ? [LIB_RUN_FIRST] : [])],
         appendService: Object.fromEntries(appendServices.entries()),
         bootLibrariesFirst: !!bootOptions?.bootLibrariesFirst,
+        configSources: bootOptions?.configSources,
         configuration: bootOptions?.configuration,
         customLogger: bootOptions?.emitLogs
           ? undefined

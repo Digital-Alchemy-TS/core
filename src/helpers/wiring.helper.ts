@@ -1,6 +1,5 @@
 import { AsyncLocalStorage } from "async_hooks";
 import { Dayjs } from "dayjs";
-import { DotenvConfigOptions } from "dotenv";
 import { EventEmitter } from "events";
 
 import {
@@ -21,6 +20,7 @@ import {
 import {
   AnyConfig,
   BooleanConfig,
+  DataTypes,
   InternalConfig,
   NumberConfig,
   OptionalModuleConfiguration,
@@ -362,6 +362,11 @@ export type BootstrapOptions = {
    * Default: `.env`
    */
   envFile?: string;
+
+  /**
+   * all properties default true if not provided
+   */
+  configSources?: Partial<Record<DataTypes, boolean>>;
 };
 
 // #MARK: LoggerOptions
@@ -494,7 +499,7 @@ export function buildSortOrder<S extends ServiceMap, C extends OptionalModuleCon
         // just "are they the same object reference?" as the test
         // you get a warning, and the one the app asks for
         // hopefully there is no breaking changes
-        if (loaded !== item && !process.env.NODE_ENV.startsWith("test")) {
+        if (loaded !== item && !process.env.NODE_ENV?.startsWith("test")) {
           logger.warn(
             { name: buildSortOrder },
             "[%s] depends different version {%s}",

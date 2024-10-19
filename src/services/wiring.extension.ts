@@ -272,9 +272,10 @@ export function CreateApplication<S extends ServiceMap, C extends OptionalModule
         );
       }
       internal = new InternalDefinition();
-      await bootstrap(application, options, internal);
+      const out = await bootstrap(application, options, internal);
       application.booted = true;
       RUNNING_APPLICATIONS.set(name, application);
+      return out;
     },
     configuration,
     libraries,
@@ -375,7 +376,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
   application: ApplicationDefinition<S, C>,
   options: BootstrapOptions,
   internal: InternalDefinition,
-) {
+): Promise<TServiceParams> {
   const initTime = performance.now();
   internal.boot = {
     application,
@@ -421,7 +422,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
     api.configuration?.[LOAD_PROJECT](LIB_BOILERPLATE.name, LIB_BOILERPLATE.configuration);
     const logger = api.logger.context(WIRING_CONTEXT);
     application.logger = logger;
-    logger.info({ name: bootstrap }, `[boilerplate] wiring complete`);
+    logger.debug({ name: bootstrap }, `[boilerplate] wiring complete`);
 
     // * Wire in various shutdown events
     processEvents.forEach((callback, event) => {
@@ -455,7 +456,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
     const order = buildSortOrder(application, logger);
     await eachSeries(order, async i => {
       start = performance.now();
-      logger.info({ name: bootstrap }, `[%s] init project`, i.name);
+      logger.debug({ name: bootstrap }, `[%s] init project`, i.name);
       await i[WIRE_PROJECT](internal, wireService);
       CONSTRUCT[i.name] = `${(performance.now() - start).toFixed(DECIMALS)}ms`;
     });
@@ -468,7 +469,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       // * preload config
       api.configuration[LOAD_PROJECT](application.name, application.configuration);
     } else {
-      logger.info({ name: bootstrap }, `init application`);
+      logger.debug({ name: bootstrap }, `init application`);
       start = performance.now();
       await application[WIRE_PROJECT](internal, wireService);
       CONSTRUCT[application.name] = `${(performance.now() - start).toFixed(DECIMALS)}ms`;
@@ -501,7 +502,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       // - hass: socket is open & resources are ready
       // - fastify: bindings are available but port isn't listening
 
-      logger.info({ name: bootstrap }, `late init application`);
+      logger.debug({ name: bootstrap }, `late init application`);
       start = performance.now();
       await application[WIRE_PROJECT](internal, wireService);
       CONSTRUCT[application.name] = `${(performance.now() - start).toFixed(DECIMALS)}ms`;
@@ -520,6 +521,15 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       application.name,
     );
     internal.boot.phase = "running";
+    return new Promise(done =>
+      wireService(
+        application.name,
+        "bootstrap",
+        i => done(i),
+        internal.boot.lifecycle.events,
+        internal,
+      ),
+    );
   } catch (error) {
     if (options?.configuration?.boilerplate?.LOG_LEVEL !== "silent") {
       // eslint-disable-next-line no-console

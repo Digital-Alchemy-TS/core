@@ -96,13 +96,6 @@ export function Configuration({
 
   // #MARK: registerLoader
   function registerLoader(loader: ConfigLoader, name: DataTypes) {
-    if (is.empty(name)) {
-      throw new BootstrapException(
-        context,
-        "MISSING_CONFIG_LOADER_NAME",
-        "Provide a name for the config loader",
-      );
-    }
     loaders.set(name, loader);
   }
 

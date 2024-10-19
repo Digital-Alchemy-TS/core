@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import dotenv from "dotenv";
-import fs, { existsSync, OpenMode, unlinkSync, writeFileSync } from "fs";
+import fs, { existsSync, unlinkSync, writeFileSync } from "fs";
 import { encode as iniEncode } from "ini";
 import { dump as yamlDump } from "js-yaml";
 import { ParsedArgs } from "minimist";

@@ -21,6 +21,7 @@ export type ExtendOptions = {
   keepConfiguration?: boolean;
 };
 
+// #MARK: DigitalAlchemyModule
 export type DigitalAlchemyModule<S extends ServiceMap, C extends OptionalModuleConfiguration> = {
   services: S;
   configuration: C;
@@ -31,6 +32,7 @@ export type DigitalAlchemyModule<S extends ServiceMap, C extends OptionalModuleC
   extend: (options?: ExtendOptions) => ModuleExtension<S, C>;
 };
 
+// #MARK: CreateModuleOptions
 export type CreateModuleOptions<S extends ServiceMap, C extends OptionalModuleConfiguration> = {
   services: S;
   configuration: C;
@@ -43,6 +45,7 @@ export type CreateModuleOptions<S extends ServiceMap, C extends OptionalModuleCo
 /**
  * commands mutate module
  */
+// #MARK: ModuleExtension
 export type ModuleExtension<S extends ServiceMap, C extends OptionalModuleConfiguration> = {
   appendLibrary: (library: TLibrary) => ModuleExtension<S, C>;
   appendService: (name: string, target: ServiceFunction) => ModuleExtension<S, C>;
@@ -93,6 +96,7 @@ export type ModuleExtension<S extends ServiceMap, C extends OptionalModuleConfig
   toTest: () => iTestRunner<S, C>;
 };
 
+// #MARK: createModule
 export function createModule<S extends ServiceMap, C extends OptionalModuleConfiguration>(
   options: CreateModuleOptions<S, C>,
 ): DigitalAlchemyModule<S, C> {
@@ -164,7 +168,7 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
       },
       toApplication: () => {
         const depends = {} as Record<string, TLibrary>;
-        workingModule.depends.forEach(i => (depends[i.name] = i));
+        workingModule.depends?.forEach(i => (depends[i.name] = i));
         appendLibrary.forEach((value, key) => (depends[key] = value));
 
         return CreateApplication({
@@ -173,13 +177,13 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
           // @ts-expect-error wrapper problems
           name: extendOptions?.name || options.name,
           // @ts-expect-error wrapper problems
-          priorityInit: [...workingModule.priorityInit],
+          priorityInit: [...(workingModule.priorityInit ?? [])],
           services,
         });
       },
       toLibrary: () => {
         const depends = {} as Record<string, TLibrary>;
-        workingModule.depends.forEach(i => (depends[i.name] = i));
+        workingModule.depends?.forEach(i => (depends[i.name] = i));
         appendLibrary.forEach((value, key) => (depends[key] = value));
 
         return CreateLibrary({
@@ -212,28 +216,30 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
   return workingModule;
 }
 
+// #MARK: fromApplication
 createModule.fromApplication = <S extends ServiceMap, C extends OptionalModuleConfiguration>(
   application: ApplicationDefinition<S, C>,
 ) => {
   return createModule<S, C>({
-    configuration: application.configuration || ({} as C),
-    depends: application.libraries || [],
+    configuration: application.configuration,
+    depends: application.libraries,
     name: application.name,
     optionalDepends: [],
-    priorityInit: application.priorityInit || [],
+    priorityInit: application.priorityInit,
     services: application.services,
   });
 };
 
+// #MARK: fromLibrary
 createModule.fromLibrary = <S extends ServiceMap, C extends OptionalModuleConfiguration>(
   library: LibraryDefinition<S, C>,
 ) => {
   return createModule<S, C>({
-    configuration: library.configuration || ({} as C),
-    depends: library.depends || [],
+    configuration: library.configuration,
+    depends: library.depends,
     name: library.name,
-    optionalDepends: library.optionalDepends || [],
-    priorityInit: library.priorityInit || [],
+    optionalDepends: library.optionalDepends,
+    priorityInit: library.priorityInit,
     services: library.services,
   });
 };

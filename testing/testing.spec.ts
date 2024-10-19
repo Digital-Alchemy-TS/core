@@ -26,6 +26,7 @@ describe("Testing", () => {
   const overrideLibrary = CreateLibrary({
     // @ts-expect-error testing
     name: "example",
+    priorityInit: ["test"],
     services: {
       test: function () {
         return () => false;
@@ -288,12 +289,19 @@ describe("Testing", () => {
 
   // #MARK: Outputs
   describe("Outputs", () => {
-    it("can create application modules", () => {
-      expect.assertions(1);
-      const test = createModule.fromLibrary(testingLibrary).extend().toApplication();
-      expect(test.type).toBe("application");
-    });
+    describe("Applications", () => {
+      it("can create", () => {
+        expect.assertions(1);
+        const test = createModule.fromLibrary(testingLibrary).extend().toApplication();
+        expect(test.type).toBe("application");
+      });
 
+      it("preserves priorityInit", async () => {
+        expect.assertions(1);
+        const test = createModule.fromLibrary(overrideLibrary).extend().toLibrary();
+        expect(test.priorityInit).toEqual(["test"]);
+      });
+    });
     it("can return params instead of running", async () => {
       const params = await TestRunner().serviceParams();
       expect(params.lifecycle).toBeDefined();

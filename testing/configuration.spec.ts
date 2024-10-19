@@ -18,6 +18,7 @@ import {
   CreateApplication,
   CreateLibrary,
   createMockLogger,
+  DataTypes,
   ILogger,
   InternalConfig,
   InternalDefinition,
@@ -188,16 +189,15 @@ describe("Configuration", () => {
     it("should be configured at the correct time in the lifecycle", async () => {
       expect.assertions(2);
       const spy = jest.fn().mockReturnValue({});
-      await TestRunner()
-        .setOptions({ configLoader: async () => spy() })
-        .run(({ lifecycle }) => {
-          lifecycle.onPreInit(() => {
-            expect(spy).not.toHaveBeenCalled();
-          });
-          lifecycle.onPostConfig(() => {
-            expect(spy).toHaveBeenCalled();
-          });
+      await TestRunner().run(({ lifecycle, internal }) => {
+        internal.config.registerLoader(spy, "test" as DataTypes);
+        lifecycle.onPreInit(() => {
+          expect(spy).not.toHaveBeenCalled();
         });
+        lifecycle.onPostConfig(() => {
+          expect(spy).toHaveBeenCalled();
+        });
+      });
     });
 
     it("defaults NODE_ENV to local", async () => {
@@ -347,26 +347,6 @@ describe("Configuration", () => {
         await TestRunner().run(({ config }) => {
           expect("boilerplate" in config).toBe(true);
         });
-      });
-
-      it("should not find variables without loaders", async () => {
-        expect.assertions(1);
-        env["DO_NOT_LOAD"] = "env";
-        await TestRunner()
-          .setOptions({
-            module_config: {
-              DO_NOT_LOAD: {
-                default: "unloaded",
-                type: "string",
-              },
-            },
-          })
-          .run(({ config, lifecycle }) => {
-            lifecycle.onPostConfig(() => {
-              // @ts-expect-error testing
-              expect(config.testing.DO_NOT_LOAD).toBe("unloaded");
-            });
-          });
       });
     });
 
@@ -578,9 +558,9 @@ describe("Configuration", () => {
       it("resolves files in the correct order", async () => {
         let testFiles: ReturnType<typeof ConfigTesting> = undefined;
 
-        jest.spyOn(global.console, "error").mockImplementation(() => {});
-        jest.spyOn(global.console, "warn").mockImplementation(() => {});
-        jest.spyOn(global.console, "log").mockImplementation(() => {});
+        jest.spyOn(globalThis.console, "error").mockImplementation(() => {});
+        jest.spyOn(globalThis.console, "warn").mockImplementation(() => {});
+        jest.spyOn(globalThis.console, "log").mockImplementation(() => {});
         const helper = CreateApplication({
           configurationLoaders: [],
           // @ts-expect-error Testing

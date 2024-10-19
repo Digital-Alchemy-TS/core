@@ -1,13 +1,15 @@
 import {
+  AbstractConfig,
   ApplicationDefinition,
   BootstrapException,
   CodeConfigDefinition,
   ConfigLoader,
   ConfigLoaderEnvironment,
-  configLoaderFile,
+  DataTypes,
   deepExtend,
   DigitalAlchemyConfiguration,
   eachSeries,
+  ILogger,
   KnownConfigs,
   OnConfigUpdateCallback,
   OptionalModuleConfiguration,
@@ -32,35 +34,35 @@ export function Configuration({
   event,
   lifecycle,
   internal,
-  // ! THIS DOES NOT EXIST BEFORE PRE INIT
-  logger,
 }: TServiceParams): DigitalAlchemyConfiguration {
   // modern problems require modern solutions
+  let logger: ILogger;
   lifecycle.onPreInit(() => (logger = internal.boilerplate.logger.context(context)));
-
-  const configuration: PartialConfiguration = {};
   const configDefinitions: KnownConfigs = new Map();
+  const configuration: PartialConfiguration = {};
+  const loaded = new Set<string>();
+  const loaders = new Map<DataTypes, ConfigLoader>();
 
-  function injectedDefinitions(): TInjectedConfig {
-    const out = {} as Record<string, object>;
-    return new Proxy(out as TInjectedConfig, {
-      get(_, project: keyof TInjectedConfig) {
-        return internal.utils.object.get(configuration, project) ?? {};
-      },
-      has(_, key: keyof TInjectedConfig) {
-        Object.keys(configuration).forEach(key => (out[key as keyof typeof out] ??= {}));
-        return Object.keys(configuration).includes(key);
-      },
-      ownKeys() {
-        Object.keys(configuration).forEach(key => (out[key as keyof typeof out] ??= {}));
-        return Object.keys(configuration);
-      },
-      set() {
-        return false;
-      },
-    });
-  }
+  // #MARK:
+  const proxyData = {} as Record<string, object>;
+  const configValueProxy = new Proxy(proxyData as TInjectedConfig, {
+    get(_, project: keyof TInjectedConfig) {
+      return { ...internal.utils.object.get(configuration, project) };
+    },
+    has(_, key: keyof TInjectedConfig) {
+      Object.keys(configuration).forEach(key => (proxyData[key as keyof typeof proxyData] ??= {}));
+      return Object.keys(configuration).includes(key);
+    },
+    ownKeys() {
+      Object.keys(configuration).forEach(key => (proxyData[key as keyof typeof proxyData] ??= {}));
+      return Object.keys(configuration);
+    },
+    set() {
+      return false;
+    },
+  });
 
+  // #MARK: setConfig
   function setConfig<
     Project extends keyof TInjectedConfig,
     Property extends keyof TInjectedConfig[Project],
@@ -70,6 +72,7 @@ export function Configuration({
     event.emit(EVENT_CONFIGURATION_UPDATED, project, property);
   }
 
+  // #MARK: validateConfig
   function validateConfig() {
     // * validate
     // - ensure all required properties have been defined
@@ -91,34 +94,70 @@ export function Configuration({
     });
   }
 
-  // #MARK: Initialize
+  // #MARK: registerLoader
+  function registerLoader(loader: ConfigLoader, name: DataTypes) {
+    if (is.empty(name)) {
+      throw new BootstrapException(
+        context,
+        "MISSING_CONFIG_LOADER_NAME",
+        "Provide a name for the config loader",
+      );
+    }
+    loaders.set(name, loader);
+  }
+
+  // #MARK: mergeConfig
+  function mergeConfig(data: Partial<AbstractConfig>, type: DataTypes[]) {
+    // * prevents loaders from setting properties that they aren't supposed to
+    configDefinitions.forEach((project, name) => {
+      const keys = Object.keys(project) as (keyof typeof project)[];
+      keys.forEach(key => {
+        const { source } = project[key];
+        if (is.array(source) && !type.some(i => source.includes(i))) {
+          return;
+        }
+        const moduleConfig = data[name as keyof AbstractConfig];
+        if (moduleConfig && key in moduleConfig) {
+          internal.utils.object.set(
+            configuration,
+            [name, key].join("."),
+            data[name as keyof AbstractConfig][key],
+          );
+        }
+      });
+    });
+  }
+
+  // #MARK: initialize
   async function initialize<S extends ServiceMap, C extends OptionalModuleConfiguration>(
     application: ApplicationDefinition<S, C>,
   ): Promise<string> {
-    const configLoaders =
-      internal.boot.application.configurationLoaders ??
-      ([ConfigLoaderEnvironment, configLoaderFile] as ConfigLoader[]);
-
     const start = performance.now();
 
-    // * were configs disabled?
-    if (is.empty(configLoaders)) {
-      validateConfig();
-      if (!configuration.boilerplate.IS_TEST) {
-        logger.warn({ name: initialize }, `no config loaders defined`);
-      }
-      return `${(performance.now() - start).toFixed(DECIMALS)}ms`;
-    }
-
-    // * load!
-    await eachSeries(configLoaders, async loader => {
-      const merge = await loader({
+    mergeConfig(
+      await ConfigLoaderEnvironment({
         application,
         configs: configDefinitions,
         internal,
         logger,
-      });
-      deepExtend(configuration, merge);
+      }),
+      ["env", "argv"],
+    );
+    mergeConfig(
+      await ConfigLoaderEnvironment({
+        application,
+        configs: configDefinitions,
+        internal,
+        logger,
+      }),
+      ["file"],
+    );
+
+    // * load!
+    await eachSeries([...loaders.entries()], async ([type, loader]) => {
+      mergeConfig(await loader({ application, configs: configDefinitions, internal, logger }), [
+        type,
+      ]);
     });
 
     validateConfig();
@@ -126,12 +165,12 @@ export function Configuration({
     return `${(performance.now() - start).toFixed(DECIMALS)}ms`;
   }
 
+  // #MARK: merge
   function merge(merge: Partial<PartialConfiguration>) {
     return deepExtend(configuration, merge);
   }
 
-  const loaded = new Set<string>();
-
+  // #MARK: loadProject
   function loadProject(library: string, definitions: CodeConfigDefinition) {
     if (loaded.has(library)) {
       return;
@@ -156,9 +195,35 @@ export function Configuration({
     }
   }
 
+  // #MARK: onUpdate
+  function onUpdate<
+    Project extends keyof TInjectedConfig,
+    Property extends Extract<keyof TInjectedConfig[Project], string>,
+  >(callback: OnConfigUpdateCallback<Project, Property>, project?: Project, property?: Property) {
+    event.on(EVENT_CONFIGURATION_UPDATED, (updatedProject, updatedProperty) => {
+      if (!is.empty(project) && project !== updatedProject) {
+        return;
+      }
+      if (!is.empty(property) && property !== updatedProperty) {
+        return;
+      }
+      callback(updatedProject, updatedProperty);
+    });
+  }
+
+  // #MARK: <return>
   return {
+    /**
+     * @internal
+     */
     [INITIALIZE]: initialize,
-    [INJECTED_DEFINITIONS]: injectedDefinitions,
+    /**
+     * @internal
+     */
+    [INJECTED_DEFINITIONS]: configValueProxy,
+    /**
+     * @internal
+     */
     [LOAD_PROJECT]: loadProject,
 
     /**
@@ -171,22 +236,11 @@ export function Configuration({
      *
      * intended for initial loading workflows
      */
-    merge: merge,
+    merge,
 
-    onUpdate<
-      Project extends keyof TInjectedConfig,
-      Property extends Extract<keyof TInjectedConfig[Project], string>,
-    >(callback: OnConfigUpdateCallback<Project, Property>, project?: Project, property?: Property) {
-      event.on(EVENT_CONFIGURATION_UPDATED, (updatedProject, updatedProperty) => {
-        if (!is.empty(project) && project !== updatedProject) {
-          return;
-        }
-        if (!is.empty(property) && property !== updatedProperty) {
-          return;
-        }
-        callback(updatedProject, updatedProperty);
-      });
-    },
+    onUpdate,
+
+    registerLoader,
 
     set: setConfig as TSetConfig,
   };

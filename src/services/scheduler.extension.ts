@@ -4,6 +4,7 @@ import { schedule } from "node-cron";
 import { is, TContext } from "..";
 import {
   BootstrapException,
+  makeRemover,
   SchedulerBuilder,
   SchedulerCronOptions,
   ScheduleRemove,
@@ -40,17 +41,17 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
           cronJob.start();
         });
 
-        const stopFunction = () => {
+        const stopFunction = makeRemover(() => {
           logger.trace({ context, name: cron, schedule: cronSchedule }, `stopping`);
           cronJob.stop();
-        };
+        });
 
         stop.add(stopFunction);
         stopFunctions.push(stopFunction);
         return stopFunction;
       });
 
-      return () => stopFunctions.forEach(stop => stop());
+      return makeRemover(() => stopFunctions.forEach(stop => stop()));
     }
 
     // #MARK: interval
@@ -58,14 +59,13 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
       let runningInterval: ReturnType<typeof setInterval>;
       lifecycle.onReady(() => {
         logger.trace({ context, name: interval }, "starting");
-
         runningInterval = setInterval(async () => await internal.safeExec(exec), interval);
       });
-      const stopFunction = () => {
+      const stopFunction = makeRemover(() => {
         if (runningInterval) {
           clearInterval(runningInterval);
         }
-      };
+      });
       stop.add(stopFunction);
       return stopFunction;
     }
@@ -125,13 +125,13 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
       // find value for now (boot)
       lifecycle.onReady(() => waitForNext());
 
-      return () => {
+      return makeRemover(() => {
         scheduleStop();
         if (timeout) {
           clearTimeout(timeout);
           timeout = undefined;
         }
-      };
+      });
     }
 
     return {
@@ -146,13 +146,13 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
           }
           timer = setInterval(async () => await internal.safeExec(callback), ms);
         });
-        const remove = () => {
+        const remove = makeRemover(() => {
           stopped = true;
           stop.delete(remove);
           if (timer) {
             clearInterval(timer);
           }
-        };
+        });
         stop.add(remove);
         return remove;
       },
@@ -168,13 +168,13 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
             await internal.safeExec(callback);
           }, ms);
         });
-        const remove = () => {
+        const remove = makeRemover(() => {
           stopped = true;
           stop.delete(remove);
           if (timer) {
             clearTimeout(timer);
           }
-        };
+        });
         stop.add(remove);
         return remove;
       },

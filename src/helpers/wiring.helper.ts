@@ -1,5 +1,6 @@
 import { AsyncLocalStorage } from "async_hooks";
 import { Dayjs } from "dayjs";
+import { DotenvConfigOptions } from "dotenv";
 import { EventEmitter } from "events";
 
 import {
@@ -20,7 +21,6 @@ import {
 import {
   AnyConfig,
   BooleanConfig,
-  ConfigLoader,
   InternalConfig,
   NumberConfig,
   OptionalModuleConfiguration,
@@ -39,7 +39,6 @@ export type ApplicationConfigurationOptions<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
 > = {
-  configurationLoaders?: ConfigLoader[];
   name: keyof LoadedModules;
   services: S;
   libraries?: LibraryDefinition<ServiceMap, OptionalModuleConfiguration>[];
@@ -99,16 +98,6 @@ export type TScheduler = {
     },
   ) => ScheduleRemove;
   /**
-   * Run code on a regular periodic interval
-   *
-   * @deprecated use `scheduler.setInterval`
-   */
-  interval: (
-    options: SchedulerOptions & {
-      interval: number;
-    },
-  ) => ScheduleRemove;
-  /**
    * Run code at a different time every {period}
    *
    * Calls `next` at start, and as determined by `reset`.
@@ -158,7 +147,7 @@ export type TInjectedConfig = {
   [ModuleName in keyof ModuleConfigs]: ConfigTypes<ModuleConfigs[ModuleName]>;
 };
 
-// #region
+// #region Special
 // SEE DOCS http://docs.digital-alchemy.app/docs/core/declaration-merging
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AsyncLogData {
@@ -309,6 +298,7 @@ export type LibraryConfigurationOptions<
   priorityInit?: Extract<keyof S, string>[];
 };
 
+// #MARK: PartialConfiguration
 export type PartialConfiguration = Partial<{
   [ModuleName in keyof ModuleConfigs]: Partial<ConfigTypes<ModuleConfigs[ModuleName]>>;
 }>;
@@ -374,6 +364,7 @@ export type BootstrapOptions = {
   envFile?: string;
 };
 
+// #MARK: LoggerOptions
 export type LoggerOptions = {
   /**
    * Generic data to include as data payload for all logs
@@ -381,6 +372,7 @@ export type LoggerOptions = {
    * Can be used to provide application tags when using a log aggregator
    */
   mergeData?: object;
+
   /**
    * Adjust the format of the timestamp at the start of the log
    *
@@ -444,6 +436,7 @@ type Wire = {
   ) => Promise<TLifecycleBase>;
 };
 
+// #MARK: LibraryDefinition
 export type LibraryDefinition<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
@@ -452,6 +445,7 @@ export type LibraryDefinition<
     type: "library";
   };
 
+// #MARK: ApplicationDefinition
 export type ApplicationDefinition<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
@@ -460,11 +454,12 @@ export type ApplicationDefinition<
     logger: ILogger;
     type: "application";
     booted: boolean;
-    bootstrap: (options?: BootstrapOptions) => Promise<void>;
+    bootstrap: (options?: BootstrapOptions) => Promise<TServiceParams>;
     teardown: () => Promise<void>;
   };
 export type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration>;
 
+// #MARK: buildSortOrder
 export function buildSortOrder<S extends ServiceMap, C extends OptionalModuleConfiguration>(
   app: ApplicationDefinition<S, C>,
   logger: ILogger,
@@ -540,6 +535,7 @@ export function buildSortOrder<S extends ServiceMap, C extends OptionalModuleCon
 export const COERCE_CONTEXT = (context: string): TContext => context as TContext;
 export const WIRING_CONTEXT = COERCE_CONTEXT("boilerplate:wiring");
 
+// #MARK: validateLibrary
 export function validateLibrary<S extends ServiceMap>(
   project: string,
   serviceList: S,
@@ -565,6 +561,7 @@ export function validateLibrary<S extends ServiceMap>(
   }
 }
 
+// #MARK: wireOrder
 export function wireOrder<T extends string>(priority: T[], list: T[]): T[] {
   const out = [...(priority || [])];
   if (!is.empty(priority)) {
@@ -581,6 +578,7 @@ export function wireOrder<T extends string>(priority: T[], list: T[]): T[] {
   return temporary;
 }
 
+// #MARK: CreateLibrary
 export function CreateLibrary<S extends ServiceMap, C extends OptionalModuleConfiguration>({
   name: libraryName,
   configuration = {} as C,

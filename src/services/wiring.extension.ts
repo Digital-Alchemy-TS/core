@@ -52,9 +52,6 @@ function createBoilerplate() {
   // While it SEEMS LIKE this can be safely moved, it causes code init race conditions.
   return CreateLibrary({
     configuration: {
-      ALS_ENABLED: {
-        type: "string",
-      },
       /**
        * Only usable by **cli switch**.
        * Pass path to a config file for loader
@@ -65,12 +62,13 @@ function createBoilerplate() {
        */
       CONFIG: {
         description: [
-          "Consumable as CLI switch only",
           "If provided, all other file based configurations will be ignored",
           "Environment variables + CLI switches will operate normally",
         ].join(". "),
+        source: ["argv"],
         type: "string",
       },
+
       /**
        * > by default true when:
        *
@@ -88,6 +86,7 @@ function createBoilerplate() {
         description: "Quick reference for if this app is currently running with test mode",
         type: "boolean",
       },
+
       /**
        * ### `trace`
        *
@@ -125,6 +124,7 @@ function createBoilerplate() {
         enum: ["silent", "trace", "info", "warn", "debug", "error", "fatal"],
         type: "string",
       } satisfies StringConfig<TConfigLogLevel> as StringConfig<TConfigLogLevel>,
+
       /**
        * Reference to `process.env.NODE_ENV` by default, `"local"` if not provided
        */
@@ -214,7 +214,6 @@ const BOILERPLATE = (internal: InternalDefinition) =>
 export function CreateApplication<S extends ServiceMap, C extends OptionalModuleConfiguration>({
   name,
   services = {} as S,
-  configurationLoaders,
   libraries = [],
   configuration = {} as C,
   priorityInit = [],
@@ -278,7 +277,6 @@ export function CreateApplication<S extends ServiceMap, C extends OptionalModule
       RUNNING_APPLICATIONS.set(name, application);
     },
     configuration,
-    configurationLoaders,
     libraries,
     logger: undefined,
     name,
@@ -330,7 +328,7 @@ async function wireService(
     loaded[service] = (await definition({
       ...inject,
       als: boilerplate.als,
-      config: boilerplate?.configuration?.[INJECTED_DEFINITIONS](),
+      config: boilerplate?.configuration?.[INJECTED_DEFINITIONS],
       context,
       event: internal?.utils?.event,
       internal,

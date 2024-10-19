@@ -32,6 +32,10 @@ export async function ConfigLoaderEnvironment<
 
     // * run through each config for module
     Object.keys(configuration).forEach(key => {
+      const { source } = configs.get(project)[key];
+      if (is.array(source) && !source.includes("env")) {
+        return;
+      }
       // > things to search for
       // - MODULE_NAME_CONFIG_KEY (module + key, ex: app_NODE_ENV)
       // - CONFIG_KEY (only key, ex: NODE_ENV)
@@ -41,14 +45,14 @@ export async function ConfigLoaderEnvironment<
 
       // * (preferred) Find an applicable cli switch
       const flag = findKey(search, switchKeys);
-      if (flag) {
+      if (flag && (!is.array(source) || source.includes("argv"))) {
         const formattedFlag = iSearchKey(flag, switchKeys);
         internal.utils.object.set(
           out,
           configPath,
           parseConfig(configuration[key], CLI_SWITCHES[formattedFlag]),
         );
-        logger.trace(
+        logger.debug(
           {
             flag: formattedFlag,
             name: ConfigLoaderEnvironment,
@@ -61,14 +65,16 @@ export async function ConfigLoaderEnvironment<
 
       // * (fallback) Find an environment variable
       const environment = findKey(search, environmentKeys);
-      if (!is.empty(environment)) {
+      if (!is.empty(environment) && (!is.array(source) || source.includes("env"))) {
         const environmentName = iSearchKey(environment, environmentKeys);
-        internal.utils.object.set(
-          out,
-          configPath,
-          parseConfig(configuration[key], env[environmentName]),
-        );
-        logger.trace(
+        if (!is.string(env[environmentName]) || !is.empty(env[environmentName])) {
+          internal.utils.object.set(
+            out,
+            configPath,
+            parseConfig(configuration[key], env[environmentName]),
+          );
+        }
+        logger.debug(
           {
             name: ConfigLoaderEnvironment,
             path: configPath,

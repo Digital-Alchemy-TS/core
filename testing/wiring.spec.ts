@@ -757,6 +757,17 @@ describe("Wiring", () => {
       );
     });
 
+    it("shouldn't process double teardown pt2", async () => {
+      expect.assertions(1);
+      const spy = jest.fn();
+      const app = await TestRunner().run(({ lifecycle }) => {
+        lifecycle.onPreShutdown(spy);
+      });
+      await Promise.all([app.teardown(), app.teardown(), app.teardown()]);
+
+      expect(spy).toHaveBeenCalledTimes(1);
+    });
+
     it("phase should be teardown after teardown starts", async () => {
       expect.assertions(1);
 
@@ -811,6 +822,13 @@ describe("Wiring", () => {
         i = internal;
       });
       expect(i.boot.constructComplete.size).not.toEqual(0);
+    });
+
+    it("has config alias", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        expect(internal.config).toBe(internal.boilerplate.configuration);
+      });
     });
   });
 

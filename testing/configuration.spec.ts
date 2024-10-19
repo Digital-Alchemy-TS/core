@@ -18,6 +18,7 @@ import {
   CreateApplication,
   CreateLibrary,
   createMockLogger,
+  DataTypes,
   ILogger,
   InternalConfig,
   InternalDefinition,
@@ -188,16 +189,15 @@ describe("Configuration", () => {
     it("should be configured at the correct time in the lifecycle", async () => {
       expect.assertions(2);
       const spy = jest.fn().mockReturnValue({});
-      await TestRunner()
-        .setOptions({ configLoader: async () => spy() })
-        .run(({ lifecycle }) => {
-          lifecycle.onPreInit(() => {
-            expect(spy).not.toHaveBeenCalled();
-          });
-          lifecycle.onPostConfig(() => {
-            expect(spy).toHaveBeenCalled();
-          });
+      await TestRunner().run(({ lifecycle, internal }) => {
+        internal.config.registerLoader(spy, "test" as DataTypes);
+        lifecycle.onPreInit(() => {
+          expect(spy).not.toHaveBeenCalled();
         });
+        lifecycle.onPostConfig(() => {
+          expect(spy).toHaveBeenCalled();
+        });
+      });
     });
 
     it("defaults NODE_ENV to local", async () => {
@@ -348,26 +348,6 @@ describe("Configuration", () => {
           expect("boilerplate" in config).toBe(true);
         });
       });
-
-      it("should not find variables without loaders", async () => {
-        expect.assertions(1);
-        env["DO_NOT_LOAD"] = "env";
-        await TestRunner()
-          .setOptions({
-            module_config: {
-              DO_NOT_LOAD: {
-                default: "unloaded",
-                type: "string",
-              },
-            },
-          })
-          .run(({ config, lifecycle }) => {
-            lifecycle.onPostConfig(() => {
-              // @ts-expect-error testing
-              expect(config.testing.DO_NOT_LOAD).toBe("unloaded");
-            });
-          });
-      });
     });
 
     // #MARK: Environment
@@ -436,6 +416,107 @@ describe("Configuration", () => {
             lifecycle.onPostConfig(() => {
               // @ts-expect-error testing
               expect(config.testing.CURRENT_WEATHER).toBe("sunny");
+            });
+          });
+      });
+
+      it("ignores when env is disabled", async () => {
+        expect.assertions(1);
+        env["current_weather"] = "sunny";
+        await TestRunner()
+          .setOptions({ configSources: { env: false } })
+          .setOptions({
+            module_config: {
+              CURRENT_WEATHER: {
+                default: "raining",
+                type: "string",
+              },
+            },
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.CURRENT_WEATHER).toBe("raining");
+            });
+          });
+      });
+
+      it("ignore non-matching source", async () => {
+        expect.assertions(1);
+        env["BAR"] = "fizz";
+        await TestRunner()
+          .appendLibrary(
+            CreateLibrary({
+              configuration: {
+                BAR: {
+                  default: "buzz",
+                  source: [],
+                  type: "string",
+                },
+              },
+              // @ts-expect-error testing
+              name: "foo",
+              services: {},
+            }),
+          )
+          .setOptions({ loadConfigs: true })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.foo.BAR).toBe("buzz");
+            });
+          });
+      });
+
+      it("matches correct source", async () => {
+        expect.assertions(1);
+        env["BAR"] = "fizz";
+        await TestRunner()
+          .appendLibrary(
+            CreateLibrary({
+              configuration: {
+                BAR: {
+                  default: "buzz",
+                  source: ["env"],
+                  type: "string",
+                },
+              },
+              // @ts-expect-error testing
+              name: "foo",
+              services: {},
+            }),
+          )
+          .setOptions({ loadConfigs: true })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.foo.BAR).toBe("fizz");
+            });
+          });
+      });
+
+      it("matches any source", async () => {
+        expect.assertions(1);
+        env["BAR"] = "fizz";
+        await TestRunner()
+          .appendLibrary(
+            CreateLibrary({
+              configuration: {
+                BAR: {
+                  default: "buzz",
+                  type: "string",
+                },
+              },
+              // @ts-expect-error testing
+              name: "foo",
+              services: {},
+            }),
+          )
+          .setOptions({ loadConfigs: true })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.foo.BAR).toBe("fizz");
             });
           });
       });
@@ -551,6 +632,107 @@ describe("Configuration", () => {
           });
       });
 
+      it("ignore when disabled", async () => {
+        expect.assertions(1);
+        process.argv.push("--current_WEATHER", "hail");
+        await TestRunner()
+          .setOptions({ configSources: { argv: false }, loadConfigs: true })
+          .setOptions({
+            module_config: {
+              CURRENT_WEATHER: {
+                default: "raining",
+                type: "string",
+              },
+            },
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.CURRENT_WEATHER).toBe("raining");
+            });
+          });
+      });
+
+      it("ignore non-matching source", async () => {
+        expect.assertions(1);
+        process.argv.push("--BAR", "fizz");
+        await TestRunner()
+          .appendLibrary(
+            CreateLibrary({
+              configuration: {
+                BAR: {
+                  default: "buzz",
+                  source: [],
+                  type: "string",
+                },
+              },
+              // @ts-expect-error testing
+              name: "foo",
+              services: {},
+            }),
+          )
+          .setOptions({ loadConfigs: true })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.foo.BAR).toBe("buzz");
+            });
+          });
+      });
+
+      it("matches correct source", async () => {
+        expect.assertions(1);
+        process.argv.push("--BAR", "fizz");
+        await TestRunner()
+          .appendLibrary(
+            CreateLibrary({
+              configuration: {
+                BAR: {
+                  default: "buzz",
+                  source: ["argv"],
+                  type: "string",
+                },
+              },
+              // @ts-expect-error testing
+              name: "foo",
+              services: {},
+            }),
+          )
+          .setOptions({ loadConfigs: true })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.foo.BAR).toBe("fizz");
+            });
+          });
+      });
+
+      it("matches any source", async () => {
+        expect.assertions(1);
+        process.argv.push("--BAR", "fizz");
+        await TestRunner()
+          .appendLibrary(
+            CreateLibrary({
+              configuration: {
+                BAR: {
+                  default: "buzz",
+                  type: "string",
+                },
+              },
+              // @ts-expect-error testing
+              name: "foo",
+              services: {},
+            }),
+          )
+          .setOptions({ loadConfigs: true })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.foo.BAR).toBe("fizz");
+            });
+          });
+      });
+
       it("is valid with equals signs", async () => {
         expect.assertions(1);
         process.argv.push("--current_WEATHER=hail");
@@ -578,9 +760,9 @@ describe("Configuration", () => {
       it("resolves files in the correct order", async () => {
         let testFiles: ReturnType<typeof ConfigTesting> = undefined;
 
-        jest.spyOn(global.console, "error").mockImplementation(() => {});
-        jest.spyOn(global.console, "warn").mockImplementation(() => {});
-        jest.spyOn(global.console, "log").mockImplementation(() => {});
+        jest.spyOn(globalThis.console, "error").mockImplementation(() => {});
+        jest.spyOn(globalThis.console, "warn").mockImplementation(() => {});
+        jest.spyOn(globalThis.console, "log").mockImplementation(() => {});
         const helper = CreateApplication({
           configurationLoaders: [],
           // @ts-expect-error Testing
@@ -626,6 +808,23 @@ describe("Configuration", () => {
           testFiles.unlink(filePath);
           sortedFiles = testFiles.sort([...testFiles.dataMap.keys()]);
         }
+      });
+
+      it("auto detects paths", async () => {
+        jest.spyOn(fs, "existsSync").mockReturnValueOnce(true);
+        // @ts-expect-error rest isn't needed
+        jest.spyOn(fs, "statSync").mockImplementation(() => ({ isFile: () => true }));
+        const spy = jest.spyOn(is, "empty").mockImplementation(() => true);
+        await configLoaderFile({
+          application: {
+            // @ts-expect-error testing
+            name: "test",
+          },
+          configs: undefined,
+          internal: undefined,
+          logger: createMockLogger(),
+        });
+        expect(spy).toHaveBeenCalledWith(["/etc/test"]);
       });
 
       // #MARK: --config

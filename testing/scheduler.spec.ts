@@ -29,7 +29,7 @@ describe("Scheduler", () => {
       jest.useFakeTimers();
       const spy = jest.fn();
       const app = await TestRunner().run(({ scheduler }) => {
-        // eslint-disable-next-line sonarjs/deprecation
+        // @ts-expect-error it's temporarily still here
         scheduler.interval({
           exec: spy,
           interval: MINUTE,
@@ -72,7 +72,7 @@ describe("Scheduler", () => {
 
     it("stops early", async () => {
       const spy = jest.fn();
-      const intervalSpy = jest.spyOn(global, "setInterval");
+      const intervalSpy = jest.spyOn(globalThis, "setInterval");
       const app = await TestRunner().run(({ scheduler }) => {
         const remove = scheduler.setInterval(spy, MINUTE);
         remove();
@@ -112,7 +112,7 @@ describe("Scheduler", () => {
 
     it("stops early", async () => {
       const spy = jest.fn();
-      const intervalSpy = jest.spyOn(global, "setTimeout");
+      const intervalSpy = jest.spyOn(globalThis, "setTimeout");
       const app = await TestRunner().run(({ scheduler }) => {
         const remove = scheduler.setTimeout(spy, MINUTE);
         remove();

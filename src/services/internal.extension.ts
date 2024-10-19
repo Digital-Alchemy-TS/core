@@ -7,6 +7,7 @@ import {
   ARRAY_OFFSET,
   BootstrapOptions,
   DAY,
+  deepExtend,
   FIRST,
   GetApis,
   HOUR,
@@ -98,6 +99,7 @@ export class InternalUtils {
 
   // #region .object
   public object = {
+    deepExtend,
     del<T>(object: T, path: string): void {
       const keys = path.split(".");
       let current = object as unknown; // Starting with the object as an unknown type
@@ -190,6 +192,10 @@ export class InternalDefinition {
    * Utility methods provided by boilerplate
    */
   public boilerplate: Pick<GetApis<typeof LIB_BOILERPLATE>, "configuration" | "logger">;
+  /**
+   * alias for `internal.boilerplate.configuration`
+   */
+  public config: GetApis<typeof LIB_BOILERPLATE>["configuration"];
   public boot: {
     /**
      * Options that were passed into bootstrap

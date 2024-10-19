@@ -20,6 +20,21 @@ import {
   TInjectedConfig,
 } from "./wiring.helper";
 
+export interface ConfigLoaderSource {
+  /**
+   * will be checked for values unless `sources` is defined without argv
+   */
+  argv: true;
+  /**
+   * will be checked for values unless `env` is defined without argv
+   */
+  env: true;
+  /**
+   * will be checked for values unless `file` is defined without argv
+   */
+  file: true;
+}
+
 export type CodeConfigDefinition = Record<string, AnyConfig>;
 export type ProjectConfigTypes =
   | "string"
@@ -52,6 +67,11 @@ export interface BaseConfig {
   required?: boolean;
 
   type: ProjectConfigTypes;
+
+  /**
+   * Where this can be loaded from
+   */
+  source?: (keyof ConfigLoaderSource)[];
 }
 export type KnownConfigs = Map<string, CodeConfigDefinition>;
 export interface StringConfig<STRING extends string> extends BaseConfig {
@@ -272,9 +292,10 @@ export type DigitalAlchemyConfiguration = {
   [INITIALIZE]: <S extends ServiceMap, C extends OptionalModuleConfiguration>(
     application: ApplicationDefinition<S, C>,
   ) => Promise<string>;
-  [INJECTED_DEFINITIONS]: () => TInjectedConfig;
+  [INJECTED_DEFINITIONS]: TInjectedConfig;
   [LOAD_PROJECT]: (library: string, definitions: CodeConfigDefinition) => void;
   getDefinitions: () => KnownConfigs;
+  registerLoader: (loader: ConfigLoader, type: DataTypes) => void;
   merge: (incoming: Partial<PartialConfiguration>) => PartialConfiguration;
   /**
    * Not a replacement for `onPostConfig`
@@ -310,3 +331,4 @@ export type OnConfigUpdateCallback<
   Project extends keyof TInjectedConfig,
   Property extends keyof TInjectedConfig[Project],
 > = (project: Project, property: Property) => TBlackHole;
+export type DataTypes = keyof ConfigLoaderSource;

@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prevent-abbreviations */
 import minimist from "minimist";
 import { env } from "process";
 
@@ -6,6 +7,7 @@ import {
   AbstractConfig,
   ConfigLoaderParams,
   ConfigLoaderReturn,
+  DataTypes,
   findKey,
   iSearchKey,
   loadDotenv,
@@ -20,6 +22,13 @@ export async function ConfigLoaderEnvironment<
   const CLI_SWITCHES = minimist(process.argv);
   const switchKeys = Object.keys(CLI_SWITCHES);
   const out: Partial<AbstractConfig> = {};
+  const canEnvironment = internal.boot.options?.configSources?.env ?? true;
+  const canArgv = internal.boot.options?.configSources?.argv ?? true;
+
+  const shouldArgv = (source: DataTypes[]) =>
+    canArgv && (!is.array(source) || source.includes("argv"));
+  const shouldEnv = (source: DataTypes[]) =>
+    canEnvironment && (!is.array(source) || source.includes("env"));
 
   // * merge dotenv into local vars
   // accounts for `--env-file` switches, and whatever is passed in via bootstrap
@@ -32,6 +41,7 @@ export async function ConfigLoaderEnvironment<
 
     // * run through each config for module
     Object.keys(configuration).forEach(key => {
+      const { source } = configs.get(project)[key];
       // > things to search for
       // - MODULE_NAME_CONFIG_KEY (module + key, ex: app_NODE_ENV)
       // - CONFIG_KEY (only key, ex: NODE_ENV)
@@ -41,14 +51,14 @@ export async function ConfigLoaderEnvironment<
 
       // * (preferred) Find an applicable cli switch
       const flag = findKey(search, switchKeys);
-      if (flag) {
+      if (flag && shouldArgv(source)) {
         const formattedFlag = iSearchKey(flag, switchKeys);
         internal.utils.object.set(
           out,
           configPath,
           parseConfig(configuration[key], CLI_SWITCHES[formattedFlag]),
         );
-        logger.trace(
+        logger.debug(
           {
             flag: formattedFlag,
             name: ConfigLoaderEnvironment,
@@ -61,14 +71,16 @@ export async function ConfigLoaderEnvironment<
 
       // * (fallback) Find an environment variable
       const environment = findKey(search, environmentKeys);
-      if (!is.empty(environment)) {
+      if (!is.empty(environment) && shouldEnv(source)) {
         const environmentName = iSearchKey(environment, environmentKeys);
-        internal.utils.object.set(
-          out,
-          configPath,
-          parseConfig(configuration[key], env[environmentName]),
-        );
-        logger.trace(
+        if (!is.string(env[environmentName]) || !is.empty(env[environmentName])) {
+          internal.utils.object.set(
+            out,
+            configPath,
+            parseConfig(configuration[key], env[environmentName]),
+          );
+        }
+        logger.debug(
           {
             name: ConfigLoaderEnvironment,
             path: configPath,

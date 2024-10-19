@@ -109,11 +109,16 @@ export type SchedulerSlidingOptions = SchedulerOptions & {
   next: () => Dayjs | string | number | Date | undefined;
 };
 
-export type ScheduleRemove = () => TBlackHole;
+export type ScheduleRemove = (() => TBlackHole) & { remove: () => TBlackHole };
+
+export const makeRemover = (remover: () => TBlackHole): ScheduleRemove => {
+  const cast = remover as ScheduleRemove;
+  cast.remove = remover;
+  return cast;
+};
 
 export type DigitalAlchemyScheduler = {
   cron: (options: SchedulerCronOptions) => ScheduleRemove;
-  interval: (options: SchedulerIntervalOptions) => ScheduleRemove;
   sliding: (options: SchedulerSlidingOptions) => ScheduleRemove;
   setInterval: (callback: () => TBlackHole, ms: number) => ScheduleRemove;
   setTimeout: (callback: () => TBlackHole, ms: number) => ScheduleRemove;

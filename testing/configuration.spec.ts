@@ -1,6 +1,6 @@
 import { faker } from "@faker-js/faker";
 import dotenv from "dotenv";
-import fs, { existsSync, unlinkSync, writeFileSync } from "fs";
+import fs, { existsSync, OpenMode, unlinkSync, writeFileSync } from "fs";
 import { encode as iniEncode } from "ini";
 import { dump as yamlDump } from "js-yaml";
 import { ParsedArgs } from "minimist";
@@ -808,6 +808,23 @@ describe("Configuration", () => {
           testFiles.unlink(filePath);
           sortedFiles = testFiles.sort([...testFiles.dataMap.keys()]);
         }
+      });
+
+      it("auto detects paths", async () => {
+        jest.spyOn(fs, "existsSync").mockReturnValueOnce(true);
+        // @ts-expect-error rest isn't needed
+        jest.spyOn(fs, "statSync").mockImplementation(() => ({ isFile: () => true }));
+        const spy = jest.spyOn(is, "empty").mockImplementation(() => true);
+        await configLoaderFile({
+          application: {
+            // @ts-expect-error testing
+            name: "test",
+          },
+          configs: undefined,
+          internal: undefined,
+          logger: createMockLogger(),
+        });
+        expect(spy).toHaveBeenCalledWith(["/etc/test"]);
       });
 
       // #MARK: --config

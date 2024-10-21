@@ -591,6 +591,7 @@ export function CreateLibrary<S extends ServiceMap, C extends OptionalModuleConf
   services,
   depends,
   optionalDepends,
+  ...extra
 }: LibraryConfigurationOptions<S, C>): LibraryDefinition<S, C> {
   validateLibrary(libraryName, services);
 
@@ -609,6 +610,8 @@ export function CreateLibrary<S extends ServiceMap, C extends OptionalModuleConf
   }
 
   const library = {
+    // * Merge in stuff which may only exist via declaration merging
+    ...extra,
     [WIRE_PROJECT]: async (
       internal: InternalDefinition,
       WireService: (

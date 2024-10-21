@@ -217,6 +217,7 @@ export function CreateApplication<S extends ServiceMap, C extends OptionalModule
   libraries = [],
   configuration = {} as C,
   priorityInit = [],
+  ...extra
 }: ApplicationConfigurationOptions<S, C>) {
   let internal: InternalDefinition;
 
@@ -234,6 +235,8 @@ export function CreateApplication<S extends ServiceMap, C extends OptionalModule
 
   const serviceApis = {} as GetApisResult<ServiceMap>;
   const application = {
+    // * Merge in stuff which may only exist via declaration merging
+    ...extra,
     [WIRE_PROJECT]: async (internal: InternalDefinition) => {
       BOILERPLATE(internal)?.configuration?.[LOAD_PROJECT](
         name as keyof LoadedModules,

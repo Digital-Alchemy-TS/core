@@ -35,10 +35,10 @@ export type TModuleMappings = Record<string, ServiceFunction>;
 export type TResolvedModuleMappings = Record<string, TServiceReturn>;
 
 // #MARK: ApplicationConfigurationOptions
-export type ApplicationConfigurationOptions<
+export interface ApplicationConfigurationOptions<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
-> = {
+> {
   name: keyof LoadedModules;
   services: S;
   libraries?: LibraryDefinition<ServiceMap, OptionalModuleConfiguration>[];
@@ -47,7 +47,7 @@ export type ApplicationConfigurationOptions<
    * Define which services should be initialized first. Any remaining services are done at the end in no set order
    */
   priorityInit?: Extract<keyof S, string>[];
-};
+}
 
 export type TConfigurable<
   S extends ServiceMap = ServiceMap,
@@ -269,10 +269,10 @@ export type ServiceFunction<R = unknown> = (params: TServiceParams) => R | Promi
 export type ServiceMap = Record<string, ServiceFunction>;
 
 // #MARK: LibraryConfigurationOptions
-export type LibraryConfigurationOptions<
+export interface LibraryConfigurationOptions<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
-> = {
+> {
   // neat trick, enforcing that they are named the same as they are loaded
   name: keyof LoadedModules;
   services: S;
@@ -296,7 +296,7 @@ export type LibraryConfigurationOptions<
    * Define which services should be initialized first. Any remaining services are done at the end in no set order
    */
   priorityInit?: Extract<keyof S, string>[];
-};
+}
 
 // #MARK: PartialConfiguration
 export type PartialConfiguration = Partial<{

@@ -5,6 +5,7 @@ import {
   CodeConfigDefinition,
   ConfigLoader,
   ConfigLoaderEnvironment,
+  configLoaderFile,
   DataTypes,
   deepExtend,
   DigitalAlchemyConfiguration,
@@ -41,7 +42,7 @@ export function Configuration({
   const configDefinitions: KnownConfigs = new Map();
   const configuration: PartialConfiguration = {};
   const loaded = new Set<string>();
-  const loaders = new Map<DataTypes, ConfigLoader>();
+  const loaders = new Map<DataTypes, ConfigLoader>([]);
 
   // #MARK:
   const proxyData = {} as Record<string, object>;
@@ -137,7 +138,7 @@ export function Configuration({
       ["env", "argv"],
     );
     mergeConfig(
-      await ConfigLoaderEnvironment({
+      await configLoaderFile({
         application,
         configs: configDefinitions,
         internal,

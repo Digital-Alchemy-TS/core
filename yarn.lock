@@ -2819,11 +2819,11 @@ __metadata:
   linkType: hard
 
 "@types/dotenv@npm:^8.2.0":
-  version: 8.2.0
-  resolution: "@types/dotenv@npm:8.2.0"
+  version: 8.2.3
+  resolution: "@types/dotenv@npm:8.2.3"
   dependencies:
     dotenv: "npm:*"
-  checksum: 10/a1f524da7dc18b09bdb6c2613b9abbbe8ca575621cce4625efc7f98daf2ba07c7dbab622c9bb394507a12c5c515f9cbbbba4aeec17b801c88faeb8e8e656d460
+  checksum: 10/3075371abbcaf231593c57297338c9b731a45b3dd519ab96c1708a2f7fa345fcf885daf1ba3e39d84942873706fb1aa656b560cde9ccb62ce598ceb563502470
   languageName: node
   linkType: hard
 

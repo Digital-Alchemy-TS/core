@@ -232,10 +232,25 @@ type ConfigTypes<Config> = {
   [Key in keyof Config]: Config[Key] extends AnyConfig ? CastConfigResult<Config[Key]> : never;
 };
 
-export type ServiceNames<T extends LoadedModuleNames = LoadedModuleNames> =
-  LoadedModules[T] extends LibraryDefinition<infer S, OptionalModuleConfiguration>
-    ? `${T}.${Extract<keyof S, string>}`
-    : never;
+export type ServiceNames<
+  T extends Extract<LoadedModuleNames, string> = Extract<LoadedModuleNames, string>,
+> = {
+  [key in T]: LoadedModules[key] extends LibraryDefinition<infer S, OptionalModuleConfiguration>
+    ? `${key}.${Extract<keyof S, string>}`
+    : LoadedModules[key] extends ApplicationDefinition<infer S, OptionalModuleConfiguration>
+      ? `${key}.${Extract<keyof S, string>}`
+      : never;
+};
+
+export type FlatServiceNames<
+  T extends Extract<LoadedModuleNames, string> = Extract<LoadedModuleNames, string>,
+> = {
+  [key in T]: LoadedModules[key] extends LibraryDefinition<infer S, OptionalModuleConfiguration>
+    ? `${key}.${Extract<keyof S, string>}`
+    : LoadedModules[key] extends ApplicationDefinition<infer S, OptionalModuleConfiguration>
+      ? `${key}.${Extract<keyof S, string>}`
+      : never;
+}[T];
 
 export type GetApis<T> =
   T extends LibraryDefinition<infer S, OptionalModuleConfiguration>
@@ -417,7 +432,7 @@ export type LoggerOptions = {
   /**
    * Override the `LOG_LEVEL` per service or module
    */
-  levelOverrides?: Partial<Record<LoadedModuleNames | ServiceNames, TConfigLogLevel>>;
+  levelOverrides?: Partial<Record<LoadedModuleNames | FlatServiceNames, TConfigLogLevel>>;
 };
 
 export const WIRE_PROJECT = Symbol.for("wire-project");

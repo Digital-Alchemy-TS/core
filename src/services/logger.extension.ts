@@ -7,11 +7,11 @@ import {
   DigitalAlchemyLogger,
   EVENT_UPDATE_LOG_LEVELS,
   FIRST,
+  FlatServiceNames,
   ILogger,
   is,
   LoadedModuleNames,
   METHOD_COLORS,
-  ServiceNames,
   START,
   TConfigLogLevel,
   TContext,
@@ -219,7 +219,7 @@ export async function Logger({
     "trace";
 
   function context(context: string | TContext) {
-    const name = context as ServiceNames;
+    const name = context as FlatServiceNames;
     const shouldILog = {} as Record<TConfigLogLevel, boolean>;
     const [prefix] = context.split(":") as [LoadedModuleNames];
     const update = () => {

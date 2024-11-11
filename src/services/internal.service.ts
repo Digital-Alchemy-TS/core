@@ -32,6 +32,7 @@ const EVERYTHING_ELSE = 1;
 const MONTHS = 12;
 
 type inputFormats = Date | string | number | Dayjs;
+export type RemoveCallback = { remove: () => void; (): void };
 
 // TODO: probably should make this configurable
 const formatter = new Intl.RelativeTimeFormat("en", {
@@ -239,6 +240,23 @@ export class InternalDefinition {
     startup: Date;
   };
   public utils = new InternalUtils();
+
+  /**
+   *
+   * ```typescript
+   * // Is it
+   * const remove = doThing();
+   * // or
+   * const { remove } = doThing();
+   * ```
+   *
+   * Now it's both! Inconsistency is the now supported
+   */
+  public removeFn(remove: () => TBlackHole): RemoveCallback {
+    const out = remove as RemoveCallback;
+    out.remove = remove;
+    return out;
+  }
 
   // #MARK: safeExec
   public async safeExec<T>(options: (() => TBlackHole) | SafeExecOptions): Promise<T> {

@@ -35,10 +35,10 @@ import {
   INITIALIZE,
   INJECTED_DEFINITIONS,
   LOAD_PROJECT,
-} from "./configuration.extension";
-import { CreateLifecycle } from "./lifecycle.extension";
-import { Logger } from "./logger.extension";
-import { Scheduler } from "./scheduler.extension";
+} from "./configuration.service";
+import { CreateLifecycle } from "./lifecycle.service";
+import { Logger } from "./logger.service";
+import { Scheduler } from "./scheduler.service";
 
 export interface DeclaredEnvironments {
   prod: true;
@@ -329,7 +329,7 @@ async function wireService(
       ]),
     );
 
-    loaded[service] = (await definition({
+    const serviceParams = {
       ...inject,
       als: boilerplate.als,
       config: boilerplate?.configuration?.[INJECTED_DEFINITIONS],
@@ -339,7 +339,10 @@ async function wireService(
       lifecycle,
       logger,
       scheduler: boilerplate?.scheduler?.(context),
-    })) as TServiceReturn;
+    } as TServiceParams;
+    serviceParams.params = serviceParams;
+
+    loaded[service] = (await definition(serviceParams)) as TServiceReturn;
 
     return loaded[service];
   } catch (error) {

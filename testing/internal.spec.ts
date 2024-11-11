@@ -1,4 +1,10 @@
-import { BootstrapOptions, CreateApplication, TestRunner } from "../src";
+import {
+  BootstrapOptions,
+  CreateApplication,
+  InternalDefinition,
+  TBlackHole,
+  TestRunner,
+} from "../src";
 
 export const BASIC_BOOT = {
   configuration: { boilerplate: { LOG_LEVEL: "silent" } },
@@ -11,10 +17,10 @@ export const BASIC_BOOT = {
 
 describe("Fetch Extension", () => {
   beforeAll(async () => {
-    jest.spyOn(global.console, "error").mockImplementation(() => {});
-    jest.spyOn(global.console, "warn").mockImplementation(() => {});
-    jest.spyOn(global.console, "debug").mockImplementation(() => {});
-    jest.spyOn(global.console, "log").mockImplementation(() => {});
+    jest.spyOn(globalThis.console, "error").mockImplementation(() => {});
+    jest.spyOn(globalThis.console, "warn").mockImplementation(() => {});
+    jest.spyOn(globalThis.console, "debug").mockImplementation(() => {});
+    jest.spyOn(globalThis.console, "log").mockImplementation(() => {});
     const preload = CreateApplication({
       // @ts-expect-error testing
       name: "testing",
@@ -25,6 +31,47 @@ describe("Fetch Extension", () => {
 
   afterEach(async () => {
     jest.restoreAllMocks();
+  });
+
+  describe("removeFn", () => {
+    const internal = new InternalDefinition();
+
+    it("should return a function with a remove property", () => {
+      const mockRemove: () => TBlackHole = jest.fn(() => ({}) as TBlackHole);
+      const result = internal.removeFn(mockRemove);
+
+      expect(typeof result).toBe("function");
+      expect(result.remove).toBe(mockRemove);
+    });
+
+    it("should correctly call the remove function", () => {
+      const mockRemove: () => TBlackHole = jest.fn(() => ({}) as TBlackHole);
+      const result = internal.removeFn(mockRemove);
+
+      result(); // Call the function
+      expect(mockRemove).toHaveBeenCalledTimes(1);
+    });
+
+    it("should allow calling remove via the returned function", () => {
+      const mockRemove: () => TBlackHole = jest.fn(() => ({}) as TBlackHole);
+      const result = internal.removeFn(mockRemove);
+
+      result.remove!(); // Call remove
+      expect(mockRemove).toHaveBeenCalledTimes(1);
+    });
+
+    it("should support both destructured and non-destructured usage", () => {
+      const mockRemove: () => TBlackHole = jest.fn(() => ({}) as TBlackHole);
+      // Destructured case
+      const { remove } = internal.removeFn(mockRemove);
+      remove!(); // Call remove
+      expect(mockRemove).toHaveBeenCalledTimes(1);
+
+      // Non-destructured case
+      const result = internal.removeFn(mockRemove);
+      result(); // Call the function
+      expect(mockRemove).toHaveBeenCalledTimes(2); // Called once more
+    });
   });
 
   describe("relativeDate", () => {

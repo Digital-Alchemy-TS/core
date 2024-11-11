@@ -1,4 +1,4 @@
-import { is } from "../services/is.extension";
+import { is } from "../services/is.service";
 
 function isSpecificValue(value: unknown) {
   return value instanceof Date || value instanceof RegExp;

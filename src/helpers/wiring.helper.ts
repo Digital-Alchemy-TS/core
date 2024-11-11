@@ -211,6 +211,12 @@ export type TServiceParams = {
    * make sure to use with/after the `onPostConfig` lifecycle event in order to receive user configuration values
    */
   config: TInjectedConfig;
+  /**
+   * reference to self
+   *
+   * useful if you want to pass the entire block of params into something deeper
+   */
+  params: TServiceParams;
 } & {
   [K in ExternalLoadedModules]: GetApis<LoadedModules[K]>;
 };

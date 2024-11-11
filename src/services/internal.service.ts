@@ -26,7 +26,7 @@ import {
   TResolvedModuleMappings,
   YEAR,
 } from "..";
-import { CreateLifecycle } from "./lifecycle.extension";
+import { CreateLifecycle } from "./lifecycle.service";
 
 const EVERYTHING_ELSE = 1;
 const MONTHS = 12;

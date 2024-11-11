@@ -8,7 +8,7 @@ import {
   TLifecycleBase,
   UP,
 } from "../helpers";
-import { is } from "./is.extension";
+import { is } from "./is.service";
 
 type EventMapObject = {
   callback: LifecycleCallback;

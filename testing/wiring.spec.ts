@@ -628,7 +628,7 @@ describe("Wiring", () => {
     it("should exit if service constructor throws error", async () => {
       expect.assertions(1);
       const spy = jest.spyOn(process, "exit").mockImplementation(() => undefined as never);
-      jest.spyOn(global.console, "error").mockImplementation(() => undefined);
+      jest.spyOn(globalThis.console, "error").mockImplementation(() => undefined);
 
       await TestRunner().run(() => {
         throw new Error("boom");
@@ -743,7 +743,7 @@ describe("Wiring", () => {
 
     it("shouldn't process double teardown", async () => {
       expect.assertions(1);
-      const spy = jest.spyOn(global.console, "error").mockImplementation(() => undefined);
+      const spy = jest.spyOn(globalThis.console, "error").mockImplementation(() => undefined);
       const app = await TestRunner().run(({ lifecycle }) => {
         lifecycle.onPreShutdown(() => {
           throw new Error("test");
@@ -834,6 +834,13 @@ describe("Wiring", () => {
 
   // #MARK: Wiring
   describe("Wiring", () => {
+    it("has recursive service params", async () => {
+      expect.assertions(2);
+      await TestRunner().run(({ params }) => {
+        expect(params).toBeDefined();
+        expect(params.params).toBe(params);
+      });
+    });
     it("should allow 2 separate apps to boot", async () => {
       expect.assertions(1);
       await expect(async () => {
@@ -1100,10 +1107,10 @@ describe("Wiring", () => {
       const other_a = CreateLibrary({ name: "A", services: {} });
 
       let hit = false;
-      jest.spyOn(global.console, "log").mockImplementation(() => {});
-      jest.spyOn(global.console, "error").mockImplementation(() => {});
-      jest.spyOn(global.console, "debug").mockImplementation(() => {});
-      jest.spyOn(global.console, "warn").mockImplementation((text: string) => {
+      jest.spyOn(globalThis.console, "log").mockImplementation(() => {});
+      jest.spyOn(globalThis.console, "error").mockImplementation(() => {});
+      jest.spyOn(globalThis.console, "debug").mockImplementation(() => {});
+      jest.spyOn(globalThis.console, "warn").mockImplementation((text: string) => {
         hit ||= text?.includes("depends different version");
       });
       const customLogger = createMockLogger();

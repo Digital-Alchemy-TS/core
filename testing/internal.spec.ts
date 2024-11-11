@@ -35,9 +35,9 @@ describe("Fetch Extension", () => {
 
   describe("removeFn", () => {
     const internal = new InternalDefinition();
-    const mockRemove: () => TBlackHole = jest.fn(() => ({}) as TBlackHole);
 
     it("should return a function with a remove property", () => {
+      const mockRemove: () => TBlackHole = jest.fn(() => ({}) as TBlackHole);
       const result = internal.removeFn(mockRemove);
 
       expect(typeof result).toBe("function");
@@ -45,6 +45,7 @@ describe("Fetch Extension", () => {
     });
 
     it("should correctly call the remove function", () => {
+      const mockRemove: () => TBlackHole = jest.fn(() => ({}) as TBlackHole);
       const result = internal.removeFn(mockRemove);
 
       result(); // Call the function
@@ -52,6 +53,7 @@ describe("Fetch Extension", () => {
     });
 
     it("should allow calling remove via the returned function", () => {
+      const mockRemove: () => TBlackHole = jest.fn(() => ({}) as TBlackHole);
       const result = internal.removeFn(mockRemove);
 
       result.remove!(); // Call remove
@@ -59,6 +61,7 @@ describe("Fetch Extension", () => {
     });
 
     it("should support both destructured and non-destructured usage", () => {
+      const mockRemove: () => TBlackHole = jest.fn(() => ({}) as TBlackHole);
       // Destructured case
       const { remove } = internal.removeFn(mockRemove);
       remove!(); // Call remove

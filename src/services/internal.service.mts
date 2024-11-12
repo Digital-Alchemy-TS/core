@@ -11,8 +11,6 @@ import {
   FIRST,
   GetApis,
   HOUR,
-  is,
-  LIB_BOILERPLATE,
   LifecycleStages,
   MINUTE,
   NONE,
@@ -25,8 +23,10 @@ import {
   TModuleMappings,
   TResolvedModuleMappings,
   YEAR,
-} from "..";
-import { CreateLifecycle } from "./lifecycle.service";
+} from "../index.mjs";
+import { is } from "./is.service.mjs";
+import { CreateLifecycle } from "./lifecycle.service.mjs";
+import { LIB_BOILERPLATE } from "./wiring.service.mjs";
 
 const EVERYTHING_ELSE = 1;
 const MONTHS = 12;

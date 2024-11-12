@@ -2,10 +2,12 @@ import { v4 } from "uuid";
 
 import {
   ApplicationDefinition,
+  CreateApplication,
   CreateLibrary,
   DataTypes,
   deepExtend,
   ILogger,
+  is,
   LibraryDefinition,
   LoggerOptions,
   ModuleConfiguration,
@@ -17,8 +19,7 @@ import {
   TConfigLogLevel,
   TLibrary,
   TServiceParams,
-} from "../helpers";
-import { CreateApplication, is } from "../services";
+} from "../index.mjs";
 
 export type CreateTestingLibraryOptions<
   S extends ServiceMap,

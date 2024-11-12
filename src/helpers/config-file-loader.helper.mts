@@ -6,8 +6,11 @@ import { homedir } from "os";
 import { join } from "path";
 import { cwd, platform } from "process";
 
-import { deepExtend, INVERT_VALUE, is, PartialConfiguration, ServiceMap, START } from "..";
-import { ConfigLoaderParams, ConfigLoaderReturn, ModuleConfiguration } from "./config.helper";
+import { is } from "../index.mjs";
+import { ConfigLoaderParams, ConfigLoaderReturn, ModuleConfiguration } from "./config.helper.mjs";
+import { deepExtend } from "./extend.helper.mjs";
+import { INVERT_VALUE, START } from "./utilities.helper.mjs";
+import { PartialConfiguration, ServiceMap } from "./wiring.helper.mjs";
 
 const isWindows = platform === "win32";
 

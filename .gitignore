@@ -121,7 +121,7 @@ bin/
 
 .nx/cache
 review.zip
-dynamic.d.ts
+dynamic.d.mts
 /obsidian/.obsidian
 .yarn/install-state.gz
 .env

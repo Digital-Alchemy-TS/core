@@ -104,7 +104,7 @@
   },
   "jest": {
     "extensionsToTreatAsEsm": [
-      ".ts"
+      ".mts"
     ],
     "collectCoverage": true,
     "coverageReporters": [
@@ -123,13 +123,13 @@
       "node"
     ],
     "testMatch": [
-      "**/?(*.)+(spec|test).ts"
+      "**/?(*.)+(spec|test).mts"
     ],
     "setupFiles": [
-      "<rootDir>/testing/setup.ts"
+      "<rootDir>/testing/setup.mts"
     ],
     "transform": {
-      "^.+\\.ts$": [
+      "^.+\\.mts$": [
         "ts-jest",
         {
           "tsconfig": "tsconfig.spec.json",

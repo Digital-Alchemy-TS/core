@@ -19,8 +19,8 @@ import {
   TInjectedConfig,
   TServiceParams,
   TSetConfig,
-} from "..";
-import { is } from ".";
+} from "../index.mjs";
+import { is } from "./is.service.mjs";
 
 export const INITIALIZE = Symbol.for("initialize");
 export const LOAD_PROJECT = Symbol.for("load-project");

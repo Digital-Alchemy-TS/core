@@ -1,9 +1,8 @@
 import { Except, Merge } from "type-fest";
 
-import { CreateApplication } from "../services";
-import { iTestRunner, TestRunner } from "../testing";
-import { OptionalModuleConfiguration } from "./config.helper";
-import { deepExtend } from "./extend.helper";
+import { CreateApplication, iTestRunner, TestRunner } from "../index.mjs";
+import { OptionalModuleConfiguration } from "./config.helper.mjs";
+import { deepExtend } from "./extend.helper.mjs";
 import {
   ApplicationDefinition,
   CreateLibrary,
@@ -11,7 +10,7 @@ import {
   ServiceFunction,
   ServiceMap,
   TLibrary,
-} from "./wiring.helper";
+} from "./wiring.helper.mjs";
 
 export type ExtendOptions = {
   name?: string;

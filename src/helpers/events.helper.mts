@@ -1,4 +1,4 @@
-import { is } from "..";
+import { is } from "../index.mjs";
 
 export const DIGITAL_ALCHEMY_NODE_GLOBAL_ERROR = "DIGITAL_ALCHEMY_NODE_GLOBAL_ERROR";
 export const DIGITAL_ALCHEMY_APPLICATION_ERROR = "DIGITAL_ALCHEMY_APPLICATION_ERROR";

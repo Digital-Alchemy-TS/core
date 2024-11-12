@@ -7,8 +7,8 @@ import {
   LifecycleStages,
   TLifecycleBase,
   UP,
-} from "../helpers";
-import { is } from "./is.service";
+} from "../index.mjs";
+import { is } from "./is.service.mjs";
 
 type EventMapObject = {
   callback: LifecycleCallback;

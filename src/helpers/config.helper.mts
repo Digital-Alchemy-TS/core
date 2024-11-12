@@ -5,20 +5,20 @@ import path from "path";
 import { cwd } from "process";
 
 import {
-  ILogger,
   INITIALIZE,
   INJECTED_DEFINITIONS,
   InternalDefinition,
   is,
   LOAD_PROJECT,
-  TBlackHole,
-} from "..";
+} from "../index.mjs";
+import { ILogger } from "./logger.helper.mjs";
+import { TBlackHole } from "./utilities.helper.mjs";
 import {
   ApplicationDefinition,
   PartialConfiguration,
   ServiceMap,
   TInjectedConfig,
-} from "./wiring.helper";
+} from "./wiring.helper.mjs";
 
 export interface ConfigLoaderSource {
   /**

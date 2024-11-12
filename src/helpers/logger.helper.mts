@@ -1,4 +1,4 @@
-import { TContext } from "./context.helper";
+import { TContext } from "./context.helper.mjs";
 
 export type DigitalAlchemyLogger = {
   /**

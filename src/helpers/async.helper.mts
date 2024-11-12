@@ -1,6 +1,7 @@
 /* eslint-disable sonarjs/no-redundant-type-constituents */
-import { is } from "../services";
-import { ARRAY_OFFSET, SINGLE, START } from "./utilities.helper";
+
+import { is } from "../index.mjs";
+import { ARRAY_OFFSET, SINGLE, START } from "./utilities.helper.mjs";
 
 // ? Functions written to be similar to the offerings from the async library
 // That library gave me oddly inconsistent results,

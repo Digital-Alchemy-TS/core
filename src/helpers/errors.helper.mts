@@ -1,4 +1,4 @@
-import { TContext } from "..";
+import { TContext } from "./context.helper.mjs";
 
 export class BootstrapException extends Error {
   context: TContext;

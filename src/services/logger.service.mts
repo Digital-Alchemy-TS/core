@@ -9,7 +9,6 @@ import {
   FIRST,
   FlatServiceNames,
   ILogger,
-  is,
   LoadedModuleNames,
   METHOD_COLORS,
   START,
@@ -17,7 +16,8 @@ import {
   TContext,
   TLoggerFunction,
   TServiceParams,
-} from "..";
+} from "../index.mjs";
+import { is } from "./is.service.mjs";
 
 const LOG_LEVEL_PRIORITY = {
   debug: 20,

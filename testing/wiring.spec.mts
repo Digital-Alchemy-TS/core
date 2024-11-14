@@ -30,7 +30,7 @@ describe("Wiring", () => {
       await application.teardown();
       application = undefined;
     }
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   // #MARK: CreateLibrary
@@ -104,7 +104,7 @@ describe("Wiring", () => {
   describe("CreateApplication", () => {
     it("should create an application with specified services and libraries", () => {
       expect.assertions(5);
-      const testService = jest.fn();
+      const testService = vi.fn();
       const testLibrary = CreateLibrary({
         // @ts-expect-error For unit testing
         name: "testing",
@@ -116,7 +116,7 @@ describe("Wiring", () => {
         libraries: [testLibrary],
         // @ts-expect-error For unit testing
         name: "testing",
-        services: { AppService: jest.fn() },
+        services: { AppService: vi.fn() },
       });
 
       expect(application).toBeDefined();
@@ -236,10 +236,10 @@ describe("Wiring", () => {
 
     it("should call the lifecycle events in order during application bootstrap", async () => {
       expect.assertions(5);
-      const spyPreInit = jest.fn();
-      const spyPostConfig = jest.fn();
-      const spyBootstrap = jest.fn();
-      const spyReady = jest.fn();
+      const spyPreInit = vi.fn();
+      const spyPostConfig = vi.fn();
+      const spyBootstrap = vi.fn();
+      const spyReady = vi.fn();
 
       await TestRunner().run(({ lifecycle }) => {
         lifecycle.onPreInit(spyPreInit);
@@ -264,10 +264,10 @@ describe("Wiring", () => {
 
     it("executes lifecycle callbacks in the correct order", async () => {
       expect.assertions(3);
-      const mockPreInit = jest.fn();
-      const mockPostConfig = jest.fn();
-      const mockBootstrap = jest.fn();
-      const mockReady = jest.fn();
+      const mockPreInit = vi.fn();
+      const mockPostConfig = vi.fn();
+      const mockBootstrap = vi.fn();
+      const mockReady = vi.fn();
 
       await TestRunner().run(({ lifecycle }) => {
         lifecycle.onPreInit(mockPreInit);
@@ -288,7 +288,7 @@ describe("Wiring", () => {
 
     it("registers and invokes lifecycle callbacks correctly", async () => {
       expect.assertions(1);
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
 
       await TestRunner().run(({ lifecycle }) => {
         lifecycle.onBootstrap(mockCallback);
@@ -299,11 +299,11 @@ describe("Wiring", () => {
 
     it("exits on catastrophic bootstrap errors", async () => {
       expect.assertions(1);
-      const errorMock = jest.fn(() => {
+      const errorMock = vi.fn(() => {
         throw new Error("EXPECTED_UNIT_TESTING_ERROR");
       });
-      jest.spyOn(console, "error").mockImplementation(() => {});
-      const exitSpy = jest.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const exitSpy = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
 
       await TestRunner().run(({ lifecycle }) => {
         lifecycle.onBootstrap(errorMock);
@@ -515,7 +515,7 @@ describe("Wiring", () => {
 
     it("includes extended stats with switch", async () => {
       const mockLogger = createMockLogger();
-      const spy = jest.spyOn(mockLogger, "info");
+      const spy = vi.spyOn(mockLogger, "info");
       expect.assertions(1);
       const app = CreateApplication({
         // @ts-expect-error testing
@@ -543,7 +543,7 @@ describe("Wiring", () => {
 
     it("does not log extended boot stats by default", async () => {
       const mockLogger = createMockLogger();
-      const spy = jest.spyOn(mockLogger, "info");
+      const spy = vi.spyOn(mockLogger, "info");
       expect.assertions(2);
       const app = CreateApplication({
         // @ts-expect-error testing
@@ -627,8 +627,8 @@ describe("Wiring", () => {
   describe("Boot Phase", () => {
     it("should exit if service constructor throws error", async () => {
       expect.assertions(1);
-      const spy = jest.spyOn(process, "exit").mockImplementation(() => undefined as never);
-      jest.spyOn(globalThis.console, "error").mockImplementation(() => undefined);
+      const spy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
+      vi.spyOn(globalThis.console, "error").mockImplementation(() => undefined);
 
       await TestRunner().run(() => {
         throw new Error("boom");
@@ -676,7 +676,7 @@ describe("Wiring", () => {
       expect.assertions(1);
 
       await TestRunner().run(({ lifecycle }) => {
-        const spy = jest.fn();
+        const spy = vi.fn();
         lifecycle.onReady(() => {
           lifecycle.onBootstrap(spy);
           // run immediately
@@ -716,7 +716,7 @@ describe("Wiring", () => {
 
       it("unhappy path", async () => {
         expect.assertions(1);
-        jest.spyOn(console, "error").mockImplementation(() => {});
+        vi.spyOn(console, "error").mockImplementation(() => {});
         const list: string[] = [];
         const app = await TestRunner().run(({ lifecycle }) => {
           lifecycle.onPreShutdown(async () => {
@@ -743,7 +743,7 @@ describe("Wiring", () => {
 
     it("shouldn't process double teardown", async () => {
       expect.assertions(1);
-      const spy = jest.spyOn(globalThis.console, "error").mockImplementation(() => undefined);
+      const spy = vi.spyOn(globalThis.console, "error").mockImplementation(() => undefined);
       const app = await TestRunner().run(({ lifecycle }) => {
         lifecycle.onPreShutdown(() => {
           throw new Error("test");
@@ -759,7 +759,7 @@ describe("Wiring", () => {
 
     it("shouldn't process double teardown pt2", async () => {
       expect.assertions(1);
-      const spy = jest.fn();
+      const spy = vi.fn();
       const app = await TestRunner().run(({ lifecycle }) => {
         lifecycle.onPreShutdown(spy);
       });
@@ -781,9 +781,9 @@ describe("Wiring", () => {
 
     it("should shutdown on SIGTERM", async () => {
       expect.assertions(2);
-      const exit = jest.spyOn(process, "exit").mockImplementation(() => undefined as never);
+      const exit = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 
-      const spy = jest.fn();
+      const spy = vi.fn();
       await TestRunner().run(({ lifecycle }) => {
         lifecycle.onPreShutdown(spy);
       });
@@ -797,9 +797,9 @@ describe("Wiring", () => {
 
     it("should shutdown on SIGINT", async () => {
       expect.assertions(2);
-      const exit = jest.spyOn(process, "exit").mockImplementation(() => undefined as never);
+      const exit = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 
-      const spy = jest.fn();
+      const spy = vi.fn();
 
       await TestRunner().run(({ lifecycle }) => {
         lifecycle.onPreShutdown(spy);
@@ -868,7 +868,7 @@ describe("Wiring", () => {
 
     it("should replace libraries with conflicting names", async () => {
       expect.assertions(2);
-      const test = jest.fn();
+      const test = vi.fn();
       const testLibrary = CreateLibrary({
         // @ts-expect-error For unit testing
         name: "testing",
@@ -1050,7 +1050,7 @@ describe("Wiring", () => {
         name: "testing",
         services: {},
       });
-      const failFastSpy = jest.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
+      const failFastSpy = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
       expect.assertions(1);
       await application.bootstrap(BASIC_BOOT);
       expect(failFastSpy).toHaveBeenCalled();
@@ -1064,7 +1064,7 @@ describe("Wiring", () => {
         name: "testing",
         services: {},
       });
-      const failFastSpy = jest.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
+      const failFastSpy = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
       expect.assertions(1);
       await application.bootstrap(BASIC_BOOT);
       expect(failFastSpy).not.toHaveBeenCalled();
@@ -1088,7 +1088,7 @@ describe("Wiring", () => {
         name: "testing",
         services: {},
       });
-      const failFastSpy = jest.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
+      const failFastSpy = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
       await application.bootstrap(BASIC_BOOT);
       expect(list).toEqual(["A", "B", "C"]);
       expect(failFastSpy).not.toHaveBeenCalled();
@@ -1107,10 +1107,10 @@ describe("Wiring", () => {
       const other_a = CreateLibrary({ name: "A", services: {} });
 
       let hit = false;
-      jest.spyOn(globalThis.console, "log").mockImplementation(() => {});
-      jest.spyOn(globalThis.console, "error").mockImplementation(() => {});
-      jest.spyOn(globalThis.console, "debug").mockImplementation(() => {});
-      jest.spyOn(globalThis.console, "warn").mockImplementation((text: string) => {
+      vi.spyOn(globalThis.console, "log").mockImplementation(() => {});
+      vi.spyOn(globalThis.console, "error").mockImplementation(() => {});
+      vi.spyOn(globalThis.console, "debug").mockImplementation(() => {});
+      vi.spyOn(globalThis.console, "warn").mockImplementation((text: string) => {
         hit ||= text?.includes("depends different version");
       });
       const customLogger = createMockLogger();

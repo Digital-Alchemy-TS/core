@@ -1,4 +1,4 @@
-import { CreateApplication } from "./index.mjs";
+import { CreateApplication } from "./index.mts";
 
 export const TEST_APPLICATION = CreateApplication({
   name: "test",
@@ -9,7 +9,7 @@ export const TEST_APPLICATION = CreateApplication({
   },
 });
 
-declare module "./index.mjs" {
+declare module "./index.mts" {
   export interface LoadedModules {
     test: typeof TEST_APPLICATION;
   }

@@ -10,15 +10,15 @@ import {
   InternalDefinition,
   is,
   LOAD_PROJECT,
-} from "../index.mjs";
-import { ILogger } from "./logger.helper.mjs";
-import { TBlackHole } from "./utilities.helper.mjs";
+} from "../index.mts";
+import { ILogger } from "./logger.mts";
+import { TBlackHole } from "./utilities.mts";
 import {
   ApplicationDefinition,
   PartialConfiguration,
   ServiceMap,
   TInjectedConfig,
-} from "./wiring.helper.mjs";
+} from "./wiring.mts";
 
 export interface ConfigLoaderSource {
   /**

@@ -28,19 +28,19 @@ import {
   WIRE_PROJECT,
   wireOrder,
   WIRING_CONTEXT,
-} from "../index.mjs";
-import { ALS } from "./als.service.mjs";
+} from "../index.mts";
+import { ALS } from "./als.service.mts";
 import {
   Configuration,
   INITIALIZE,
   INJECTED_DEFINITIONS,
   LOAD_PROJECT,
-} from "./configuration.service.mjs";
-import { InternalDefinition } from "./internal.service.mjs";
-import { is } from "./is.service.mjs";
-import { CreateLifecycle } from "./lifecycle.service.mjs";
-import { Logger } from "./logger.service.mjs";
-import { Scheduler } from "./scheduler.service.mjs";
+} from "./configuration.service.mts";
+import { InternalDefinition } from "./internal.service.mts";
+import { is } from "./is.service.mts";
+import { CreateLifecycle } from "./lifecycle.service.mts";
+import { Logger } from "./logger.service.mts";
+import { Scheduler } from "./scheduler.service.mts";
 
 export interface DeclaredEnvironments {
   prod: true;

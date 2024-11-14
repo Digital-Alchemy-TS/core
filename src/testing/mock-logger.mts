@@ -1,4 +1,4 @@
-import { ILogger } from "../index.mjs";
+import { ILogger } from "../index.mts";
 
 export function createMockLogger(): ILogger {
   return {

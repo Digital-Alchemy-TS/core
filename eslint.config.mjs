@@ -117,7 +117,7 @@ export default [
   {
     files: ["testing/**/*.mts"],
     languageOptions: {
-      globals: { ...globals.jest },
+      globals: { ...globals.vi },
       parser: tsParser,
       ecmaVersion: 5,
       sourceType: "script",

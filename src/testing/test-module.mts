@@ -19,7 +19,7 @@ import {
   TConfigLogLevel,
   TLibrary,
   TServiceParams,
-} from "../index.mjs";
+} from "../index.mts";
 
 export type CreateTestingLibraryOptions<
   S extends ServiceMap,

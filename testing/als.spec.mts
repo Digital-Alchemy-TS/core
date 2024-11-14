@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "async_hooks";
 
-import { sleep, TestRunner } from "../src";
+import { sleep, TestRunner } from "../src/index.mts";
 
 describe("ALS", () => {
   it("exists", async () => {
@@ -45,7 +45,7 @@ describe("ALS", () => {
 
   it("run", async () => {
     await TestRunner().run(async ({ als }) => {
-      const done = jest.fn();
+      const done = vi.fn();
       const data = { logs: {} };
       als.run(data, done);
       await sleep(0);

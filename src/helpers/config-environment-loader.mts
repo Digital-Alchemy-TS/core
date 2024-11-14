@@ -2,7 +2,7 @@
 import minimist from "minimist";
 import { env } from "process";
 
-import { is } from "../index.mjs";
+import { is } from "../index.mts";
 import {
   AbstractConfig,
   ConfigLoaderParams,
@@ -13,8 +13,8 @@ import {
   loadDotenv,
   ModuleConfiguration,
   parseConfig,
-} from "./config.helper.mjs";
-import { ServiceMap } from "./wiring.helper.mjs";
+} from "./config.mts";
+import { ServiceMap } from "./wiring.mts";
 
 export async function ConfigLoaderEnvironment<
   S extends ServiceMap = ServiceMap,

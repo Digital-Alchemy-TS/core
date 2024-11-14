@@ -2,8 +2,8 @@ import { AsyncLocalStorage } from "async_hooks";
 import { Dayjs } from "dayjs";
 import { EventEmitter } from "events";
 
-import { ConfigManager, InternalDefinition, is, LIB_BOILERPLATE, LOAD_PROJECT } from "../index.mjs";
-import { eachSeries } from "./async.helper.mjs";
+import { ConfigManager, InternalDefinition, is, LIB_BOILERPLATE, LOAD_PROJECT } from "../index.mts";
+import { eachSeries } from "./async.mts";
 import {
   AnyConfig,
   BooleanConfig,
@@ -13,13 +13,13 @@ import {
   OptionalModuleConfiguration,
   StringArrayConfig,
   StringConfig,
-} from "./config.helper.mjs";
-import { TContext } from "./context.helper.mjs";
-import { CronExpression, ScheduleRemove } from "./cron.helper.mjs";
-import { BootstrapException } from "./errors.helper.mjs";
-import { TLifecycleBase } from "./lifecycle.helper.mjs";
-import { ILogger, TConfigLogLevel } from "./logger.helper.mjs";
-import { TBlackHole } from "./utilities.helper.mjs";
+} from "./config.mts";
+import { TContext } from "./context.mts";
+import { CronExpression, ScheduleRemove } from "./cron.mts";
+import { BootstrapException } from "./errors.mts";
+import { TLifecycleBase } from "./lifecycle.mts";
+import { ILogger, TConfigLogLevel } from "./logger.mts";
+import { TBlackHole } from "./utilities.mts";
 
 export type TServiceReturn<OBJECT extends object = object> = void | OBJECT;
 

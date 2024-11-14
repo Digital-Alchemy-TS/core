@@ -1,4 +1,4 @@
-import { is } from "../index.mjs";
+import { is } from "../index.mts";
 
 /* eslint-disable @typescript-eslint/no-magic-numbers */
 export const EVEN = 2;

@@ -17,10 +17,10 @@ export const BASIC_BOOT = {
 
 describe("Fetch Extension", () => {
   beforeAll(async () => {
-    jest.spyOn(globalThis.console, "error").mockImplementation(() => {});
-    jest.spyOn(globalThis.console, "warn").mockImplementation(() => {});
-    jest.spyOn(globalThis.console, "debug").mockImplementation(() => {});
-    jest.spyOn(globalThis.console, "log").mockImplementation(() => {});
+    vi.spyOn(globalThis.console, "error").mockImplementation(() => {});
+    vi.spyOn(globalThis.console, "warn").mockImplementation(() => {});
+    vi.spyOn(globalThis.console, "debug").mockImplementation(() => {});
+    vi.spyOn(globalThis.console, "log").mockImplementation(() => {});
     const preload = CreateApplication({
       // @ts-expect-error testing
       name: "testing",
@@ -30,14 +30,14 @@ describe("Fetch Extension", () => {
   });
 
   afterEach(async () => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe("removeFn", () => {
     const internal = new InternalDefinition();
 
     it("should return a function with a remove property", () => {
-      const mockRemove: () => TBlackHole = jest.fn(() => ({}) as TBlackHole);
+      const mockRemove: () => TBlackHole = vi.fn(() => ({}) as TBlackHole);
       const result = internal.removeFn(mockRemove);
 
       expect(typeof result).toBe("function");
@@ -45,7 +45,7 @@ describe("Fetch Extension", () => {
     });
 
     it("should correctly call the remove function", () => {
-      const mockRemove: () => TBlackHole = jest.fn(() => ({}) as TBlackHole);
+      const mockRemove: () => TBlackHole = vi.fn(() => ({}) as TBlackHole);
       const result = internal.removeFn(mockRemove);
 
       result(); // Call the function
@@ -53,7 +53,7 @@ describe("Fetch Extension", () => {
     });
 
     it("should allow calling remove via the returned function", () => {
-      const mockRemove: () => TBlackHole = jest.fn(() => ({}) as TBlackHole);
+      const mockRemove: () => TBlackHole = vi.fn(() => ({}) as TBlackHole);
       const result = internal.removeFn(mockRemove);
 
       result.remove!(); // Call remove
@@ -61,7 +61,7 @@ describe("Fetch Extension", () => {
     });
 
     it("should support both destructured and non-destructured usage", () => {
-      const mockRemove: () => TBlackHole = jest.fn(() => ({}) as TBlackHole);
+      const mockRemove: () => TBlackHole = vi.fn(() => ({}) as TBlackHole);
       // Destructured case
       const { remove } = internal.removeFn(mockRemove);
       remove!(); // Call remove
@@ -263,7 +263,7 @@ describe("Fetch Extension", () => {
     it("executes the provided function successfully", async () => {
       expect.assertions(1);
       await TestRunner().run(async ({ internal }) => {
-        const mockFunction = jest.fn();
+        const mockFunction = vi.fn();
         await internal.safeExec(mockFunction);
         expect(mockFunction).toHaveBeenCalled();
       });
@@ -279,10 +279,10 @@ describe("Fetch Extension", () => {
     it("catches and logs errors thrown by the provided function", async () => {
       expect.assertions(2);
       await TestRunner().run(async ({ internal }) => {
-        const mockFunction = jest.fn().mockImplementation(() => {
+        const mockFunction = vi.fn().mockImplementation(() => {
           throw new Error("Test error");
         });
-        const mockLogger = jest.spyOn(internal.boilerplate.logger.systemLogger, "error");
+        const mockLogger = vi.spyOn(internal.boilerplate.logger.systemLogger, "error");
 
         await internal.safeExec(mockFunction);
 

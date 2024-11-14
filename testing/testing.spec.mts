@@ -172,13 +172,13 @@ describe("Testing", () => {
       expect.assertions(1);
       const test = createModule.fromApplication(topApplication).extend();
       expect(() => {
-        test.appendService("test", jest.fn());
+        test.appendService("test", vi.fn());
       }).toThrow();
     });
 
     it("can append a service with a unique name", async () => {
       expect.assertions(1);
-      const spy = jest.fn();
+      const spy = vi.fn();
       const id = v4();
       const test = createModule.fromApplication(topApplication).extend().appendService(id, spy);
       const runner = test.toLibrary();
@@ -204,7 +204,7 @@ describe("Testing", () => {
       const out = createModule
         .fromApplication(topApplication)
         .extend()
-        .appendService(id, jest.fn())
+        .appendService(id, vi.fn())
         .pickService(id)
         .toLibrary();
       expect(Object.keys(out.services)).toEqual([id]);
@@ -212,7 +212,7 @@ describe("Testing", () => {
 
     it("rebuild", () => {
       expect.assertions(1);
-      const spy = jest.fn();
+      const spy = vi.fn();
       const out = createModule
         .fromApplication(topApplication)
         .extend()
@@ -268,7 +268,7 @@ describe("Testing", () => {
   describe("replaceService", () => {
     it("can replace libraries", async () => {
       expect.assertions(1);
-      const spy = jest.fn();
+      const spy = vi.fn();
       const test = createModule.fromApplication(topApplication).extend();
       expect(() => {
         test.replaceService(v4(), spy);
@@ -277,7 +277,7 @@ describe("Testing", () => {
 
     it("can replace services", async () => {
       expect.assertions(1);
-      const spy = jest.fn();
+      const spy = vi.fn();
       const test = createModule
         .fromApplication(topApplication)
         .extend()

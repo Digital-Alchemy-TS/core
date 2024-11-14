@@ -16,8 +16,8 @@ import {
   TContext,
   TLoggerFunction,
   TServiceParams,
-} from "../index.mjs";
-import { is } from "./is.service.mjs";
+} from "../index.mts";
+import { is } from "./is.service.mts";
 
 const LOG_LEVEL_PRIORITY = {
   debug: 20,

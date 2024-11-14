@@ -1,6 +1,6 @@
 import { AsyncLocalStorage } from "async_hooks";
 
-import { AlsExtension, AsyncLocalData, AsyncLogData, TBlackHole } from "../index.mjs";
+import { AlsExtension, AsyncLocalData, AsyncLogData, TBlackHole } from "../index.mts";
 
 export function ALS(): AlsExtension {
   const storage = new AsyncLocalStorage<AsyncLocalData>();

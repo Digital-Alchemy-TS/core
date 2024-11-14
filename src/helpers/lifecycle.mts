@@ -1,4 +1,4 @@
-import { TBlackHole } from "./utilities.helper.mjs";
+import { TBlackHole } from "./utilities.mts";
 
 export type LifecycleCallback = () => TBlackHole;
 export type LifecyclePrioritizedCallback = [callback: LifecycleCallback, priority: number];

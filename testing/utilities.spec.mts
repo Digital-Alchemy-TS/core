@@ -137,7 +137,7 @@ describe("utilities", () => {
   describe("eachLimit", () => {
     it("handles an empty array", async () => {
       const items: number[] = [];
-      const callback = jest.fn(async () => {});
+      const callback = vi.fn(async () => {});
 
       await eachLimit(items, 2, callback);
 
@@ -148,7 +148,7 @@ describe("utilities", () => {
       const repeat = 20;
       const items = [...".".repeat(repeat)].map((_, i) => i);
       const limit = 2;
-      const callback = jest.fn(async () => {
+      const callback = vi.fn(async () => {
         await sleep(100);
       });
 
@@ -163,7 +163,7 @@ describe("utilities", () => {
 
     it("handles errors thrown in callback", async () => {
       const items = [1, 2, 3];
-      const callback = jest.fn(async (item: number) => {
+      const callback = vi.fn(async (item: number) => {
         if (item === 2) throw new Error("Error on item 2");
         await new Promise(resolve => setTimeout(resolve, 50));
       });
@@ -178,7 +178,7 @@ describe("utilities", () => {
     it("should call the callback for each item in an array", async () => {
       expect.assertions(4);
       const items = [1, 2, 3];
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
 
       await each(items, mockCallback);
 
@@ -191,7 +191,7 @@ describe("utilities", () => {
     it("should call the callback for each item in a set", async () => {
       expect.assertions(4);
       const items = new Set([1, 2, 3]);
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
 
       await each(items, mockCallback);
 
@@ -204,7 +204,7 @@ describe("utilities", () => {
     it("should handle asynchronous callbacks", async () => {
       expect.assertions(1);
       const items = [1, 2, 3];
-      const mockCallback = jest.fn().mockResolvedValue("done");
+      const mockCallback = vi.fn().mockResolvedValue("done");
 
       await each(items, mockCallback);
 
@@ -214,7 +214,7 @@ describe("utilities", () => {
     it("should handle an empty array without calling the callback", async () => {
       expect.assertions(1);
       const items: number[] = [];
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
 
       await each(items, mockCallback);
 
@@ -224,7 +224,7 @@ describe("utilities", () => {
     it("should handle an empty set without calling the callback", async () => {
       expect.assertions(1);
       const items = new Set<number>();
-      const mockCallback = jest.fn();
+      const mockCallback = vi.fn();
 
       await each(items, mockCallback);
 
@@ -232,10 +232,10 @@ describe("utilities", () => {
     });
 
     describe("eachSeries", () => {
-      const mockCallback = jest.fn().mockResolvedValue(undefined);
+      const mockCallback = vi.fn().mockResolvedValue(undefined);
 
       beforeEach(() => {
-        jest.clearAllMocks();
+        vi.clearAllMocks();
       });
 
       it("should call the callback for each item in an array", async () => {

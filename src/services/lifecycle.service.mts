@@ -7,8 +7,8 @@ import {
   LifecycleStages,
   TLifecycleBase,
   UP,
-} from "../index.mjs";
-import { is } from "./is.service.mjs";
+} from "../index.mts";
+import { is } from "./is.service.mts";
 
 type EventMapObject = {
   callback: LifecycleCallback;
@@ -18,8 +18,8 @@ const PRE_CALLBACKS_START = 0;
 const DECIMALS = 2;
 
 export function CreateLifecycle() {
-  const events = new Map<LifecycleStages, EventMapObject[]>(
-    LIFECYCLE_STAGES.map(event => [event, []]),
+  const events = new Map(
+    LIFECYCLE_STAGES.map((event): [LifecycleStages, EventMapObject[]] => [event, []]),
   );
 
   function attachEvent(callback: LifecycleCallback, name: LifecycleStages, priority?: number) {

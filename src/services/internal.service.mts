@@ -23,10 +23,10 @@ import {
   TModuleMappings,
   TResolvedModuleMappings,
   YEAR,
-} from "../index.mjs";
-import { is } from "./is.service.mjs";
-import { CreateLifecycle } from "./lifecycle.service.mjs";
-import { LIB_BOILERPLATE } from "./wiring.service.mjs";
+} from "../index.mts";
+import { is } from "./is.service.mts";
+import { CreateLifecycle } from "./lifecycle.service.mts";
+import { LIB_BOILERPLATE } from "./wiring.service.mts";
 
 const EVERYTHING_ELSE = 1;
 const MONTHS = 12;

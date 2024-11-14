@@ -24,6 +24,8 @@
     "strictBindCallApply": true,
     "strictFunctionTypes": true,
     "target": "ESNext",
+    "rewriteRelativeImportExtensions": true,
+    "types": ["vitest/globals"],
     "allowSyntheticDefaultImports": true
   },
   "include": [

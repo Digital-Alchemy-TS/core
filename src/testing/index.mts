@@ -1,2 +1,2 @@
-export * from "./mock-logger.mjs";
-export * from "./test-module.mjs";
+export * from "./mock-logger.mts";
+export * from "./test-module.mts";

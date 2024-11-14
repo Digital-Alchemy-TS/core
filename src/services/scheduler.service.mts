@@ -12,8 +12,8 @@ import {
   TBlackHole,
   TContext,
   TServiceParams,
-} from "../index.mjs";
-import { is } from "./is.service.mjs";
+} from "../index.mts";
+import { is } from "./is.service.mts";
 
 export function Scheduler({ logger, lifecycle, internal }: TServiceParams): SchedulerBuilder {
   const stop = new Set<ScheduleRemove>();

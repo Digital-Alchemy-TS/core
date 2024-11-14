@@ -181,14 +181,14 @@ describe("Configuration", () => {
       await application.teardown();
       application = undefined;
     }
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   // #MARK: Initialization
   describe("Initialization", () => {
     it("should be configured at the correct time in the lifecycle", async () => {
       expect.assertions(2);
-      const spy = jest.fn().mockReturnValue({});
+      const spy = vi.fn().mockReturnValue({});
       await TestRunner().run(({ lifecycle, internal }) => {
         internal.config.registerLoader(spy, "test" as DataTypes);
         lifecycle.onPreInit(() => {
@@ -760,9 +760,9 @@ describe("Configuration", () => {
       it("resolves files in the correct order", async () => {
         let testFiles: ReturnType<typeof ConfigTesting> = undefined;
 
-        jest.spyOn(globalThis.console, "error").mockImplementation(() => {});
-        jest.spyOn(globalThis.console, "warn").mockImplementation(() => {});
-        jest.spyOn(globalThis.console, "log").mockImplementation(() => {});
+        vi.spyOn(globalThis.console, "error").mockImplementation(() => {});
+        vi.spyOn(globalThis.console, "warn").mockImplementation(() => {});
+        vi.spyOn(globalThis.console, "log").mockImplementation(() => {});
         const helper = CreateApplication({
           configurationLoaders: [],
           // @ts-expect-error Testing
@@ -811,10 +811,10 @@ describe("Configuration", () => {
       });
 
       it("auto detects paths", async () => {
-        jest.spyOn(fs, "existsSync").mockReturnValueOnce(true);
+        vi.spyOn(fs, "existsSync").mockReturnValueOnce(true);
         // @ts-expect-error rest isn't needed
-        jest.spyOn(fs, "statSync").mockImplementation(() => ({ isFile: () => true }));
-        const spy = jest.spyOn(is, "empty").mockImplementation(() => true);
+        vi.spyOn(fs, "statSync").mockImplementation(() => ({ isFile: () => true }));
+        const spy = vi.spyOn(is, "empty").mockImplementation(() => true);
         await configLoaderFile({
           application: {
             // @ts-expect-error testing
@@ -833,7 +833,7 @@ describe("Configuration", () => {
           expect.assertions(1);
           process.argv = ["", "--config"];
           const error = new Error("HIT");
-          jest.spyOn(process, "exit").mockImplementation(() => {
+          vi.spyOn(process, "exit").mockImplementation(() => {
             throw error;
           });
           const logger = createMockLogger();
@@ -852,7 +852,7 @@ describe("Configuration", () => {
           expect.assertions(1);
           process.argv = ["", "--config=./missing_file"];
           const error = new Error("HIT");
-          jest.spyOn(process, "exit").mockImplementation(() => {
+          vi.spyOn(process, "exit").mockImplementation(() => {
             throw error;
           });
           const logger = createMockLogger();
@@ -868,9 +868,9 @@ describe("Configuration", () => {
         });
 
         it("will attempt to load existing files", async () => {
-          jest.spyOn(fs, "existsSync").mockImplementation(() => true);
+          vi.spyOn(fs, "existsSync").mockImplementation(() => true);
 
-          const readSpy = jest.spyOn(fs, "readFileSync").mockImplementation(() => ``);
+          const readSpy = vi.spyOn(fs, "readFileSync").mockImplementation(() => ``);
           const logger = createMockLogger();
           process.argv = ["", "--config=./config_file"];
           await configLoaderFile({
@@ -886,23 +886,23 @@ describe("Configuration", () => {
       // #MARK: loadConfigFromFile
       describe("loadConfigFromFile", () => {
         it("configFilePaths returns empty array for all missing files", async () => {
-          jest.spyOn(fs, "existsSync").mockImplementation(() => false);
+          vi.spyOn(fs, "existsSync").mockImplementation(() => false);
           const out = configFilePaths("test");
           expect(out).toEqual([]);
         });
 
         it("configFilePaths does not return non-files", async () => {
-          jest.spyOn(fs, "existsSync").mockImplementation(() => true);
+          vi.spyOn(fs, "existsSync").mockImplementation(() => true);
           // @ts-expect-error rest isn't needed
-          jest.spyOn(fs, "statSync").mockImplementation(() => ({ isFile: () => false }));
+          vi.spyOn(fs, "statSync").mockImplementation(() => ({ isFile: () => false }));
           const out = configFilePaths("test");
           expect(out).toEqual([]);
         });
 
         it("configFilePaths returns paths to files", async () => {
-          jest.spyOn(fs, "existsSync").mockImplementation(() => true);
+          vi.spyOn(fs, "existsSync").mockImplementation(() => true);
           // @ts-expect-error rest isn't needed
-          jest.spyOn(fs, "statSync").mockImplementation(() => ({ isFile: () => true }));
+          vi.spyOn(fs, "statSync").mockImplementation(() => ({ isFile: () => true }));
           const out = configFilePaths("test");
           expect(out).not.toEqual([]);
         });
@@ -911,7 +911,7 @@ describe("Configuration", () => {
         describe("with extension", () => {
           it("detects ini extension", async () => {
             const data = {} as PartialConfiguration;
-            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+            vi.spyOn(fs, "readFileSync").mockImplementation(() =>
               iniEncode({
                 boilerplate: {
                   LOG_LEVEL: "trace",
@@ -924,7 +924,7 @@ describe("Configuration", () => {
 
           it("detects yaml extension", async () => {
             const data = {} as PartialConfiguration;
-            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+            vi.spyOn(fs, "readFileSync").mockImplementation(() =>
               yamlDump({
                 boilerplate: {
                   LOG_LEVEL: "trace",
@@ -937,7 +937,7 @@ describe("Configuration", () => {
 
           it("detects yml extension", async () => {
             const data = {} as PartialConfiguration;
-            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+            vi.spyOn(fs, "readFileSync").mockImplementation(() =>
               yamlDump({
                 boilerplate: {
                   LOG_LEVEL: "trace",
@@ -950,7 +950,7 @@ describe("Configuration", () => {
 
           it("detects json extension", async () => {
             const data = {} as PartialConfiguration;
-            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+            vi.spyOn(fs, "readFileSync").mockImplementation(() =>
               JSON.stringify({
                 boilerplate: {
                   LOG_LEVEL: "trace",
@@ -966,7 +966,7 @@ describe("Configuration", () => {
         describe("without extension", () => {
           it("detects json data", async () => {
             const data = {} as PartialConfiguration;
-            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+            vi.spyOn(fs, "readFileSync").mockImplementation(() =>
               JSON.stringify({
                 boilerplate: {
                   LOG_LEVEL: "trace",
@@ -979,7 +979,7 @@ describe("Configuration", () => {
 
           it("detects ini data", async () => {
             const data = {} as PartialConfiguration;
-            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+            vi.spyOn(fs, "readFileSync").mockImplementation(() =>
               iniEncode({
                 boilerplate: {
                   LOG_LEVEL: "trace",
@@ -992,7 +992,7 @@ describe("Configuration", () => {
 
           it("detects yaml data", async () => {
             const data = {} as PartialConfiguration;
-            jest.spyOn(fs, "readFileSync").mockImplementation(() =>
+            vi.spyOn(fs, "readFileSync").mockImplementation(() =>
               yamlDump({
                 boilerplate: {
                   LOG_LEVEL: "trace",
@@ -1089,8 +1089,8 @@ describe("Configuration", () => {
       });
 
       it("should load env file from CLI switch if provided", () => {
-        jest.spyOn(fs, "existsSync").mockReturnValue(true);
-        const config = jest
+        vi.spyOn(fs, "existsSync").mockReturnValue(true);
+        const config = vi
           .spyOn(dotenv, "config")
           // @ts-expect-error idc
           .mockReturnValue(() => undefined);
@@ -1108,11 +1108,11 @@ describe("Configuration", () => {
       });
 
       it("should load env file from bootstrap if CLI switch is not provided", () => {
-        const config = jest
+        const config = vi
           .spyOn(dotenv, "config")
           // @ts-expect-error idc
           .mockReturnValue(() => undefined);
-        jest.spyOn(fs, "existsSync").mockReturnValue(true);
+        vi.spyOn(fs, "existsSync").mockReturnValue(true);
         mockInternal.boot.options.envFile = "path/to/bootstrap-env-file";
 
         const CLI_SWITCHES = {
@@ -1129,11 +1129,11 @@ describe("Configuration", () => {
       });
 
       it("should load env file from bootstrap if CLI switch is not provided (absolute)", () => {
-        const config = jest
+        const config = vi
           .spyOn(dotenv, "config")
           // @ts-expect-error idc
           .mockReturnValue(() => undefined);
-        jest.spyOn(fs, "existsSync").mockReturnValue(true);
+        vi.spyOn(fs, "existsSync").mockReturnValue(true);
         mockInternal.boot.options.envFile = "/path/to/bootstrap-env-file";
 
         const CLI_SWITCHES = {
@@ -1151,9 +1151,9 @@ describe("Configuration", () => {
 
       it("should load default .env file if no CLI switch or bootstrap envFile is provided", () => {
         mockInternal.boot.options.envFile = "";
-        jest.spyOn(fs, "existsSync").mockReturnValue(true);
+        vi.spyOn(fs, "existsSync").mockReturnValue(true);
 
-        const config = jest
+        const config = vi
           .spyOn(dotenv, "config")
           // @ts-expect-error idc
           .mockReturnValue(() => undefined);
@@ -1178,9 +1178,9 @@ describe("Configuration", () => {
           _: [],
           "env-file": "",
         } as ParsedArgs;
-        jest.spyOn(fs, "existsSync").mockReturnValue(false);
+        vi.spyOn(fs, "existsSync").mockReturnValue(false);
 
-        const config = jest
+        const config = vi
           .spyOn(dotenv, "config")
           // @ts-expect-error idc
           .mockReturnValue(() => undefined);
@@ -1196,9 +1196,9 @@ describe("Configuration", () => {
           _: [],
           "env-file": "",
         } as ParsedArgs;
-        jest.spyOn(fs, "existsSync").mockReturnValue(false);
+        vi.spyOn(fs, "existsSync").mockReturnValue(false);
 
-        const config = jest
+        const config = vi
           .spyOn(dotenv, "config")
           // @ts-expect-error idc
           .mockReturnValue(() => undefined);
@@ -1243,7 +1243,7 @@ describe("Configuration", () => {
             boilerplate: { configuration },
           },
         }) => {
-          const spy = jest.fn();
+          const spy = vi.fn();
           configuration.onUpdate(spy);
           configuration.set("boilerplate", "LOG_LEVEL", "debug");
           expect(spy).toHaveBeenCalled();
@@ -1268,8 +1268,8 @@ describe("Configuration", () => {
 
     it("throws errors during boot for missing required configs", async () => {
       expect.assertions(2);
-      const spy = jest.spyOn(console, "error").mockImplementation(() => undefined);
-      const exitSpy = jest.spyOn(process, "exit").mockImplementation(() => undefined as never);
+      const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 
       await TestRunner()
         .appendLibrary(
@@ -1299,7 +1299,7 @@ describe("Configuration", () => {
               boilerplate: { configuration },
             },
           }) => {
-            const spy = jest.fn();
+            const spy = vi.fn();
             configuration.onUpdate(spy);
             configuration.set("boilerplate", "LOG_LEVEL", "debug");
             expect(spy).toHaveBeenCalled();
@@ -1314,7 +1314,7 @@ describe("Configuration", () => {
               boilerplate: { configuration },
             },
           }) => {
-            const spy = jest.fn();
+            const spy = vi.fn();
             configuration.onUpdate(spy, "boilerplate", "config");
             configuration.set("boilerplate", "CONFIG", "debug");
             expect(spy).not.toHaveBeenCalled();
@@ -1329,7 +1329,7 @@ describe("Configuration", () => {
               boilerplate: { configuration },
             },
           }) => {
-            const spy = jest.fn();
+            const spy = vi.fn();
             configuration.onUpdate(spy, "boilerplate", "config");
             // @ts-expect-error I got nothing better here
             configuration.set("test", "CONFIG", "debug");

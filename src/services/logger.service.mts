@@ -76,7 +76,7 @@ export async function Logger({
     });
   }
 
-  function mergeData<T extends object>(data: T): T {
+  function mergeData<T extends object>(data: T): [T, ILogger] {
     let out = { ...data, ...loggerOptions.mergeData };
 
     if (loggerOptions.counter) {
@@ -84,11 +84,15 @@ export async function Logger({
       counter.logIdx = logCounter++;
     }
 
+    let logger: ILogger;
     if (loggerOptions.als) {
-      out = { ...out, ...als.getLogData() };
+      const data = als.getLogData();
+      logger = data.logger;
+      delete data.logger;
+      out = { ...out, ...data };
     }
 
-    return out;
+    return [out, logger];
   }
 
   const prettyFormatMessage = (message: string): string => {
@@ -122,7 +126,7 @@ export async function Logger({
     [...METHOD_COLORS.keys()].forEach(key => {
       const level = `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ");
       logger[key] = (context: TContext, ...parameters: Parameters<TLoggerFunction>) => {
-        const data = mergeData(
+        const [data, child] = mergeData(
           is.object(parameters[FIRST])
             ? (parameters.shift() as {
                 context?: TContext;
@@ -184,6 +188,10 @@ export async function Logger({
               .split("\n")
               .slice(SYMBOL_START, SYMBOL_END)
               .join("\n");
+        }
+        if (child) {
+          child[key](message);
+          return;
         }
         switch (key) {
           case "warn": {

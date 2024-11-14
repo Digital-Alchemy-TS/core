@@ -141,10 +141,8 @@ export type TInjectedConfig = {
 
 // #region Special
 // SEE DOCS http://docs.digital-alchemy.app/docs/core/declaration-merging
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AsyncLogData {
-  // No data by default
-  // Intended to have declaration merges happen to be useful
+  logger: ILogger;
 }
 
 export interface AsyncLocalData {

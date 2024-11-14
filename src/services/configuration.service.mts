@@ -137,16 +137,18 @@ export function Configuration({
       }),
       ["env", "argv"],
     );
-    mergeConfig(
-      await configLoaderFile({
-        application,
-        configs: configDefinitions,
-        internal,
-        logger,
-      }),
-      ["file"],
-    );
-
+    const canFile = internal.boot.options?.configSources?.file ?? true;
+    if (canFile) {
+      mergeConfig(
+        await configLoaderFile({
+          application,
+          configs: configDefinitions,
+          internal,
+          logger,
+        }),
+        ["file"],
+      );
+    }
     // * load!
     await eachSeries([...loaders.entries()], async ([type, loader]) => {
       mergeConfig(await loader({ application, configs: configDefinitions, internal, logger }), [

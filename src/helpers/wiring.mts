@@ -142,7 +142,7 @@ export type TInjectedConfig = {
 // #region Special
 // SEE DOCS http://docs.digital-alchemy.app/docs/core/declaration-merging
 export interface AsyncLogData {
-  logger: ILogger;
+  logger?: ILogger;
 }
 
 export interface AsyncLocalData {

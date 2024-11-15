@@ -11,8 +11,8 @@
     "strictNullChecks": false,
   },
   "include": [
-    "src/**/*.ts",
-    "testing/**/*.ts"
+    "src/**/*.mts",
+    "testing/**/*.mts"
   ],
   "exclude": [
     "node_modules",

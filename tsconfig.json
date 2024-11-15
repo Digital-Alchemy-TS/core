@@ -24,11 +24,13 @@
     "strictBindCallApply": true,
     "strictFunctionTypes": true,
     "target": "ESNext",
+    "rewriteRelativeImportExtensions": true,
+    "types": ["vitest/globals"],
     "allowSyntheticDefaultImports": true
   },
   "include": [
-    "src/**/*.ts",
-    "testing/**/*.ts"
+    "src/**/*.mts",
+    "testing/**/*.mts"
   ],
   "exclude": [
     "node_modules",

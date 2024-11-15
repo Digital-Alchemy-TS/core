@@ -46,11 +46,11 @@ export default [
       "plugin:prettier/recommended",
       "plugin:@cspell/recommended",
     )
-    .map(config => ({ ...config, files: ["src/**/*.ts", "testing/**/*.ts"] })),
+    .map(config => ({ ...config, files: ["src/**/*.mts", "testing/**/*.mts"] })),
 
   // everything
   {
-    files: ["src/**/*.ts", "testing/**/*.ts"],
+    files: ["src/**/*.mts", "testing/**/*.mts"],
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 5,
@@ -115,9 +115,9 @@ export default [
   },
   // tests
   {
-    files: ["testing/**/*.ts"],
+    files: ["testing/**/*.mts"],
     languageOptions: {
-      globals: { ...globals.jest },
+      globals: { ...globals.vi },
       parser: tsParser,
       ecmaVersion: 5,
       sourceType: "script",
@@ -137,7 +137,7 @@ export default [
   },
   // module definitions
   {
-    files: ["src/**/*.module.ts"],
+    files: ["src/**/*.module.mts"],
     languageOptions: {
       parser: tsParser,
       ecmaVersion: 5,

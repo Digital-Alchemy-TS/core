@@ -1,0 +1,29 @@
+name: "DA CodeQL"
+version: 3
+options:
+  # Adjust the number of threads used by CodeQL
+  threads: 0 # Use all available CPU cores
+  # Enable experimental analysis options if needed
+  experimental: false
+queries:
+  # Specify the query packs to use
+  - name: security-and-quality
+    include:
+      - codeql/javascript-queries
+  # Additional custom queries can be added here if needed
+databases:
+  # Specify the languages and their corresponding extractors
+  languages:
+    javascript:
+      # Specify paths for the TypeScript configuration file
+      typescript: [tsconfig.json]
+      include:
+        - src/
+  # Paths to the source code to be analyzed
+  source:
+    - src/
+  # Paths to external dependencies to be excluded
+  exclude:
+    - node_modules/
+    - dist/
+    - out/

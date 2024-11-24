@@ -32,7 +32,7 @@ import {
   SINGLE,
   TestRunner,
   TServiceParams,
-} from "../src";
+} from "../src/index.mts";
 
 const BASIC_BOOT = {
   configuration: { boilerplate: { LOG_LEVEL: "silent" } },

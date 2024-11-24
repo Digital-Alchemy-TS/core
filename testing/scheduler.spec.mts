@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import { CronExpression, HOUR, MINUTE, SECOND, TestRunner } from "../src";
+import { CronExpression, HOUR, MINUTE, SECOND, TestRunner } from "../src/index.mts";
 
 describe("Scheduler", () => {
   afterEach(async () => {

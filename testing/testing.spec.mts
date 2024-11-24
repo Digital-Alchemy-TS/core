@@ -1,6 +1,6 @@
 import { v4 } from "uuid";
 
-import { CreateApplication, CreateLibrary, createModule, is, TestRunner } from "../src";
+import { CreateApplication, CreateLibrary, createModule, is, TestRunner } from "../src/index.mts";
 
 describe("Testing", () => {
   const testingLibrary = CreateLibrary({

@@ -1,6 +1,6 @@
 import dayjs from "dayjs";
 
-import { is } from "../src";
+import { is } from "../src/index.mts";
 
 describe("IsIt class", () => {
   test("is.array returns true for arrays", () => {

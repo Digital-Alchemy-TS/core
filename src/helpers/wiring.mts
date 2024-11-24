@@ -18,7 +18,7 @@ import { TContext } from "./context.mts";
 import { CronExpression, ScheduleRemove } from "./cron.mts";
 import { BootstrapException } from "./errors.mts";
 import { TLifecycleBase } from "./lifecycle.mts";
-import { ILogger, TConfigLogLevel } from "./logger.mts";
+import { GetLogger, TConfigLogLevel } from "./logger.mts";
 import { TBlackHole } from "./utilities.mts";
 
 export type TServiceReturn<OBJECT extends object = object> = void | OBJECT;
@@ -142,7 +142,14 @@ export type TInjectedConfig = {
 // #region Special
 // SEE DOCS http://docs.digital-alchemy.app/docs/core/declaration-merging
 export interface AsyncLogData {
-  logger?: ILogger;
+  /**
+   * return ms since entry, precision is on you
+   */
+  duration?: () => number;
+  /**
+   * thread local child logger
+   */
+  logger?: GetLogger;
 }
 
 export interface AsyncLocalData {
@@ -188,7 +195,7 @@ export type TServiceParams = {
   /**
    * context aware logger instance
    */
-  logger: ILogger;
+  logger: GetLogger;
   /**
    * run commands on intervals & schedules
    *
@@ -355,7 +362,7 @@ export type BootstrapOptions = {
   /**
    * use this logger, instead of the baked in one. Maybe you want some custom transports or something? Put your customized thing here
    */
-  customLogger?: ILogger;
+  customLogger?: GetLogger;
 
   /**
    * fine tine the built in logger
@@ -429,6 +436,13 @@ export type LoggerOptions = {
    * Override the `LOG_LEVEL` per service or module
    */
   levelOverrides?: Partial<Record<LoadedModuleNames | FlatServiceNames, TConfigLogLevel>>;
+
+  /**
+   * default: true (unless a replacement logger is provided)
+   *
+   * emit logs to stdout
+   */
+  stdOut?: boolean;
 };
 
 export const WIRE_PROJECT = Symbol.for("wire-project");
@@ -467,7 +481,7 @@ export type ApplicationDefinition<
   C extends OptionalModuleConfiguration,
 > = ApplicationConfigurationOptions<S, C> &
   Wire & {
-    logger: ILogger;
+    logger: GetLogger;
     type: "application";
     booted: boolean;
     bootstrap: (options?: BootstrapOptions) => Promise<TServiceParams>;
@@ -478,7 +492,7 @@ export type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration
 // #MARK: buildSortOrder
 export function buildSortOrder<S extends ServiceMap, C extends OptionalModuleConfiguration>(
   app: ApplicationDefinition<S, C>,
-  logger: ILogger,
+  logger: GetLogger,
 ) {
   if (is.empty(app.libraries)) {
     return [];

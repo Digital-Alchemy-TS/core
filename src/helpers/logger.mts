@@ -1,6 +1,21 @@
+import { Get } from "type-fest";
+
 import { TContext } from "./context.mts";
+import { TBlackHole } from "./utilities.mts";
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+export interface ReplacementLogger {
+  // intentionally left empty
+  // for use with declaration merging
+}
+
+export type GetLogger =
+  Get<ReplacementLogger, "logger"> extends object ? Get<ReplacementLogger, "logger"> : ILogger;
+
+export type LogStreamTarget = (message: string, data: object) => TBlackHole;
 
 export type DigitalAlchemyLogger = {
+  addTarget: (logger: GetLogger | LogStreamTarget) => void;
   /**
    * Create a new logger instance for a given context
    */
@@ -9,7 +24,7 @@ export type DigitalAlchemyLogger = {
    * Retrieve a reference to the base logger used to emit from
    */
   getBaseLogger: () => Record<
-    keyof ILogger,
+    keyof GetLogger,
     (context: TContext, ...data: Parameters<TLoggerFunction>) => void
   >;
   getPrettyFormat: () => boolean;
@@ -22,7 +37,7 @@ export type DigitalAlchemyLogger = {
    *
    * Note: Extension still handles LOG_LEVEL logic
    */
-  setBaseLogger: (base: ILogger) => ILogger;
+  setBaseLogger: (base: GetLogger) => GetLogger;
   /**
    * Set the enabled/disabled state of the message pretty formatting logic
    */
@@ -30,15 +45,11 @@ export type DigitalAlchemyLogger = {
   /**
    * Logger instance of last resort
    */
-  systemLogger: ILogger;
+  systemLogger: GetLogger;
   /**
    * exposed for testing
    */
   updateShouldLog: () => void;
-  /**
-   * If set, logs will be converted to json & sent to target
-   */
-  setHttpLogs: (url: string) => void;
 };
 
 export type TLoggerFunction =

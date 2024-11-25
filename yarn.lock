@@ -2019,7 +2019,7 @@ __metadata:
     "@types/ini": "npm:^4.1.1"
     "@types/js-yaml": "npm:^4.0.9"
     "@types/minimist": "npm:^1.2.5"
-    "@types/node": "npm:^22.9.1"
+    "@types/node": "npm:^22.9.3"
     "@types/node-cron": "npm:^3.0.11"
     "@types/sinonjs__fake-timers": "npm:^8.1.5"
     "@typescript-eslint/eslint-plugin": "npm:8.15.0"
@@ -2045,8 +2045,8 @@ __metadata:
     prettier: "npm:^3.3.3"
     tslib: "npm:^2.8.1"
     tsx: "npm:^4.19.2"
-    type-fest: "npm:^4.27.0"
-    typescript: "npm:^5.7.0-beta"
+    type-fest: "npm:^4.28.0"
+    typescript: "npm:^5.7.2"
     uuid: "npm:^11.0.3"
     vitest: "npm:^2.1.5"
   languageName: unknown
@@ -2840,12 +2840,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^22.9.1":
-  version: 22.9.1
-  resolution: "@types/node@npm:22.9.1"
+"@types/node@npm:^22.9.3":
+  version: 22.9.3
+  resolution: "@types/node@npm:22.9.3"
   dependencies:
     undici-types: "npm:~6.19.8"
-  checksum: 10/43fadcb3a914a1daff8e559839f235eec65fe80bfef5016b361dbc7952c9bc9d79456c78d89beab275a9e9e5accff37e838c019ab519f821f12c953cd6c24b50
+  checksum: 10/c32a03ff998b8c6cf7d653216508a92b1e6569dd5031ea6cfc2aaa8c75ebbf4172bf1602f0e1f673086e210787dc96667b99ba4d919bc151f9a1f88aeac42822
   languageName: node
   linkType: hard
 
@@ -7636,10 +7636,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"type-fest@npm:^4.27.0":
-  version: 4.27.0
-  resolution: "type-fest@npm:4.27.0"
-  checksum: 10/13be3937f39ef94012ca622aa69c7edb87850b9b61ad7742e9d410b7a98fe28ee54b508ebb50fac5be2f8563fbc7b417a3d1ef129b9b092d6f3f67b7e1fca96f
+"type-fest@npm:^4.28.0":
+  version: 4.28.0
+  resolution: "type-fest@npm:4.28.0"
+  checksum: 10/2fc54972af0aff1846786c11beeb2e446a1a6ea19b07ba80db1d3f24894002e0ed3de7f40d2a1007fe2e6e6da264a3790a844d744825dba3d31505d1983df2a5
   languageName: node
   linkType: hard
 
@@ -7705,13 +7705,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.7.0-beta":
-  version: 5.7.0-dev.20241105
-  resolution: "typescript@npm:5.7.0-dev.20241105"
+"typescript@npm:^5.7.2":
+  version: 5.7.2
+  resolution: "typescript@npm:5.7.2"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10/aa57235a790624e08f82948e8c60d9e2bcfd908062cfbb5be164b32fb3000b134e346e35ea89255144bb3621c2b0040762c7638e03776a24668e75c3fec822d2
+  checksum: 10/4caa3904df69db9d4a8bedc31bafc1e19ffb7b24fbde2997a1633ae1398d0de5bdbf8daf602ccf3b23faddf1aeeb9b795223a2ed9c9a4fdcaf07bfde114a401a
   languageName: node
   linkType: hard
 
@@ -7725,13 +7725,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.7.0-beta#optional!builtin<compat/typescript>":
-  version: 5.7.0-dev.20241105
-  resolution: "typescript@patch:typescript@npm%3A5.7.0-dev.20241105#optional!builtin<compat/typescript>::version=5.7.0-dev.20241105&hash=cef18b"
+"typescript@patch:typescript@npm%3A^5.7.2#optional!builtin<compat/typescript>":
+  version: 5.7.2
+  resolution: "typescript@patch:typescript@npm%3A5.7.2#optional!builtin<compat/typescript>::version=5.7.2&hash=cef18b"
   bin:
     tsc: bin/tsc
     tsserver: bin/tsserver
-  checksum: 10/c5658b7663558218daee3371b829db4b0857b4ac09db997720ad3db26278d746561c4b338845df3d1cbaa7d578e78fb04854769d784df1f1ee4e365e874e1ad6
+  checksum: 10/ff27fc124bceb8969be722baa38af945b2505767cf794de3e2715e58f61b43780284060287d651fcbbdfb6f917f4653b20f4751991f17e0706db389b9bb3f75d
   languageName: node
   linkType: hard
 

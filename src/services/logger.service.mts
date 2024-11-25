@@ -8,8 +8,10 @@ import {
   EVENT_UPDATE_LOG_LEVELS,
   FIRST,
   FlatServiceNames,
+  GetLogger,
   ILogger,
   LoadedModuleNames,
+  LogStreamTarget,
   METHOD_COLORS,
   START,
   TConfigLogLevel,
@@ -51,11 +53,12 @@ export async function Logger({
 }: TServiceParams): Promise<DigitalAlchemyLogger> {
   let lastMessage = performance.now();
   let logCounter = START;
-  let httpLogTarget: string;
+  const extraTargets = new Set<GetLogger | LogStreamTarget>();
 
   internal.boot.options ??= {};
   const { loggerOptions = {} } = internal.boot.options;
 
+  loggerOptions.stdOut ??= true;
   const timestampFormat = loggerOptions.timestampFormat ?? "ddd HH:mm:ss.SSS";
   loggerOptions.mergeData ??= {};
 
@@ -63,19 +66,7 @@ export async function Logger({
   const BLUE_TICK = chalk.blue(`>`);
   let prettyFormat = is.boolean(loggerOptions.pretty) ? loggerOptions.pretty : true;
 
-  function emitHttpLogs(data: object) {
-    if (is.empty(httpLogTarget)) {
-      return;
-    }
-    // validated with datadog, probably is fine elsewhere too
-    // https://http-intake.logs.datadoghq.com/v1/input/{API_KEY}
-    globalThis.fetch(httpLogTarget, {
-      body: JSON.stringify(data),
-      headers: { "Content-Type": "application/json" },
-      method: "POST",
-    });
-  }
-
+  // #MARK: mergeData
   function mergeData<T extends object>(data: T): [T, ILogger] {
     let out = { ...data, ...loggerOptions.mergeData };
 
@@ -86,16 +77,20 @@ export async function Logger({
 
     let logger: ILogger;
     if (loggerOptions.als) {
-      const data = als.getLogData();
-      logger = data.logger;
-      delete data.logger;
-      out = { ...out, ...data };
+      const { duration, logger: replacement, ...data } = als.getLogData();
+      logger = replacement;
+      const extra = {} as Record<string, unknown>;
+      if (duration) {
+        extra.elapsed = duration();
+      }
+      out = { ...out, ...data, ...extra };
     }
 
     return [out, logger];
   }
 
-  const prettyFormatMessage = (message: string): string => {
+  // #MARK: prettyFormatMessage
+  function prettyFormatMessage(message: string): string {
     if (!message) {
       return ``;
     }
@@ -119,12 +114,11 @@ export async function Logger({
       message = `${YELLOW_DASH}${message.slice(frontDash.length)}`;
     }
     return message;
-  };
+  }
 
   if (is.empty(internal.boot.options?.customLogger)) {
     // #MARK: formatter
     [...METHOD_COLORS.keys()].forEach(key => {
-      const level = `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ");
       logger[key] = (context: TContext, ...parameters: Parameters<TLoggerFunction>) => {
         const [data, child] = mergeData(
           is.object(parameters[FIRST])
@@ -137,39 +131,70 @@ export async function Logger({
             : {},
         );
 
+        // common for functions to be thrown in
+        // extract it's declared name and discard the rest of the info
+        data.name = is.object(data.name) || is.function(data.name) ? data.name.name : data.name;
+
+        // ? full data object representing this log
+        // used with cloud logging (graylog, datadog, etc)
         const rawData = {
           ...data,
+          context: data.context || context,
           level: key,
           timestamp: Date.now(),
         } as Record<string, unknown>;
-
-        const highlighted = chalk.bold[METHOD_COLORS.get(key)](`[${data.context || context}]`);
-        const name = is.object(data.name) || is.function(data.name) ? data.name.name : data.name;
-        delete data.context;
-        delete data.name;
-
-        const timestamp = chalk.white(`[${dayjs().format(timestampFormat)}]`);
         let prettyMessage: string;
+        let msg = "";
+
+        // > logger.info("text", ...parameters);
+        // convert a message + parameters set down to a simple string
         if (!is.empty(parameters)) {
           const text = parameters.shift() as string;
-          rawData.msg = format(text, ...parameters);
-          prettyMessage = format(prettyFormatMessage(text), ...parameters);
+          msg = format(text, ...parameters);
+          if (loggerOptions.stdOut) {
+            prettyMessage = format(prettyFormatMessage(text), ...parameters);
+          }
         }
 
+        // ms since last log message
         let ms = "";
         if (loggerOptions.ms) {
           const now = performance.now();
-          ms = "+" + (now - lastMessage).toFixed(DECIMALS) + `ms`;
+          const duration = (now - lastMessage).toFixed(DECIMALS);
+          ms = `+${duration}ms`;
           lastMessage = now;
           rawData.ms = ms;
         }
-        let message = `${ms}${timestamp} ${level}${highlighted}`;
 
-        if (!is.empty(name)) {
-          message += chalk.blue(` (${name})`);
+        // emit logs to external targets
+        extraTargets.forEach(target => {
+          // stream targets, just take all messages and do the exact same thing with them
+          // ex: send to http endpoint
+          if (is.function(target)) {
+            target(msg, rawData);
+            return;
+          }
+          // something that conforms to the basic logger interface
+          (target as GetLogger)[key](msg, rawData);
+        });
+
+        // minor performance tuning option:
+        // don't do any work to output to stdout if nobody is gonna look at it
+        if (!loggerOptions.stdOut) {
+          return;
         }
 
-        emitHttpLogs(rawData);
+        // #MARK: pretty logs
+        const level = `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ");
+        const highlighted = chalk.bold[METHOD_COLORS.get(key)](`[${data.context || context}]`);
+        const timestamp = chalk.white(`[${dayjs().format(timestampFormat)}]`);
+        let message = `${ms}${timestamp} ${level}${highlighted}`;
+        delete data.context;
+        delete data.name;
+
+        if (!is.empty(data.name)) {
+          message += chalk.blue(` (${String(data.name)})`);
+        }
 
         if (!is.empty(prettyMessage)) {
           message += `: ${chalk.cyan(prettyMessage)}`;
@@ -189,10 +214,13 @@ export async function Logger({
               .slice(SYMBOL_START, SYMBOL_END)
               .join("\n");
         }
+
         if (child) {
           child[key](message);
           return;
         }
+
+        // #MARK: globalThis.console
         switch (key) {
           case "warn": {
             globalThis.console.warn(message);
@@ -217,7 +245,6 @@ export async function Logger({
     logger = internal.boot.options.customLogger;
   }
 
-  // #MARK: instances
   // if bootstrap hard coded something specific, then start there
   // otherwise, be noisy until config loads a user preference
   //
@@ -226,6 +253,7 @@ export async function Logger({
     internal.utils.object.get(internal, "boot.options.configuration.boilerplate.LOG_LEVEL") ||
     "trace";
 
+  // #MARK: context
   function context(context: string | TContext) {
     const name = context as FlatServiceNames;
     const shouldILog = {} as Record<TConfigLogLevel, boolean>;
@@ -262,15 +290,16 @@ export async function Logger({
         shouldILog.trace && logger.trace(context as TContext, ...params),
       warn: (...params: Parameters<TLoggerFunction>) =>
         shouldILog.warn && logger.warn(context as TContext, ...params),
-    } as ILogger;
+    } as GetLogger;
   }
 
-  const updateShouldLog = () => {
+  // #MARK updateShouldLog:
+  function updateShouldLog() {
     if (!is.empty(config.boilerplate.LOG_LEVEL)) {
       CURRENT_LOG_LEVEL = config.boilerplate.LOG_LEVEL;
     }
     event.emit(EVENT_UPDATE_LOG_LEVELS);
-  };
+  }
 
   // #MARK: lifecycle
   lifecycle.onPostConfig(() => internal.boilerplate.logger.updateShouldLog());
@@ -280,14 +309,18 @@ export async function Logger({
     "LOG_LEVEL",
   );
 
+  function addTarget(target: GetLogger | LogStreamTarget) {
+    extraTargets.add(target);
+  }
+
   // #MARK: return object
   return {
+    addTarget,
     context,
     getBaseLogger: () => logger,
     getPrettyFormat: () => prettyFormat,
     prettyFormatMessage,
     setBaseLogger: base => (logger = base),
-    setHttpLogs: url => (httpLogTarget = url),
     setPrettyFormat: state => (prettyFormat = state),
     systemLogger: context("digital-alchemy:system-logger"),
     updateShouldLog,

@@ -4,7 +4,7 @@ import {
   InternalDefinition,
   TBlackHole,
   TestRunner,
-} from "../src";
+} from "../src/index.mts";
 
 export const BASIC_BOOT = {
   configuration: { boilerplate: { LOG_LEVEL: "silent" } },

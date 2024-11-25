@@ -14,7 +14,7 @@ import {
   sleep,
   TestRunner,
   wireOrder,
-} from "../src";
+} from "../src/index.mts";
 
 export const FAKE_EXIT = (() => {}) as () => never;
 

@@ -5,7 +5,7 @@
   "repository": {
     "url": "git+https://github.com/Digital-Alchemy-TS/core"
   },
-  "version": "24.11.3",
+  "version": "24.11.4",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe Codez"
@@ -66,7 +66,7 @@
     "@types/ini": "^4.1.1",
     "@types/js-yaml": "^4.0.9",
     "@types/minimist": "^1.2.5",
-    "@types/node": "^22.9.1",
+    "@types/node": "^22.9.3",
     "@types/node-cron": "^3.0.11",
     "@types/sinonjs__fake-timers": "^8.1.5",
     "@typescript-eslint/eslint-plugin": "8.15.0",
@@ -92,8 +92,8 @@
     "prettier": "^3.3.3",
     "tslib": "^2.8.1",
     "tsx": "^4.19.2",
-    "type-fest": "^4.27.0",
-    "typescript": "^5.7.0-beta",
+    "type-fest": "^4.28.0",
+    "typescript": "^5.7.2",
     "uuid": "^11.0.3",
     "vitest": "^2.1.5"
   },

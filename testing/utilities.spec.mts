@@ -14,7 +14,7 @@ import {
   safeGetProperty,
   sleep,
   TContext,
-} from "../src";
+} from "../src/index.mts";
 
 describe("utilities", () => {
   // #MARK: sleep

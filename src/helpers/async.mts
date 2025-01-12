@@ -1,5 +1,3 @@
-/* eslint-disable sonarjs/no-redundant-type-constituents */
-
 import { is } from "../index.mts";
 import { ARRAY_OFFSET, SINGLE, START } from "./utilities.mts";
 

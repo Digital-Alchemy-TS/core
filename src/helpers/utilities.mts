@@ -117,6 +117,5 @@ export async function debounce(identifier: string, timeout: number): Promise<voi
 export const asyncNoop = async () => await sleep(NONE);
 export const noop = () => {};
 
-// eslint-disable-next-line sonarjs/no-redundant-type-constituents
 export type TBlackHole = unknown | void | Promise<void>;
 export type TAnyFunction = (...data: unknown[]) => TBlackHole;

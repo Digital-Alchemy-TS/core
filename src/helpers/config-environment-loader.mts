@@ -1,4 +1,3 @@
-/* eslint-disable unicorn/prevent-abbreviations */
 import minimist from "minimist";
 import { env } from "process";
 

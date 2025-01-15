@@ -69,7 +69,7 @@
     "@types/node": "^22.10.5",
     "@types/node-cron": "^3.0.11",
     "@types/sinonjs__fake-timers": "^8.1.5",
-    "@typescript-eslint/eslint-plugin": "8.19.1",
+    "@typescript-eslint/eslint-plugin": "8.20.0",
     "@typescript-eslint/parser": "8.19.1",
     "chalk": "^5.4.1",
     "dayjs": "^1.11.13",

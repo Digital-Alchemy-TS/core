@@ -10,7 +10,7 @@
     "url": "https://github.com/zoe-codez",
     "name": "Zoe Codez"
   },
-  "types": "index.d.mts",
+  "types": "dist/index.d.mts",
   "homepage": "https://docs.digital-alchemy.app",
   "scripts": {
     "build": "rm -rf dist/; tsc -p tsconfig.lib.json",

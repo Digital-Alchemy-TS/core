@@ -5,12 +5,12 @@
   "repository": {
     "url": "git+https://github.com/Digital-Alchemy-TS/core"
   },
-  "version": "25.1.2",
+  "version": "25.1.3",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe Codez"
   },
-  "types": "index.d.mts",
+  "types": "dist/index.d.mts",
   "homepage": "https://docs.digital-alchemy.app",
   "scripts": {
     "build": "rm -rf dist/; tsc -p tsconfig.lib.json",

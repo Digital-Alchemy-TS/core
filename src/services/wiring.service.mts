@@ -414,7 +414,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
     // * Recreate base eventemitter
     internal.utils.event = new EventEmitter();
     internal.utils.event.setMaxListeners(NONE);
-    // ? Some libraries need to be aware of
+    internal.utils.is = is;
 
     // * Generate a new boilerplate module
     LIB_BOILERPLATE = createBoilerplate();

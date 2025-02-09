@@ -13,9 +13,9 @@ import {
   TContext,
   TServiceParams,
 } from "../index.mts";
-import { is } from "./is.service.mts";
 
 export function Scheduler({ logger, lifecycle, internal }: TServiceParams): SchedulerBuilder {
+  const { is } = internal.utils;
   const stop = new Set<ScheduleRemove>();
 
   // #MARK: lifecycle events

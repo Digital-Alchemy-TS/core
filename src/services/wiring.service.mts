@@ -277,6 +277,7 @@ export function CreateApplication<S extends ServiceMap, C extends OptionalModule
         );
       }
       internal = new InternalDefinition();
+      internal.utils.is = is;
       const out = await bootstrap(application, options, internal);
       application.booted = true;
       RUNNING_APPLICATIONS.set(name, application);
@@ -414,7 +415,6 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
     // * Recreate base eventemitter
     internal.utils.event = new EventEmitter();
     internal.utils.event.setMaxListeners(NONE);
-    internal.utils.is = is;
 
     // * Generate a new boilerplate module
     LIB_BOILERPLATE = createBoilerplate();

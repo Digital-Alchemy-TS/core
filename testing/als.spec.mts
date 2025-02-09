@@ -37,6 +37,7 @@ describe("ALS", () => {
 
   it("getLogData", async () => {
     await TestRunner().run(({ als }) => {
+      // @ts-expect-error testing
       als.enterWith({ logs: { test: true } });
       const data = als.getLogData();
       expect(data).toEqual({ test: true });

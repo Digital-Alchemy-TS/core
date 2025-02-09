@@ -24,7 +24,7 @@ import {
   TResolvedModuleMappings,
   YEAR,
 } from "../index.mts";
-import { is } from "./is.service.mts";
+import { is, IsIt } from "./is.service.mts";
 import { CreateLifecycle } from "./lifecycle.service.mts";
 import { LIB_BOILERPLATE } from "./wiring.service.mts";
 
@@ -49,6 +49,12 @@ export class InternalUtils {
    * Making listener changes should only be done from within the context of service functions
    */
   public event: EventEmitter;
+
+  /**
+   * reference to `is` instance that's importable from `core`
+   */
+  public is: IsIt;
+
   constructor() {
     this.event = new EventEmitter();
     this.event.setMaxListeners(NONE);

@@ -19,7 +19,6 @@ import {
   TLoggerFunction,
   TServiceParams,
 } from "../index.mts";
-import { is } from "./is.service.mts";
 
 const LOG_LEVEL_PRIORITY = {
   debug: 20,
@@ -51,6 +50,7 @@ export async function Logger({
   internal,
   als,
 }: TServiceParams): Promise<DigitalAlchemyLogger> {
+  const { is } = internal.utils;
   let lastMessage = performance.now();
   let logCounter = START;
   const extraTargets = new Set<GetLogger | LogStreamTarget>();

@@ -20,7 +20,6 @@ import {
   TServiceParams,
   TSetConfig,
 } from "../index.mts";
-import { is } from "./is.service.mts";
 
 export const INITIALIZE = Symbol.for("initialize");
 export const LOAD_PROJECT = Symbol.for("load-project");
@@ -36,6 +35,8 @@ export function Configuration({
   lifecycle,
   internal,
 }: TServiceParams): DigitalAlchemyConfiguration {
+  const { is } = internal.utils;
+
   // modern problems require modern solutions
   let logger: ILogger;
   lifecycle.onPreInit(() => (logger = internal.boilerplate.logger.context(context)));

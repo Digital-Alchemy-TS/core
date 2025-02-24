@@ -47,7 +47,7 @@ export const YEAR = 365 * DAY;
 
 export const ACTIVE_SLEEPS = new Set<SleepReturn>();
 
-type SleepReturn = Promise<void> & {
+export type SleepReturn = Promise<void> & {
   kill: (execute?: "stop" | "continue") => void;
 };
 /**

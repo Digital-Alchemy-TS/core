@@ -7,7 +7,7 @@ updates:
       day: 'monday'
       time: '09:00'
       timezone: 'America/New_York'
-    target-branch: 'develop'
+    target-branch: 'main'
     groups:
       minor-patch-dependencies:
         update-types:
@@ -20,4 +20,4 @@ updates:
       day: 'monday'
       time: '09:00'
       timezone: 'America/New_York'
-    target-branch: 'develop'
+    target-branch: 'main'

@@ -42,7 +42,6 @@ export default [
     .extends(
       "plugin:@typescript-eslint/recommended",
       "plugin:jsonc/recommended-with-jsonc",
-      "plugin:unicorn/recommended",
       "plugin:prettier/recommended",
       "plugin:@cspell/recommended",
     )

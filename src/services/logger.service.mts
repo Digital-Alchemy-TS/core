@@ -65,6 +65,9 @@ export async function Logger({
   const YELLOW_DASH = chalk.yellowBright(frontDash);
   const BLUE_TICK = chalk.blue(`>`);
   let prettyFormat = is.boolean(loggerOptions.pretty) ? loggerOptions.pretty : true;
+  // make sure the object formatter respects the pretty option
+  // if this is enabled while outputting to docker logs, the output becomes much harder to read
+  inspect.defaultOptions.colors = prettyFormat;
 
   // #MARK: mergeData
   function mergeData<T extends object>(data: T): [T, ILogger] {
@@ -321,7 +324,11 @@ export async function Logger({
     getPrettyFormat: () => prettyFormat,
     prettyFormatMessage,
     setBaseLogger: base => (logger = base),
-    setPrettyFormat: state => (prettyFormat = state),
+    setPrettyFormat: state => {
+      prettyFormat = state;
+      inspect.defaultOptions.colors = prettyFormat;
+      return prettyFormat;
+    },
     systemLogger: context("digital-alchemy:system-logger"),
     updateShouldLog,
   };

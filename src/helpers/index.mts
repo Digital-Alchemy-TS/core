@@ -10,5 +10,6 @@ export * from "./extend.mts";
 export * from "./lifecycle.mts";
 export * from "./logger.mts";
 export * from "./module.mts";
+export * from "./service-runner.mts";
 export * from "./utilities.mts";
 export * from "./wiring.mts";

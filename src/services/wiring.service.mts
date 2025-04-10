@@ -473,7 +473,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
 
     // * Finally the application
     if (options?.bootLibrariesFirst) {
-      logger.warn({ name: bootstrap }, `bootLibrariesFirst`);
+      logger.debug({ name: bootstrap }, `bootLibrariesFirst`);
       // * preload config
       api.configuration[LOAD_PROJECT](application.name, application.configuration);
     } else {

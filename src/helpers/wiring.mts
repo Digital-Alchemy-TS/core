@@ -231,7 +231,7 @@ type ModuleConfigs = {
 };
 
 // Now, map these configurations to their respective types using CastConfigResult for each property in the configs
-type ConfigTypes<Config> = {
+export type ConfigTypes<Config> = {
   [Key in keyof Config]: Config[Key] extends AnyConfig ? CastConfigResult<Config[Key]> : never;
 };
 

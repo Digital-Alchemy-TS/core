@@ -8,9 +8,11 @@ import {
   createMockLogger,
   createModule,
   InternalDefinition,
+  is,
   LifecycleStages,
   OptionalModuleConfiguration,
   ServiceMap,
+  ServiceRunner,
   sleep,
   TestRunner,
   wireOrder,
@@ -30,6 +32,65 @@ afterEach(async () => {
     application = undefined;
   }
   vi.restoreAllMocks();
+});
+
+// #MARK: ServiceRunner
+describe("ServiceRunner", () => {
+  it("exists", () => {
+    expect(ServiceRunner).toBeDefined();
+  });
+
+  it("runs a service", async () => {
+    expect.assertions(1);
+    await ServiceRunner({}, function ({ context }) {
+      expect(context).toBeDefined();
+    });
+  });
+
+  it("uses dynamic as default name", async () => {
+    expect.assertions(1);
+    await ServiceRunner({}, function (params) {
+      expect("dynamic" in params).toBe(true);
+    });
+  });
+
+  it("uses provided name", async () => {
+    expect.assertions(1);
+    await ServiceRunner({ name: "foo" }, function (params) {
+      expect("foo" in params).toBe(true);
+    });
+  });
+
+  it("maps configs", async () => {
+    expect.assertions(1);
+    await ServiceRunner(
+      {
+        configuration: {
+          FOO: {
+            default: false,
+            type: "boolean",
+          },
+        },
+      },
+      function ({ config }) {
+        expect(config.dynamic.FOO).toBe(false);
+      },
+    );
+  });
+
+  it("runs lifecycle events by default", async () => {
+    expect.assertions(1);
+    await ServiceRunner({}, function ({ internal }) {
+      expect(is.empty(internal.boot.completedLifecycleEvents)).toBe(true);
+    });
+  });
+
+  it("passes through bootstrap options", async () => {
+    expect.assertions(1);
+    await ServiceRunner({ bootstrap: { bootLibrariesFirst: true } }, function ({ internal }) {
+      expect(is.empty(internal.boot.completedLifecycleEvents)).toBe(false);
+    });
+  });
 });
 
 // #MARK: CreateLibrary

@@ -33,8 +33,9 @@ export async function ServiceRunner<
   service: (params: LocalServiceParams<C, NAME>) => void | Promise<void>,
 ): Promise<void> {
   await CreateApplication({
-    // @ts-expect-error loosen this up
+    // @ts-expect-error necessary evil for this type loosening
     name: "dynamic",
+    // config will override default name
     ...config,
     services: {
       service: service as ServiceFunction,

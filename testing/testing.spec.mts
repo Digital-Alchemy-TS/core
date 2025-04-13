@@ -224,13 +224,28 @@ describe("Testing", () => {
 
   // #MARK: replaceLibrary
   describe("replaceLibrary", () => {
-    it("can replace libraries", async () => {
+    it("can replace module libraries", async () => {
       expect.assertions(1);
       const test = createModule
         .fromApplication(topApplication)
         .extend()
         .replaceLibrary(overrideLibrary)
         .toTest();
+      // @ts-expect-error testing
+      await test.run(({ example }) => {
+        const result = example.test();
+        expect(result).toBe(false);
+      });
+      await test.teardown();
+    });
+
+    it("can replace test libraries", async () => {
+      expect.assertions(1);
+      const test = createModule
+        .fromApplication(topApplication)
+        .extend()
+        .toTest()
+        .replaceLibrary("example", overrideLibrary);
       // @ts-expect-error testing
       await test.run(({ example }) => {
         const result = example.test();
@@ -275,7 +290,7 @@ describe("Testing", () => {
       }).toThrow();
     });
 
-    it("can replace services", async () => {
+    it("can replace module services", async () => {
       expect.assertions(1);
       const spy = vi.fn();
       const test = createModule
@@ -285,6 +300,20 @@ describe("Testing", () => {
         .toLibrary();
       expect(test.services.test).toBe(spy);
     });
+  });
+
+  it("runs setup functions first", async () => {
+    expect.assertions(1);
+    const list = [] as number[];
+    const spy = (num: number) => list.push(num);
+    const test = createModule
+      .fromApplication(topApplication)
+      .extend()
+      .toTest()
+      .setup(() => spy(1))
+      .setup(() => spy(2));
+    await test.run(() => spy(3));
+    expect(list).toEqual([1, 2, 3]);
   });
 
   // #MARK: Outputs

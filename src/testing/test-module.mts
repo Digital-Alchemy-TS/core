@@ -149,13 +149,6 @@ export type iTestRunner<S extends ServiceMap, C extends OptionalModuleConfigurat
   replaceLibrary: (name: string, library: TLibrary) => iTestRunner<S, C>;
 
   /**
-   * substitute a service for another in your module
-   *
-   * does not check if the substitution is valid
-   */
-  replaceService: (name: string, service: ServiceFunction) => iTestRunner<S, C>;
-
-  /**
    * reference to the app teardown internally
    *
    * clean up your testing resources!
@@ -177,7 +170,6 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
   const appendLibraries = new Map<string, TLibrary>();
   const appendServices = new Map<string, ServiceFunction>();
   const replaceLibrary = new Map<string, TLibrary>();
-  const replaceService = new Map<string, ServiceFunction>();
   const runFirst = new Set<ServiceFunction>();
 
   function getLibraries(target: LibraryDefinition<S, C> | ApplicationDefinition<S, C>) {
@@ -202,12 +194,7 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
           name: target.name,
           optionalDepends: optional,
           priorityInit: target.priorityInit,
-          services: Object.fromEntries(
-            Object.entries(target.services).map(([name, service]) => [
-              name,
-              replaceService.has(name) ? replaceService.get(name) : service,
-            ]),
-          ) as S,
+          services: target.services,
         })
       : undefined;
     let LIB_RUN_FIRST: TLibrary;
@@ -270,10 +257,6 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
     },
     replaceLibrary(name: string, library: TLibrary) {
       replaceLibrary.set(name, library);
-      return libraryTestRunner;
-    },
-    replaceService(name: string, service: ServiceFunction) {
-      replaceService.set(name, service);
       return libraryTestRunner;
     },
     async run(test: ServiceFunction) {

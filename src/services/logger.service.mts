@@ -207,7 +207,6 @@ export async function Logger({
           message +=
             "\n" +
             inspect(data, {
-              colors: true,
               compact: false,
               depth: 10,
               numericSeparator: true,

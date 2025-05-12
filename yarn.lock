@@ -649,7 +649,7 @@ __metadata:
     ini: "npm:^5.0.0"
     js-yaml: "npm:^4.1.0"
     minimist: "npm:^1.2.8"
-    node-cron: "npm:^3.0.3"
+    node-cron: "npm:^4.0.4"
     prettier: "npm:^3.5.2"
     tslib: "npm:^2.8.1"
     tsx: "npm:^4.19.3"
@@ -4791,12 +4791,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-cron@npm:^3.0.3":
-  version: 3.0.3
-  resolution: "node-cron@npm:3.0.3"
-  dependencies:
-    uuid: "npm:8.3.2"
-  checksum: 10/f088043da4f61c3640155f7b11e909e6cfb23d9970111a8dcd7b39a1f3d47c897e207bb9657b15441207df21676885b083c777630efa87801de961b15a3d0ad1
+"node-cron@npm:^4.0.4":
+  version: 4.0.4
+  resolution: "node-cron@npm:4.0.4"
+  checksum: 10/4497d9a875a635c798bed77ec07485c0dabe31babf89eea8ede032c7a00a3b8ee95ac8630a7e999ef15ad3a90ccd8c70314215d0b061e9a3264833097aee2a84
   languageName: node
   linkType: hard
 
@@ -6171,15 +6169,6 @@ __metadata:
   dependencies:
     punycode: "npm:^2.1.0"
   checksum: 10/b271ca7e3d46b7160222e3afa3e531505161c9a4e097febae9664e4b59912f4cbe94861361a4175edac3a03fee99d91e44b6a58c17a634bc5a664b19fc76fbcb
-  languageName: node
-  linkType: hard
-
-"uuid@npm:8.3.2":
-  version: 8.3.2
-  resolution: "uuid@npm:8.3.2"
-  bin:
-    uuid: dist/bin/uuid
-  checksum: 10/9a5f7aa1d6f56dd1e8d5f2478f855f25c645e64e26e347a98e98d95781d5ed20062d6cca2eecb58ba7c84bc3910be95c0451ef4161906abaab44f9cb68ffbdd1
   languageName: node
   linkType: hard
 

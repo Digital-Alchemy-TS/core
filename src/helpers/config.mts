@@ -272,7 +272,7 @@ export function loadDotenv(
 export function parseConfig(config: AnyConfig, value: unknown) {
   switch (config.type) {
     case "string": {
-      return value;
+      return String(value);
     }
     case "number": {
       return Number(value);

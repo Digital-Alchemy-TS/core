@@ -1035,14 +1035,26 @@ describe("Configuration", () => {
         expect(output).toEqual(["hello", "world"]);
       });
 
-      it("record config", () => {
-        const value = JSON.stringify({ key: "value" });
+      it("string[] config with direct array input", () => {
+        const value = ["hello", "world"];
+        const output = parseConfig({ type: "string[]" }, value);
+        expect(output).toBe(value); // Should return the exact same array
+      });
+
+      it("string[] config with comma-separated string", () => {
+        const value = "hello,world,test";
+        const output = parseConfig({ type: "string[]" }, value);
+        expect(output).toEqual(["hello", "world", "test"]);
+      });
+
+      it("record config with object input", () => {
+        const value = { key: "value" };
         const output = parseConfig({ type: "record" }, value);
         expect(output).toEqual({ key: "value" });
       });
 
-      it("internal config", () => {
-        const value = JSON.stringify({ internalKey: "internalValue" });
+      it("internal config with object input", () => {
+        const value = { internalKey: "internalValue" };
         const output = parseConfig({ type: "internal" } as InternalConfig<object>, value);
         expect(output).toEqual({ internalKey: "internalValue" });
       });
@@ -1069,6 +1081,46 @@ describe("Configuration", () => {
         const value = "n";
         const output = parseConfig({ type: "boolean" }, value);
         expect(output).toBe(false);
+      });
+
+      it("boolean config with non-boolean/non-string input", () => {
+        const value = 123;
+        const output = parseConfig({ type: "boolean" }, value);
+        expect(output).toBe(false);
+      });
+
+      it("record/internal config with invalid JSON string", () => {
+        const value: string = "invalid json";
+        expect(() => parseConfig({ type: "record" }, value)).toThrow();
+        expect(() => parseConfig({ type: "internal" } as InternalConfig<object>, value)).toThrow();
+      });
+
+      it("boolean config with undefined input", () => {
+        const value: undefined = undefined;
+        const output = parseConfig({ type: "boolean" }, value);
+        expect(output).toBe(false);
+      });
+
+      it("boolean config handles null and undefined", () => {
+        expect(parseConfig({ type: "boolean" }, null)).toBe(false);
+        expect(parseConfig({ type: "boolean" }, undefined)).toBe(false);
+      });
+
+      it("boolean config returns false for non-string values", () => {
+        const output = parseConfig({ type: "boolean" }, 42); // number
+        expect(output).toBe(false);
+      });
+
+      it("boolean config with direct boolean input", () => {
+        const value = true;
+        const output = parseConfig({ type: "boolean" }, value);
+        expect(output).toBe(value); // Should return the exact same boolean
+      });
+
+      it("string[] config returns empty array for non-array non-string input", () => {
+        const value = 42; // number is neither array nor string
+        const output = parseConfig({ type: "string[]" }, value);
+        expect(output).toEqual([]);
       });
     });
 

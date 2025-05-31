@@ -269,20 +269,36 @@ export function loadDotenv(
   }
 }
 
-export function parseConfig(config: AnyConfig, value: string) {
+export function parseConfig(config: AnyConfig, value: unknown) {
   switch (config.type) {
     case "string": {
-      return value;
+      return String(value);
     }
     case "number": {
       return Number(value);
     }
     case "string[]":
+      if (is.array(value)) {
+        return value;
+      }
+      if (is.string(value)) {
+        return value.startsWith("[") ? JSON.parse(value) : value.split(",");
+      }
+      return [];
     case "record":
     case "internal": {
-      return JSON.parse(value);
+      if (is.object(value)) {
+        return value;
+      }
+      return JSON.parse(String(value));
     }
     case "boolean": {
+      if (is.boolean(value)) {
+        return value;
+      }
+      if (!is.string(value)) {
+        return false;
+      }
       return ["y", "true"].includes(value.toLowerCase());
     }
   }

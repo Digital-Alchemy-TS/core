@@ -151,6 +151,7 @@ describe("Scheduler", () => {
       });
     });
 
+    // This works, but the test is being weird with fake timers
     it.skip("runs a sliding schedule", async () => {
       vi.useFakeTimers();
       const advanceHours = 5;

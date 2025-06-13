@@ -192,8 +192,6 @@ export async function Logger({
         const highlighted = chalk.bold[METHOD_COLORS.get(key)](`[${data.context || context}]`);
         const timestamp = chalk.white(`[${dayjs().format(timestampFormat)}]`);
         let message = `${ms}${timestamp} ${level}${highlighted}`;
-        delete data.context;
-        delete data.name;
 
         if (!is.empty(data.name)) {
           message += chalk.blue(` (${String(data.name)})`);
@@ -202,21 +200,28 @@ export async function Logger({
         if (!is.empty(prettyMessage)) {
           message += `: ${chalk.cyan(prettyMessage)}`;
         }
-
-        if (!is.empty(data)) {
-          message +=
-            "\n" +
-            inspect(data, {
-              compact: false,
-              depth: 10,
-              numericSeparator: true,
-              sorted: true,
-            })
-              .split("\n")
-              .slice(SYMBOL_START, SYMBOL_END)
-              .join("\n");
+        {
+          const {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            name,
+            // eslint-disable-next-line sonarjs/no-unused-vars, @typescript-eslint/no-unused-vars
+            context: ctx,
+            ...extra
+          } = data;
+          if (!is.empty(extra)) {
+            message +=
+              "\n" +
+              inspect(extra, {
+                compact: false,
+                depth: 10,
+                numericSeparator: true,
+                sorted: true,
+              })
+                .split("\n")
+                .slice(SYMBOL_START, SYMBOL_END)
+                .join("\n");
+          }
         }
-
         if (child) {
           child[key](message);
           return;

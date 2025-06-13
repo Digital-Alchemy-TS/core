@@ -193,11 +193,11 @@ export async function Logger({
         const timestamp = chalk.white(`[${dayjs().format(timestampFormat)}]`);
         let message = `${ms}${timestamp} ${level}${highlighted}`;
         delete data.context;
-        delete data.name;
 
         if (!is.empty(data.name)) {
           message += chalk.blue(` (${String(data.name)})`);
         }
+        delete data.name;
 
         if (!is.empty(prettyMessage)) {
           message += `: ${chalk.cyan(prettyMessage)}`;

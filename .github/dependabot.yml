@@ -13,6 +13,17 @@ updates:
         update-types:
           - 'minor'
           - 'patch'
+    commit-message:
+      prefix: 'deps'
+      include: 'scope'
+    open-pull-requests-limit: 10
+    auto-merge: true
+    reviewers:
+      - zoe-codez
+    assignees:
+      - zoe-codez
+    required-checks:
+      - 'check'
   - package-ecosystem: 'github-actions'
     directory: '/'
     schedule:
@@ -21,3 +32,14 @@ updates:
       time: '09:00'
       timezone: 'America/New_York'
     target-branch: 'main'
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'
+    open-pull-requests-limit: 5
+    auto-merge: true
+    reviewers:
+      - zoe-codez
+    assignees:
+      - zoe-codez
+    required-checks:
+      - 'check'

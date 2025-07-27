@@ -1,4 +1,4 @@
-import dotenv from "dotenv";
+import dotenv from "@dotenvx/dotenvx";
 import fs from "fs";
 import { ParsedArgs } from "minimist";
 import path from "path";

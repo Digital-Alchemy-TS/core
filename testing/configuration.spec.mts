@@ -1,5 +1,5 @@
+import dotenv from "@dotenvx/dotenvx";
 import { faker } from "@faker-js/faker";
-import dotenv from "dotenv";
 import fs, { existsSync, unlinkSync, writeFileSync } from "fs";
 import { encode as iniEncode } from "ini";
 import { dump as yamlDump } from "js-yaml";

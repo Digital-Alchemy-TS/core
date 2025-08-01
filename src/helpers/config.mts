@@ -265,7 +265,7 @@ export function loadDotenv(
   // ? each of the steps above verified the path as valid
   if (!is.empty(file)) {
     logger.trace({ file, name: loadDotenv }, `loading env file`);
-    dotenv.config({ override: true, path: file });
+    dotenv.config({ override: true, path: file, quiet: true });
   }
 }
 

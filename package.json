@@ -5,7 +5,7 @@
   "repository": {
     "url": "git+https://github.com/Digital-Alchemy-TS/core"
   },
-  "version": "25.7.27",
+  "version": "25.8.1",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe Codez"
@@ -48,7 +48,7 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@dotenvx/dotenvx": "^1.48.3",
+    "@dotenvx/dotenvx": "^1.48.4",
     "chalk": "^5.4.1",
     "dayjs": "^1.11.13",
     "ini": "^5.0.0",
@@ -90,14 +90,14 @@
     "minimist": "^1.2.8",
     "node-cron": "^4.2.1",
     "pino": "^9.7.0",
-    "pino-pretty": "^13.0.0",
+    "pino-pretty": "^13.1.1",
     "prettier": "^3.6.2",
     "tslib": "^2.8.1",
     "tsx": "^4.20.3",
     "type-fest": "^4.41.0",
-    "typescript": "^5.8.3",
+    "typescript": "^5.9.2",
     "uuid": "^11.1.0",
     "vitest": "^3.2.4"
   },
-  "packageManager": "yarn@4.9.1"
+  "packageManager": "yarn@4.9.2"
 }

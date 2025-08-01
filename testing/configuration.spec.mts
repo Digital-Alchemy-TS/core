@@ -1156,6 +1156,7 @@ describe("Configuration", () => {
         expect(config).toHaveBeenCalledWith({
           override: true,
           path: join(cwd(), "path/to/env-file"),
+          quiet: true,
         });
       });
 
@@ -1177,6 +1178,7 @@ describe("Configuration", () => {
         expect(config).toHaveBeenCalledWith({
           override: true,
           path: join(cwd(), "path/to/bootstrap-env-file"),
+          quiet: true,
         });
       });
 
@@ -1198,6 +1200,7 @@ describe("Configuration", () => {
         expect(config).toHaveBeenCalledWith({
           override: true,
           path: "/path/to/bootstrap-env-file",
+          quiet: true,
         });
       });
 
@@ -1220,6 +1223,7 @@ describe("Configuration", () => {
         expect(config).toHaveBeenCalledWith({
           override: true,
           path: join(cwd(), ".env"),
+          quiet: true,
         });
       });
 

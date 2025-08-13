@@ -26,13 +26,13 @@ jobs:
         node-version: '22'
     - run: corepack enable
     - run: yarn config set enableImmutableInstalls false
-    - run: cp .yarnrc.github.yml .yarnrc.yml
     - run: yarn
     - run: yarn build
     - run: yarn lint
     - run: yarn test
     - name: Configure package.json for GitHub Packages
       run: |
+        cp .yarnrc.github.yml .yarnrc.yml
         # Get git short hash
         GIT_HASH=$(git rev-parse --short HEAD)
         # Append hash to version

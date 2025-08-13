@@ -1,0 +1,7 @@
+compressionLevel: mixed
+nodeLinker: node-modules
+npmRegistryServer: "https://npm.pkg.github.com"
+
+npmScopes:
+  digital-alchemy:
+    npmRegistryServer: "https://npm.pkg.github.com"

@@ -6,6 +6,9 @@
     "url": "git+https://github.com/Digital-Alchemy-TS/core"
   },
   "version": "25.8.1",
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe Codez"

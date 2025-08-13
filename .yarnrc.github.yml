@@ -4,4 +4,6 @@ npmRegistryServer: "https://npm.pkg.github.com"
 
 npmScopes:
   digital-alchemy:
+    npmAlwaysAuth: true
     npmRegistryServer: "https://npm.pkg.github.com"
+    npmAuthToken: "${NODE_AUTH_TOKEN}"

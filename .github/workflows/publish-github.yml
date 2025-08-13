@@ -39,10 +39,10 @@ jobs:
         jq --arg hash "$GIT_HASH" '.version = .version + "-" + $hash' package.json > package.json.tmp && mv package.json.tmp package.json
         # Set registry
         jq '.publishConfig = {"registry": "https://npm.pkg.github.com"}' package.json > package.json.tmp && mv package.json.tmp package.json
-    - name: Configure npm authentication
+    - name: Configure Yarn authentication
       run: |
-        echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
-        echo "@${{ github.repository_owner }}:registry=https://npm.pkg.github.com" >> ~/.npmrc
+        yarn config set npmAuthToken ${{ secrets.GITHUB_TOKEN }} --scope @${{ github.repository_owner }}
+        yarn config set npmRegistryServer https://npm.pkg.github.com
     - name: Publish to GitHub Package Registry
       run: yarn npm publish
       env:

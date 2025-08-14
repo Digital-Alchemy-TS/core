@@ -40,6 +40,6 @@ jobs:
         jq '.publishConfig = {"registry": "https://npm.pkg.github.com"}' package.json > package.json.tmp && mv package.json.tmp package.json
         cp .yarnrc.github.yml .yarnrc.yml
     - name: Publish to GitHub Package Registry
-      run: yarn npm publish --scope digital-alchemy-ts
+      run: yarn npm --scope digital-alchemy-ts publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}

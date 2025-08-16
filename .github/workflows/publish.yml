@@ -22,6 +22,26 @@ jobs:
     - run: yarn build
     - run: yarn lint
     - run: yarn test
+    - name: Check package version
+      run: |
+        PACKAGE_VERSION=$(node -p "require('./package.json').version")
+        echo "Package version: $PACKAGE_VERSION"
+
+        if [[ "${{ github.event.release.prerelease }}" == "true" ]]; then
+          # For prereleases, version must contain -beta
+          if [[ "$PACKAGE_VERSION" != *"-beta"* ]]; then
+            echo "❌ Prerelease failed: Package version '$PACKAGE_VERSION' must contain '-beta'"
+            exit 1
+          fi
+          echo "✅ Prerelease version check passed"
+        else
+          # For releases, version must NOT contain -beta
+          if [[ "$PACKAGE_VERSION" == *"-beta"* ]]; then
+            echo "❌ Release failed: Package version '$PACKAGE_VERSION' cannot contain '-beta'"
+            exit 1
+          fi
+          echo "✅ Release version check passed"
+        fi
     - name: Publish to npm
       run: |
         if [[ "${{ github.event.release.prerelease }}" == "true" ]]; then
@@ -32,12 +52,13 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
     - name: Send Discord Notification
+      if: ${{ !github.event.release.prerelease }}
       uses: sarisia/actions-status-discord@v1
       with:
         webhook: ${{ secrets.DISCORD_WEBHOOK }}
         nodetail: true
         url: ${{ github.event.release.html_url }}
-        title: ${{ github.event.release.prerelease && '🧪 **PRE-RELEASE**' || '🚀 **RELEASE**' }} **@digital-alchemy/core v${{ github.event.release.tag_name }}** published
+        title: 🚀 **RELEASE** **@digital-alchemy/core v${{ github.event.release.tag_name }}** published
         content: |
           **Release Notes:**
           ${{ github.event.release.body }}

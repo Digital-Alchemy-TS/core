@@ -11,6 +11,8 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     concurrency: publish-${{ github.event.release.tag_name }}
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
@@ -20,8 +22,6 @@ jobs:
     - run: corepack enable
     - run: yarn config set enableImmutableInstalls false
     - run: yarn config set npmAuthToken $NODE_AUTH_TOKEN
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
     - run: yarn
     - run: yarn build
     - run: yarn lint
@@ -50,7 +50,6 @@ jobs:
         fi
     - name: Publish to npm
       env:
-        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
         IS_PRERELEASE: ${{ github.event.release.prerelease }}
       run: |
         if [[ "$IS_PRERELEASE" == "true" ]]; then

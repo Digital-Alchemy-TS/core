@@ -10,7 +10,9 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    concurrency: publish-${{ github.event.release.tag_name }}
+    concurrency:
+      group: publish-${{ github.event.release.tag_name }}
+      cancel-in-progress: true
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-node@v4
@@ -19,9 +21,7 @@ jobs:
         registry-url: 'https://registry.npmjs.org/'
     - run: corepack enable
     - run: yarn config set enableImmutableInstalls false
-    - run: yarn config set npmAuthToken $NPM_TOKEN
-      env:
-        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
     - run: yarn
     - run: yarn build
     - run: yarn lint
@@ -51,11 +51,13 @@ jobs:
     - name: Publish to npm
       env:
         IS_PRERELEASE: ${{ github.event.release.prerelease }}
+        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       run: |
+        npm config set //registry.npmjs.org/:_authToken $NPM_TOKEN
         if [[ "$IS_PRERELEASE" == "true" ]]; then
-          yarn npm publish --tag beta
+          npm publish --tag beta
         else
-          yarn npm publish
+          npm publish
         fi
     - name: Send Discord Notification
       if: ${{ !github.event.release.prerelease }}

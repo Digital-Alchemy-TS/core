@@ -18,16 +18,21 @@ jobs:
         registry-url: 'https://registry.npmjs.org/'
     - run: corepack enable
     - run: yarn config set enableImmutableInstalls false
+    - run: yarn config set npmAuthToken $NODE_AUTH_TOKEN
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
     - run: yarn
     - run: yarn build
     - run: yarn lint
     - run: yarn test
     - name: Check package version
+      env:
+        IS_PRERELEASE: ${{ github.event.release.prerelease }}
       run: |
         PACKAGE_VERSION=$(node -p "require('./package.json').version")
         echo "Package version: $PACKAGE_VERSION"
 
-        if [[ "${{ github.event.release.prerelease }}" == "true" ]]; then
+        if [[ "$IS_PRERELEASE" == "true" ]]; then
           # For prereleases, version must contain -beta
           if [[ "$PACKAGE_VERSION" != *"-beta"* ]]; then
             echo "❌ Prerelease failed: Package version '$PACKAGE_VERSION' must contain '-beta'"
@@ -43,14 +48,15 @@ jobs:
           echo "✅ Release version check passed"
         fi
     - name: Publish to npm
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+        IS_PRERELEASE: ${{ github.event.release.prerelease }}
       run: |
-        if [[ "${{ github.event.release.prerelease }}" == "true" ]]; then
+        if [[ "$IS_PRERELEASE" == "true" ]]; then
           yarn npm publish --tag beta
         else
           yarn npm publish
         fi
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
     - name: Send Discord Notification
       if: ${{ !github.event.release.prerelease }}
       uses: sarisia/actions-status-discord@v1

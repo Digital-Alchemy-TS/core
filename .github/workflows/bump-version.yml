@@ -63,3 +63,8 @@ jobs:
 
       - name: Push changes
         run: git push origin HEAD:${{ github.ref }}
+
+      - name: Create and push tag
+        run: |
+          git tag -a "v${{ steps.bump_version.outputs.new_version }}" -m "Release version ${{ steps.bump_version.outputs.new_version }}"
+          git push origin "v${{ steps.bump_version.outputs.new_version }}"

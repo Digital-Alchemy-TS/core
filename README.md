@@ -33,4 +33,4 @@ The framework adds minimal overhead to boot times, making it well-suited for a w
 
 ## Questions / Issues?
 
-![discord](https://img.shields.io/discord/1219758743848489147?label=Discord&logo=discord)
+[![discord](https://img.shields.io/discord/1219758743848489147?label=Discord&logo=discord)](https://discord.gg/JkZ35Gv97Y)

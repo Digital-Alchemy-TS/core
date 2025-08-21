@@ -13,6 +13,9 @@ jobs:
     concurrency:
       group: publish-${{ github.event.release.tag_name }}
       cancel-in-progress: true
+    environment:
+      name: npm
+      url: ${{ github.event.release.html_url }}
     steps:
     - uses: actions/checkout@v5
     - uses: actions/setup-node@v4

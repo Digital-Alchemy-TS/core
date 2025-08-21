@@ -41,8 +41,8 @@ jobs:
         id: bump_version
         run: |
           if [ "${{ inputs.release_type }}" = "release" ]; then
-            # Set to calver format (YYYY.MM.DD)
-            CALVER_VERSION=$(date +%Y.%-m.%-d)
+            # Set to calver format (YY.MM.DD)
+            CALVER_VERSION=$(date +%y.%-m.%-d)
             npm version $CALVER_VERSION --no-git-tag-version
             echo "new_version=$CALVER_VERSION" >> $GITHUB_OUTPUT
             echo "bump_type=calver" >> $GITHUB_OUTPUT

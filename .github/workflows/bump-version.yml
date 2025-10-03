@@ -25,7 +25,7 @@ jobs:
         with:
           token: ${{ secrets.DA_REPO_TOKEN }}
           fetch-depth: 0
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: '22'
       - run: corepack enable

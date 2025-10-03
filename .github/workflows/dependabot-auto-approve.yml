@@ -4,12 +4,21 @@ on: pull_request
 permissions:
   contents: write
   pull-requests: write
+  statuses: read
 
 jobs:
   dependabot:
     runs-on: ubuntu-latest
     if: github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
+      - name: Wait for checks to pass
+        uses: fountainhead/action-wait-for-check@v1.2.0
+        id: wait-for-check
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          checkName: lint-and-build
+          ref: ${{ github.event.pull_request.head.sha }}
+
       - name: Dependabot metadata
         id: metadata
         uses: dependabot/fetch-metadata@08eff52bf64351f401fb50d4972fa95b9f2c2d1b
@@ -17,6 +26,7 @@ jobs:
           github-token: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Enable auto-merge for Dependabot PRs
+        if: steps.wait-for-check.outputs.conclusion == 'success'
         run: gh pr merge --auto --squash --delete-branch "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}

@@ -1411,11 +1411,11 @@ __metadata:
   linkType: hard
 
 "@types/node@npm:^24.6.2":
-  version: 24.6.2
-  resolution: "@types/node@npm:24.6.2"
+  version: 24.7.0
+  resolution: "@types/node@npm:24.7.0"
   dependencies:
-    undici-types: "npm:~7.13.0"
-  checksum: 10/8d1e64b37abdafd3da295394235ad5357509ac0b47e6991d36b1eecacd7ad830ada60ca71b7b3598b6c8b519361fb70aab691888c378ff25e69dba5690afcc22
+    undici-types: "npm:~7.14.0"
+  checksum: 10/db0b77e9b132906cdf0350661df660c970e924093ccaa781472d61bc5c448f3d15514b15f55b4df6827254a041aad2418339fe00d45ef10687557ffc0f026d47
   languageName: node
   linkType: hard
 
@@ -2391,6 +2391,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"diff-sequences@npm:^27.5.1":
+  version: 27.5.1
+  resolution: "diff-sequences@npm:27.5.1"
+  checksum: 10/34d852a13eb82735c39944a050613f952038614ce324256e1c3544948fa090f1ca7f329a4f1f57c31fe7ac982c17068d8915b633e300f040b97708c81ceb26cd
+  languageName: node
+  linkType: hard
+
 "doctrine@npm:^2.1.0":
   version: 2.1.0
   resolution: "doctrine@npm:2.1.0"
@@ -2821,10 +2828,11 @@ __metadata:
   linkType: hard
 
 "eslint-plugin-jsonc@npm:^2.20.1":
-  version: 2.20.1
-  resolution: "eslint-plugin-jsonc@npm:2.20.1"
+  version: 2.21.0
+  resolution: "eslint-plugin-jsonc@npm:2.21.0"
   dependencies:
     "@eslint-community/eslint-utils": "npm:^4.5.1"
+    diff-sequences: "npm:^27.5.1"
     eslint-compat-utils: "npm:^0.6.4"
     eslint-json-compat-utils: "npm:^0.2.1"
     espree: "npm:^9.6.1 || ^10.3.0"
@@ -2834,7 +2842,7 @@ __metadata:
     synckit: "npm:^0.6.2 || ^0.7.3 || ^0.11.5"
   peerDependencies:
     eslint: ">=6.0.0"
-  checksum: 10/fc02f74ca20e0003adbd2b2a0b356073814e1d6393f8f3067a15aaf8e7b33b482e4a21bbe188463fef676f0dbb83f3c9e3809d897bdd8be4b016099ee54232fd
+  checksum: 10/3b0e15b33a918b1ffccbcb4c234deb7b6b68752e89cccd8e31d6d3e4647ec48ebc6b89998f1b3b585b4486f9d849eb618e15d0ffacd4b185d601a83de81b335a
   languageName: node
   linkType: hard
 
@@ -5834,10 +5842,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici-types@npm:~7.13.0":
-  version: 7.13.0
-  resolution: "undici-types@npm:7.13.0"
-  checksum: 10/1088ad68dd57981aa6eced5b3f5d74129ac619fbe558b30cb584d6096d32b084ae30d7cdc480d622226e6ffc8d31e01ac30215816439a0d784e0fe64db873b0f
+"undici-types@npm:~7.14.0":
+  version: 7.14.0
+  resolution: "undici-types@npm:7.14.0"
+  checksum: 10/0f8709b21437697af35801e33bddbe9992e0cf1771959c41850b1946f63822b825e03ce99f44bf19e4f5c3ccc5166e0be59f541565c36ce86163dc2c5870bc62
   languageName: node
   linkType: hard
 

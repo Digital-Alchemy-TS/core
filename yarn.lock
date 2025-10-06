@@ -649,7 +649,7 @@ __metadata:
     js-yaml: "npm:^4.1.0"
     minimist: "npm:^1.2.8"
     node-cron: "npm:^4.2.1"
-    pino: "npm:^9.9.0"
+    pino: "npm:^10.0.0"
     pino-pretty: "npm:^13.1.1"
     prettier: "npm:^3.6.2"
     tslib: "npm:^2.8.1"
@@ -4739,9 +4739,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pino@npm:^9.9.0":
-  version: 9.12.0
-  resolution: "pino@npm:9.12.0"
+"pino@npm:^10.0.0":
+  version: 10.0.0
+  resolution: "pino@npm:10.0.0"
   dependencies:
     atomic-sleep: "npm:^1.0.0"
     on-exit-leak-free: "npm:^2.1.0"
@@ -4756,7 +4756,7 @@ __metadata:
     thread-stream: "npm:^3.0.0"
   bin:
     pino: bin.js
-  checksum: 10/ee9f29b4ea02035d212d7691f837d1f0d91a49e3fbe88dded4a29fe2fbc3febaf37314a72b44ac64bcaaea4b0a7d1f3a01ce7343e808aeb3de1aff39d63614dc
+  checksum: 10/32c7da274526706a2f1ad329bd44f2e2d2f0e0484e63dc290f8fb6986ed23e97ba5f30e6a80af3fa5f30a58e70a46d40a08b5731e1dfcb6f17a465f595fa361d
   languageName: node
   linkType: hard
 

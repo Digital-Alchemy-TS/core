@@ -1,4 +1,4 @@
-import { TContext } from "./context.mts";
+import type { TContext } from "./context.mts";
 
 export class BootstrapException extends Error {
   context: TContext;

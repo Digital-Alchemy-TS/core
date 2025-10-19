@@ -3,22 +3,19 @@ import chalk from "chalk";
 import dayjs from "dayjs";
 import { format, inspect } from "util";
 
-import {
+import type {
   DigitalAlchemyLogger,
-  EVENT_UPDATE_LOG_LEVELS,
-  FIRST,
   FlatServiceNames,
   GetLogger,
   ILogger,
   LoadedModuleNames,
   LogStreamTarget,
-  METHOD_COLORS,
-  START,
   TConfigLogLevel,
   TContext,
   TLoggerFunction,
   TServiceParams,
 } from "../index.mts";
+import { EVENT_UPDATE_LOG_LEVELS, FIRST, METHOD_COLORS, START } from "../index.mts";
 
 const LOG_LEVEL_PRIORITY = {
   debug: 20,

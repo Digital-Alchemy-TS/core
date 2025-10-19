@@ -1,6 +1,6 @@
 import { CreateApplication } from "../index.mts";
-import { OptionalModuleConfiguration } from "./config.mts";
-import {
+import type { OptionalModuleConfiguration } from "./config.mts";
+import type {
   ApplicationConfigurationOptions,
   BootstrapOptions,
   ConfigTypes,

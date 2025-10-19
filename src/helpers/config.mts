@@ -1,19 +1,19 @@
 import dotenv from "@dotenvx/dotenvx";
 import fs from "fs";
-import { ParsedArgs } from "minimist";
+import type { ParsedArgs } from "minimist";
 import path from "path";
 import { cwd } from "process";
 
-import {
+import type {
   INITIALIZE,
   INJECTED_DEFINITIONS,
   InternalDefinition,
-  is,
   LOAD_PROJECT,
 } from "../index.mts";
-import { ILogger } from "./logger.mts";
-import { TBlackHole } from "./utilities.mts";
-import {
+import { is } from "../index.mts";
+import type { ILogger } from "./logger.mts";
+import type { TBlackHole } from "./utilities.mts";
+import type {
   ApplicationDefinition,
   PartialConfiguration,
   ServiceMap,

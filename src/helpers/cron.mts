@@ -1,8 +1,8 @@
-import { Dayjs } from "dayjs";
+import type { Dayjs } from "dayjs";
 
-import { TContext } from "./context.mts";
-import { TBlackHole } from "./utilities.mts";
-import { Schedule, SchedulerOptions } from "./wiring.mts";
+import type { TContext } from "./context.mts";
+import type { TBlackHole } from "./utilities.mts";
+import type { Schedule, SchedulerOptions } from "./wiring.mts";
 
 export enum CronExpression {
   EVERY_SECOND = "* * * * * *",

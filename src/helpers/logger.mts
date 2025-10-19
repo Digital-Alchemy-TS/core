@@ -1,7 +1,7 @@
-import { Get } from "type-fest";
+import type { Get } from "type-fest";
 
-import { TContext } from "./context.mts";
-import { TBlackHole } from "./utilities.mts";
+import type { TContext } from "./context.mts";
+import type { TBlackHole } from "./utilities.mts";
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ReplacementLogger {

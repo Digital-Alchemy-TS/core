@@ -1,10 +1,11 @@
-import { AsyncLocalStorage } from "async_hooks";
-import { Dayjs } from "dayjs";
-import { EventEmitter } from "events";
+import type { AsyncLocalStorage } from "async_hooks";
+import type { Dayjs } from "dayjs";
+import type { EventEmitter } from "events";
 
-import { ConfigManager, InternalDefinition, is, LIB_BOILERPLATE, LOAD_PROJECT } from "../index.mts";
+import type { ConfigManager, InternalDefinition, LIB_BOILERPLATE } from "../index.mts";
+import { is, LOAD_PROJECT } from "../index.mts";
 import { eachSeries } from "./async.mts";
-import {
+import type {
   AnyConfig,
   BooleanConfig,
   DataTypes,
@@ -14,12 +15,12 @@ import {
   StringArrayConfig,
   StringConfig,
 } from "./config.mts";
-import { TContext } from "./context.mts";
-import { CronExpression, ScheduleRemove } from "./cron.mts";
+import type { TContext } from "./context.mts";
+import type { CronExpression, ScheduleRemove } from "./cron.mts";
 import { BootstrapException } from "./errors.mts";
-import { TLifecycleBase } from "./lifecycle.mts";
-import { GetLogger, TConfigLogLevel } from "./logger.mts";
-import { TBlackHole } from "./utilities.mts";
+import type { TLifecycleBase } from "./lifecycle.mts";
+import type { GetLogger, TConfigLogLevel } from "./logger.mts";
+import type { TBlackHole } from "./utilities.mts";
 
 export type TServiceReturn<OBJECT extends object = object> = void | OBJECT;
 

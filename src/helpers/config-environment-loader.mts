@@ -2,18 +2,15 @@ import minimist from "minimist";
 import { env } from "process";
 
 import { is } from "../index.mts";
-import {
+import type {
   AbstractConfig,
   ConfigLoaderParams,
   ConfigLoaderReturn,
   DataTypes,
-  findKey,
-  iSearchKey,
-  loadDotenv,
   ModuleConfiguration,
-  parseConfig,
 } from "./config.mts";
-import { ServiceMap } from "./wiring.mts";
+import { findKey, iSearchKey, loadDotenv, parseConfig } from "./config.mts";
+import type { ServiceMap } from "./wiring.mts";
 
 export async function ConfigLoaderEnvironment<
   S extends ServiceMap = ServiceMap,

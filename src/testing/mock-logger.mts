@@ -1,4 +1,4 @@
-import { ILogger } from "../index.mts";
+import type { ILogger } from "../index.mts";
 
 export function createMockLogger(): ILogger {
   return {

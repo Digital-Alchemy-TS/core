@@ -1,9 +1,7 @@
 import dayjs from "dayjs";
 import { schedule } from "node-cron";
 
-import {
-  BootstrapException,
-  makeRemover,
+import type {
   SchedulerBuilder,
   SchedulerCronOptions,
   ScheduleRemove,
@@ -13,6 +11,7 @@ import {
   TContext,
   TServiceParams,
 } from "../index.mts";
+import { BootstrapException, makeRemover } from "../index.mts";
 
 export function Scheduler({ logger, lifecycle, internal }: TServiceParams): SchedulerBuilder {
   const { is } = internal.utils;

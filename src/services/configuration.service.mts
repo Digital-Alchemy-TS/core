@@ -1,15 +1,10 @@
-import {
+import type {
   AbstractConfig,
   ApplicationDefinition,
-  BootstrapException,
   CodeConfigDefinition,
   ConfigLoader,
-  ConfigLoaderEnvironment,
-  configLoaderFile,
   DataTypes,
-  deepExtend,
   DigitalAlchemyConfiguration,
-  eachSeries,
   ILogger,
   KnownConfigs,
   OnConfigUpdateCallback,
@@ -19,6 +14,13 @@ import {
   TInjectedConfig,
   TServiceParams,
   TSetConfig,
+} from "../index.mts";
+import {
+  BootstrapException,
+  ConfigLoaderEnvironment,
+  configLoaderFile,
+  deepExtend,
+  eachSeries,
 } from "../index.mts";
 
 export const INITIALIZE = Symbol.for("initialize");

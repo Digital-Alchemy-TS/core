@@ -1,8 +1,10 @@
 import { randomBytes } from "crypto";
-import dayjs, { Dayjs } from "dayjs";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { isDeepStrictEqual, types } from "util";
 
-import { EMPTY, EVEN, TBlackHole, TContext } from "../index.mts";
+import type { TBlackHole, TContext } from "../index.mts";
+import { EMPTY, EVEN } from "../index.mts";
 
 type MaybeEmptyTypes =
   | string

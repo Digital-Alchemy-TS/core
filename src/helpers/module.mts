@@ -1,16 +1,17 @@
-import { Except, Merge } from "type-fest";
+import type { Except, Merge } from "type-fest";
 
-import { CreateApplication, iTestRunner, TestRunner } from "../index.mts";
-import { OptionalModuleConfiguration } from "./config.mts";
+import type { iTestRunner } from "../index.mts";
+import { CreateApplication, TestRunner } from "../index.mts";
+import type { OptionalModuleConfiguration } from "./config.mts";
 import { deepExtend } from "./extend.mts";
-import {
+import type {
   ApplicationDefinition,
-  CreateLibrary,
   LibraryDefinition,
   ServiceFunction,
   ServiceMap,
   TLibrary,
 } from "./wiring.mts";
+import { CreateLibrary } from "./wiring.mts";
 
 export type ExtendOptions = {
   name?: string;

@@ -60,6 +60,7 @@ export default [
     },
     rules: {
       "prettier/prettier": "error",
+      "@typescript-eslint/consistent-type-imports": "error",
       "unicorn/switch-case-braces": "off",
       "unicorn/prefer-module": "off",
       "sonarjs/no-unused-expressions": "off",

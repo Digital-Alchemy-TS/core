@@ -7,10 +7,10 @@ import { join } from "path";
 import { cwd, platform } from "process";
 
 import { is } from "../index.mts";
-import { ConfigLoaderParams, ConfigLoaderReturn, ModuleConfiguration } from "./config.mts";
+import type { ConfigLoaderParams, ConfigLoaderReturn, ModuleConfiguration } from "./config.mts";
 import { deepExtend } from "./extend.mts";
 import { INVERT_VALUE, START } from "./utilities.mts";
-import { PartialConfiguration, ServiceMap } from "./wiring.mts";
+import type { PartialConfiguration, ServiceMap } from "./wiring.mts";
 
 const isWindows = platform === "win32";
 

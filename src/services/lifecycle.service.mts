@@ -1,13 +1,5 @@
-import {
-  DOWN,
-  each,
-  eachSeries,
-  LIFECYCLE_STAGES,
-  LifecycleCallback,
-  LifecycleStages,
-  TLifecycleBase,
-  UP,
-} from "../index.mts";
+import type { LifecycleCallback, LifecycleStages, TLifecycleBase } from "../index.mts";
+import { DOWN, each, eachSeries, LIFECYCLE_STAGES, UP } from "../index.mts";
 import { is } from "./is.service.mts";
 
 type EventMapObject = {

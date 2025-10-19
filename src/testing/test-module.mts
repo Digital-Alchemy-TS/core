@@ -1,17 +1,12 @@
 import { v4 } from "uuid";
 
-import {
+import type {
   ApplicationDefinition,
-  CreateApplication,
-  CreateLibrary,
   DataTypes,
-  deepExtend,
   ILogger,
-  is,
   LibraryDefinition,
   LoggerOptions,
   ModuleConfiguration,
-  NONE,
   OptionalModuleConfiguration,
   PartialConfiguration,
   ServiceFunction,
@@ -20,6 +15,7 @@ import {
   TLibrary,
   TServiceParams,
 } from "../index.mts";
+import { CreateApplication, CreateLibrary, deepExtend, is, NONE } from "../index.mts";
 
 export type CreateTestingLibraryOptions<
   S extends ServiceMap,

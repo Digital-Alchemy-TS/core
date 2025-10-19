@@ -1,32 +1,36 @@
-import dayjs, { Dayjs } from "dayjs";
+import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
 import { EventEmitter } from "events";
-import { Get } from "type-fest";
+import type { Get } from "type-fest";
 
-import {
+import type {
   ApplicationDefinition,
-  ARRAY_OFFSET,
   BootstrapOptions,
-  DAY,
-  deepExtend,
-  FIRST,
   GetApis,
-  HOUR,
   LifecycleStages,
-  MINUTE,
-  NONE,
   OptionalModuleConfiguration,
-  SECOND,
   ServiceMap,
-  START,
   TBlackHole,
   TContext,
   TModuleMappings,
   TResolvedModuleMappings,
+} from "../index.mts";
+import {
+  ARRAY_OFFSET,
+  DAY,
+  deepExtend,
+  FIRST,
+  HOUR,
+  MINUTE,
+  NONE,
+  SECOND,
+  START,
   YEAR,
 } from "../index.mts";
-import { is, IsIt } from "./is.service.mts";
-import { CreateLifecycle } from "./lifecycle.service.mts";
-import { LIB_BOILERPLATE } from "./wiring.service.mts";
+import type { IsIt } from "./is.service.mts";
+import { is } from "./is.service.mts";
+import type { CreateLifecycle } from "./lifecycle.service.mts";
+import type { LIB_BOILERPLATE } from "./wiring.service.mts";
 
 const EVERYTHING_ELSE = 1;
 const MONTHS = 12;

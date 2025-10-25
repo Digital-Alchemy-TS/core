@@ -5,6 +5,7 @@ on:
     types: [published, prereleased]
 
 permissions:
+  id-token: write
   contents: read
 
 jobs:

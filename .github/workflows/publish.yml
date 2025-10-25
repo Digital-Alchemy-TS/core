@@ -59,9 +59,9 @@ jobs:
         IS_PRERELEASE: ${{ github.event.release.prerelease }}
       run: |
         if [[ "$IS_PRERELEASE" == "true" ]]; then
-          npm publish --tag beta
+          npm publish --tag beta --access public --loglevel verbose
         else
-          npm publish
+          npm publish --access public --loglevel verbose
         fi
     - name: Send Discord Notification
       if: ${{ !github.event.release.prerelease }}

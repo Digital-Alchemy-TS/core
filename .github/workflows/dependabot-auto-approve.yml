@@ -7,8 +7,15 @@ permissions:
   statuses: read
 
 jobs:
+  code_check:
+    name: 🔬 PR Checks
+    uses: ./.github/workflows/check.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   dependabot:
     runs-on: ubuntu-latest
+    needs: code_check
     if: github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
       - name: Wait for checks to pass

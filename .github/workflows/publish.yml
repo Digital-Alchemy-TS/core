@@ -9,8 +9,15 @@ permissions:
   contents: read
 
 jobs:
+  code_check:
+    name: 🔬 PR Checks
+    uses: ./.github/workflows/check.yml
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
   publish:
     runs-on: ubuntu-latest
+    needs: code_check
     concurrency:
       group: publish-${{ github.event.release.tag_name }}
       cancel-in-progress: true
@@ -24,9 +31,6 @@ jobs:
     - run: yarn config set enableImmutableInstalls false
 
     - run: yarn
-    - run: yarn build
-    - run: yarn lint
-    - run: yarn test
     - name: Check package version
       env:
         IS_PRERELEASE: ${{ github.event.release.prerelease }}

@@ -55,7 +55,6 @@ jobs:
     - name: Publish to npm
       env:
         IS_PRERELEASE: ${{ github.event.release.prerelease }}
-        NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
       run: |
         if [[ "$IS_PRERELEASE" == "true" ]]; then
           npm publish --tag beta

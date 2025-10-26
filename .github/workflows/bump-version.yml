@@ -25,17 +25,10 @@ jobs:
         with:
           token: ${{ secrets.DA_REPO_TOKEN }}
           fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: corepack enable
-
-      - run: yarn config set enableImmutableInstalls false
-      - run: yarn
 
       - name: Get current version
         id: current_version
-        run: echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+        run: echo "version=$(jq -r '.version' package.json)" >> $GITHUB_OUTPUT
 
       - name: Bump version
         id: bump_version
@@ -49,22 +42,29 @@ jobs:
           else
             # Bump beta version using yarn
             npm version prerelease --preid beta --no-git-tag-version
-            NEW_VERSION=$(node -p "require('./package.json').version")
+            NEW_VERSION=$(jq -r '.version' package.json)
             echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
             echo "bump_type=beta" >> $GITHUB_OUTPUT
           fi
 
       - name: Create commit
+        env:
+          NEW_VERSION: ${{ steps.bump_version.outputs.new_version }}
+          BUMP_TYPE: ${{ steps.bump_version.outputs.bump_type }}
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git add package.json
-          git commit -m "chore: bump version to ${{ steps.bump_version.outputs.new_version }} (${{ steps.bump_version.outputs.bump_type }})"
+          git commit -m "chore: bump version to $NEW_VERSION ($BUMP_TYPE)"
 
       - name: Push changes
-        run: git push origin HEAD:${{ github.ref }}
+        env:
+          REF: ${{ github.ref }}
+        run: git push origin HEAD:$REF
 
       - name: Create and push tag
+        env:
+          NEW_VERSION: ${{ steps.bump_version.outputs.new_version }}
         run: |
-          git tag -a "v${{ steps.bump_version.outputs.new_version }}" -m "Release version ${{ steps.bump_version.outputs.new_version }}"
-          git push origin "v${{ steps.bump_version.outputs.new_version }}"
+          git tag -a "v$NEW_VERSION" -m "Release version $NEW_VERSION"
+          git push origin "v$NEW_VERSION"

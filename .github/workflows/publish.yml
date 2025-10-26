@@ -63,14 +63,14 @@ jobs:
         else
           npm publish --access public --loglevel verbose
         fi
-    - name: Send Discord Notification
-      if: ${{ !github.event.release.prerelease }}
-      uses: sarisia/actions-status-discord@v1
-      with:
-        webhook: ${{ secrets.DISCORD_WEBHOOK }}
-        nodetail: true
-        url: ${{ github.event.release.html_url }}
-        title: 🚀 **RELEASE** **@digital-alchemy/core ${{ github.event.release.tag_name }}** published
-        content: |
-          (${{ github.event.release.tag_name }}) **${{ github.event.release.name }}**
-          ${{ github.event.release.body }}
+    # - name: Send Discord Notification
+    #   if: ${{ !github.event.release.prerelease }}
+    #   uses: sarisia/actions-status-discord@v1
+    #   with:
+    #     webhook: ${{ secrets.DISCORD_WEBHOOK }}
+    #     nodetail: true
+    #     url: ${{ github.event.release.html_url }}
+    #     title: 🚀 **RELEASE** **@digital-alchemy/core ${{ github.event.release.tag_name }}** published
+    #     content: |
+    #       (${{ github.event.release.tag_name }}) **${{ github.event.release.name }}**
+    #       ${{ github.event.release.body }}

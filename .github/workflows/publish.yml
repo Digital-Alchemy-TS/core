@@ -16,6 +16,7 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
   publish:
+    name: 📮 to npm
     runs-on: ubuntu-latest
     needs: code_check
     environment:
@@ -24,9 +25,11 @@ jobs:
     concurrency:
       group: publish-${{ github.event.release.tag_name }}
       cancel-in-progress: true
+
     steps:
     - name: 🧾 Checkout
       uses: actions/checkout@v5
+
     - name: 🚧 Setup Node
       uses: actions/setup-node@v4
       with:

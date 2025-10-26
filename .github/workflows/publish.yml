@@ -54,7 +54,7 @@ jobs:
               echo "❌ Release failed: Package version '$PACKAGE_VERSION' cannot contain '-beta'"
               exit 1
             fi
-            echo "version=$PACKAGE_VERSION" >> $GITHUB_OUTPUT
+            echo "version=latest" >> $GITHUB_OUTPUT
             echo "✅ Release version check passed"
           fi
 

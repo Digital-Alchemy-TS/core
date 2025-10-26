@@ -1,4 +1,4 @@
-name: Publish
+name: 📨 Publish
 
 on:
   release:
@@ -25,15 +25,15 @@ jobs:
       group: publish-${{ github.event.release.tag_name }}
       cancel-in-progress: true
     steps:
-    - name: Checkout
+    - name: 🧾 Checkout
       uses: actions/checkout@v5
-    - name: Setup Node
+    - name: 🚧 Setup Node
       uses: actions/setup-node@v4
       with:
         node-version: '22'
         registry-url: 'https://registry.npmjs.org/'
 
-    - name: Setup Dependencies
+    - name: 🏗️ Setup Dependencies
       run: |
         npm install -g npm@latest
         corepack enable
@@ -41,7 +41,7 @@ jobs:
         yarn install
         yarn build
 
-    - name: Check package version
+    - name: 🔎 Check package version
       env:
         IS_PRERELEASE: ${{ github.event.release.prerelease }}
       run: |
@@ -64,7 +64,7 @@ jobs:
           echo "✅ Release version check passed"
         fi
 
-    - name: Publish to npm
+    - name: 📨 Publish to npm
       env:
         IS_PRERELEASE: ${{ github.event.release.prerelease }}
       run: |
@@ -74,7 +74,7 @@ jobs:
           npm publish
         fi
 
-    - name: Send Discord Notification
+    - name: 📣 Send Discord Notification
       if: ${{ !github.event.release.prerelease }}
       uses: sarisia/actions-status-discord@v1
       with:

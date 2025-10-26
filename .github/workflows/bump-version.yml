@@ -1,4 +1,4 @@
-name: Bump Package Version
+name: 📬 Bump Package Version
 
 on:
   workflow_dispatch:

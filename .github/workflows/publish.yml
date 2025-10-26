@@ -58,6 +58,9 @@ jobs:
         IS_PRERELEASE: ${{ github.event.release.prerelease }}
       run: |
         npm --version
+        npm install -g npm@latest
+        npm --version
+
         if [[ "$IS_PRERELEASE" == "true" ]]; then
           npm publish --tag beta --access public --loglevel verbose
         else

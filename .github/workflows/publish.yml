@@ -65,6 +65,7 @@ jobs:
 
       - name: 📦 Create build
         run: |
+          npm install -g npm
           corepack enable
           yarn config set enableImmutableInstalls false
           yarn

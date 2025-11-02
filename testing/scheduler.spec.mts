@@ -8,7 +8,7 @@ describe("Scheduler", () => {
   });
 
   describe("cron", () => {
-    it.skip("runs a cron schedule", async () => {
+    it("runs a cron schedule", async () => {
       vi.useFakeTimers();
       const spy = vi.fn();
       const app = await TestRunner().run(({ scheduler }) => {

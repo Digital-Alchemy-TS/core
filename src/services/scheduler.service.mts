@@ -1,5 +1,5 @@
+import { CronJob } from "cron";
 import dayjs from "dayjs";
-import { schedule } from "node-cron";
 
 import type {
   SchedulerBuilder,
@@ -35,7 +35,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
       const stopFunctions: ScheduleRemove[] = [];
       [scheduleList].flat().forEach(cronSchedule => {
         logger.trace({ context, name: cron, schedule: cronSchedule }, `init`);
-        const cronJob = schedule(cronSchedule, async () => await internal.safeExec(exec));
+        const cronJob = new CronJob(cronSchedule, async () => await internal.safeExec(exec));
         lifecycle.onReady(() => {
           logger.trace({ context, name: cron, schedule: cronSchedule }, "starting");
           cronJob.start();

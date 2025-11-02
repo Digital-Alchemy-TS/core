@@ -25,7 +25,7 @@
     "strictFunctionTypes": true,
     "target": "ESNext",
     "rewriteRelativeImportExtensions": true,
-    "types": ["vitest/globals"],
+    "types": ["node", "vitest/globals"],
     "allowSyntheticDefaultImports": true
   },
   "include": [

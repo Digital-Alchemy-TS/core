@@ -1,14 +1,12 @@
 import chalk from "chalk";
 import dayjs from "dayjs";
 
-import {
+import type {
   ApplicationDefinition,
-  CreateLibrary,
-  createMockLogger,
   OptionalModuleConfiguration,
   ServiceMap,
-  TestRunner,
 } from "../src/index.mts";
+import { CreateLibrary, createMockLogger, TestRunner } from "../src/index.mts";
 
 describe("Logger", () => {
   let application: ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;

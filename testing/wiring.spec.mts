@@ -1,17 +1,19 @@
-import {
+import type {
   ApplicationDefinition,
-  BootstrapException,
   BootstrapOptions,
+  InternalDefinition,
+  LifecycleStages,
+  OptionalModuleConfiguration,
+  ServiceMap,
+} from "../src/index.mts";
+import {
+  BootstrapException,
   buildSortOrder,
   CreateApplication,
   CreateLibrary,
   createMockLogger,
   createModule,
-  InternalDefinition,
   is,
-  LifecycleStages,
-  OptionalModuleConfiguration,
-  ServiceMap,
   ServiceRunner,
   sleep,
   TestRunner,
@@ -358,7 +360,7 @@ describe("Lifecycle", () => {
   });
 
   it("exits on catastrophic bootstrap errors", async () => {
-    expect.assertions(1);
+    expect.assertions(2);
     const errorMock = vi.fn(() => {
       throw new Error("EXPECTED_UNIT_TESTING_ERROR");
     });
@@ -370,6 +372,7 @@ describe("Lifecycle", () => {
     });
 
     expect(exitSpy).toHaveBeenCalled();
+    expect(exitSpy).toHaveBeenCalledWith(1); // EXIT_ERROR
   });
 
   it("higher numbers go first (positive)", async () => {
@@ -686,7 +689,7 @@ describe("Bootstrap", () => {
 // #MARK: Boot Phase
 describe("Boot Phase", () => {
   it("should exit if service constructor throws error", async () => {
-    expect.assertions(1);
+    expect.assertions(2);
     const spy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
     vi.spyOn(globalThis.console, "error").mockImplementation(() => undefined);
 
@@ -694,6 +697,7 @@ describe("Boot Phase", () => {
       throw new Error("boom");
     });
     expect(spy).toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledWith(1); // EXIT_ERROR
   });
 
   it("should not have project name in construction complete prior to completion", async () => {
@@ -840,7 +844,7 @@ describe("Teardown", () => {
   });
 
   it("should shutdown on SIGTERM", async () => {
-    expect.assertions(2);
+    expect.assertions(3);
     const exit = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 
     const spy = vi.fn();
@@ -852,11 +856,12 @@ describe("Teardown", () => {
 
     expect(spy).toHaveBeenCalled();
     expect(exit).toHaveBeenCalled();
+    expect(exit).toHaveBeenCalledWith(143); // SIGTERM
     application = undefined;
   });
 
   it("should shutdown on SIGINT", async () => {
-    expect.assertions(2);
+    expect.assertions(3);
     const exit = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 
     const spy = vi.fn();
@@ -869,6 +874,7 @@ describe("Teardown", () => {
 
     expect(spy).toHaveBeenCalled();
     expect(exit).toHaveBeenCalled();
+    expect(exit).toHaveBeenCalledWith(130); // SIGINT
     application = undefined;
   });
 });

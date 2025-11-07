@@ -3,35 +3,37 @@ import { faker } from "@faker-js/faker";
 import fs, { existsSync, unlinkSync, writeFileSync } from "fs";
 import { encode as iniEncode } from "ini";
 import { dump as yamlDump } from "js-yaml";
-import { ParsedArgs } from "minimist";
+import type { ParsedArgs } from "minimist";
 import { homedir } from "os";
 import { extname, join } from "path";
 import { cwd, env } from "process";
 import { v4 } from "uuid";
 
-import {
+import type {
   ApplicationDefinition,
   BootstrapOptions,
+  DataTypes,
+  ILogger,
+  InternalConfig,
+  InternalDefinition,
+  OptionalModuleConfiguration,
+  PartialConfiguration,
+  ServiceMap,
+  TServiceParams,
+} from "../src/index.mts";
+import {
   cast,
   configFilePaths,
   configLoaderFile,
   CreateApplication,
   CreateLibrary,
   createMockLogger,
-  DataTypes,
-  ILogger,
-  InternalConfig,
-  InternalDefinition,
   is,
   loadConfigFromFile,
   loadDotenv,
-  OptionalModuleConfiguration,
   parseConfig,
-  PartialConfiguration,
-  ServiceMap,
   SINGLE,
   TestRunner,
-  TServiceParams,
 } from "../src/index.mts";
 
 const BASIC_BOOT = {

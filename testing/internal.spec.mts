@@ -1,10 +1,5 @@
-import {
-  BootstrapOptions,
-  CreateApplication,
-  InternalDefinition,
-  TBlackHole,
-  TestRunner,
-} from "../src/index.mts";
+import type { BootstrapOptions, TBlackHole } from "../src/index.mts";
+import { CreateApplication, InternalDefinition, TestRunner } from "../src/index.mts";
 
 export const BASIC_BOOT = {
   configuration: { boilerplate: { LOG_LEVEL: "silent" } },

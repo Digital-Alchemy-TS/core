@@ -50,6 +50,10 @@ export interface DeclaredEnvironments {
   local: true;
 }
 
+const EXIT_ERROR = 1;
+const SIGINT = 130;
+const SIGTERM = 143;
+
 // #MARK: CreateBoilerplate
 function createBoilerplate() {
   // ! DO NOT MOVE TO ANOTHER FILE !
@@ -179,7 +183,6 @@ function createBoilerplate() {
 // unclear if this variable even serves a purpose beyond types
 export let LIB_BOILERPLATE: ReturnType<typeof createBoilerplate>;
 type GenericApp = ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
-
 const RUNNING_APPLICATIONS = new Map<string, GenericApp>();
 
 // #MARK: QuickShutdown
@@ -196,14 +199,14 @@ const processEvents = new Map([
     "SIGTERM",
     async () => {
       await quickShutdown("SIGTERM");
-      process.exit();
+      process.exit(SIGTERM);
     },
   ],
   [
     "SIGINT",
     async () => {
       await quickShutdown("SIGINT");
-      process.exit();
+      process.exit(SIGINT);
     },
   ],
   // ["uncaughtException", () => {}],
@@ -354,7 +357,7 @@ async function wireService(
     // Init errors at this level are considered blocking / fatal
     // eslint-disable-next-line no-console
     console.error("initialization error", error);
-    process.exit();
+    process.exit(EXIT_ERROR);
   }
 }
 
@@ -545,8 +548,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       // eslint-disable-next-line no-console
       console.error("bootstrap failed", error);
     }
-
-    process.exit();
+    process.exit(EXIT_ERROR);
   }
 }
 

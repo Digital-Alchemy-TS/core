@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 
+import type { TContext } from "../src/index.mts";
 import {
   ACTIVE_THROTTLE,
   cloneSpecificValue,
@@ -13,7 +14,6 @@ import {
   InternalError,
   safeGetProperty,
   sleep,
-  TContext,
 } from "../src/index.mts";
 
 describe("utilities", () => {

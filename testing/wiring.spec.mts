@@ -590,8 +590,8 @@ describe("Bootstrap", () => {
       showExtraBootStats: true,
     });
     expect(spy).toHaveBeenCalledWith(
-      "boilerplate:wiring",
       expect.objectContaining({
+        context: "boilerplate:wiring",
         Bootstrap: expect.any(String),
         Configure: expect.any(String),
         PostConfig: expect.any(String),
@@ -617,16 +617,16 @@ describe("Bootstrap", () => {
       customLogger: mockLogger,
     });
     expect(spy).toHaveBeenCalledWith(
-      "boilerplate:wiring",
       expect.objectContaining({
+        context: "boilerplate:wiring",
         Total: expect.any(String),
       }),
       "[%s] application bootstrapped",
       "app",
     );
     expect(spy).not.toHaveBeenCalledWith(
-      "boilerplate:wiring",
       expect.objectContaining({
+        context: "boilerplate:wiring",
         Ready: expect.any(String),
       }),
       "[%s] application bootstrapped",

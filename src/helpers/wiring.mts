@@ -19,7 +19,7 @@ import type { TContext } from "./context.mts";
 import type { CronExpression, ScheduleRemove } from "./cron.mts";
 import { BootstrapException } from "./errors.mts";
 import type { TLifecycleBase } from "./lifecycle.mts";
-import type { GetLogger, TConfigLogLevel } from "./logger.mts";
+import type { ILogger, TConfigLogLevel } from "./logger.mts";
 import type { TBlackHole } from "./utilities.mts";
 
 export type TServiceReturn<OBJECT extends object = object> = void | OBJECT;
@@ -150,7 +150,7 @@ export interface AsyncLogData {
   /**
    * thread local child logger
    */
-  logger?: GetLogger;
+  logger?: ILogger;
 }
 
 export interface AsyncLocalData {
@@ -196,7 +196,7 @@ export type TServiceParams = {
   /**
    * context aware logger instance
    */
-  logger: GetLogger;
+  logger: ILogger;
   /**
    * run commands on intervals & schedules
    *
@@ -363,7 +363,7 @@ export type BootstrapOptions = {
   /**
    * use this logger, instead of the baked in one. Maybe you want some custom transports or something? Put your customized thing here
    */
-  customLogger?: GetLogger;
+  customLogger?: ILogger;
 
   /**
    * fine tine the built in logger
@@ -482,7 +482,7 @@ export type ApplicationDefinition<
   C extends OptionalModuleConfiguration,
 > = ApplicationConfigurationOptions<S, C> &
   Wire & {
-    logger: GetLogger;
+    logger: ILogger;
     type: "application";
     booted: boolean;
     bootstrap: (options?: BootstrapOptions) => Promise<TServiceParams>;
@@ -493,7 +493,7 @@ export type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration
 // #MARK: buildSortOrder
 export function buildSortOrder<S extends ServiceMap, C extends OptionalModuleConfiguration>(
   app: ApplicationDefinition<S, C>,
-  logger: GetLogger,
+  logger: ILogger,
 ) {
   if (is.empty(app.libraries)) {
     return [];

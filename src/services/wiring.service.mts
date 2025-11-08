@@ -27,6 +27,7 @@ import {
   eachSeries,
   NONE,
   SINGLE,
+  VALID_LOG_LEVELS,
   WIRE_PROJECT,
   wireOrder,
   WIRING_CONTEXT,
@@ -78,6 +79,15 @@ function createBoilerplate() {
       },
 
       /**
+       * Affects the node global inspectDepth for console.log, as well as the internal logger
+       */
+      INSPECT_DEPTH: {
+        default: 10,
+        description: "Object depth to print in logs",
+        type: "number",
+      },
+
+      /**
        * > by default true when:
        *
        * ```typescript
@@ -120,7 +130,8 @@ function createBoilerplate() {
        *
        * ### `fatal`
        *
-       * Produce a log at the highest importance level, not common
+       * Produce a log at the highest importance level, not common.
+       * Prints logs sync to console (getting ahead of the probable exit as the next step)
        *
        * ### `silent`
        *
@@ -129,7 +140,7 @@ function createBoilerplate() {
       LOG_LEVEL: {
         default: "trace",
         description: "Minimum log level to process",
-        enum: ["silent", "trace", "info", "warn", "debug", "error", "fatal"],
+        enum: VALID_LOG_LEVELS,
         type: "string",
       } satisfies StringConfig<TConfigLogLevel> as StringConfig<TConfigLogLevel>,
 

@@ -1,12 +1,12 @@
 /* eslint-disable sonarjs/slow-regex */
 import chalk from "chalk";
 import dayjs from "dayjs";
+import { writeSync } from "fs";
 import { format, inspect } from "util";
 
 import type {
   DigitalAlchemyLogger,
   FlatServiceNames,
-  GetLogger,
   ILogger,
   LoadedModuleNames,
   LogStreamTarget,
@@ -26,13 +26,14 @@ const LOG_LEVEL_PRIORITY = {
   trace: 10,
   warn: 40,
 };
+export const VALID_LOG_LEVELS = Object.keys(
+  LOG_LEVEL_PRIORITY,
+) as (keyof typeof LOG_LEVEL_PRIORITY)[];
+
 const DECIMALS = 2;
 const LOG_LEVELS = Object.keys(LOG_LEVEL_PRIORITY) as TConfigLogLevel[];
 
-let logger = {} as Record<
-  keyof ILogger,
-  (context: TContext, ...data: Parameters<TLoggerFunction>) => void
->;
+let logger = {} as ILogger;
 
 const MAX_CUTOFF = 2000;
 const frontDash = " - ";
@@ -50,7 +51,7 @@ export async function Logger({
   const { is } = internal.utils;
   let lastMessage = performance.now();
   let logCounter = START;
-  const extraTargets = new Set<GetLogger | LogStreamTarget>();
+  const extraTargets = new Set<ILogger | LogStreamTarget>();
 
   internal.boot.options ??= {};
   const { loggerOptions = {} } = internal.boot.options;
@@ -87,6 +88,32 @@ export async function Logger({
     }
 
     return [out, logger];
+  }
+
+  // #MARK: printMessage
+  function printMessage(key: keyof ILogger, message: string) {
+    switch (key) {
+      case "warn": {
+        globalThis.console.warn(message);
+        return;
+      }
+      case "debug": {
+        globalThis.console.debug(message);
+        return;
+      }
+      case "error": {
+        globalThis.console.error(message);
+        return;
+      }
+      case "fatal": {
+        // Synchronous write for fatal logs to ensure they are flushed before process exit
+        writeSync(process.stderr.fd, `${message}\n`);
+        return;
+      }
+      default: {
+        globalThis.console.log(message);
+      }
+    }
   }
 
   // #MARK: prettyFormatMessage
@@ -171,11 +198,12 @@ export async function Logger({
           // stream targets, just take all messages and do the exact same thing with them
           // ex: send to http endpoint
           if (is.function(target)) {
-            target(msg, rawData);
+            (target as LogStreamTarget)(msg, rawData);
             return;
           }
-          // something that conforms to the basic logger interface
-          (target as GetLogger)[key](msg, rawData);
+          if (is.object(target)) {
+            (target as ILogger)[key](rawData, msg);
+          }
         });
 
         // minor performance tuning option:
@@ -210,7 +238,7 @@ export async function Logger({
               "\n" +
               inspect(extra, {
                 compact: false,
-                depth: 10,
+                depth: config.boilerplate.INSPECT_DEPTH,
                 numericSeparator: true,
                 sorted: true,
               })
@@ -224,25 +252,7 @@ export async function Logger({
           return;
         }
 
-        // #MARK: globalThis.console
-        switch (key) {
-          case "warn": {
-            globalThis.console.warn(message);
-            return;
-          }
-          case "debug": {
-            globalThis.console.debug(message);
-            return;
-          }
-          case "error":
-          case "fatal": {
-            globalThis.console.error(message);
-            return;
-          }
-          default: {
-            globalThis.console.log(message);
-          }
-        }
+        printMessage(key, message);
       };
     });
   } else {
@@ -294,7 +304,7 @@ export async function Logger({
         shouldILog.trace && logger.trace(context as TContext, ...params),
       warn: (...params: Parameters<TLoggerFunction>) =>
         shouldILog.warn && logger.warn(context as TContext, ...params),
-    } as GetLogger;
+    } as ILogger;
   }
 
   // #MARK updateShouldLog:
@@ -306,15 +316,24 @@ export async function Logger({
   }
 
   // #MARK: lifecycle
-  lifecycle.onPostConfig(() => internal.boilerplate.logger.updateShouldLog());
+  lifecycle.onPostConfig(() => {
+    internal.boilerplate.logger.updateShouldLog();
+    inspect.defaultOptions.depth = config.boilerplate.INSPECT_DEPTH;
+  });
+
+  lifecycle.onShutdownComplete(() => {
+    extraTargets.forEach(i => extraTargets.delete(i));
+  }, Number.POSITIVE_INFINITY);
+
   internal.boilerplate.configuration.onUpdate(
     () => internal.boilerplate.logger.updateShouldLog(),
     "boilerplate",
     "LOG_LEVEL",
   );
 
-  function addTarget(target: GetLogger | LogStreamTarget) {
+  function addTarget(target: ILogger | LogStreamTarget) {
     extraTargets.add(target);
+    return internal.removeFn(() => extraTargets.delete(target));
   }
 
   // #MARK: return object

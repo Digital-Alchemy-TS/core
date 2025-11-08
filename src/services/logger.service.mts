@@ -1,7 +1,7 @@
 /* eslint-disable sonarjs/slow-regex */
 import chalk from "chalk";
 import dayjs from "dayjs";
-import { writeSync } from "fs";
+import fs from "fs";
 import { format, inspect } from "util";
 
 import type {
@@ -40,6 +40,7 @@ const frontDash = " - ";
 const SYMBOL_START = 1;
 const SYMBOL_END = -1;
 const LEVEL_MAX = 7;
+const SKIP_FIRST_PARAM = 1;
 
 export async function Logger({
   lifecycle,
@@ -66,6 +67,24 @@ export async function Logger({
   // make sure the object formatter respects the pretty option
   // if this is enabled while outputting to docker logs, the output becomes much harder to read
   inspect.defaultOptions.colors = prettyFormat;
+
+  // #MARK: normalizeParameters
+  function normalizeParameters(
+    context: TContext,
+    ...params: Parameters<TLoggerFunction>
+  ): Parameters<TLoggerFunction> {
+    if (is.object(params[FIRST])) {
+      // First param is an object - ensure it has context (create new object to avoid mutation)
+      const firstParam = params[FIRST] as { context?: TContext } & Record<string, unknown>;
+      if (!firstParam.context) {
+        const remainingParams = params.slice(SKIP_FIRST_PARAM);
+        return [{ ...firstParam, context }, ...remainingParams] as Parameters<TLoggerFunction>;
+      }
+      return params;
+    }
+    // First param is not an object - create one with context and shift everything over
+    return [{ context }, ...params] as Parameters<TLoggerFunction>;
+  }
 
   // #MARK: mergeData
   function mergeData<T extends object>(data: T): [T, ILogger] {
@@ -107,7 +126,7 @@ export async function Logger({
       }
       case "fatal": {
         // Synchronous write for fatal logs to ensure they are flushed before process exit
-        writeSync(process.stderr.fd, `${message}\n`);
+        fs.writeSync(process.stdout.fd, `${message}\n`);
         return;
       }
       default: {
@@ -146,7 +165,13 @@ export async function Logger({
   if (is.empty(internal.boot.options?.customLogger)) {
     // #MARK: formatter
     [...METHOD_COLORS.keys()].forEach(key => {
-      logger[key] = (context: TContext, ...parameters: Parameters<TLoggerFunction>) => {
+      logger[key] = (...parameters: Parameters<TLoggerFunction>) => {
+        // Extract context from first param if it's an object, otherwise use default
+        const firstParam = parameters[FIRST];
+        const contextValue: TContext =
+          (is.object(firstParam) && (firstParam as { context?: TContext }).context) ||
+          ("digital-alchemy:system-logger" as TContext);
+
         const [data, child] = mergeData(
           is.object(parameters[FIRST])
             ? (parameters.shift() as {
@@ -166,7 +191,7 @@ export async function Logger({
         // used with cloud logging (graylog, datadog, etc)
         const rawData = {
           ...data,
-          context: data.context || context,
+          context: data.context || contextValue,
           level: key,
           timestamp: Date.now(),
         } as Record<string, unknown>;
@@ -214,7 +239,7 @@ export async function Logger({
 
         // #MARK: pretty logs
         const level = `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ");
-        const highlighted = chalk.bold[METHOD_COLORS.get(key)](`[${data.context || context}]`);
+        const highlighted = chalk.bold[METHOD_COLORS.get(key)](`[${data.context || contextValue}]`);
         const timestamp = chalk.white(`[${dayjs().format(timestampFormat)}]`);
         let message = `${ms}${timestamp} ${level}${highlighted}`;
 
@@ -293,17 +318,17 @@ export async function Logger({
 
     return {
       debug: (...params: Parameters<TLoggerFunction>) =>
-        shouldILog.debug && logger.debug(context as TContext, ...params),
+        shouldILog.debug && logger.debug(...normalizeParameters(context as TContext, ...params)),
       error: (...params: Parameters<TLoggerFunction>) =>
-        shouldILog.error && logger.error(context as TContext, ...params),
+        shouldILog.error && logger.error(...normalizeParameters(context as TContext, ...params)),
       fatal: (...params: Parameters<TLoggerFunction>) =>
-        shouldILog.fatal && logger.fatal(context as TContext, ...params),
+        shouldILog.fatal && logger.fatal(...normalizeParameters(context as TContext, ...params)),
       info: (...params: Parameters<TLoggerFunction>) =>
-        shouldILog.info && logger.info(context as TContext, ...params),
+        shouldILog.info && logger.info(...normalizeParameters(context as TContext, ...params)),
       trace: (...params: Parameters<TLoggerFunction>) =>
-        shouldILog.trace && logger.trace(context as TContext, ...params),
+        shouldILog.trace && logger.trace(...normalizeParameters(context as TContext, ...params)),
       warn: (...params: Parameters<TLoggerFunction>) =>
-        shouldILog.warn && logger.warn(context as TContext, ...params),
+        shouldILog.warn && logger.warn(...normalizeParameters(context as TContext, ...params)),
     } as ILogger;
   }
 

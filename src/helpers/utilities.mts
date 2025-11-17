@@ -1,7 +1,7 @@
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import type { Duration, DurationUnitsObjectType } from "dayjs/plugin/duration";
-import duration from "dayjs/plugin/duration";
+import duration from "dayjs/plugin/duration.js";
 
 import { is } from "../index.mts";
 import type { TOffset } from "./cron.mts";

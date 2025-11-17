@@ -1,7 +1,7 @@
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 import type { Duration, DurationUnitsObjectType, DurationUnitType } from "dayjs/plugin/duration";
-import duration from "dayjs/plugin/duration";
+import duration from "dayjs/plugin/duration.js";
 
 import type { RemoveCallback } from "../index.mts";
 import type { TContext } from "./context.mts";

@@ -357,7 +357,6 @@ async function wireService(
     // Init errors at this level are considered blocking / fatal
     // eslint-disable-next-line no-console
     console.error("initialization error", error);
-    throw error;
     process.exit(EXIT_ERROR);
   }
 }
@@ -549,7 +548,6 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       // eslint-disable-next-line no-console
       console.error("bootstrap failed", error);
     }
-    throw error;
     process.exit(EXIT_ERROR);
   }
 }

@@ -1,6 +1,5 @@
 import type { Dayjs } from "dayjs";
-import dayjs, { isDuration } from "dayjs";
-import type { Duration, DurationUnitsObjectType } from "dayjs/plugin/duration";
+import dayjs from "dayjs";
 import { EventEmitter } from "events";
 import type { Get } from "type-fest";
 
@@ -27,6 +26,8 @@ import {
   NONE,
   SECOND,
   START,
+  toOffsetDuration,
+  toOffsetMs,
   YEAR,
 } from "../index.mts";
 import type { IsIt } from "./is.service.mts";
@@ -87,58 +88,13 @@ export class InternalUtils {
   }
 
   getIntervalTarget(offset: TOffset): Dayjs {
-    let duration: Duration;
-    // * if function, unwrap
-    if (is.function(offset)) {
-      offset = offset();
-    }
-    // * if tuple, resolve
-    if (is.array(offset)) {
-      const [amount, unit] = offset;
-      duration = dayjs.duration(amount, unit);
-      // * resolve objects, or capture Duration
-    } else if (is.object(offset)) {
-      duration = isDuration(offset)
-        ? (offset as Duration)
-        : dayjs.duration(offset as DurationUnitsObjectType);
-    }
-    // * resolve from partial ISO 8601
-    if (is.string(offset)) {
-      duration = dayjs.duration(`PT${offset.toUpperCase()}`);
-    }
-    // * ms
-    if (is.number(offset)) {
-      duration = dayjs.duration(offset, "ms");
-    }
+    const duration = toOffsetDuration(offset);
     const now = dayjs();
     return duration ? now.add(duration) : now;
   }
 
   getIntervalMs(offset: TOffset): number {
-    let duration: Duration;
-    // * if function, unwrap
-    if (is.function(offset)) {
-      offset = offset();
-    }
-    // * if tuple, resolve
-    if (is.array(offset)) {
-      const [amount, unit] = offset;
-      duration = dayjs.duration(amount, unit);
-      // * resolve objects, or capture Duration
-    } else if (is.object(offset)) {
-      duration = isDuration(offset)
-        ? (offset as Duration)
-        : dayjs.duration(offset as DurationUnitsObjectType);
-    }
-    // * resolve from partial ISO 8601
-    if (is.string(offset)) {
-      duration = dayjs.duration(`PT${offset.toUpperCase()}`);
-    }
-    // * ms
-    if (is.number(offset)) {
-      return offset;
-    }
-    return duration?.asMilliseconds() ?? NONE;
+    return toOffsetMs(offset);
   }
 
   public relativeDate(pastDate: inputFormats, futureDate: inputFormats = new Date().toISOString()) {

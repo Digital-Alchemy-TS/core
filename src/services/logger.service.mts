@@ -1,12 +1,12 @@
 /* eslint-disable sonarjs/slow-regex */
 import chalk from "chalk";
 import dayjs from "dayjs";
+import fs from "fs";
 import { format, inspect } from "util";
 
 import type {
   DigitalAlchemyLogger,
   FlatServiceNames,
-  GetLogger,
   ILogger,
   LoadedModuleNames,
   LogStreamTarget,
@@ -26,19 +26,21 @@ const LOG_LEVEL_PRIORITY = {
   trace: 10,
   warn: 40,
 };
+export const VALID_LOG_LEVELS = Object.keys(
+  LOG_LEVEL_PRIORITY,
+) as (keyof typeof LOG_LEVEL_PRIORITY)[];
+
 const DECIMALS = 2;
 const LOG_LEVELS = Object.keys(LOG_LEVEL_PRIORITY) as TConfigLogLevel[];
 
-let logger = {} as Record<
-  keyof ILogger,
-  (context: TContext, ...data: Parameters<TLoggerFunction>) => void
->;
+let logger = {} as ILogger;
 
 const MAX_CUTOFF = 2000;
 const frontDash = " - ";
 const SYMBOL_START = 1;
 const SYMBOL_END = -1;
 const LEVEL_MAX = 7;
+const SKIP_FIRST_PARAM = 1;
 
 export async function Logger({
   lifecycle,
@@ -50,7 +52,7 @@ export async function Logger({
   const { is } = internal.utils;
   let lastMessage = performance.now();
   let logCounter = START;
-  const extraTargets = new Set<GetLogger | LogStreamTarget>();
+  const extraTargets = new Set<ILogger | LogStreamTarget>();
 
   internal.boot.options ??= {};
   const { loggerOptions = {} } = internal.boot.options;
@@ -65,6 +67,24 @@ export async function Logger({
   // make sure the object formatter respects the pretty option
   // if this is enabled while outputting to docker logs, the output becomes much harder to read
   inspect.defaultOptions.colors = prettyFormat;
+
+  // #MARK: normalizeParameters
+  function normalizeParameters(
+    context: TContext,
+    ...params: Parameters<TLoggerFunction>
+  ): Parameters<TLoggerFunction> {
+    if (is.object(params[FIRST])) {
+      // First param is an object - ensure it has context (create new object to avoid mutation)
+      const firstParam = params[FIRST] as { context?: TContext } & Record<string, unknown>;
+      if (!firstParam.context) {
+        const remainingParams = params.slice(SKIP_FIRST_PARAM);
+        return [{ ...firstParam, context }, ...remainingParams] as Parameters<TLoggerFunction>;
+      }
+      return params;
+    }
+    // First param is not an object - create one with context and shift everything over
+    return [{ context }, ...params] as Parameters<TLoggerFunction>;
+  }
 
   // #MARK: mergeData
   function mergeData<T extends object>(data: T): [T, ILogger] {
@@ -87,6 +107,32 @@ export async function Logger({
     }
 
     return [out, logger];
+  }
+
+  // #MARK: printMessage
+  function printMessage(key: keyof ILogger, message: string) {
+    switch (key) {
+      case "warn": {
+        globalThis.console.warn(message);
+        return;
+      }
+      case "debug": {
+        globalThis.console.debug(message);
+        return;
+      }
+      case "error": {
+        globalThis.console.error(message);
+        return;
+      }
+      case "fatal": {
+        // Synchronous write for fatal logs to ensure they are flushed before process exit
+        fs.writeSync(process.stdout.fd, `${message}\n`);
+        return;
+      }
+      default: {
+        globalThis.console.log(message);
+      }
+    }
   }
 
   // #MARK: prettyFormatMessage
@@ -119,7 +165,13 @@ export async function Logger({
   if (is.empty(internal.boot.options?.customLogger)) {
     // #MARK: formatter
     [...METHOD_COLORS.keys()].forEach(key => {
-      logger[key] = (context: TContext, ...parameters: Parameters<TLoggerFunction>) => {
+      logger[key] = (...parameters: Parameters<TLoggerFunction>) => {
+        // Extract context from first param if it's an object, otherwise use default
+        const firstParam = parameters[FIRST];
+        const contextValue: TContext =
+          (is.object(firstParam) && (firstParam as { context?: TContext }).context) ||
+          ("digital-alchemy:system-logger" as TContext);
+
         const [data, child] = mergeData(
           is.object(parameters[FIRST])
             ? (parameters.shift() as {
@@ -139,7 +191,7 @@ export async function Logger({
         // used with cloud logging (graylog, datadog, etc)
         const rawData = {
           ...data,
-          context: data.context || context,
+          context: data.context || contextValue,
           level: key,
           timestamp: Date.now(),
         } as Record<string, unknown>;
@@ -171,11 +223,12 @@ export async function Logger({
           // stream targets, just take all messages and do the exact same thing with them
           // ex: send to http endpoint
           if (is.function(target)) {
-            target(msg, rawData);
+            (target as LogStreamTarget)(msg, rawData);
             return;
           }
-          // something that conforms to the basic logger interface
-          (target as GetLogger)[key](msg, rawData);
+          if (is.object(target)) {
+            (target as ILogger)[key](rawData, msg);
+          }
         });
 
         // minor performance tuning option:
@@ -186,7 +239,7 @@ export async function Logger({
 
         // #MARK: pretty logs
         const level = `[${key.toUpperCase()}]`.padStart(LEVEL_MAX, " ");
-        const highlighted = chalk.bold[METHOD_COLORS.get(key)](`[${data.context || context}]`);
+        const highlighted = chalk.bold[METHOD_COLORS.get(key)](`[${data.context || contextValue}]`);
         const timestamp = chalk.white(`[${dayjs().format(timestampFormat)}]`);
         let message = `${ms}${timestamp} ${level}${highlighted}`;
 
@@ -210,7 +263,7 @@ export async function Logger({
               "\n" +
               inspect(extra, {
                 compact: false,
-                depth: 10,
+                depth: config.boilerplate.INSPECT_DEPTH,
                 numericSeparator: true,
                 sorted: true,
               })
@@ -224,25 +277,7 @@ export async function Logger({
           return;
         }
 
-        // #MARK: globalThis.console
-        switch (key) {
-          case "warn": {
-            globalThis.console.warn(message);
-            return;
-          }
-          case "debug": {
-            globalThis.console.debug(message);
-            return;
-          }
-          case "error":
-          case "fatal": {
-            globalThis.console.error(message);
-            return;
-          }
-          default: {
-            globalThis.console.log(message);
-          }
-        }
+        printMessage(key, message);
       };
     });
   } else {
@@ -283,18 +318,18 @@ export async function Logger({
 
     return {
       debug: (...params: Parameters<TLoggerFunction>) =>
-        shouldILog.debug && logger.debug(context as TContext, ...params),
+        shouldILog.debug && logger.debug(...normalizeParameters(context as TContext, ...params)),
       error: (...params: Parameters<TLoggerFunction>) =>
-        shouldILog.error && logger.error(context as TContext, ...params),
+        shouldILog.error && logger.error(...normalizeParameters(context as TContext, ...params)),
       fatal: (...params: Parameters<TLoggerFunction>) =>
-        shouldILog.fatal && logger.fatal(context as TContext, ...params),
+        shouldILog.fatal && logger.fatal(...normalizeParameters(context as TContext, ...params)),
       info: (...params: Parameters<TLoggerFunction>) =>
-        shouldILog.info && logger.info(context as TContext, ...params),
+        shouldILog.info && logger.info(...normalizeParameters(context as TContext, ...params)),
       trace: (...params: Parameters<TLoggerFunction>) =>
-        shouldILog.trace && logger.trace(context as TContext, ...params),
+        shouldILog.trace && logger.trace(...normalizeParameters(context as TContext, ...params)),
       warn: (...params: Parameters<TLoggerFunction>) =>
-        shouldILog.warn && logger.warn(context as TContext, ...params),
-    } as GetLogger;
+        shouldILog.warn && logger.warn(...normalizeParameters(context as TContext, ...params)),
+    } as ILogger;
   }
 
   // #MARK updateShouldLog:
@@ -306,15 +341,24 @@ export async function Logger({
   }
 
   // #MARK: lifecycle
-  lifecycle.onPostConfig(() => internal.boilerplate.logger.updateShouldLog());
+  lifecycle.onPostConfig(() => {
+    internal.boilerplate.logger.updateShouldLog();
+    inspect.defaultOptions.depth = config.boilerplate.INSPECT_DEPTH;
+  });
+
+  lifecycle.onShutdownComplete(() => {
+    extraTargets.forEach(i => extraTargets.delete(i));
+  }, Number.POSITIVE_INFINITY);
+
   internal.boilerplate.configuration.onUpdate(
     () => internal.boilerplate.logger.updateShouldLog(),
     "boilerplate",
     "LOG_LEVEL",
   );
 
-  function addTarget(target: GetLogger | LogStreamTarget) {
+  function addTarget(target: ILogger | LogStreamTarget) {
     extraTargets.add(target);
+    return internal.removeFn(() => extraTargets.delete(target));
   }
 
   // #MARK: return object

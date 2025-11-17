@@ -41,7 +41,10 @@ export function Configuration({
 
   // modern problems require modern solutions
   let logger: ILogger;
-  lifecycle.onPreInit(() => (logger = internal.boilerplate.logger.context(context)));
+  lifecycle.onPreInit(
+    () => (logger = internal.boilerplate.logger.context(context)),
+    Number.NEGATIVE_INFINITY,
+  );
   const configDefinitions: KnownConfigs = new Map();
   const configuration: PartialConfiguration = {};
   const loaded = new Set<string>();

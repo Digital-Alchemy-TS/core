@@ -1,5 +1,5 @@
 import type { Dayjs } from "dayjs";
-import dayjs, { isDuration } from "dayjs";
+import dayjs from "dayjs";
 import type { Duration, DurationUnitsObjectType } from "dayjs/plugin/duration";
 import duration from "dayjs/plugin/duration";
 
@@ -71,7 +71,7 @@ export function toOffsetDuration(offset: TOffset): Duration | undefined {
   }
   // Resolve objects, or capture Duration
   if (is.object(offset)) {
-    return isDuration(offset)
+    return dayjs.isDuration(offset)
       ? (offset as Duration)
       : dayjs.duration(offset as DurationUnitsObjectType);
   }

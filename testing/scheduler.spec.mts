@@ -80,6 +80,103 @@ describe("Scheduler", () => {
       expect(intervalSpy).not.toHaveBeenCalled();
       await app.teardown();
     });
+
+    it("handles tuple offset [amount, unit]", async () => {
+      vi.useFakeTimers();
+      const spy = vi.fn();
+      const app = await TestRunner().run(({ scheduler }) => {
+        scheduler.setInterval(spy, [30, "seconds"]);
+      });
+      vi.advanceTimersByTime(29 * SECOND);
+      expect(spy).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(2 * SECOND);
+      expect(spy).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(30 * SECOND);
+      expect(spy).toHaveBeenCalledTimes(2);
+      vi.useRealTimers();
+      await app.teardown();
+    });
+
+    it("handles object offset (DurationUnitsObjectType)", async () => {
+      vi.useFakeTimers();
+      const spy = vi.fn();
+      const app = await TestRunner().run(({ scheduler }) => {
+        scheduler.setInterval(spy, { minutes: 1, seconds: 30 });
+      });
+      vi.advanceTimersByTime(MINUTE + 29 * SECOND);
+      expect(spy).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(2 * SECOND);
+      expect(spy).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(MINUTE + 30 * SECOND);
+      expect(spy).toHaveBeenCalledTimes(2);
+      vi.useRealTimers();
+      await app.teardown();
+    });
+
+    it("handles string offset (ISO 8601 partial)", async () => {
+      vi.useFakeTimers();
+      const spy = vi.fn();
+      const app = await TestRunner().run(({ scheduler }) => {
+        scheduler.setInterval(spy, "1M30S"); // 1 minute 30 seconds
+      });
+      vi.advanceTimersByTime(MINUTE + 29 * SECOND);
+      expect(spy).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(2 * SECOND);
+      expect(spy).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(MINUTE + 30 * SECOND);
+      expect(spy).toHaveBeenCalledTimes(2);
+      vi.useRealTimers();
+      await app.teardown();
+    });
+
+    it("handles function offset", async () => {
+      vi.useFakeTimers();
+      const spy = vi.fn();
+      const app = await TestRunner().run(({ scheduler }) => {
+        scheduler.setInterval(spy, () => 2 * MINUTE);
+      });
+      vi.advanceTimersByTime(2 * MINUTE - SECOND);
+      expect(spy).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(2 * SECOND);
+      expect(spy).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(2 * MINUTE);
+      expect(spy).toHaveBeenCalledTimes(2);
+      vi.useRealTimers();
+      await app.teardown();
+    });
+
+    it("handles Duration object", async () => {
+      vi.useFakeTimers();
+      const spy = vi.fn();
+      const app = await TestRunner().run(({ scheduler }) => {
+        const duration = dayjs.duration({ minutes: 2, seconds: 30 });
+        scheduler.setInterval(spy, duration);
+      });
+      vi.advanceTimersByTime(2 * MINUTE + 29 * SECOND);
+      expect(spy).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(2 * SECOND);
+      expect(spy).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(2 * MINUTE + 30 * SECOND);
+      expect(spy).toHaveBeenCalledTimes(2);
+      vi.useRealTimers();
+      await app.teardown();
+    });
+
+    it("handles tuple with hours", async () => {
+      vi.useFakeTimers();
+      const spy = vi.fn();
+      const app = await TestRunner().run(({ scheduler }) => {
+        scheduler.setInterval(spy, [1, "hour"]);
+      });
+      vi.advanceTimersByTime(HOUR - SECOND);
+      expect(spy).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(2 * SECOND);
+      expect(spy).toHaveBeenCalledTimes(1);
+      vi.advanceTimersByTime(HOUR);
+      expect(spy).toHaveBeenCalledTimes(2);
+      vi.useRealTimers();
+      await app.teardown();
+    });
   });
 
   describe("setTimeout", () => {

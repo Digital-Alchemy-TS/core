@@ -117,8 +117,8 @@ export type SchedulerSlidingOptions = SchedulerOptions & {
 export type DigitalAlchemyScheduler = {
   cron: (options: SchedulerCronOptions) => RemoveCallback;
   sliding: (options: SchedulerSlidingOptions) => RemoveCallback;
-  setInterval: (callback: () => TBlackHole, ms: number) => RemoveCallback;
-  setTimeout: (callback: () => TBlackHole, ms: TOffset) => RemoveCallback;
+  setInterval: (callback: () => TBlackHole, target: TOffset) => RemoveCallback;
+  setTimeout: (callback: () => TBlackHole, target: TOffset) => RemoveCallback;
 };
 
 export type SchedulerBuilder = (context: TContext) => DigitalAlchemyScheduler;

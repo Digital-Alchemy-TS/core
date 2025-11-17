@@ -114,14 +114,14 @@ export type TScheduler = {
    * - handles shutdown events properly
    * - won't crash app for errors
    */
-  setInterval: (callback: () => TBlackHole, ms: number) => RemoveCallback;
+  setInterval: (callback: () => TBlackHole, target: TOffset) => RemoveCallback;
   /**
    * Same as setTimeout but:
    *
    * - handles shutdown events properly
    * - won't crash app for errors
    */
-  setTimeout: (callback: () => TBlackHole, ms: TOffset) => RemoveCallback;
+  setTimeout: (callback: () => TBlackHole, target: TOffset) => RemoveCallback;
 };
 
 export interface LoadedModules {

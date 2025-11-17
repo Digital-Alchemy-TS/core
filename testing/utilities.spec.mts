@@ -77,6 +77,102 @@ describe("utilities", () => {
       const end = Date.now();
       expect(end - start).toBeGreaterThanOrEqual(99);
     });
+
+    it("should handle Dayjs object correctly", async () => {
+      const targetDayjs = dayjs().add(100, "ms");
+      const start = Date.now();
+
+      await sleep(targetDayjs);
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(99);
+    });
+
+    it("should handle TOffset tuple format [number, unit]", async () => {
+      const timeout = 100;
+      const start = Date.now();
+
+      await sleep([timeout, "ms"]);
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(timeout - 1);
+    });
+
+    it("should handle TOffset tuple format with seconds", async () => {
+      const timeout = 0.1; // 0.1 seconds = 100ms
+      const start = Date.now();
+
+      await sleep([timeout, "s"]);
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(99);
+    });
+
+    it("should handle TOffset string format (ISO 8601 partial)", async () => {
+      const start = Date.now();
+
+      await sleep("0.1S");
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(99);
+    });
+
+    it("should handle TOffset string format with seconds", async () => {
+      const start = Date.now();
+
+      await sleep("0.1s");
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(99);
+    });
+
+    it("should handle TOffset object format (DurationUnitsObjectType)", async () => {
+      const start = Date.now();
+
+      await sleep({ milliseconds: 100 });
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(99);
+    });
+
+    it("should handle TOffset object format with seconds", async () => {
+      const start = Date.now();
+
+      await sleep({ seconds: 0.1 });
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(99);
+    });
+
+    it("should handle TOffset function format", async () => {
+      const timeout = 100;
+      const start = Date.now();
+
+      await sleep(() => timeout);
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(timeout - 1);
+    });
+
+    it("should handle TOffset function returning tuple", async () => {
+      const timeout = 100;
+      const start = Date.now();
+
+      await sleep(() => [timeout, "ms"]);
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(timeout - 1);
+    });
+
+    it("should handle Duration object", async () => {
+      const duration = dayjs.duration(100, "ms");
+      const start = Date.now();
+
+      await sleep(duration);
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(99);
+    });
   });
 
   // #MARK: debounce
@@ -130,6 +226,115 @@ describe("utilities", () => {
       await debounce(identifier, timeout);
 
       expect(ACTIVE_THROTTLE.has(identifier)).toBe(false);
+    });
+
+    it("should handle TOffset tuple format [number, unit]", async () => {
+      const identifier = "test-id";
+      const timeout = 10;
+      const start = Date.now();
+
+      await debounce(identifier, [timeout, "ms"]);
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(timeout);
+    });
+
+    it("should handle TOffset tuple format with seconds", async () => {
+      const identifier = "test-id";
+      const timeout = 0.01; // 0.01 seconds = 10ms
+      const start = Date.now();
+
+      await debounce(identifier, [timeout, "s"]);
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(9);
+    });
+
+    it("should handle TOffset string format (ISO 8601 partial)", async () => {
+      const identifier = "test-id";
+      const start = Date.now();
+
+      await debounce(identifier, "0.01S");
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(9);
+    });
+
+    it("should handle TOffset string format with seconds", async () => {
+      const identifier = "test-id";
+      const start = Date.now();
+
+      await debounce(identifier, "0.01s");
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(9);
+    });
+
+    it("should handle TOffset object format (DurationUnitsObjectType)", async () => {
+      const identifier = "test-id";
+      const start = Date.now();
+
+      await debounce(identifier, { milliseconds: 10 });
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(9);
+    });
+
+    it("should handle TOffset object format with seconds", async () => {
+      const identifier = "test-id";
+      const start = Date.now();
+
+      await debounce(identifier, { seconds: 0.01 });
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(9);
+    });
+
+    it("should handle TOffset function format", async () => {
+      const identifier = "test-id";
+      const timeout = 10;
+      const start = Date.now();
+
+      await debounce(identifier, () => timeout);
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(timeout);
+    });
+
+    it("should handle TOffset function returning tuple", async () => {
+      const identifier = "test-id";
+      const timeout = 10;
+      const start = Date.now();
+
+      await debounce(identifier, () => [timeout, "ms"]);
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(timeout);
+    });
+
+    it("should handle Duration object", async () => {
+      const identifier = "test-id";
+      const duration = dayjs.duration(10, "ms");
+      const start = Date.now();
+
+      await debounce(identifier, duration);
+
+      const end = Date.now();
+      expect(end - start).toBeGreaterThanOrEqual(9);
+    });
+
+    it("should cancel previous debounce with TOffset formats", async () => {
+      const identifier = "test-id";
+      const timeout1 = 20;
+      const timeout2 = 10;
+
+      const start = Date.now();
+      debounce(identifier, [timeout1, "ms"]);
+      await debounce(identifier, [timeout2, "ms"]);
+
+      const end = Date.now();
+      expect(end - start).toBeLessThan(timeout1);
+      expect(end - start).toBeGreaterThanOrEqual(9);
     });
   });
 

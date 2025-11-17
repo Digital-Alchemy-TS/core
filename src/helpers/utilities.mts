@@ -169,7 +169,7 @@ export const ACTIVE_DEBOUNCE = new Map<string, SleepReturn>();
 /**
  * wait for duration after call before allowing next, extends for calls inside window
  */
-export async function debounce(identifier: string, timeout: number): Promise<void> {
+export async function debounce(identifier: string, timeout: TOffset): Promise<void> {
   const current = ACTIVE_DEBOUNCE.get(identifier);
   if (!is.undefined(current)) {
     current.kill("stop");

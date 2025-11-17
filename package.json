@@ -58,7 +58,7 @@
   },
   "devDependencies": {
     "@cspell/eslint-plugin": "^9.3.0",
-    "@eslint/compat": "^1.4.1",
+    "@eslint/compat": "^2.0.0",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.39.1",
     "@faker-js/faker": "^10.1.0",

@@ -96,5 +96,5 @@
     "uuid": "^13.0.0",
     "vitest": "^4.0.8"
   },
-  "packageManager": "yarn@4.10.3"
+  "packageManager": "yarn@4.11.0"
 }

@@ -291,4 +291,249 @@ describe("Fetch Extension", () => {
       });
     });
   });
+
+  describe("internal.utils.getIntervalTarget", () => {
+    it("handles number offset (milliseconds)", async () => {
+      expect.assertions(2);
+      await TestRunner().run(({ internal }) => {
+        const offset = 5000; // 5 seconds
+        const result = internal.utils.getIntervalTarget(offset);
+        const now = Date.now();
+        const resultTime = result.valueOf();
+        // Should be approximately 5 seconds in the future (allow 100ms tolerance)
+        expect(resultTime).toBeGreaterThanOrEqual(now + offset - 100);
+        expect(resultTime).toBeLessThanOrEqual(now + offset + 100);
+      });
+    });
+
+    it("handles array/tuple offset [amount, unit]", async () => {
+      expect.assertions(2);
+      await TestRunner().run(({ internal }) => {
+        const result = internal.utils.getIntervalTarget([2, "hours"]);
+        const now = Date.now();
+        const resultTime = result.valueOf();
+        const expectedMs = 2 * 60 * 60 * 1000; // 2 hours in ms
+        expect(resultTime).toBeGreaterThanOrEqual(now + expectedMs - 100);
+        expect(resultTime).toBeLessThanOrEqual(now + expectedMs + 100);
+      });
+    });
+
+    it("handles object offset (DurationUnitsObjectType)", async () => {
+      expect.assertions(2);
+      await TestRunner().run(({ internal }) => {
+        const offset = { minutes: 30, seconds: 15 };
+        const result = internal.utils.getIntervalTarget(offset);
+        const now = Date.now();
+        const resultTime = result.valueOf();
+        const expectedMs = 30 * 60 * 1000 + 15 * 1000; // 30 minutes + 15 seconds
+        expect(resultTime).toBeGreaterThanOrEqual(now + expectedMs - 100);
+        expect(resultTime).toBeLessThanOrEqual(now + expectedMs + 100);
+      });
+    });
+
+    it("handles string offset (ISO 8601 partial)", async () => {
+      expect.assertions(2);
+      await TestRunner().run(({ internal }) => {
+        const offset = "1H30M"; // 1 hour 30 minutes
+        const result = internal.utils.getIntervalTarget(offset);
+        const now = Date.now();
+        const resultTime = result.valueOf();
+        const expectedMs = 1 * 60 * 60 * 1000 + 30 * 60 * 1000; // 1 hour + 30 minutes
+        expect(resultTime).toBeGreaterThanOrEqual(now + expectedMs - 100);
+        expect(resultTime).toBeLessThanOrEqual(now + expectedMs + 100);
+      });
+    });
+
+    it("handles function offset", async () => {
+      expect.assertions(2);
+      await TestRunner().run(({ internal }) => {
+        const offset = () => 10000; // 10 seconds
+        const result = internal.utils.getIntervalTarget(offset);
+        const now = Date.now();
+        const resultTime = result.valueOf();
+        expect(resultTime).toBeGreaterThanOrEqual(now + 10000 - 100);
+        expect(resultTime).toBeLessThanOrEqual(now + 10000 + 100);
+      });
+    });
+
+    it("handles Duration object", async () => {
+      expect.assertions(2);
+      await TestRunner().run(async ({ internal }) => {
+        const dayjs = (await import("dayjs")).default;
+        const duration = dayjs.duration({ hours: 1 });
+        const result = internal.utils.getIntervalTarget(duration);
+        const now = Date.now();
+        const resultTime = result.valueOf();
+        const expectedMs = 60 * 60 * 1000; // 1 hour
+        expect(resultTime).toBeGreaterThanOrEqual(now + expectedMs - 100);
+        expect(resultTime).toBeLessThanOrEqual(now + expectedMs + 100);
+      });
+    });
+
+    it("returns current time when offset is invalid", async () => {
+      expect.assertions(2);
+      await TestRunner().run(({ internal }) => {
+        const result = internal.utils.getIntervalTarget(null);
+        const now = Date.now();
+        const resultTime = result.valueOf();
+        // Should be approximately now (allow 100ms tolerance)
+        expect(resultTime).toBeGreaterThanOrEqual(now - 100);
+        expect(resultTime).toBeLessThanOrEqual(now + 100);
+      });
+    });
+  });
+
+  describe("internal.utils.getIntervalMs", () => {
+    it("handles number offset (milliseconds)", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const offset = 5000;
+        const result = internal.utils.getIntervalMs(offset);
+        expect(result).toBe(5000);
+      });
+    });
+
+    it("handles array/tuple offset [amount, unit]", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const result = internal.utils.getIntervalMs([2, "hours"]);
+        const expectedMs = 2 * 60 * 60 * 1000; // 2 hours in ms
+        expect(result).toBe(expectedMs);
+      });
+    });
+
+    it("handles object offset (DurationUnitsObjectType)", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const offset = { minutes: 30, seconds: 15 };
+        const result = internal.utils.getIntervalMs(offset);
+        const expectedMs = 30 * 60 * 1000 + 15 * 1000; // 30 minutes + 15 seconds
+        expect(result).toBe(expectedMs);
+      });
+    });
+
+    it("handles string offset (ISO 8601 partial)", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const offset = "1H30M"; // 1 hour 30 minutes
+        const result = internal.utils.getIntervalMs(offset);
+        const expectedMs = 1 * 60 * 60 * 1000 + 30 * 60 * 1000; // 1 hour + 30 minutes
+        expect(result).toBe(expectedMs);
+      });
+    });
+
+    it("handles function offset", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const offset = () => 10000; // 10 seconds
+        const result = internal.utils.getIntervalMs(offset);
+        expect(result).toBe(10000);
+      });
+    });
+
+    it("handles Duration object", async () => {
+      expect.assertions(1);
+      await TestRunner().run(async ({ internal }) => {
+        const dayjs = (await import("dayjs")).default;
+        const duration = dayjs.duration({ hours: 1 });
+        const result = internal.utils.getIntervalMs(duration);
+        const expectedMs = 60 * 60 * 1000; // 1 hour
+        expect(result).toBe(expectedMs);
+      });
+    });
+
+    it("returns 0 when offset is invalid", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const result = internal.utils.getIntervalMs(null);
+        expect(result).toBe(0);
+      });
+    });
+  });
+
+  describe("internal.utils.object.get", () => {
+    it("gets a top-level property", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const object = { a: 1, b: 2 };
+        const result = internal.utils.object.get(object, "a");
+        expect(result).toBe(1);
+      });
+    });
+
+    it("gets a nested property", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const object = { a: { b: { c: 3 } } };
+        const result = internal.utils.object.get(object, "a.b.c");
+        expect(result).toBe(3);
+      });
+    });
+
+    it("returns undefined for non-existent top-level property", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const object = { a: 1, b: 2 };
+        const result = internal.utils.object.get(object, "x");
+        expect(result).toBeUndefined();
+      });
+    });
+
+    it("returns undefined for non-existent nested property", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const object = { a: { b: { c: 3 } } };
+        const result = internal.utils.object.get(object, "a.b.x");
+        expect(result).toBeUndefined();
+      });
+    });
+
+    it("returns undefined when path goes through a non-object", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const object = { a: 1 };
+        const result = internal.utils.object.get(object, "a.b.c");
+        expect(result).toBeUndefined();
+      });
+    });
+
+    it("returns undefined when path goes through null", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal }) => {
+        const object = { a: { b: null } } as object;
+        const result = internal.utils.object.get(object, "a.b.c");
+        expect(result).toBeUndefined();
+      });
+    });
+
+    it("handles empty path", async () => {
+      expect.assertions(1);
+      await TestRunner().run(async ({ internal }) => {
+        const object = { a: 1 };
+        const result = internal.utils.object.get(object, "");
+        expect(result).toBe(undefined);
+      });
+    });
+
+    it("gets a property with falsy value", async () => {
+      expect.assertions(4);
+      await TestRunner().run(({ internal }) => {
+        // @ts-expect-error part of testing
+        const object = { a: false, b: 0, c: "", d: null };
+        expect(internal.utils.object.get(object, "a")).toBe(false);
+        expect(internal.utils.object.get(object, "b")).toBe(0);
+        expect(internal.utils.object.get(object, "c")).toBe("");
+        expect(internal.utils.object.get(object, "d")).toBeNull();
+      });
+    });
+
+    it("gets nested property with falsy value", async () => {
+      expect.assertions(2);
+      await TestRunner().run(({ internal }) => {
+        const object = { a: { b: false, c: 0 } };
+        expect(internal.utils.object.get(object, "a.b")).toBe(false);
+        expect(internal.utils.object.get(object, "a.c")).toBe(0);
+      });
+    });
+  });
 });

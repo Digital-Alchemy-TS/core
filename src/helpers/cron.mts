@@ -1,8 +1,13 @@
 import type { Dayjs } from "dayjs";
+import dayjs from "dayjs";
+import type { Duration, DurationUnitsObjectType, DurationUnitType } from "dayjs/plugin/duration";
+import duration from "dayjs/plugin/duration";
 
+import type { RemoveCallback } from "../index.mts";
 import type { TContext } from "./context.mts";
 import type { TBlackHole } from "./utilities.mts";
 import type { Schedule, SchedulerOptions } from "./wiring.mts";
+dayjs.extend(duration);
 
 export enum CronExpression {
   EVERY_SECOND = "* * * * * *",
@@ -109,19 +114,21 @@ export type SchedulerSlidingOptions = SchedulerOptions & {
   next: () => Dayjs | string | number | Date | undefined;
 };
 
-export type ScheduleRemove = (() => TBlackHole) & { remove: () => TBlackHole };
-
-export const makeRemover = (remover: () => TBlackHole): ScheduleRemove => {
-  const cast = remover as ScheduleRemove;
-  cast.remove = remover;
-  return cast;
-};
-
 export type DigitalAlchemyScheduler = {
-  cron: (options: SchedulerCronOptions) => ScheduleRemove;
-  sliding: (options: SchedulerSlidingOptions) => ScheduleRemove;
-  setInterval: (callback: () => TBlackHole, ms: number) => ScheduleRemove;
-  setTimeout: (callback: () => TBlackHole, ms: number) => ScheduleRemove;
+  cron: (options: SchedulerCronOptions) => RemoveCallback;
+  sliding: (options: SchedulerSlidingOptions) => RemoveCallback;
+  setInterval: (callback: () => TBlackHole, ms: number) => RemoveCallback;
+  setTimeout: (callback: () => TBlackHole, ms: TOffset) => RemoveCallback;
 };
 
 export type SchedulerBuilder = (context: TContext) => DigitalAlchemyScheduler;
+
+type Part<CHAR extends string> = `${number}${CHAR}` | "";
+type ISO_8601_PARTIAL = Exclude<`${Part<"H" | "h">}${Part<"M" | "m">}${Part<"S" | "s">}`, "">;
+export type OffsetTypes =
+  | Duration
+  | number
+  | DurationUnitsObjectType
+  | ISO_8601_PARTIAL
+  | [quantity: number, unit: DurationUnitType];
+export type TOffset = OffsetTypes | (() => OffsetTypes);

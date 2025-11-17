@@ -1,5 +1,6 @@
 import type { Dayjs } from "dayjs";
-import dayjs from "dayjs";
+import dayjs, { isDuration } from "dayjs";
+import type { Duration, DurationUnitsObjectType } from "dayjs/plugin/duration";
 import { EventEmitter } from "events";
 import type { Get } from "type-fest";
 
@@ -13,6 +14,7 @@ import type {
   TBlackHole,
   TContext,
   TModuleMappings,
+  TOffset,
   TResolvedModuleMappings,
 } from "../index.mts";
 import {
@@ -34,6 +36,15 @@ import type { LIB_BOILERPLATE } from "./wiring.service.mts";
 
 const EVERYTHING_ELSE = 1;
 const MONTHS = 12;
+
+const RELATIVE_DATE_UNITS = new Map<Intl.RelativeTimeFormatUnit, number>([
+  ["year", YEAR],
+  ["month", YEAR / MONTHS],
+  ["day", DAY],
+  ["hour", HOUR],
+  ["minute", MINUTE],
+  ["second", SECOND],
+]);
 
 type inputFormats = Date | string | number | Dayjs;
 export type RemoveCallback = { remove: () => void; (): void };
@@ -75,15 +86,62 @@ export class InternalUtils {
       .join(" ");
   }
 
+  getIntervalTarget(offset: TOffset): Dayjs {
+    let duration: Duration;
+    // * if function, unwrap
+    if (is.function(offset)) {
+      offset = offset();
+    }
+    // * if tuple, resolve
+    if (is.array(offset)) {
+      const [amount, unit] = offset;
+      duration = dayjs.duration(amount, unit);
+      // * resolve objects, or capture Duration
+    } else if (is.object(offset)) {
+      duration = isDuration(offset)
+        ? (offset as Duration)
+        : dayjs.duration(offset as DurationUnitsObjectType);
+    }
+    // * resolve from partial ISO 8601
+    if (is.string(offset)) {
+      duration = dayjs.duration(`PT${offset.toUpperCase()}`);
+    }
+    // * ms
+    if (is.number(offset)) {
+      duration = dayjs.duration(offset, "ms");
+    }
+    const now = dayjs();
+    return duration ? now.add(duration) : now;
+  }
+
+  getIntervalMs(offset: TOffset): number {
+    let duration: Duration;
+    // * if function, unwrap
+    if (is.function(offset)) {
+      offset = offset();
+    }
+    // * if tuple, resolve
+    if (is.array(offset)) {
+      const [amount, unit] = offset;
+      duration = dayjs.duration(amount, unit);
+      // * resolve objects, or capture Duration
+    } else if (is.object(offset)) {
+      duration = isDuration(offset)
+        ? (offset as Duration)
+        : dayjs.duration(offset as DurationUnitsObjectType);
+    }
+    // * resolve from partial ISO 8601
+    if (is.string(offset)) {
+      duration = dayjs.duration(`PT${offset.toUpperCase()}`);
+    }
+    // * ms
+    if (is.number(offset)) {
+      return offset;
+    }
+    return duration?.asMilliseconds() ?? NONE;
+  }
+
   public relativeDate(pastDate: inputFormats, futureDate: inputFormats = new Date().toISOString()) {
-    const UNITS = new Map<Intl.RelativeTimeFormatUnit, number>([
-      ["year", YEAR],
-      ["month", YEAR / MONTHS],
-      ["day", DAY],
-      ["hour", HOUR],
-      ["minute", MINUTE],
-      ["second", SECOND],
-    ]);
     const past = dayjs(pastDate);
     if (!past.isValid()) {
       throw new Error("invalid past date " + pastDate);
@@ -96,8 +154,8 @@ export class InternalUtils {
     const elapsed = past.diff(future, "ms");
     let out = "";
 
-    [...UNITS.keys()].some(unit => {
-      const cutoff = UNITS.get(unit);
+    [...RELATIVE_DATE_UNITS.keys()].some(unit => {
+      const cutoff = RELATIVE_DATE_UNITS.get(unit);
       if (Math.abs(elapsed) > cutoff || unit == "second") {
         out = formatter.format(Math.round(elapsed / cutoff), unit);
         return true;

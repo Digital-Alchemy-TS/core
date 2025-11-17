@@ -2,7 +2,12 @@ import type { AsyncLocalStorage } from "async_hooks";
 import type { Dayjs } from "dayjs";
 import type { EventEmitter } from "events";
 
-import type { ConfigManager, InternalDefinition, LIB_BOILERPLATE } from "../index.mts";
+import type {
+  ConfigManager,
+  InternalDefinition,
+  LIB_BOILERPLATE,
+  RemoveCallback,
+} from "../index.mts";
 import { is, LOAD_PROJECT } from "../index.mts";
 import { eachSeries } from "./async.mts";
 import type {
@@ -16,7 +21,7 @@ import type {
   StringConfig,
 } from "./config.mts";
 import type { TContext } from "./context.mts";
-import type { CronExpression, ScheduleRemove } from "./cron.mts";
+import type { CronExpression, TOffset } from "./cron.mts";
 import { BootstrapException } from "./errors.mts";
 import type { TLifecycleBase } from "./lifecycle.mts";
 import type { GetLogger, TConfigLogLevel } from "./logger.mts";
@@ -89,7 +94,7 @@ export type TScheduler = {
     options: SchedulerOptions & {
       schedule: Schedule | Schedule[];
     },
-  ) => ScheduleRemove;
+  ) => RemoveCallback;
   /**
    * Run code at a different time every {period}
    *
@@ -102,21 +107,21 @@ export type TScheduler = {
       reset: Schedule;
       next: () => Dayjs;
     },
-  ) => ScheduleRemove;
+  ) => RemoveCallback;
   /**
    * Same as setInterval but:
    *
    * - handles shutdown events properly
    * - won't crash app for errors
    */
-  setInterval: (callback: () => TBlackHole, ms: number) => ScheduleRemove;
+  setInterval: (callback: () => TBlackHole, ms: number) => RemoveCallback;
   /**
    * Same as setTimeout but:
    *
    * - handles shutdown events properly
    * - won't crash app for errors
    */
-  setTimeout: (callback: () => TBlackHole, ms: number) => ScheduleRemove;
+  setTimeout: (callback: () => TBlackHole, ms: TOffset) => RemoveCallback;
 };
 
 export interface LoadedModules {

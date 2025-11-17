@@ -2,20 +2,21 @@ import { CronJob } from "cron";
 import dayjs from "dayjs";
 
 import type {
+  RemoveCallback,
   SchedulerBuilder,
   SchedulerCronOptions,
-  ScheduleRemove,
   SchedulerIntervalOptions,
   SchedulerSlidingOptions,
   TBlackHole,
   TContext,
+  TOffset,
   TServiceParams,
 } from "../index.mts";
-import { BootstrapException, makeRemover } from "../index.mts";
+import { BootstrapException } from "../index.mts";
 
 export function Scheduler({ logger, lifecycle, internal }: TServiceParams): SchedulerBuilder {
   const { is } = internal.utils;
-  const stop = new Set<ScheduleRemove>();
+  const stop = new Set<RemoveCallback>();
 
   // #MARK: lifecycle events
   lifecycle.onPreShutdown(function onPreShutdown() {
@@ -32,7 +33,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
   return (context: TContext) => {
     // #MARK: cron
     function cron({ exec, schedule: scheduleList }: SchedulerCronOptions) {
-      const stopFunctions: ScheduleRemove[] = [];
+      const stopFunctions: RemoveCallback[] = [];
       [scheduleList].flat().forEach(cronSchedule => {
         logger.trace({ context, name: cron, schedule: cronSchedule }, `init`);
         const cronJob = new CronJob(cronSchedule, async () => await internal.safeExec(exec));
@@ -41,7 +42,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
           cronJob.start();
         });
 
-        const stopFunction = makeRemover(() => {
+        const stopFunction = internal.removeFn(() => {
           logger.trace({ context, name: cron, schedule: cronSchedule }, `stopping`);
           cronJob.stop();
         });
@@ -51,7 +52,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
         return stopFunction;
       });
 
-      return makeRemover(() => stopFunctions.forEach(stop => stop()));
+      return internal.removeFn(() => stopFunctions.forEach(stop => stop()));
     }
 
     // #MARK: interval
@@ -61,7 +62,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
         logger.trace({ context, name: interval }, "starting");
         runningInterval = setInterval(async () => await internal.safeExec(exec), interval);
       });
-      const stopFunction = makeRemover(() => {
+      const stopFunction = internal.removeFn(() => {
         if (runningInterval) {
           clearInterval(runningInterval);
         }
@@ -125,7 +126,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
       // find value for now (boot)
       lifecycle.onReady(() => waitForNext());
 
-      return makeRemover(() => {
+      return internal.removeFn(() => {
         scheduleStop();
         if (timeout) {
           clearTimeout(timeout);
@@ -134,50 +135,54 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
       });
     }
 
+    function SetTimeout(callback: () => TBlackHole, target: TOffset) {
+      let timer: ReturnType<typeof setTimeout>;
+      let stopped = false;
+      lifecycle.onReady(() => {
+        if (stopped) {
+          return;
+        }
+        timer = setTimeout(async () => {
+          stop.delete(remove);
+          await internal.safeExec(callback);
+        }, internal.utils.getIntervalMs(target));
+      });
+      const remove = internal.removeFn(() => {
+        stopped = true;
+        stop.delete(remove);
+        if (timer) {
+          clearTimeout(timer);
+        }
+      });
+      stop.add(remove);
+      return remove;
+    }
+
+    function SetInterval(callback: () => TBlackHole, ms: number) {
+      let timer: ReturnType<typeof setInterval>;
+      let stopped = false;
+      lifecycle.onReady(() => {
+        if (stopped) {
+          return;
+        }
+        timer = setInterval(async () => await internal.safeExec(callback), ms);
+      });
+      const remove = internal.removeFn(() => {
+        stopped = true;
+        stop.delete(remove);
+        if (timer) {
+          clearInterval(timer);
+        }
+      });
+      stop.add(remove);
+      return remove;
+    }
+
     return {
       cron,
       interval,
-      setInterval: (callback: () => TBlackHole, ms: number) => {
-        let timer: ReturnType<typeof setInterval>;
-        let stopped = false;
-        lifecycle.onReady(() => {
-          if (stopped) {
-            return;
-          }
-          timer = setInterval(async () => await internal.safeExec(callback), ms);
-        });
-        const remove = makeRemover(() => {
-          stopped = true;
-          stop.delete(remove);
-          if (timer) {
-            clearInterval(timer);
-          }
-        });
-        stop.add(remove);
-        return remove;
-      },
-      setTimeout: (callback: () => TBlackHole, ms: number) => {
-        let timer: ReturnType<typeof setTimeout>;
-        let stopped = false;
-        lifecycle.onReady(() => {
-          if (stopped) {
-            return;
-          }
-          timer = setTimeout(async () => {
-            stop.delete(remove);
-            await internal.safeExec(callback);
-          }, ms);
-        });
-        const remove = makeRemover(() => {
-          stopped = true;
-          stop.delete(remove);
-          if (timer) {
-            clearTimeout(timer);
-          }
-        });
-        stop.add(remove);
-        return remove;
-      },
+      setInterval: SetInterval,
+      setTimeout: SetTimeout,
       sliding,
     };
   };

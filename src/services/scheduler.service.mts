@@ -158,14 +158,17 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
       return remove;
     }
 
-    function SetInterval(callback: () => TBlackHole, ms: number) {
+    function SetInterval(callback: () => TBlackHole, target: TOffset) {
       let timer: ReturnType<typeof setInterval>;
       let stopped = false;
       lifecycle.onReady(() => {
         if (stopped) {
           return;
         }
-        timer = setInterval(async () => await internal.safeExec(callback), ms);
+        timer = setInterval(
+          async () => await internal.safeExec(callback),
+          internal.utils.getIntervalMs(target),
+        );
       });
       const remove = internal.removeFn(() => {
         stopped = true;

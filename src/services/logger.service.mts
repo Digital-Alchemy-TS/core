@@ -15,7 +15,7 @@ import type {
   TLoggerFunction,
   TServiceParams,
 } from "../index.mts";
-import { EVENT_UPDATE_LOG_LEVELS, FIRST, METHOD_COLORS, START } from "../index.mts";
+import { EVENT_UPDATE_LOG_LEVELS, fatalLog, FIRST, METHOD_COLORS, START } from "../index.mts";
 
 const LOG_LEVEL_PRIORITY = {
   debug: 20,
@@ -234,9 +234,12 @@ export async function Logger({
             globalThis.console.debug(message);
             return;
           }
-          case "error":
-          case "fatal": {
+          case "error": {
             globalThis.console.error(message);
+            return;
+          }
+          case "fatal": {
+            fatalLog(message);
             return;
           }
           default: {

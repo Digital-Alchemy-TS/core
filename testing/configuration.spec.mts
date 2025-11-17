@@ -1326,7 +1326,7 @@ describe("Configuration", () => {
 
     it("throws errors during boot for missing required configs", async () => {
       expect.assertions(2);
-      const spy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+      const spy = vi.spyOn(fs, "writeSync").mockImplementation(() => 0);
       const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
 
       await TestRunner()

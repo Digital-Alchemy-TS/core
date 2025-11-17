@@ -1,5 +1,6 @@
 import chalk from "chalk";
 import dayjs from "dayjs";
+import fs from "fs";
 
 import type {
   ApplicationDefinition,
@@ -305,8 +306,8 @@ describe("Logger", () => {
           });
       });
 
-      it("fatal uses error", async () => {
-        const spy = vi.spyOn(globalThis.console, "error").mockImplementation(() => {});
+      it("fatal uses fatalLog", async () => {
+        const spy = vi.spyOn(fs, "writeSync").mockImplementation(() => 0);
         vi.spyOn(globalThis.console, "debug").mockImplementation(() => {});
         vi.spyOn(globalThis.console, "log").mockImplementation(() => {});
         await TestRunner()

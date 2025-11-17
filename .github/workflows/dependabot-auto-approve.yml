@@ -9,6 +9,7 @@ permissions:
 jobs:
   code_check:
     name: 🔬 PR Checks
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
     uses: ./.github/workflows/check.yml
     secrets:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

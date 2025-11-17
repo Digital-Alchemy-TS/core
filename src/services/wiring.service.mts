@@ -25,6 +25,7 @@ import {
   CreateLibrary,
   each,
   eachSeries,
+  fatalLog,
   NONE,
   SINGLE,
   WIRE_PROJECT,
@@ -355,8 +356,7 @@ async function wireService(
     return loaded[service];
   } catch (error) {
     // Init errors at this level are considered blocking / fatal
-    // eslint-disable-next-line no-console
-    console.error("initialization error", error);
+    fatalLog("initialization error", error);
     process.exit(EXIT_ERROR);
   }
 }
@@ -545,8 +545,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
     );
   } catch (error) {
     if (options?.configuration?.boilerplate?.LOG_LEVEL !== "silent") {
-      // eslint-disable-next-line no-console
-      console.error("bootstrap failed", error);
+      fatalLog("bootstrap failed", error);
     }
     process.exit(EXIT_ERROR);
   }

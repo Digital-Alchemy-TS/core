@@ -1,3 +1,4 @@
+import fs from "fs";
 import type { Get } from "type-fest";
 
 import type { TContext } from "./context.mts";
@@ -88,3 +89,12 @@ export const METHOD_COLORS = new Map<keyof ILogger, CONTEXT_COLORS>([
 ]);
 export type CONTEXT_COLORS = "grey" | "blue" | "yellow" | "red" | "green" | "magenta";
 export const EVENT_UPDATE_LOG_LEVELS = "EVENT_UPDATE_LOG_LEVELS";
+
+export function fatalLog(message: string, data?: unknown) {
+  if (data) {
+    const serializable =
+      data instanceof Error ? { message: data.message, name: data.name, stack: data.stack } : data;
+    message = [message, JSON.stringify(serializable, undefined, "  ")].join("\n");
+  }
+  fs.writeSync(process.stderr.fd, `${message}\n`);
+}

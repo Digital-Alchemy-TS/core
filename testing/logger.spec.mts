@@ -1,12 +1,13 @@
 import chalk from "chalk";
 import dayjs from "dayjs";
+import fs from "fs";
 
 import type {
   ApplicationDefinition,
   OptionalModuleConfiguration,
   ServiceMap,
 } from "../src/index.mts";
-import { CreateLibrary, createMockLogger, TestRunner } from "../src/index.mts";
+import { CreateLibrary, createMockLogger, fatalLog, TestRunner } from "../src/index.mts";
 
 describe("Logger", () => {
   let application: ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
@@ -305,8 +306,8 @@ describe("Logger", () => {
           });
       });
 
-      it("fatal uses error", async () => {
-        const spy = vi.spyOn(globalThis.console, "error").mockImplementation(() => {});
+      it("fatal uses fatalLog", async () => {
+        const spy = vi.spyOn(fs, "writeSync").mockImplementation(() => 0);
         vi.spyOn(globalThis.console, "debug").mockImplementation(() => {});
         vi.spyOn(globalThis.console, "log").mockImplementation(() => {});
         await TestRunner()
@@ -355,6 +356,47 @@ describe("Logger", () => {
             logger.info(`test`);
             expect(spy).toHaveBeenCalled();
           });
+      });
+    });
+
+    // #MARK: fatalLog
+    describe("fatalLog", () => {
+      it("serializes Error objects correctly", () => {
+        expect.assertions(3);
+        const spy = vi.spyOn(fs, "writeSync").mockImplementation(() => 0);
+        const error = new Error("test error");
+        error.name = "TestError";
+        error.stack = "Error: test error\n    at test";
+
+        fatalLog("test message", error);
+
+        const callArgs = spy.mock.calls[0];
+        const writtenMessage = callArgs[1] as string;
+        expect(writtenMessage).toContain('"message": "test error"');
+        expect(writtenMessage).toContain('"name": "TestError"');
+        expect(writtenMessage).toContain('"stack": "Error: test error');
+      });
+
+      it("uses regular objects as-is", () => {
+        expect.assertions(2);
+        const spy = vi.spyOn(fs, "writeSync").mockImplementation(() => 0);
+        const data = { key: "value", number: 42 };
+
+        fatalLog("test message", data);
+
+        const callArgs = spy.mock.calls[0];
+        const writtenMessage = callArgs[1] as string;
+        expect(writtenMessage).toContain('"key": "value"');
+        expect(writtenMessage).toContain('"number": 42');
+      });
+
+      it("handles undefined data", () => {
+        expect.assertions(1);
+        const spy = vi.spyOn(fs, "writeSync").mockImplementation(() => 0);
+
+        fatalLog("test message");
+
+        expect(spy).toHaveBeenCalledWith(process.stderr.fd, "test message\n");
       });
     });
 

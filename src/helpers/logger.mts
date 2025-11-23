@@ -92,9 +92,13 @@ export const EVENT_UPDATE_LOG_LEVELS = "EVENT_UPDATE_LOG_LEVELS";
 
 export function fatalLog(message: string, data?: unknown) {
   if (data) {
-    const serializable =
-      data instanceof Error ? { message: data.message, name: data.name, stack: data.stack } : data;
-    message = [message, JSON.stringify(serializable, undefined, "  ")].join("\n");
+    if (data instanceof Error) {
+      const errorOutput =
+        data.stack || `${data.name || "Error"}: ${data.message || "Unknown error"}`;
+      message = [message, errorOutput].join("\n");
+    } else {
+      message = [message, JSON.stringify(data, undefined, "  ")].join("\n");
+    }
   }
   fs.writeSync(process.stderr.fd, `${message}\n`);
 }

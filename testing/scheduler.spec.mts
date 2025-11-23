@@ -442,4 +442,13 @@ describe("Scheduler", () => {
       await app.teardown();
     });
   });
+
+  describe("sleep", () => {
+    it("exists on scheduler interface", async () => {
+      await TestRunner().run(({ scheduler }) => {
+        expect(scheduler.sleep).toBeDefined();
+        expect(typeof scheduler.sleep).toBe("function");
+      });
+    });
+  });
 });

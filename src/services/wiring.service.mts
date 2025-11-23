@@ -347,6 +347,7 @@ async function wireService(
       internal,
       lifecycle,
       logger,
+      params: undefined,
       scheduler: boilerplate?.scheduler?.(context),
     } as TServiceParams;
     serviceParams.params = serviceParams;

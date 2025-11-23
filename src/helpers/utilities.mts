@@ -1,6 +1,6 @@
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
-import type { Duration, DurationUnitsObjectType } from "dayjs/plugin/duration";
+import type { Duration, DurationUnitsObjectType } from "dayjs/plugin/duration.js";
 import duration from "dayjs/plugin/duration.js";
 
 import { is } from "../index.mts";

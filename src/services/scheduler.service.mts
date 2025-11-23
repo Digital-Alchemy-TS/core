@@ -12,7 +12,7 @@ import type {
   TOffset,
   TServiceParams,
 } from "../index.mts";
-import { BootstrapException } from "../index.mts";
+import { BootstrapException, sleep } from "../index.mts";
 
 export function Scheduler({ logger, lifecycle, internal }: TServiceParams): SchedulerBuilder {
   const { is } = internal.utils;
@@ -186,6 +186,7 @@ export function Scheduler({ logger, lifecycle, internal }: TServiceParams): Sche
       interval,
       setInterval: SetInterval,
       setTimeout: SetTimeout,
+      sleep,
       sliding,
     };
   };

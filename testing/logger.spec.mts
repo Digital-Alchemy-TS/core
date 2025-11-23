@@ -372,9 +372,9 @@ describe("Logger", () => {
 
         const callArgs = spy.mock.calls[0];
         const writtenMessage = callArgs[1] as string;
-        expect(writtenMessage).toContain('"message": "test error"');
-        expect(writtenMessage).toContain('"name": "TestError"');
-        expect(writtenMessage).toContain('"stack": "Error: test error');
+        expect(writtenMessage).toContain("test message");
+        expect(writtenMessage).toContain("test error");
+        expect(writtenMessage).toContain("    at test");
       });
 
       it("uses regular objects as-is", () => {

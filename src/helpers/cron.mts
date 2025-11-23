@@ -1,11 +1,11 @@
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
-import type { Duration, DurationUnitsObjectType, DurationUnitType } from "dayjs/plugin/duration";
+import type { Duration, DurationUnitsObjectType, DurationUnitType } from "dayjs/plugin/duration.js";
 import duration from "dayjs/plugin/duration.js";
 
 import type { RemoveCallback } from "../index.mts";
 import type { TContext } from "./context.mts";
-import type { TBlackHole } from "./utilities.mts";
+import type { SleepReturn, TBlackHole } from "./utilities.mts";
 import type { Schedule, SchedulerOptions } from "./wiring.mts";
 dayjs.extend(duration);
 
@@ -119,6 +119,7 @@ export type DigitalAlchemyScheduler = {
   sliding: (options: SchedulerSlidingOptions) => RemoveCallback;
   setInterval: (callback: () => TBlackHole, target: TOffset) => RemoveCallback;
   setTimeout: (callback: () => TBlackHole, target: TOffset) => RemoveCallback;
+  sleep: (target: TOffset | Date | Dayjs) => SleepReturn;
 };
 
 export type SchedulerBuilder = (context: TContext) => DigitalAlchemyScheduler;

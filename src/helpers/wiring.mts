@@ -1,6 +1,7 @@
 import type { AsyncLocalStorage } from "node:async_hooks";
+import type { EventEmitter } from "node:events";
+
 import type { Dayjs } from "dayjs";
-import type { EventEmitter } from "events";
 
 import type {
   ConfigManager,

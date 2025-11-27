@@ -85,7 +85,7 @@ export default [
       "unicorn/prevent-abbreviations": "off",
       "no-case-declarations": "off",
       "no-async-promise-executor": "off",
-      "unicorn/prefer-node-protocol": "off",
+      "unicorn/prefer-node-protocol": "error",
       "unicorn/no-array-for-each": "off",
       "unicorn/import-style": "off",
       "sort-keys-fix/sort-keys-fix": "warn",

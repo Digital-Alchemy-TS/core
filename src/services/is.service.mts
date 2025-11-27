@@ -1,7 +1,8 @@
-import { randomBytes } from "crypto";
+import { randomBytes } from "node:crypto";
+import { isDeepStrictEqual, types } from "node:util";
+
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
-import { isDeepStrictEqual, types } from "util";
 
 import type { TBlackHole, TContext } from "../index.mts";
 import { EMPTY, EVEN } from "../index.mts";

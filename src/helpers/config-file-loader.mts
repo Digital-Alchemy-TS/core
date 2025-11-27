@@ -1,10 +1,11 @@
-import fs from "fs";
+import fs from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import { cwd, platform } from "node:process";
+
 import ini from "ini";
 import yaml from "js-yaml";
 import minimist from "minimist";
-import { homedir } from "os";
-import { join } from "path";
-import { cwd, platform } from "process";
 
 import { is } from "../index.mts";
 import type { ConfigLoaderParams, ConfigLoaderReturn, ModuleConfiguration } from "./config.mts";

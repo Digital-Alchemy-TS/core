@@ -1,0 +1,68 @@
+name: Test Pipelines - TSX
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test-pipelines-tsx:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: corepack enable
+      - run: yarn config set enableImmutableInstalls false
+      - run: yarn
+      - run: yarn build
+      - name: Test config-error with tsx
+        run: |
+          set +e
+          output=$(npx tsx testing/pipelines/config-error.mts 2>&1)
+          exit_code=$?
+          echo "Exit code: $exit_code"
+          echo "Output: $output"
+          if [ $exit_code -eq 0 ]; then
+            echo "ERROR: Expected non-zero exit code but got 0"
+            exit 1
+          fi
+          if ! echo "$output" | grep -q "REQUIRED_CONFIGURATION_MISSING"; then
+            echo "ERROR: Expected 'REQUIRED_CONFIGURATION_MISSING' in output"
+            exit 1
+          fi
+          echo "SUCCESS: tsx test passed - got expected error and exit code"
+      - name: Test thrown-bootstrap-error with tsx
+        run: |
+          set +e
+          output=$(npx tsx testing/pipelines/thrown-bootstrap-error.mts 2>&1)
+          exit_code=$?
+          echo "Exit code: $exit_code"
+          echo "Output: $output"
+          if [ $exit_code -eq 0 ]; then
+            echo "ERROR: Expected non-zero exit code but got 0"
+            exit 1
+          fi
+          if ! echo "$output" | grep -q "BOOM"; then
+            echo "ERROR: Expected 'BOOM' in output"
+            exit 1
+          fi
+          echo "SUCCESS: tsx thrown-bootstrap-error test passed"
+      - name: Test simple-success with tsx
+        run: |
+          set +e
+          output=$(npx tsx testing/pipelines/simple-success.mts 2>&1)
+          exit_code=$?
+          echo "Exit code: $exit_code"
+          echo "Output: $output"
+          if [ $exit_code -ne 0 ]; then
+            echo "ERROR: Expected zero exit code but got $exit_code"
+            exit 1
+          fi
+          if ! echo "$output" | grep -q "this should be seen"; then
+            echo "ERROR: Expected 'this should be seen' in output"
+            exit 1
+          fi
+          echo "SUCCESS: tsx simple-success test passed"

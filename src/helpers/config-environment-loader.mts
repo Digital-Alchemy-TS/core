@@ -1,5 +1,6 @@
+import { env } from "node:process";
+
 import minimist from "minimist";
-import { env } from "process";
 
 import { is } from "../index.mts";
 import type {

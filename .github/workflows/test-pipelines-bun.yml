@@ -1,0 +1,64 @@
+name: Test Pipelines - Bun
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test-pipelines-bun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - name: Test config-error with bun
+        run: |
+          set +e
+          output=$(bun run testing/pipelines/config-error.mts 2>&1)
+          exit_code=$?
+          echo "Exit code: $exit_code"
+          echo "Output: $output"
+          if [ $exit_code -eq 0 ]; then
+            echo "ERROR: Expected non-zero exit code but got 0"
+            exit 1
+          fi
+          if ! echo "$output" | grep -q "REQUIRED_CONFIGURATION_MISSING"; then
+            echo "ERROR: Expected 'REQUIRED_CONFIGURATION_MISSING' in output"
+            exit 1
+          fi
+          echo "SUCCESS: bun test passed - got expected error and exit code"
+      - name: Test thrown-bootstrap-error with bun
+        run: |
+          set +e
+          output=$(bun run testing/pipelines/thrown-bootstrap-error.mts 2>&1)
+          exit_code=$?
+          echo "Exit code: $exit_code"
+          echo "Output: $output"
+          if [ $exit_code -eq 0 ]; then
+            echo "ERROR: Expected non-zero exit code but got 0"
+            exit 1
+          fi
+          if ! echo "$output" | grep -q "BOOM"; then
+            echo "ERROR: Expected 'BOOM' in output"
+            exit 1
+          fi
+          echo "SUCCESS: bun thrown-bootstrap-error test passed"
+      - name: Test simple-success with bun
+        run: |
+          set +e
+          output=$(bun run testing/pipelines/simple-success.mts 2>&1)
+          exit_code=$?
+          echo "Exit code: $exit_code"
+          echo "Output: $output"
+          if [ $exit_code -ne 0 ]; then
+            echo "ERROR: Expected zero exit code but got $exit_code"
+            exit 1
+          fi
+          if ! echo "$output" | grep -q "this should be seen"; then
+            echo "ERROR: Expected 'this should be seen' in output"
+            exit 1
+          fi
+          echo "SUCCESS: bun simple-success test passed"

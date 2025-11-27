@@ -140,7 +140,7 @@ export function Configuration({
       }),
       ["env", "argv"],
     );
-    const canFile = internal.boot.options?.configSources?.file ?? true;
+    const canFile = internal.boot.options?.configSources?.file ?? false;
     if (canFile) {
       mergeConfig(
         await configLoaderFile({

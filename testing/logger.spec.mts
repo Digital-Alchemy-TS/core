@@ -1,6 +1,7 @@
+import fs from "node:fs";
+
 import chalk from "chalk";
 import dayjs from "dayjs";
-import fs from "fs";
 
 import type {
   ApplicationDefinition,

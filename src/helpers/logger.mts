@@ -1,4 +1,5 @@
-import fs from "fs";
+import fs from "node:fs";
+
 import type { Get } from "type-fest";
 
 import type { TContext } from "./context.mts";

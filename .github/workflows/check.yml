@@ -37,3 +37,12 @@ jobs:
         uses: codecov/codecov-action@v5.5.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  test-pipelines-tsx:
+    uses: ./.github/workflows/test-pipelines-tsx.yml
+
+  test-pipelines-deno:
+    uses: ./.github/workflows/test-pipelines-deno.yml
+
+  test-pipelines-bun:
+    uses: ./.github/workflows/test-pipelines-bun.yml

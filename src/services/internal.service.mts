@@ -1,6 +1,7 @@
+import { EventEmitter } from "node:events";
+
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
-import { EventEmitter } from "events";
 import type { Get } from "type-fest";
 
 import type {

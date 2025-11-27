@@ -1,4 +1,4 @@
-import type { AsyncLocalStorage } from "async_hooks";
+import type { AsyncLocalStorage } from "node:async_hooks";
 import type { Dayjs } from "dayjs";
 import type { EventEmitter } from "events";
 

@@ -73,10 +73,10 @@ jobs:
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - run: deno install
       - name: Test config-error with deno
         run: |
           set +e
-          deno install
           output=$(deno run --allow-read --allow-env testing/pipelines/config-error.mts 2>&1)
           exit_code=$?
           echo "Exit code: $exit_code"

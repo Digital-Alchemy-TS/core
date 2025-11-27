@@ -1,8 +1,8 @@
+import fs from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { cwd, platform } from "node:process";
 
-import fs from "fs";
 import ini from "ini";
 import yaml from "js-yaml";
 import minimist from "minimist";

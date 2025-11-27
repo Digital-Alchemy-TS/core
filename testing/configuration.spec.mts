@@ -1,10 +1,10 @@
+import fs, { existsSync, unlinkSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { extname, join } from "node:path";
 import { cwd, env } from "node:process";
 
 import dotenv from "@dotenvx/dotenvx";
 import { faker } from "@faker-js/faker";
-import fs, { existsSync, unlinkSync, writeFileSync } from "fs";
 import { encode as iniEncode } from "ini";
 import { dump as yamlDump } from "js-yaml";
 import type { ParsedArgs } from "minimist";

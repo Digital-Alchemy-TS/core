@@ -1,8 +1,8 @@
+import fs from "node:fs";
 import path from "node:path";
 import { cwd } from "node:process";
 
 import dotenv from "@dotenvx/dotenvx";
-import fs from "fs";
 import type { ParsedArgs } from "minimist";
 
 import type {

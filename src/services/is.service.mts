@@ -1,6 +1,6 @@
+import { randomBytes } from "node:crypto";
 import { isDeepStrictEqual, types } from "node:util";
 
-import { randomBytes } from "crypto";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 

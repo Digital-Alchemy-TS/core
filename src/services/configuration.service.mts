@@ -132,21 +132,17 @@ export function Configuration({
     const start = performance.now();
     const configTimings: Record<string, string> = {};
 
-    // ConfigLoaderEnvironment handles both env and argv
-    const envArgvStart = performance.now();
+    // ConfigLoaderEnvironment handles both env and argv and tracks timings internally
     mergeConfig(
       await ConfigLoaderEnvironment({
         application,
         configs: configDefinitions,
         internal,
         logger,
+        timings: configTimings,
       }),
       ["env", "argv"],
     );
-    const envArgvDuration = `${(performance.now() - envArgvStart).toFixed(DECIMALS)}ms`;
-    // Since ConfigLoaderEnvironment handles both, track the same time for both
-    configTimings.argv = envArgvDuration;
-    configTimings.env = envArgvDuration;
 
     const canFile = internal.boot.options?.configSources?.file ?? false;
     if (canFile) {

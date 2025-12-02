@@ -331,6 +331,7 @@ async function wireService(
   internal.boot.loadedModules.set(project, loaded);
   try {
     logger?.trace({ name: wireService }, `initializing`);
+    const serviceStart = performance.now();
     const inject = Object.fromEntries(
       [...internal.boot.loadedModules.keys()].map(project => [
         project as keyof TServiceParams,
@@ -353,6 +354,13 @@ async function wireService(
     serviceParams.params = serviceParams;
 
     loaded[service] = (await definition(serviceParams)) as TServiceReturn;
+
+    const serviceDuration = performance.now() - serviceStart;
+    internal.boot.serviceConstructionTimes.push({
+      duration: `${serviceDuration.toFixed(DECIMALS)}ms`,
+      module: project,
+      service,
+    });
 
     return loaded[service];
   } catch (error) {
@@ -402,6 +410,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
     moduleMappings: new Map(),
     options,
     phase: "bootstrap",
+    serviceConstructionTimes: [],
     startup: new Date(),
   };
 
@@ -526,10 +535,23 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
     STATS.Ready = await runReady(internal);
 
     STATS.Total = `${(performance.now() - initTime).toFixed(DECIMALS)}ms`;
+
+    // Add config timings if available
+    if (internal.boot.configTimings) {
+      STATS.config = internal.boot.configTimings;
+    }
+
     // * App is ready!
     logger.info(
       options?.showExtraBootStats
-        ? { ...STATS, name: bootstrap }
+        ? {
+            ...STATS,
+            Construct: {
+              ...CONSTRUCT,
+              services: internal.boot.serviceConstructionTimes,
+            },
+            name: bootstrap,
+          }
         : { Total: STATS.Total, name: bootstrap },
       `[%s] application bootstrapped`,
       application.name,

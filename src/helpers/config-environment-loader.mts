@@ -16,7 +16,13 @@ import type { ServiceMap } from "./wiring.mts";
 export async function ConfigLoaderEnvironment<
   S extends ServiceMap = ServiceMap,
   C extends ModuleConfiguration = ModuleConfiguration,
->({ configs, internal, logger }: ConfigLoaderParams<S, C>): ConfigLoaderReturn {
+>({
+  configs,
+  internal,
+  logger,
+  timings,
+}: ConfigLoaderParams<S, C> & { timings?: Record<string, string> }): ConfigLoaderReturn {
+  const DECIMALS = 2;
   const CLI_SWITCHES = minimist(process.argv);
   const switchKeys = Object.keys(CLI_SWITCHES);
   const out: Partial<AbstractConfig> = {};
@@ -33,6 +39,10 @@ export async function ConfigLoaderEnvironment<
   loadDotenv(internal, CLI_SWITCHES, logger);
   const environmentKeys = Object.keys(env);
 
+  // Track timing for argv and env separately
+  let argvTime = 0;
+  let envTime = 0;
+
   // * go through all module
   configs.forEach((configuration, project) => {
     const cleanedProject = project.replaceAll("-", "_");
@@ -48,6 +58,7 @@ export async function ConfigLoaderEnvironment<
       const configPath = `${project}.${key}`;
 
       // * (preferred) Find an applicable cli switch
+      const argvStart = performance.now();
       const flag = findKey(search, switchKeys);
       if (flag && shouldArgv(source)) {
         const formattedFlag = iSearchKey(flag, switchKeys);
@@ -56,6 +67,7 @@ export async function ConfigLoaderEnvironment<
           configPath,
           parseConfig(configuration[key], CLI_SWITCHES[formattedFlag]),
         );
+        argvTime += performance.now() - argvStart;
         logger.debug(
           {
             flag: formattedFlag,
@@ -66,8 +78,10 @@ export async function ConfigLoaderEnvironment<
         );
         return;
       }
+      argvTime += performance.now() - argvStart;
 
       // * (fallback) Find an environment variable
+      const envStart = performance.now();
       const environment = findKey(search, environmentKeys);
       if (!is.empty(environment) && shouldEnv(source)) {
         const environmentName = iSearchKey(environment, environmentKeys);
@@ -78,6 +92,7 @@ export async function ConfigLoaderEnvironment<
             parseConfig(configuration[key], env[environmentName]),
           );
         }
+        envTime += performance.now() - envStart;
         logger.debug(
           {
             name: ConfigLoaderEnvironment,
@@ -86,8 +101,17 @@ export async function ConfigLoaderEnvironment<
           },
           `load config from [env]`,
         );
+      } else {
+        envTime += performance.now() - envStart;
       }
     });
   });
+
+  // Store timings if timings object provided
+  if (timings) {
+    timings.argv = `${argvTime.toFixed(DECIMALS)}ms`;
+    timings.env = `${envTime.toFixed(DECIMALS)}ms`;
+  }
+
   return out;
 }

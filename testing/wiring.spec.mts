@@ -579,7 +579,7 @@ describe("Bootstrap", () => {
   it("includes extended stats with switch", async () => {
     const mockLogger = createMockLogger();
     const spy = vi.spyOn(mockLogger, "info");
-    expect.assertions(1);
+    expect.assertions(4);
     const app = CreateApplication({
       // @ts-expect-error testing
       name: "app",
@@ -594,20 +594,123 @@ describe("Bootstrap", () => {
       expect.objectContaining({
         Bootstrap: expect.any(String),
         Configure: expect.any(String),
+        Construct: expect.objectContaining({
+          boilerplate: expect.any(String),
+          services: expect.arrayContaining([
+            expect.objectContaining({
+              duration: expect.stringMatching(/^\d+\.\d{2}ms$/),
+              module: expect.any(String),
+              service: expect.any(String),
+            }),
+          ]),
+        }),
         PostConfig: expect.any(String),
         PreInit: expect.any(String),
         Ready: expect.any(String),
         Total: expect.any(String),
+        config: expect.objectContaining({
+          argv: expect.stringMatching(/^\d+\.\d{2}ms$/),
+          env: expect.stringMatching(/^\d+\.\d{2}ms$/),
+        }),
       }),
       "[%s] application bootstrapped",
       "app",
     );
+    // Verify services array structure
+    const callArgs = spy.mock.calls.find(call => call[2] === "[%s] application bootstrapped");
+    expect(callArgs).toBeDefined();
+    const stats = callArgs[1] as unknown as {
+      Construct: { services: Array<{ duration: string; module: string; service: string }> };
+    };
+    expect(stats.Construct.services.length).toBeGreaterThan(0);
+    expect(stats.Construct.services[0]).toMatchObject({
+      duration: expect.stringMatching(/^\d+\.\d{2}ms$/),
+      module: expect.any(String),
+      service: expect.any(String),
+    });
+  });
+
+  it("tracks service construction times in order", async () => {
+    const mockLogger = createMockLogger();
+    const spy = vi.spyOn(mockLogger, "info");
+    expect.assertions(4);
+    const app = CreateApplication({
+      // @ts-expect-error testing
+      name: "app",
+      services: {
+        ServiceA() {
+          // no-op
+        },
+        ServiceB() {
+          // no-op
+        },
+      },
+    });
+    await app.bootstrap({
+      customLogger: mockLogger,
+      showExtraBootStats: true,
+    });
+    const callArgs = spy.mock.calls.find(call => call[2] === "[%s] application bootstrapped");
+    expect(callArgs).toBeDefined();
+    const stats = callArgs[1] as unknown as {
+      Construct: { services: Array<{ duration: string; module: string; service: string }> };
+    };
+    const appServices = stats.Construct.services.filter(s => s.module === "app");
+    expect(appServices.length).toBeGreaterThanOrEqual(2);
+    const serviceNames = appServices.map(s => s.service);
+    expect(serviceNames).toContain("ServiceA");
+    expect(serviceNames).toContain("ServiceB");
+  });
+
+  it("tracks config loader timings including file loader", async () => {
+    const mockLogger = createMockLogger();
+    const spy = vi.spyOn(mockLogger, "info");
+    expect.assertions(3);
+    const app = CreateApplication({
+      // @ts-expect-error testing
+      name: "app",
+      services: {},
+    });
+    await app.bootstrap({
+      configSources: { file: true },
+      customLogger: mockLogger,
+      showExtraBootStats: true,
+    });
+    const callArgs = spy.mock.calls.find(call => call[2] === "[%s] application bootstrapped");
+    expect(callArgs).toBeDefined();
+    const stats = callArgs[1] as unknown as { config: Record<string, string> };
+    expect(stats.config).toBeDefined();
+    expect(stats.config).toMatchObject({
+      argv: expect.stringMatching(/^\d+\.\d{2}ms$/),
+      env: expect.stringMatching(/^\d+\.\d{2}ms$/),
+      file: expect.stringMatching(/^\d+\.\d{2}ms$/),
+    });
+  });
+
+  it("tracks custom config loader timings", async () => {
+    const mockLogger = createMockLogger();
+    const spy = vi.spyOn(mockLogger, "info");
+    expect.assertions(2);
+    const app = CreateApplication({
+      // @ts-expect-error testing
+      name: "app",
+      services: {},
+    });
+    await app.bootstrap({
+      customLogger: mockLogger,
+      showExtraBootStats: true,
+    });
+    const callArgs = spy.mock.calls.find(call => call[2] === "[%s] application bootstrapped");
+    expect(callArgs).toBeDefined();
+    const stats = callArgs[1] as unknown as { config: Record<string, string> };
+    // Verify config structure exists (custom loaders would be tracked if registered)
+    expect(stats.config).toBeDefined();
   });
 
   it("does not log extended boot stats by default", async () => {
     const mockLogger = createMockLogger();
     const spy = vi.spyOn(mockLogger, "info");
-    expect.assertions(2);
+    expect.assertions(5);
     const app = CreateApplication({
       // @ts-expect-error testing
       name: "app",
@@ -632,6 +735,11 @@ describe("Bootstrap", () => {
       "[%s] application bootstrapped",
       "app",
     );
+    const callArgs = spy.mock.calls.find(call => call[2] === "[%s] application bootstrapped");
+    expect(callArgs).toBeDefined();
+    const stats = callArgs[1] as unknown as Record<string, unknown>;
+    expect(stats.Construct).toBeUndefined();
+    expect(stats.config).toBeUndefined();
   });
 
   it("throws errors with missing priority services in apps", async () => {

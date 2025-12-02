@@ -263,6 +263,14 @@ export class InternalDefinition {
      */
     constructComplete: Set<string>;
     startup: Date;
+    /**
+     * Service construction times in order
+     */
+    serviceConstructionTimes: Array<{ module: string; service: string; duration: string }>;
+    /**
+     * Config loader execution times
+     */
+    configTimings?: Record<string, string>;
   };
   public utils = new InternalUtils();
 

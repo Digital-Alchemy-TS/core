@@ -130,7 +130,10 @@ export function Configuration({
     application: ApplicationDefinition<S, C>,
   ): Promise<string> {
     const start = performance.now();
+    const configTimings: Record<string, string> = {};
 
+    // ConfigLoaderEnvironment handles both env and argv
+    const envArgvStart = performance.now();
     mergeConfig(
       await ConfigLoaderEnvironment({
         application,
@@ -140,8 +143,14 @@ export function Configuration({
       }),
       ["env", "argv"],
     );
+    const envArgvDuration = `${(performance.now() - envArgvStart).toFixed(DECIMALS)}ms`;
+    // Since ConfigLoaderEnvironment handles both, track the same time for both
+    configTimings.argv = envArgvDuration;
+    configTimings.env = envArgvDuration;
+
     const canFile = internal.boot.options?.configSources?.file ?? false;
     if (canFile) {
+      const fileStart = performance.now();
       mergeConfig(
         await configLoaderFile({
           application,
@@ -151,15 +160,20 @@ export function Configuration({
         }),
         ["file"],
       );
+      configTimings.file = `${(performance.now() - fileStart).toFixed(DECIMALS)}ms`;
     }
     // * load!
     await eachSeries([...loaders.entries()], async ([type, loader]) => {
+      const loaderStart = performance.now();
       mergeConfig(await loader({ application, configs: configDefinitions, internal, logger }), [
         type,
       ]);
+      configTimings[type] = `${(performance.now() - loaderStart).toFixed(DECIMALS)}ms`;
     });
 
     validateConfig();
+
+    internal.boot.configTimings = configTimings;
 
     return `${(performance.now() - start).toFixed(DECIMALS)}ms`;
   }

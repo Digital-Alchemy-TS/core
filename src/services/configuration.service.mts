@@ -159,7 +159,11 @@ export function Configuration({
       configTimings.file = `${(performance.now() - fileStart).toFixed(DECIMALS)}ms`;
     }
     // * load!
+    const configSources = internal.boot.options.configSources ?? {};
     await eachSeries([...loaders.entries()], async ([type, loader]) => {
+      if (configSources[type] === false) {
+        return;
+      }
       const loaderStart = performance.now();
       mergeConfig(await loader({ application, configs: configDefinitions, internal, logger }), [
         type,

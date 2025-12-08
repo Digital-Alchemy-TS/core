@@ -2,7 +2,7 @@ import { env } from "node:process";
 
 import minimist from "minimist";
 
-import { is } from "../index.mts";
+import { is, NONE } from "../index.mts";
 import type {
   AbstractConfig,
   ConfigLoaderParams,
@@ -40,8 +40,8 @@ export async function ConfigLoaderEnvironment<
   const environmentKeys = Object.keys(env);
 
   // Track timing for argv and env separately
-  let argvTime = 0;
-  let envTime = 0;
+  let argvTime = NONE;
+  let envTime = NONE;
 
   // * go through all module
   configs.forEach((configuration, project) => {
@@ -57,60 +57,67 @@ export async function ConfigLoaderEnvironment<
       const search = [noAppPath, key];
       const configPath = `${project}.${key}`;
 
-      // * (preferred) Find an applicable cli switch
-      const argvStart = performance.now();
-      const flag = findKey(search, switchKeys);
-      if (flag && shouldArgv(source)) {
-        const formattedFlag = iSearchKey(flag, switchKeys);
-        internal.utils.object.set(
-          out,
-          configPath,
-          parseConfig(configuration[key], CLI_SWITCHES[formattedFlag]),
-        );
-        argvTime += performance.now() - argvStart;
-        logger.debug(
-          {
-            flag: formattedFlag,
-            name: ConfigLoaderEnvironment,
-            path: configPath,
-          },
-          `load config from [cli switch]`,
-        );
-        return;
-      }
-      argvTime += performance.now() - argvStart;
-
-      // * (fallback) Find an environment variable
-      const envStart = performance.now();
-      const environment = findKey(search, environmentKeys);
-      if (!is.empty(environment) && shouldEnv(source)) {
-        const environmentName = iSearchKey(environment, environmentKeys);
-        if (!is.string(env[environmentName]) || !is.empty(env[environmentName])) {
+      if (canArgv) {
+        // * (preferred) Find an applicable cli switch
+        const argvStart = performance.now();
+        const flag = findKey(search, switchKeys);
+        if (flag && shouldArgv(source)) {
+          const formattedFlag = iSearchKey(flag, switchKeys);
           internal.utils.object.set(
             out,
             configPath,
-            parseConfig(configuration[key], env[environmentName]),
+            parseConfig(configuration[key], CLI_SWITCHES[formattedFlag]),
           );
+          argvTime += performance.now() - argvStart;
+          logger.debug(
+            {
+              flag: formattedFlag,
+              name: ConfigLoaderEnvironment,
+              path: configPath,
+            },
+            `load config from [cli switch]`,
+          );
+          return;
         }
-        envTime += performance.now() - envStart;
-        logger.debug(
-          {
-            name: ConfigLoaderEnvironment,
-            path: configPath,
-            var: environmentName,
-          },
-          `load config from [env]`,
-        );
-      } else {
-        envTime += performance.now() - envStart;
+        argvTime += performance.now() - argvStart;
+      }
+
+      // * (fallback) Find an environment variable
+      if (canEnvironment) {
+        const envStart = performance.now();
+        const environment = findKey(search, environmentKeys);
+        if (!is.empty(environment) && shouldEnv(source)) {
+          const environmentName = iSearchKey(environment, environmentKeys);
+          if (!is.string(env[environmentName]) || !is.empty(env[environmentName])) {
+            internal.utils.object.set(
+              out,
+              configPath,
+              parseConfig(configuration[key], env[environmentName]),
+            );
+          }
+          envTime += performance.now() - envStart;
+          logger.debug(
+            {
+              name: ConfigLoaderEnvironment,
+              path: configPath,
+              var: environmentName,
+            },
+            `load config from [env]`,
+          );
+        } else {
+          envTime += performance.now() - envStart;
+        }
       }
     });
   });
 
-  // Store timings if timings object provided
   if (timings) {
-    timings.argv = `${argvTime.toFixed(DECIMALS)}ms`;
-    timings.env = `${envTime.toFixed(DECIMALS)}ms`;
+    if (argvTime) {
+      timings.argv = `${argvTime.toFixed(DECIMALS)}ms`;
+    }
+    if (envTime) {
+      timings.env = `${envTime.toFixed(DECIMALS)}ms`;
+    }
   }
 
   return out;

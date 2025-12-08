@@ -586,6 +586,7 @@ describe("Bootstrap", () => {
       services: {},
     });
     await app.bootstrap({
+      configSources: { argv: false, env: false },
       customLogger: mockLogger,
       showExtraBootStats: true,
     });
@@ -608,10 +609,8 @@ describe("Bootstrap", () => {
         PreInit: expect.any(String),
         Ready: expect.any(String),
         Total: expect.any(String),
-        config: expect.objectContaining({
-          argv: expect.stringMatching(/^\d+\.\d{2}ms$/),
-          env: expect.stringMatching(/^\d+\.\d{2}ms$/),
-        }),
+        config: {},
+        name: expect.any(Function),
       }),
       "[%s] application bootstrapped",
       "app",
@@ -681,8 +680,6 @@ describe("Bootstrap", () => {
     const stats = callArgs[1] as unknown as { config: Record<string, string> };
     expect(stats.config).toBeDefined();
     expect(stats.config).toMatchObject({
-      argv: expect.stringMatching(/^\d+\.\d{2}ms$/),
-      env: expect.stringMatching(/^\d+\.\d{2}ms$/),
       file: expect.stringMatching(/^\d+\.\d{2}ms$/),
     });
   });
@@ -705,6 +702,63 @@ describe("Bootstrap", () => {
     const stats = callArgs[1] as unknown as { config: Record<string, string> };
     // Verify config structure exists (custom loaders would be tracked if registered)
     expect(stats.config).toBeDefined();
+  });
+
+  it("does not run custom loader when explicitly disabled", async () => {
+    const loaderSpy = vi.fn().mockResolvedValue({});
+    expect.assertions(1);
+    await TestRunner()
+      // @ts-expect-error testing
+      .setOptions({ configSources: { custom: false } })
+      .run(({ lifecycle, internal }) => {
+        // @ts-expect-error testing
+        internal.config.registerLoader(loaderSpy, "custom");
+        lifecycle.onPostConfig(() => {
+          expect(loaderSpy).not.toHaveBeenCalled();
+        });
+      });
+  });
+
+  it("tracks custom loader timings when enabled", async () => {
+    const loaderSpy = vi.fn().mockResolvedValue({});
+    expect.assertions(2);
+    await TestRunner()
+      .setOptions({
+        configSources: {
+          argv: false,
+          env: false,
+          file: false,
+        },
+      })
+      .run(({ lifecycle, internal }) => {
+        // @ts-expect-error testing
+        internal.config.registerLoader(loaderSpy, "custom");
+        lifecycle.onReady(() => {
+          expect(loaderSpy).toHaveBeenCalled();
+          expect(internal.boot.configTimings.custom).toMatch(/^\d+\.\d{2}ms$/);
+        });
+      });
+  });
+
+  it("tracks argv and env timings when configs are processed", async () => {
+    const originalEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = "test-value";
+    expect.assertions(1);
+    await TestRunner()
+      .emitLogs()
+      .setOptions({
+        configSources: {
+          argv: false,
+          env: true,
+          file: false,
+        },
+      })
+      .run(({ lifecycle, internal }) => {
+        lifecycle.onReady(() => {
+          expect(internal.boot.configTimings.env).toMatch(/^\d+\.\d{2}ms$/);
+        });
+      });
+    process.env.NODE_ENV = originalEnv;
   });
 
   it("does not log extended boot stats by default", async () => {

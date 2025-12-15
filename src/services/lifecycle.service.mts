@@ -35,7 +35,7 @@ export function CreateLifecycle() {
       onShutdownComplete: (callback, priority) =>
         attachEvent(callback, "ShutdownComplete", priority),
       onShutdownStart: (callback, priority) => attachEvent(callback, "ShutdownStart", priority),
-    } satisfies TLifecycleBase,
+    } satisfies TLifecycleBase as TLifecycleBase,
     async exec(stage: LifecycleStages): Promise<string> {
       const start = performance.now();
       const list = events.get(stage);

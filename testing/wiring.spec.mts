@@ -118,13 +118,15 @@ describe("CreateLibrary", () => {
 
   it("throws an error with invalid service definition", () => {
     expect.assertions(1);
-    expect(() => {
+    try {
       CreateLibrary({
         // @ts-expect-error For unit testing
         name: "testing",
         services: { InvalidService: undefined },
       });
-    }).toThrow("INVALID_SERVICE_DEFINITION");
+    } catch (error) {
+      expect(error.cause).toBe("INVALID_SERVICE_DEFINITION");
+    }
   });
 
   it("creates multiple libraries with distinct configurations", () => {
@@ -200,7 +202,7 @@ describe("CreateApplication", () => {
     try {
       await application.bootstrap(BASIC_BOOT);
     } catch (error) {
-      expect(error.message).toBe("DOUBLE_BOOT");
+      expect(error.cause).toBe("DOUBLE_BOOT");
     }
   });
 
@@ -798,7 +800,7 @@ describe("Bootstrap", () => {
 
   it("throws errors with missing priority services in apps", async () => {
     expect.assertions(1);
-    expect(() => {
+    try {
       CreateApplication({
         // @ts-expect-error testing
         name: "library",
@@ -806,12 +808,14 @@ describe("Bootstrap", () => {
         priorityInit: ["missing"],
         services: {},
       });
-    }).toThrow("MISSING_PRIORITY_SERVICE");
+    } catch (error) {
+      expect(error.cause).toBe("MISSING_PRIORITY_SERVICE");
+    }
   });
 
   it("throws errors with missing priority libraries", async () => {
     expect.assertions(1);
-    expect(() => {
+    try {
       CreateLibrary({
         // @ts-expect-error testing
         name: "library",
@@ -819,7 +823,9 @@ describe("Bootstrap", () => {
         priorityInit: ["missing"],
         services: {},
       });
-    }).toThrow("MISSING_PRIORITY_SERVICE");
+    } catch (error) {
+      expect(error.cause).toBe("MISSING_PRIORITY_SERVICE");
+    }
   });
 
   it("sets booted after finishing bootstrap", async () => {

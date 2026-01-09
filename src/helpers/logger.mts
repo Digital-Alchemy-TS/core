@@ -2,6 +2,7 @@ import fs from "node:fs";
 
 import type { Get } from "type-fest";
 
+import { is, SINGLE } from "../index.mts";
 import type { TContext } from "./context.mts";
 import type { TBlackHole } from "./utilities.mts";
 
@@ -94,8 +95,9 @@ export const EVENT_UPDATE_LOG_LEVELS = "EVENT_UPDATE_LOG_LEVELS";
 export function fatalLog(message: string, data?: unknown) {
   if (data) {
     if (data instanceof Error) {
-      const errorOutput =
-        data.stack || `${data.name || "Error"}: ${data.message || "Unknown error"}`;
+      const cause = is.string(data?.cause) && !is.empty(data?.cause) ? ` - ${data.cause}` : "";
+      const stack = data.stack ? `\n` + data.stack.split("\n").slice(SINGLE).join("\n") : ``;
+      const errorOutput = `${data.name || "Error"}${cause}: ${data.message || "Unknown error"}${stack}`;
       message = [message, errorOutput].join("\n");
     } else {
       message = [message, JSON.stringify(data, undefined, "  ")].join("\n");

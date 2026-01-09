@@ -8,9 +8,9 @@ export class BootstrapException extends Error {
   constructor(context: TContext, cause: string, message: string) {
     super();
     this.name = "BootstrapException";
-    this.message = cause;
+    this.message = message;
     this.context = context;
-    this.cause = message;
+    this.cause = cause;
     this.timestamp = new Date();
   }
 }

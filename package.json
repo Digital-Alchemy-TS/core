@@ -72,7 +72,7 @@
     "@vitest/coverage-v8": "^4.0.16",
     "chalk": "^5.6.2",
     "dayjs": "^1.11.19",
-    "eslint": "9.39.2",
+    "eslint": "10.0.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsonc": "^2.21.0",

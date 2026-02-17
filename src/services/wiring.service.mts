@@ -62,7 +62,7 @@ function createBoilerplate() {
   return CreateLibrary({
     configuration: {
       /**
-       * Only usable by **cli switch**.
+       * Only usable by **cli switch** / application bootstrap.
        * Pass path to a config file for loader
        *
        * ```bash

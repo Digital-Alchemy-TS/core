@@ -45,9 +45,10 @@ export function configFilePaths(name: string): string[] {
 export async function configLoaderFile<
   S extends ServiceMap = ServiceMap,
   C extends ModuleConfiguration = ModuleConfiguration,
->({ application, logger }: ConfigLoaderParams<S, C>): ConfigLoaderReturn {
+>({ application, logger, internal }: ConfigLoaderParams<S, C>): ConfigLoaderReturn {
   const CLI_SWITCHES = minimist(process.argv);
-  const configFile = CLI_SWITCHES.config;
+  const configFile =
+    CLI_SWITCHES.config ?? internal?.boot?.options?.configuration?.boilerplate?.CONFIG;
   let files: string[];
   if (is.boolean(configFile)) {
     logger.fatal({ argv: process.argv }, "system failed to parse argv");

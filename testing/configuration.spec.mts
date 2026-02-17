@@ -884,6 +884,87 @@ describe("Configuration", () => {
 
           expect(readSpy).toHaveBeenCalledWith("./config_file", "utf8");
         });
+
+        it("uses bootstrap-provided CONFIG when no CLI switch", async () => {
+          vi.spyOn(fs, "existsSync").mockImplementation(() => true);
+
+          const readSpy = vi.spyOn(fs, "readFileSync").mockImplementation(() => ``);
+          const logger = createMockLogger();
+          process.argv = [""];
+          await configLoaderFile({
+            // @ts-expect-error not needed for test
+            application: {},
+            internal: {
+              boot: {
+                options: {
+                  configuration: {
+                    boilerplate: {
+                      CONFIG: "./bootstrap_config.yaml",
+                    },
+                  },
+                },
+              },
+            } as InternalDefinition,
+            logger,
+          });
+
+          expect(readSpy).toHaveBeenCalledWith("./bootstrap_config.yaml", "utf8");
+        });
+
+        it("CLI switch takes precedence over bootstrap-provided CONFIG", async () => {
+          vi.spyOn(fs, "existsSync").mockImplementation(() => true);
+
+          const readSpy = vi.spyOn(fs, "readFileSync").mockImplementation(() => ``);
+          const logger = createMockLogger();
+          process.argv = ["", "--config=./cli_config.yaml"];
+          await configLoaderFile({
+            // @ts-expect-error not needed for test
+            application: {},
+            internal: {
+              boot: {
+                options: {
+                  configuration: {
+                    boilerplate: {
+                      CONFIG: "./bootstrap_config.yaml",
+                    },
+                  },
+                },
+              },
+            } as InternalDefinition,
+            logger,
+          });
+
+          expect(readSpy).toHaveBeenCalledWith("./cli_config.yaml", "utf8");
+        });
+
+        it("bootstrap CONFIG overrides auto-discovery", async () => {
+          vi.spyOn(fs, "existsSync").mockImplementation(() => true);
+          // @ts-expect-error rest isn't needed
+          vi.spyOn(fs, "statSync").mockImplementation(() => ({ isFile: () => true }));
+
+          const readSpy = vi.spyOn(fs, "readFileSync").mockImplementation(() => ``);
+          const logger = createMockLogger();
+          process.argv = [""];
+          await configLoaderFile({
+            // @ts-expect-error not needed for test
+            application: { name: "test-app" },
+            internal: {
+              boot: {
+                options: {
+                  configuration: {
+                    boilerplate: {
+                      CONFIG: "./explicit_config.yaml",
+                    },
+                  },
+                },
+              },
+            } as InternalDefinition,
+            logger,
+          });
+
+          expect(readSpy).toHaveBeenCalledWith("./explicit_config.yaml", "utf8");
+          expect(readSpy).not.toHaveBeenCalledWith(expect.stringContaining(".test-app"), "utf8");
+        });
       });
 
       // #MARK: loadConfigFromFile

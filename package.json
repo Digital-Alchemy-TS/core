@@ -80,7 +80,7 @@
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-security": "^3.0.1",
     "eslint-plugin-simple-import-sort": "^12.1.1",
-    "eslint-plugin-sonarjs": "^3.0.5",
+    "eslint-plugin-sonarjs": "^4.0.0",
     "eslint-plugin-sort-keys-fix": "^1.1.2",
     "eslint-plugin-unicorn": "^63.0.0",
     "ini": "^6.0.0",

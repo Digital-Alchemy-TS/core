@@ -1,3 +1,14 @@
+/**
+ * Minimal single-service bootstrap helper for scripts and one-off operations.
+ *
+ * @remarks
+ * `ServiceRunner` creates a complete DI graph for a single service, handling
+ * all wiring, lifecycle, and teardown. It is useful for scripts that need
+ * access to the full framework without building an application. The service
+ * function receives the same `TServiceParams` as a normal service, allowing
+ * access to config, logger, scheduler, and other boilerplate.
+ */
+
 import { CreateApplication } from "../index.mts";
 import type { OptionalModuleConfiguration } from "./config.mts";
 import type {
@@ -23,7 +34,23 @@ type LocalServiceParams<C extends OptionalModuleConfiguration, NAME extends stri
 };
 
 /**
- * Type safe way to kick off a mini service / script
+ * Bootstrap and run a single typed service with full framework support.
+ *
+ * @remarks
+ * Creates an application with a single service, invokes its bootstrap lifecycle,
+ * and returns when the service completes. The service runs synchronously within
+ * the context of a fully-initialized DI graph, with access to all boilerplate
+ * services (logger, scheduler, lifecycle, config, etc.).
+ *
+ * @example
+ * ```typescript
+ * await ServiceRunner(
+ *   { configuration: { myLib: {...} } },
+ *   ({ logger, config }) => {
+ *     logger.info("running with config:", config.myLib);
+ *   }
+ * );
+ * ```
  */
 export async function ServiceRunner<
   C extends OptionalModuleConfiguration,

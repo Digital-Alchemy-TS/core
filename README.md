@@ -17,11 +17,27 @@ yarn add @digital-alchemy/core
 
 ## Introduction
 
-The Digital Alchemy core utilities are a set of dependency-light tools for building backend applications with **TypeScript**. It targets the latest **ESModule** syntax and language standards, and it's compatible with Bun, Deno, and modern versions of NodeJS.
+`@digital-alchemy/core` is a dependency-injection framework for TypeScript — no decorators, no reflection, no class hierarchy. Services are plain functions that receive their dependencies through a single typed parameter. The framework wires everything at boot time, with full type safety across your entire service graph.
 
-Modules leverage advanced TypeScript features to easily combine services and configurations into type-safe applications. This makes it friendly to a variety of use cases, from complex functional programming logic to usage as a smaller utility in an existing codebase.
+Targets the latest ESModule syntax and runs on Bun, Deno, and modern Node.
 
-The framework adds minimal overhead to boot times, making it well-suited for a wide range of applications, such as web servers, serverless functions, automation tools, and long-running background scripts.
+## At a glance
+
+```typescript
+import { CreateApplication, TServiceParams } from "@digital-alchemy/core";
+
+function HelloService({ logger, lifecycle }: TServiceParams) {
+  lifecycle.onReady(() => logger.info("hello world"));
+}
+
+const app = CreateApplication({
+  name: "hello",
+  services: { hello: HelloService },
+});
+
+await app.bootstrap();
+```
+
 ## What it does
 
 - **Service wiring** - Automatic dependency injection with full type safety

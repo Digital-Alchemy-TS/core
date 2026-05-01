@@ -1,3 +1,13 @@
+/**
+ * Public helpers — pure-function modules and type definitions.
+ *
+ * @remarks
+ * This module re-exports all helper modules (async utilities, config loaders,
+ * lifecycle types, logging interfaces, cron schedules, etc.). Helpers are
+ * side-effect-free and differ from services in that they do not receive
+ * `TServiceParams` or participate in the DI graph.
+ */
+
 export * from "./async.mts";
 export * from "./config.mts";
 export * from "./config-environment-loader.mts";

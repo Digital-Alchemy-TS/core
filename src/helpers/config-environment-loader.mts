@@ -1,3 +1,15 @@
+/**
+ * Environment variable and CLI switch config loader.
+ *
+ * @remarks
+ * Reads config from Node.js env vars and command-line arguments. For each config
+ * key, searches using a three-tier precedence: CLI switches (highest), then env
+ * vars (middle), then defaults (lowest). Both argv and env sources support a
+ * double-underscore variant (`MODULE__KEY`) in addition to single-underscore,
+ * enabling env vars with embedded dots/slashes that would be shell-escaped.
+ * Timing information is captured and returned for observability.
+ */
+
 import { env } from "node:process";
 
 import minimist from "minimist";
@@ -13,6 +25,34 @@ import type {
 import { findKey, iSearchKey, loadDotenv, parseConfig } from "./config.mts";
 import type { ServiceMap } from "./wiring.mts";
 
+/**
+ * Load configuration from environment variables and CLI switches.
+ *
+ * @remarks
+ * Merges CLI arguments and environment variables into the config tree, respecting
+ * the configured sources (argv, env) and individual config key source restrictions.
+ * Searches for each key in three forms (in order):
+ * 1. `MODULE__KEY` (double underscore) — preferred, allows shell-escaped env vars
+ * 2. `MODULE_KEY` (single underscore) — classic format
+ * 3. `KEY` (bare key) — fallback for globals
+ *
+ * CLI arguments are checked first (highest precedence); env vars are checked second.
+ * Both are optional and controlled by `internal.boot.options.configSources`.
+ *
+ * Timing data is collected for argv and env separately and returned if the
+ * optional `timings` object is provided.
+ *
+ * @example
+ * ```
+ * // Search order for app.NODE_ENV config key:
+ * // 1. --app__NODE_ENV cli switch
+ * // 2. APP__NODE_ENV env var
+ * // 3. --app_NODE_ENV cli switch
+ * // 4. APP_NODE_ENV env var
+ * // 5. --NODE_ENV cli switch
+ * // 6. NODE_ENV env var
+ * ```
+ */
 export async function ConfigLoaderEnvironment<
   S extends ServiceMap = ServiceMap,
   C extends ModuleConfiguration = ModuleConfiguration,
@@ -34,31 +74,30 @@ export async function ConfigLoaderEnvironment<
   const shouldEnv = (source: DataTypes[]) =>
     canEnvironment && (!is.array(source) || source.includes("env"));
 
-  // * merge dotenv into local vars
-  // accounts for `--env-file` switches, and whatever is passed in via bootstrap
+  // merge dotenv files and env-file switches into process.env
   loadDotenv(internal, CLI_SWITCHES, logger);
   const environmentKeys = Object.keys(env);
 
-  // Track timing for argv and env separately
+  // track timing for argv and env separately
   let argvTime = NONE;
   let envTime = NONE;
 
-  // * go through all module
+  // iterate through all module configurations
   configs.forEach((configuration, project) => {
     const cleanedProject = project.replaceAll("-", "_");
 
-    // * run through each config for module
+    // iterate through each config key within the module
     Object.keys(configuration).forEach(key => {
       const { source } = configs.get(project)[key];
-      // > things to search for
-      // - MODULE_NAME_CONFIG_KEY (module + key, ex: app_NODE_ENV)
-      // - CONFIG_KEY (only key, ex: NODE_ENV)
+      // search keys in order: double-underscore (preferred), single-underscore, bare key
+      // double-underscore allows env var names with embedded special chars (dots, slashes)
       const noAppPath = `${cleanedProject}_${key}`;
-      const search = [noAppPath, key];
+      const noAppPathDouble = `${cleanedProject}__${key}`;
+      const search = [noAppPathDouble, noAppPath, key];
       const configPath = `${project}.${key}`;
 
       if (canArgv) {
-        // * (preferred) Find an applicable cli switch
+        // CLI switches take precedence; find a matching flag in the argv
         const argvStart = performance.now();
         const flag = findKey(search, switchKeys);
         if (flag && shouldArgv(source)) {
@@ -82,12 +121,13 @@ export async function ConfigLoaderEnvironment<
         argvTime += performance.now() - argvStart;
       }
 
-      // * (fallback) Find an environment variable
+      // fallback to environment variable if no CLI switch was found
       if (canEnvironment) {
         const envStart = performance.now();
         const environment = findKey(search, environmentKeys);
         if (!is.empty(environment) && shouldEnv(source)) {
           const environmentName = iSearchKey(environment, environmentKeys);
+          // only set if the env var is defined and non-empty
           if (!is.string(env[environmentName]) || !is.empty(env[environmentName])) {
             internal.utils.object.set(
               out,
@@ -111,6 +151,7 @@ export async function ConfigLoaderEnvironment<
     });
   });
 
+  // record timing if provided
   if (timings) {
     if (argvTime) {
       timings.argv = `${argvTime.toFixed(DECIMALS)}ms`;

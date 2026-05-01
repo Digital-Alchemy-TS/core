@@ -359,6 +359,8 @@ describe("Configuration", () => {
         delete env["current_weather"];
         delete env["current_WEATHER"];
         delete env["CURRENT_WEATHER"];
+        delete env["testing__CURRENT_WEATHER"];
+        delete env["testing_CURRENT_WEATHER"];
       });
 
       it("should default properly if environment variables do not exist", async () => {
@@ -541,6 +543,48 @@ describe("Configuration", () => {
             lifecycle.onPostConfig(() => {
               // @ts-expect-error testing
               expect(config.testing.CURRENT_WEATHER).toBe("hail");
+            });
+          });
+      });
+
+      it("should resolve MODULE__KEY (double-underscore) env var", async () => {
+        expect.assertions(1);
+        env["testing__CURRENT_WEATHER"] = "sleet";
+        await TestRunner()
+          .setOptions({ loadConfigs: true })
+          .setOptions({
+            module_config: {
+              CURRENT_WEATHER: {
+                default: "raining",
+                type: "string",
+              },
+            },
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.CURRENT_WEATHER).toBe("sleet");
+            });
+          });
+      });
+
+      it("should resolve MODULE_KEY (single-underscore) env var", async () => {
+        expect.assertions(1);
+        env["testing_CURRENT_WEATHER"] = "fog";
+        await TestRunner()
+          .setOptions({ loadConfigs: true })
+          .setOptions({
+            module_config: {
+              CURRENT_WEATHER: {
+                default: "raining",
+                type: "string",
+              },
+            },
+          })
+          .run(({ config, lifecycle }) => {
+            lifecycle.onPostConfig(() => {
+              // @ts-expect-error testing
+              expect(config.testing.CURRENT_WEATHER).toBe("fog");
             });
           });
       });

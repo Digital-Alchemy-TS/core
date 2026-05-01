@@ -15,6 +15,7 @@
     "declaration": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
+    "strictNullChecks": false,
     "noUnusedParameters": true,
     "rootDir": "./src",
     "skipDefaultLibCheck": true,

@@ -386,4 +386,3 @@ export function Configuration({
     set: setConfig as TSetConfig,
   };
 }
-

@@ -2,7 +2,6 @@ import importPlugin from "eslint-plugin-import";
 import jsonc from "eslint-plugin-jsonc";
 import noUnsanitized from "eslint-plugin-no-unsanitized";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
-import sortKeysFix from "eslint-plugin-sort-keys-fix";
 import unicorn from "eslint-plugin-unicorn";
 import prettier from "eslint-plugin-prettier";
 import { fixupPluginRules } from "@eslint/compat";
@@ -30,7 +29,6 @@ export default [
       jsonc,
       "no-unsanitized": noUnsanitized,
       "simple-import-sort": simpleImportSort,
-      "sort-keys-fix": sortKeysFix,
       unicorn,
       prettier,
     },
@@ -41,7 +39,6 @@ export default [
   ...compat
     .extends(
       "plugin:@typescript-eslint/recommended",
-      "plugin:jsonc/recommended-with-jsonc",
       "plugin:prettier/recommended",
       "plugin:@cspell/recommended",
     )
@@ -88,10 +85,11 @@ export default [
       "unicorn/prefer-node-protocol": "error",
       "unicorn/no-array-for-each": "off",
       "unicorn/import-style": "off",
-      "sort-keys-fix/sort-keys-fix": "warn",
+      // "sort-keys-fix/sort-keys-fix": "warn",
       "unicorn/prefer-event-target": "off",
       "simple-import-sort/imports": "warn",
       "sonarjs/no-misused-promises": "off",
+      "@typescript-eslint/no-duplicate-enum-values": "off",
       "sonarjs/no-commented-code": "off",
       "sonarjs/todo-tag": "off",
       "simple-import-sort/exports": "warn",

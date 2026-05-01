@@ -41,7 +41,8 @@
     "./testing": "./dist/testing/helpers/index.mjs"
   },
   "files": [
-    "dist/**/*"
+    "dist/**/*",
+    "CLAUDE.md"
   ],
   "engines": {
     "node": ">=20"

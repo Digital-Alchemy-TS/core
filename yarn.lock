@@ -646,7 +646,7 @@ __metadata:
     chalk: "npm:^5.6.2"
     cron: "npm:^4.4.0"
     dayjs: "npm:^1.11.20"
-    eslint: "npm:10.2.1"
+    eslint: "npm:10.3.0"
     eslint-config-prettier: "npm:10.1.8"
     eslint-plugin-import: "npm:^2.32.0"
     eslint-plugin-jsonc: "npm:^3.1.2"
@@ -2823,9 +2823,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint@npm:10.2.1":
-  version: 10.2.1
-  resolution: "eslint@npm:10.2.1"
+"eslint@npm:10.3.0":
+  version: 10.3.0
+  resolution: "eslint@npm:10.3.0"
   dependencies:
     "@eslint-community/eslint-utils": "npm:^4.8.0"
     "@eslint-community/regexpp": "npm:^4.12.2"
@@ -2864,7 +2864,7 @@ __metadata:
       optional: true
   bin:
     eslint: bin/eslint.js
-  checksum: 10/954658c846696dc501a2b8e5fb268713e231dd81375dc25d76cd2fb4a1c73094ea73c64197634ece6fca8a54536e89eb44548a11be672544522e7a50eb8aae95
+  checksum: 10/7d8131e5ef65754f61afd807d875377403f1c89b5f5529f23506776c2df504ba0d53d378b8aeec1996c66c6d428ea3e2ea5c04b226474ce89b6e28443fd3b7b6
   languageName: node
   linkType: hard
 
@@ -4142,12 +4142,12 @@ __metadata:
   linkType: hard
 
 "npm-check-updates@npm:^22.0.1":
-  version: 22.0.1
-  resolution: "npm-check-updates@npm:22.0.1"
+  version: 22.1.0
+  resolution: "npm-check-updates@npm:22.1.0"
   bin:
     ncu: build/cli.js
     npm-check-updates: build/cli.js
-  checksum: 10/03a8fee1b3a7bea04ffe23a68d3c6ba9f39cbb18f744d89783298bf3bdcde4071853f6487aa3431b806d1efcec41cfd2722cd4e0663d4e38601815ae81ec526e
+  checksum: 10/f0f890e19b0c9e9fe795ac056a9f4f26a02bae8af111c63bf0e716437196c906a6e0bde5b757c44f52624fa9cfa7aa99974802e9d9ad8afdac228e45899088e3
   languageName: node
   linkType: hard
 

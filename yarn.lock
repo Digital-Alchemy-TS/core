@@ -657,7 +657,7 @@ __metadata:
     eslint-plugin-sonarjs: "npm:^4.0.3"
     eslint-plugin-sort-keys-fix: "npm:^1.1.2"
     eslint-plugin-unicorn: "npm:^64.0.0"
-    ini: "npm:^6.0.0"
+    ini: "npm:^7.0.0"
     js-yaml: "npm:^4.1.1"
     minimist: "npm:^1.2.8"
     npm-check-updates: "npm:^22.0.1"
@@ -3408,10 +3408,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ini@npm:6.0.0, ini@npm:^6.0.0":
+"ini@npm:6.0.0":
   version: 6.0.0
   resolution: "ini@npm:6.0.0"
   checksum: 10/e87d8cde86d091ddb104580d42dfdc8306593627269990ca0f5176ccc60c936268bad56856398fef924cdf0af33b1a9c21e84f85914820037e003ee45443cc85
+  languageName: node
+  linkType: hard
+
+"ini@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "ini@npm:7.0.0"
+  checksum: 10/684221cc6c9cc4fcbe01ed99048a9ba3ac7bdfc9b9606b3ff71ca80e32b047b51772178f9536bf93998136576929040666c8212c2301e813e7f7f3b1c1374ee3
   languageName: node
   linkType: hard
 

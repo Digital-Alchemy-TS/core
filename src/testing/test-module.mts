@@ -47,6 +47,11 @@ type TestingBootstrapOptions = {
   /**
    * default: false
    *
+   * When false (the default), the runner installs a no-op customLogger AND sets
+   * boilerplate.LOG_LEVEL=silent so all framework output is suppressed. Both
+   * halves are required because fatalLog writes directly to stderr.fd and
+   * bypasses the customLogger entirely.
+   *
    * Set to true to have this test emit logs to stdout. Useful for debugging
    * test failures during interactive development.
    */
@@ -361,13 +366,18 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
     async run(test: ServiceFunction) {
       // build the application with all configured libraries, services, and the test service
       const { app, LIB_RUN_FIRST } = buildApp(options?.name ?? "testing", options?.target, test);
+      // when logs are suppressed, default LOG_LEVEL to "silent" so fatalLog (which writes
+      // directly to stderr.fd) is also gated; user configuration wins via deepExtend order
+      const effectiveConfiguration = bootOptions?.emitLogs
+        ? bootOptions?.configuration
+        : deepExtend({ boilerplate: { LOG_LEVEL: "silent" } }, bootOptions?.configuration ?? {});
       // bootstrap the full application; all lifecycle stages fire here
       await app.bootstrap({
         appendLibrary: [...appendLibraries.values(), ...(LIB_RUN_FIRST ? [LIB_RUN_FIRST] : [])],
         appendService: Object.fromEntries(appendServices.entries()),
         bootLibrariesFirst: !!bootOptions?.bootLibrariesFirst,
         configSources: bootOptions?.configSources,
-        configuration: bootOptions?.configuration,
+        configuration: effectiveConfiguration,
         // if logging is disabled, provide a no-op logger; otherwise use the provided custom logger or default
         customLogger: bootOptions?.emitLogs
           ? undefined

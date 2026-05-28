@@ -23,6 +23,7 @@ import type {
   TServiceParams,
 } from "../src/index.mts";
 import {
+  BootstrapException,
   cast,
   configFilePaths,
   configLoaderFile,
@@ -237,11 +238,13 @@ describe("Configuration", () => {
 
     it("should have the correct defaults for boilerplate", async () => {
       expect.assertions(1);
-      await TestRunner().run(({ config, lifecycle }) => {
-        lifecycle.onPostConfig(() => {
-          expect(config.boilerplate.LOG_LEVEL).toBe("trace");
+      await TestRunner()
+        .emitLogs("trace")
+        .run(({ config, lifecycle }) => {
+          lifecycle.onPostConfig(() => {
+            expect(config.boilerplate.LOG_LEVEL).toBe("trace");
+          });
         });
-      });
     });
 
     it("should generate the correct structure for applications", async () => {
@@ -1451,27 +1454,25 @@ describe("Configuration", () => {
     });
 
     it("throws errors during boot for missing required configs", async () => {
-      expect.assertions(2);
-      const spy = vi.spyOn(fs, "writeSync").mockImplementation(() => 0);
-      const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
+      expect.assertions(1);
 
-      await TestRunner()
-        .appendLibrary(
-          CreateLibrary({
-            configuration: {
-              TEST_CONFIG: {
-                required: true,
-                type: "string",
+      await expect(
+        TestRunner()
+          .appendLibrary(
+            CreateLibrary({
+              configuration: {
+                TEST_CONFIG: {
+                  required: true,
+                  type: "string",
+                },
               },
-            },
-            // @ts-expect-error testing
-            name: "test_library",
-            services: {},
-          }),
-        )
-        .run(() => {});
-      expect(spy).toHaveBeenCalled();
-      expect(exitSpy).toHaveBeenCalled();
+              // @ts-expect-error testing
+              name: "test_library",
+              services: {},
+            }),
+          )
+          .run(() => {}),
+      ).rejects.toThrow(BootstrapException);
     });
 
     // #MARK: onUpdate

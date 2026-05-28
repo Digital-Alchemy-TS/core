@@ -366,15 +366,14 @@ describe("Lifecycle", () => {
     const errorMock = vi.fn(() => {
       throw new Error("EXPECTED_UNIT_TESTING_ERROR");
     });
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
 
-    await TestRunner().run(({ lifecycle }) => {
-      lifecycle.onBootstrap(errorMock);
-    });
+    await expect(
+      TestRunner().run(({ lifecycle }) => {
+        lifecycle.onBootstrap(errorMock);
+      }),
+    ).rejects.toThrow("EXPECTED_UNIT_TESTING_ERROR");
 
-    expect(exitSpy).toHaveBeenCalled();
-    expect(exitSpy).toHaveBeenCalledWith(1); // EXIT_ERROR
+    expect(errorMock).toHaveBeenCalled();
   });
 
   it("higher numbers go first (positive)", async () => {
@@ -857,15 +856,13 @@ describe("Bootstrap", () => {
 // #MARK: Boot Phase
 describe("Boot Phase", () => {
   it("should exit if service constructor throws error", async () => {
-    expect.assertions(2);
-    const spy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
-    vi.spyOn(globalThis.console, "error").mockImplementation(() => undefined);
+    expect.assertions(1);
 
-    await TestRunner().run(() => {
-      throw new Error("boom");
-    });
-    expect(spy).toHaveBeenCalled();
-    expect(spy).toHaveBeenCalledWith(1); // EXIT_ERROR
+    await expect(
+      TestRunner().run(() => {
+        throw new Error("boom");
+      }),
+    ).rejects.toThrow("boom");
   });
 
   it("should not have project name in construction complete prior to completion", async () => {

@@ -435,6 +435,9 @@ async function wireService(
 
     return loaded[service];
   } catch (error) {
+    if (internal.boot.options?.customLogger) {
+      throw error;
+    }
     // constructor errors are blocking — a partially-initialized service graph
     // cannot be safely recovered, so exit immediately
     fatalLog("initialization error", error);
@@ -499,6 +502,11 @@ const runReady = async (internal: InternalDefinition) => {
  * 7. Run `PreInit → Configure (loaders) → PostConfig → Bootstrap → Ready`.
  * 8. Resolve the returned `TServiceParams` promise via a synthetic
  *    "bootstrap" service wire call so the caller can access the wired graph.
+ *
+ * When `customLogger` is supplied (library/test mode), bootstrap failures reject
+ * the returned promise with the original error instead of calling `fatalLog` and
+ * `process.exit`. App-mode callers (no `customLogger`) get the existing
+ * fail-fast behavior.
  *
  * @internal
  */
@@ -680,6 +688,10 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       ),
     );
   } catch (error) {
+    if (options?.customLogger) {
+      // library/test mode: caller owns output and the rejection chain
+      throw error;
+    }
     if (options?.configuration?.boilerplate?.LOG_LEVEL !== "silent") {
       fatalLog("bootstrap failed", error);
     }

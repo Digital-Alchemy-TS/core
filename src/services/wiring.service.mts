@@ -435,8 +435,12 @@ async function wireService(
 
     return loaded[service];
   } catch (error) {
+    // Default (app) mode: a constructor throw means the service graph is partially initialized
+    // and cannot recover, so fatalLog + exit is correct. But test/library consumers set
+    // customLogger to claim output and the rejection chain — the FATAL write leaks past their
+    // no-op logger and process.exit mangles the original error class through the test runner's
+    // interceptor. Short-circuit to a plain re-throw; app-mode fallthrough is unchanged.
     if (internal.boot.options?.customLogger) {
-      // library/test mode: re-throw so the caller's rejection chain and error class survive intact
       throw error;
     }
     // constructor errors are blocking — a partially-initialized service graph
@@ -689,8 +693,12 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       ),
     );
   } catch (error) {
+    // Default (app) mode: a lifecycle-stage throw (Bootstrap/Ready/etc.) gets a FATAL line and
+    // exits, which is correct for production. But test/library consumers set customLogger to
+    // claim output and the rejection chain — the FATAL write leaks past their no-op logger and
+    // process.exit mangles the original error class through the test runner's interceptor.
+    // Short-circuit to a plain re-throw; app-mode fallthrough is unchanged.
     if (options?.customLogger) {
-      // library/test mode: caller owns output and the rejection chain
       throw error;
     }
     if (options?.configuration?.boilerplate?.LOG_LEVEL !== "silent") {

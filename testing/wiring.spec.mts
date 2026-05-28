@@ -851,6 +851,34 @@ describe("Bootstrap", () => {
       expect(error).toBeDefined();
     }
   });
+
+  it("calls fatalLog and process.exit in bootstrap app-mode catch (no customLogger)", async () => {
+    expect.assertions(1);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
+
+    application = CreateApplication({
+      configurationLoaders: [],
+      libraries: [
+        CreateLibrary({
+          configuration: {
+            REQUIRED_KEY: { required: true, type: "string" },
+          },
+          // @ts-expect-error testing
+          name: "needs_config",
+          services: {},
+        }),
+      ],
+      // @ts-expect-error testing
+      name: "testing",
+      services: {},
+    });
+
+    // LOG_LEVEL is not "silent" here so fatalLog fires before process.exit
+    await application.bootstrap({
+      configuration: { boilerplate: { LOG_LEVEL: "error" } },
+    });
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
 });
 
 // #MARK: Boot Phase
@@ -863,6 +891,36 @@ describe("Boot Phase", () => {
         throw new Error("boom");
       }),
     ).rejects.toThrow("boom");
+  });
+
+  it("preserves error class through wireService customLogger re-throw", async () => {
+    expect.assertions(1);
+    class ServiceInitError extends Error {}
+
+    await expect(
+      TestRunner().run(() => {
+        throw new ServiceInitError("custom class");
+      }),
+    ).rejects.toThrow(ServiceInitError);
+  });
+
+  it("calls process.exit in wireService app-mode catch (no customLogger)", async () => {
+    expect.assertions(1);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
+
+    application = CreateApplication({
+      configurationLoaders: [],
+      // @ts-expect-error testing
+      name: "testing",
+      services: {
+        Broken() {
+          throw new Error("app-mode constructor failure");
+        },
+      },
+    });
+
+    await application.bootstrap(BASIC_BOOT);
+    expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
   it("should not have project name in construction complete prior to completion", async () => {

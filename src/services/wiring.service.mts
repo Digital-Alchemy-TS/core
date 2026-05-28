@@ -436,6 +436,7 @@ async function wireService(
     return loaded[service];
   } catch (error) {
     if (internal.boot.options?.customLogger) {
+      // library/test mode: re-throw so the caller's rejection chain and error class survive intact
       throw error;
     }
     // constructor errors are blocking — a partially-initialized service graph

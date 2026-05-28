@@ -435,6 +435,14 @@ async function wireService(
 
     return loaded[service];
   } catch (error) {
+    // Default (app) mode: a constructor throw means the service graph is partially initialized
+    // and cannot recover, so fatalLog + exit is correct. But test/library consumers set
+    // customLogger to claim output and the rejection chain — the FATAL write leaks past their
+    // no-op logger and process.exit mangles the original error class through the test runner's
+    // interceptor. Short-circuit to a plain re-throw; app-mode fallthrough is unchanged.
+    if (internal.boot.options?.customLogger) {
+      throw error;
+    }
     // constructor errors are blocking — a partially-initialized service graph
     // cannot be safely recovered, so exit immediately
     fatalLog("initialization error", error);
@@ -499,6 +507,11 @@ const runReady = async (internal: InternalDefinition) => {
  * 7. Run `PreInit → Configure (loaders) → PostConfig → Bootstrap → Ready`.
  * 8. Resolve the returned `TServiceParams` promise via a synthetic
  *    "bootstrap" service wire call so the caller can access the wired graph.
+ *
+ * When `customLogger` is supplied (library/test mode), bootstrap failures reject
+ * the returned promise with the original error instead of calling `fatalLog` and
+ * `process.exit`. App-mode callers (no `customLogger`) get the existing
+ * fail-fast behavior.
  *
  * @internal
  */
@@ -680,6 +693,14 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       ),
     );
   } catch (error) {
+    // Default (app) mode: a lifecycle-stage throw (Bootstrap/Ready/etc.) gets a FATAL line and
+    // exits, which is correct for production. But test/library consumers set customLogger to
+    // claim output and the rejection chain — the FATAL write leaks past their no-op logger and
+    // process.exit mangles the original error class through the test runner's interceptor.
+    // Short-circuit to a plain re-throw; app-mode fallthrough is unchanged.
+    if (options?.customLogger) {
+      throw error;
+    }
     if (options?.configuration?.boilerplate?.LOG_LEVEL !== "silent") {
       fatalLog("bootstrap failed", error);
     }

@@ -366,15 +366,14 @@ describe("Lifecycle", () => {
     const errorMock = vi.fn(() => {
       throw new Error("EXPECTED_UNIT_TESTING_ERROR");
     });
-    vi.spyOn(console, "error").mockImplementation(() => {});
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
 
-    await TestRunner().run(({ lifecycle }) => {
-      lifecycle.onBootstrap(errorMock);
-    });
+    await expect(
+      TestRunner().run(({ lifecycle }) => {
+        lifecycle.onBootstrap(errorMock);
+      }),
+    ).rejects.toThrow("EXPECTED_UNIT_TESTING_ERROR");
 
-    expect(exitSpy).toHaveBeenCalled();
-    expect(exitSpy).toHaveBeenCalledWith(1); // EXIT_ERROR
+    expect(errorMock).toHaveBeenCalled();
   });
 
   it("higher numbers go first (positive)", async () => {
@@ -852,20 +851,76 @@ describe("Bootstrap", () => {
       expect(error).toBeDefined();
     }
   });
+
+  it("calls fatalLog and process.exit in bootstrap app-mode catch (no customLogger)", async () => {
+    expect.assertions(1);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
+
+    application = CreateApplication({
+      configurationLoaders: [],
+      libraries: [
+        CreateLibrary({
+          configuration: {
+            REQUIRED_KEY: { required: true, type: "string" },
+          },
+          // @ts-expect-error testing
+          name: "needs_config",
+          services: {},
+        }),
+      ],
+      // @ts-expect-error testing
+      name: "testing",
+      services: {},
+    });
+
+    // LOG_LEVEL is not "silent" here so fatalLog fires before process.exit
+    await application.bootstrap({
+      configuration: { boilerplate: { LOG_LEVEL: "error" } },
+    });
+    expect(exitSpy).toHaveBeenCalledWith(1);
+  });
 });
 
 // #MARK: Boot Phase
 describe("Boot Phase", () => {
   it("should exit if service constructor throws error", async () => {
-    expect.assertions(2);
-    const spy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
-    vi.spyOn(globalThis.console, "error").mockImplementation(() => undefined);
+    expect.assertions(1);
 
-    await TestRunner().run(() => {
-      throw new Error("boom");
+    await expect(
+      TestRunner().run(() => {
+        throw new Error("boom");
+      }),
+    ).rejects.toThrow("boom");
+  });
+
+  it("preserves error class through wireService customLogger re-throw", async () => {
+    expect.assertions(1);
+    class ServiceInitError extends Error {}
+
+    await expect(
+      TestRunner().run(() => {
+        throw new ServiceInitError("custom class");
+      }),
+    ).rejects.toThrow(ServiceInitError);
+  });
+
+  it("calls process.exit in wireService app-mode catch (no customLogger)", async () => {
+    expect.assertions(1);
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
+
+    application = CreateApplication({
+      configurationLoaders: [],
+      // @ts-expect-error testing
+      name: "testing",
+      services: {
+        Broken() {
+          throw new Error("app-mode constructor failure");
+        },
+      },
     });
-    expect(spy).toHaveBeenCalled();
-    expect(spy).toHaveBeenCalledWith(1); // EXIT_ERROR
+
+    await application.bootstrap(BASIC_BOOT);
+    expect(exitSpy).toHaveBeenCalledWith(1);
   });
 
   it("should not have project name in construction complete prior to completion", async () => {

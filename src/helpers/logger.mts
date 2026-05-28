@@ -260,6 +260,10 @@ export const EVENT_UPDATE_LOG_LEVELS = "EVENT_UPDATE_LOG_LEVELS";
  * wired). If `data` is an Error, extracts and formats `name`, `cause`, `message`,
  * and stack trace; otherwise, JSON-stringifies it. Always adds a trailing newline.
  *
+ * This function is intended for **app-mode** last-resort writes only. Callers
+ * that pass `customLogger` to `bootstrap` (library/test mode) bypass this
+ * function entirely — their failures propagate as thrown errors instead.
+ *
  * @example
  * ```typescript
  * try {

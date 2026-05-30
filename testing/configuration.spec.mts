@@ -261,6 +261,20 @@ describe("Configuration", () => {
         });
     });
 
+    it("injects a record config as a typed object", async () => {
+      expect.assertions(1);
+      await TestRunner()
+        .setOptions({
+          module_config: {
+            MY_RECORD: { default: { foo: "bar" }, type: "record" },
+          },
+        })
+        .run(({ config }) => {
+          // @ts-expect-error testing
+          expect(config.testing.MY_RECORD).toEqual({ foo: "bar" });
+        });
+    });
+
     it("should generate the correct structure for libraries", async () => {
       expect.assertions(1);
       await TestRunner()

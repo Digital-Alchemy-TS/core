@@ -39,6 +39,7 @@ import type {
   InternalConfig,
   NumberConfig,
   OptionalModuleConfiguration,
+  RecordConfig,
   StringArrayConfig,
   StringConfig,
 } from "./config.mts";
@@ -266,9 +267,25 @@ type CastConfigResult<T extends AnyConfig> =
         ? number
         : T extends StringArrayConfig
           ? string[]
-          : T extends InternalConfig<infer VALUE>
-            ? VALUE
-            : never;
+          : T extends RecordConfig<infer VALUE>
+            ? Record<string, VALUE>
+            : T extends InternalConfig<infer VALUE>
+              ? VALUE
+              : never;
+
+/**
+ * Compile-time proof that a `record` config injects as `Record<string, V>` and not `never`.
+ * If the `RecordConfig` branch above regresses, `ExpectTrue<false>` fails `tsc` (`yarn build`).
+ */
+type TypeEqual<A, B> =
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- `1`/`2` are the standard sentinel literals of the type-equality idiom
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
+type ExpectTrue<T extends true> = T;
+
+/** @internal — assertion only; consumed via `export` so `noUnusedLocals` is satisfied. */
+export type _RecordConfigCastsToStringRecord = ExpectTrue<
+  TypeEqual<CastConfigResult<RecordConfig>, Record<string, string>>
+>;
 
 /**
  * The fully-typed config object injected as `config` into `TServiceParams`.

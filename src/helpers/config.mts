@@ -192,7 +192,8 @@ export interface NumberConfig extends BaseConfig {
  *
  * key/value pairs
  */
-export interface RecordConfig extends BaseConfig {
+export interface RecordConfig<VALUE = string> extends BaseConfig {
+  default?: Record<string, VALUE>;
   type: "record";
 }
 

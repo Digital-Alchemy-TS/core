@@ -1313,6 +1313,68 @@ describe("Application + Library interactions", () => {
     }).toThrow(BootstrapException);
   });
 
+  it("crashes when two libraries share a name", () => {
+    const dupeA = CreateLibrary({ name: "dupe", services: { One() {} } });
+    const dupeB = CreateLibrary({ name: "dupe", services: { Two() {} } });
+    expect(() =>
+      CreateApplication({
+        libraries: [dupeA, dupeB],
+        // @ts-expect-error testing
+        name: "testing",
+        services: {},
+      }),
+    ).toThrow(BootstrapException);
+  });
+
+  it("crashes when the same library object is listed twice", () => {
+    const dupe = CreateLibrary({ name: "dupe", services: { One() {} } });
+    expect(() =>
+      CreateApplication({
+        libraries: [dupe, dupe],
+        // @ts-expect-error testing
+        name: "testing",
+        services: {},
+      }),
+    ).toThrow(BootstrapException);
+  });
+
+  it("reports every duplicated name in one error", () => {
+    const mk = (name: string) => CreateLibrary({ name, services: {} });
+    let caught: BootstrapException;
+    try {
+      CreateApplication({
+        libraries: [mk("a"), mk("a"), mk("b"), mk("b")],
+        // @ts-expect-error testing
+        name: "testing",
+        services: {},
+      });
+    } catch (error) {
+      caught = error as BootstrapException;
+    }
+    expect(caught.cause).toBe("DUPLICATE_LIBRARY");
+    expect(caught.message).toContain('"a"');
+    expect(caught.message).toContain('"b"');
+  });
+
+  it.each(["logger", "config", "internal", "boilerplate", "scheduler"])(
+    "rejects a library named after the reserved builtin %s",
+    reserved => {
+      let caught: BootstrapException;
+      try {
+        CreateApplication({
+          // @ts-expect-error testing
+          libraries: [CreateLibrary({ name: reserved, services: {} })],
+          name: "testing",
+          services: {},
+        });
+      } catch (error) {
+        caught = error as BootstrapException;
+      }
+      expect(caught.cause).toBe("RESERVED_LIBRARY_NAME");
+      expect(caught.message).toMatch(/reserved/i);
+    },
+  );
+
   it("should pass through optionalDepends", () => {
     expect(LIBRARY_D.optionalDepends).toBeDefined();
   });

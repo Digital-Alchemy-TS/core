@@ -376,6 +376,20 @@ describe("utilities", () => {
       await expect(eachLimit(items, 2, callback)).rejects.toThrow("Error on item 2");
       expect(callback).toHaveBeenCalledTimes(2); // Callback will be called until error is thrown
     });
+
+    it("processes every item exactly once -- no drop, no double", async () => {
+      // Regression: the prior seed/loop off-by-one dropped items[0] and
+      // re-processed items[limit-1]. The call COUNT stayed correct (one drop
+      // cancels one double), so toHaveBeenCalledTimes could not catch it --
+      // assert item coverage and uniqueness instead.
+      const items = [...".".repeat(10)].map((_, i) => i);
+      const seen: number[] = [];
+      await eachLimit(items, 3, async (item: number) => {
+        seen.push(item);
+      });
+      expect(new Set(seen).size).toBe(items.length);
+      expect([...seen].sort((left, right) => left - right)).toEqual(items);
+    });
   });
 
   // #MARK: each

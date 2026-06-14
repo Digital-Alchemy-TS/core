@@ -7,6 +7,7 @@ import type {
   GetApis,
   GetApisResult,
   ILogger,
+  LibraryDefinition,
   LoadedModules,
   OptionalModuleConfiguration,
   ServiceFunction,
@@ -242,6 +243,68 @@ const DECIMALS = 2;
 const BOILERPLATE = (internal: InternalDefinition) =>
   internal.boot.loadedModules.get("boilerplate") as GetApis<ReturnType<typeof createBoilerplate>>;
 
+// a library may not be named after a value the framework injects into every
+// TServiceParams, nor the built-in "boilerplate" library — such a name silently
+// clobbers the injected value at wire time. Source of truth: the `serviceParams`
+// object in wireService.
+const RESERVED_LIBRARY_NAMES = new Set([
+  "als",
+  "config",
+  "context",
+  "event",
+  "internal",
+  "lifecycle",
+  "logger",
+  "params",
+  "scheduler",
+  "boilerplate",
+]);
+
+/**
+ * Reject collisions in the declared library list before any wiring runs.
+ *
+ * Two failure modes, both fatal at definition time:
+ * - a library named after a reserved framework key (`RESERVED_LIBRARY_NAME`),
+ *   which would clobber an injected `TServiceParams` value;
+ * - duplicate library names (`DUPLICATE_LIBRARY`), which the name-keyed module
+ *   maps would otherwise silently collapse to a last-wins single entry.
+ *
+ * Note the asymmetry with `appendLibrary`: that mechanism *intentionally*
+ * replaces a same-named library (with a warning) at bootstrap time, whereas a
+ * duplicate in the declared `libraries` array is always an error.
+ */
+function assertLibraryNames(
+  libraries: LibraryDefinition<ServiceMap, OptionalModuleConfiguration>[],
+): void | never {
+  // reserved-name collisions (String() guards exotic Symbol names from crashing
+  // the message interpolation)
+  const reserved = is.unique(
+    libraries.map(lib => lib.name).filter(name => RESERVED_LIBRARY_NAMES.has(name)),
+  );
+  if (!is.empty(reserved)) {
+    const detail = reserved.map(name => `"${String(name)}"`).join(", ");
+    throw new BootstrapException(
+      WIRING_CONTEXT,
+      "RESERVED_LIBRARY_NAME",
+      `Library name(s) ${detail} are reserved framework names; choose another.`,
+    );
+  }
+  // duplicate names — report ALL offenders in one throw (no whack-a-mole)
+  const counts = new Map<string, number>();
+  for (const { name } of libraries) {
+    counts.set(name, (counts.get(name) ?? NONE) + SINGLE);
+  }
+  const dupes = [...counts.entries()].filter(([, count]) => count > SINGLE);
+  if (!is.empty(dupes)) {
+    const detail = dupes.map(([name, count]) => `"${String(name)}" (×${count})`).join(", ");
+    throw new BootstrapException(
+      WIRING_CONTEXT,
+      "DUPLICATE_LIBRARY",
+      `Duplicate library names: ${detail}; library names must be unique.`,
+    );
+  }
+}
+
 // #MARK: CreateApplication
 /**
  * Define an application and return a handle that can be bootstrapped.
@@ -259,6 +322,10 @@ const BOILERPLATE = (internal: InternalDefinition) =>
  *
  * @throws {BootstrapException} `MISSING_PRIORITY_SERVICE` if a service listed
  *   in `priorityInit` is not present in `services`.
+ * @throws {BootstrapException} `RESERVED_LIBRARY_NAME` if a library is named
+ *   after a reserved framework key (e.g. `logger`, `config`, `boilerplate`).
+ * @throws {BootstrapException} `DUPLICATE_LIBRARY` if two libraries in
+ *   `libraries` share the same name.
  */
 export function CreateApplication<S extends ServiceMap, C extends OptionalModuleConfiguration>({
   name,
@@ -283,6 +350,10 @@ export function CreateApplication<S extends ServiceMap, C extends OptionalModule
       }
     });
   }
+
+  // reject duplicate / reserved library names up front, for the same reason:
+  // fail loudly at definition time rather than silently clobbering at wire time
+  assertLibraryNames(libraries);
 
   const serviceApis = {} as GetApisResult<ServiceMap>;
   const application = {
@@ -600,6 +671,10 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
         application.libraries.push(append);
       });
     }
+
+    // re-check after appendLibrary resolution so boot-time injected libraries
+    // can't reintroduce a duplicate or reserved name before any wiring happens
+    assertLibraryNames(application.libraries);
 
     // sort libraries so each one is wired after its declared dependencies
     const order = buildSortOrder(application, logger);

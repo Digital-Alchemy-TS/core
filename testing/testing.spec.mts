@@ -166,6 +166,95 @@ describe("Testing", () => {
     });
   });
 
+  // #MARK: appendLibrary ordering (issue #88)
+  describe("appendLibrary ordering (issue #88)", () => {
+    // https://github.com/Digital-Alchemy-TS/core/issues/88
+    // An appended library must construct BEFORE the module-under-test regardless
+    // of whether appendLibrary is called on the module extension (Version 1) or
+    // the test runner (Version 2), so doubles/spies can be installed against its
+    // dependencies before the module's own construction logic runs.
+    let order: string[];
+
+    // no `depends` on purpose: also guards the regressed NPE in
+    // module.appendLibrary (workingModule.depends.some on undefined)
+    const orderedExample = CreateLibrary({
+      // @ts-expect-error testing
+      name: "example",
+      services: {
+        main() {
+          order.push("example");
+        },
+      },
+    });
+
+    const orderedSpy = CreateLibrary({
+      // @ts-expect-error testing
+      name: "spy",
+      services: {
+        spy() {
+          order.push("spy");
+        },
+      },
+    });
+
+    beforeEach(() => {
+      order = [];
+    });
+
+    it("constructs the appended library first (append on module extension)", async () => {
+      expect.assertions(1);
+      const test = createModule
+        .fromLibrary(orderedExample)
+        .extend()
+        .appendLibrary(orderedSpy)
+        .toTest();
+      await test.run(() => {});
+      await test.teardown();
+      expect(order).toEqual(["spy", "example"]);
+    });
+
+    it("constructs the appended library first (append on test runner)", async () => {
+      expect.assertions(1);
+      const test = createModule
+        .fromLibrary(orderedExample)
+        .extend()
+        .toTest()
+        .appendLibrary(orderedSpy);
+      await test.run(() => {});
+      await test.teardown();
+      expect(order).toEqual(["spy", "example"]);
+    });
+
+    it("produces the same order from both append sites", async () => {
+      expect.assertions(1);
+      const v1 = createModule
+        .fromLibrary(orderedExample)
+        .extend()
+        .appendLibrary(orderedSpy)
+        .toTest();
+      await v1.run(() => {});
+      await v1.teardown();
+      const v1Order = [...order];
+
+      order = [];
+      const v2 = createModule
+        .fromLibrary(orderedExample)
+        .extend()
+        .toTest()
+        .appendLibrary(orderedSpy);
+      await v2.run(() => {});
+      await v2.teardown();
+      expect([...order]).toEqual(v1Order);
+    });
+
+    it("does not throw when appending to a base library with no depends", () => {
+      expect.assertions(1);
+      expect(() =>
+        createModule.fromLibrary(orderedExample).extend().appendLibrary(orderedSpy),
+      ).not.toThrow();
+    });
+  });
+
   // #MARK: appendService
   describe("appendService", () => {
     it("cannot append an existing service", () => {

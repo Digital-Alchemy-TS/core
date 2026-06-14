@@ -275,12 +275,22 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
 
     // wrap the target's services and configuration into a library so it can be
     // mixed with appended libraries and the run_first setup library
+    //
+    // issue #88: the module-extension path (createModule.extend().appendLibrary())
+    // keeps the module-under-test as the *application*, so appended libraries —
+    // being plain libraries — wire before it. Here the target is demoted to a
+    // library, so without an explicit constraint it and the appended libraries
+    // are unordered siblings and declaration order lets the target win. Declaring
+    // the appended libraries as optional dependencies of the wrapped target makes
+    // buildSortOrder wire them first, matching the extension path so doubles/spies
+    // are installed before the module's construction logic runs.
+    const optionalDepends = [...(optional ?? []), ...appendLibraries.values()];
     const testLibrary = target
       ? CreateLibrary({
           configuration: target.configuration,
           depends,
           name: target.name,
-          optionalDepends: optional,
+          optionalDepends,
           priorityInit: target.priorityInit,
           services: target.services,
         })

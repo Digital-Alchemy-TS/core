@@ -233,7 +233,9 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
             `${name} already is appended`,
           );
         }
-        const exists = workingModule.depends.some(i => i.name === name);
+        // depends may be undefined when seeded from a library/application with no
+        // declared dependencies (createModule.fromLibrary of a no-depends library)
+        const exists = workingModule.depends?.some(i => i.name === name) ?? false;
         if (exists) {
           // base depends list owns this name; callers must use replaceLibrary to swap it
           throw new BootstrapException(
@@ -280,7 +282,8 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
           // already in the appended set — replace in-place
           appendLibrary.set(name, library);
         } else {
-          const exists = workingModule.depends.some(i => i.name === name);
+          // depends may be undefined (see appendLibrary above)
+          const exists = workingModule.depends?.some(i => i.name === name) ?? false;
           if (!exists) {
             // neither appended nor in base depends; require explicit append first
             throw new BootstrapException(

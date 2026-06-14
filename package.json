@@ -5,7 +5,7 @@
   "repository": {
     "url": "git+https://github.com/Digital-Alchemy-TS/core"
   },
-  "version": "26.6.14",
+  "version": "26.6.15",
   "author": {
     "url": "https://github.com/zoe-codez",
     "name": "Zoe Codez"
@@ -16,7 +16,7 @@
     "build": "rm -rf dist/; tsc -p tsconfig.lib.json",
     "lint": "eslint src",
     "test": "vitest",
-    "upgrade": "ncu --upgrade && truncate -s 0 yarn.lock && yarn install"
+    "upgrade": "ncu --upgrade --cooldown 48h && truncate -s 0 yarn.lock && yarn install"
   },
   "bugs": {
     "email": "bugs@digital-alchemy.app",
@@ -48,17 +48,17 @@
     "node": ">=20"
   },
   "dependencies": {
-    "@dotenvx/dotenvx": "^1.69.1",
+    "@dotenvx/dotenvx": "^1.71.3",
     "chalk": "^5.6.2",
     "cron": "^4.4.0",
     "dayjs": "^1.11.21",
     "ini": "^7.0.0",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^4.2.0",
     "minimist": "^1.2.8",
     "uuid": "^14.0.0"
   },
   "devDependencies": {
-    "@cspell/eslint-plugin": "^10.0.0",
+    "@cspell/eslint-plugin": "^10.0.1",
     "@eslint/compat": "^2.1.0",
     "@eslint/eslintrc": "^3.3.5",
     "@eslint/js": "^10.0.1",
@@ -66,37 +66,37 @@
     "@types/ini": "^4.1.1",
     "@types/js-yaml": "^4.0.9",
     "@types/minimist": "^1.2.5",
-    "@types/node": "^25.9.1",
+    "@types/node": "^25.9.3",
     "@types/sinonjs__fake-timers": "^15.0.1",
-    "@typescript-eslint/eslint-plugin": "8.60.1",
-    "@typescript-eslint/parser": "8.60.1",
-    "@vitest/coverage-v8": "^4.1.7",
+    "@typescript-eslint/eslint-plugin": "8.61.0",
+    "@typescript-eslint/parser": "8.61.0",
+    "@vitest/coverage-v8": "^4.1.8",
     "chalk": "^5.6.2",
     "dayjs": "^1.11.21",
-    "eslint": "10.4.1",
+    "eslint": "10.5.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-import": "^2.32.0",
-    "eslint-plugin-jsonc": "^3.1.2",
+    "eslint-plugin-jsonc": "^3.2.0",
     "eslint-plugin-no-unsanitized": "^4.1.5",
     "eslint-plugin-prettier": "^5.5.6",
-    "eslint-plugin-security": "^4.0.0",
+    "eslint-plugin-security": "^4.0.1",
     "eslint-plugin-simple-import-sort": "^13.0.0",
     "eslint-plugin-sonarjs": "^4.0.3",
     "eslint-plugin-sort-keys-fix": "^1.1.2",
-    "eslint-plugin-unicorn": "^64.0.0",
+    "eslint-plugin-unicorn": "^65.0.1",
     "ini": "^7.0.0",
-    "js-yaml": "^4.1.1",
+    "js-yaml": "^4.2.0",
     "minimist": "^1.2.8",
-    "npm-check-updates": "^22.2.1",
+    "npm-check-updates": "^22.2.3",
     "pino": "^10.3.1",
     "pino-pretty": "^13.1.3",
-    "prettier": "^3.8.3",
+    "prettier": "^3.8.4",
     "tslib": "^2.8.1",
-    "tsx": "^4.22.3",
-    "type-fest": "^5.6.0",
+    "tsx": "^4.22.4",
+    "type-fest": "^5.7.0",
     "typescript": "^6.0.3",
     "uuid": "^14.0.0",
-    "vitest": "^4.1.7"
+    "vitest": "^4.1.8"
   },
-  "packageManager": "yarn@4.14.1"
+  "packageManager": "yarn@4.16.0"
 }

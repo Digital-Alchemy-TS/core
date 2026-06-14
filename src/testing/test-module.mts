@@ -301,20 +301,35 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
       });
     }
 
+    // assemble libraries: the (possibly replaced) dependency tree plus the
+    // target wrapped as a library. When the target shares its name with one of
+    // its own dependencies, both land here under one name. Collapse to a single
+    // entry per name, keeping the FIRST occurrence — this mirrors how
+    // `buildSortOrder` already resolved the duplicate (it picks the first
+    // same-named library that becomes wire-eligible and drops the rest by name),
+    // so CreateApplication's unique-name guard sees this resolved list rather
+    // than the intentional internal duplicate.
+    const mergedLibraries = [
+      // map any replaced libraries; use the replacement if it exists in replaceLibrary map
+      ...(is.empty(depends)
+        ? []
+        : depends.map(i => (replaceLibrary.has(i.name) ? replaceLibrary.get(i.name) : i))),
+      // include the target library to ensure its services and config are wired
+      ...(testLibrary ? [testLibrary] : []),
+    ];
+    const dedupedLibraries = new Map<string, TLibrary>();
+    for (const library of mergedLibraries) {
+      if (!dedupedLibraries.has(library.name)) {
+        dedupedLibraries.set(library.name, library);
+      }
+    }
     // build the application with appended libraries, the target library (if any),
     // and the special test service that the caller provides to .run() or .serviceParams()
     const app = CreateApplication({
       configuration: bootOptions?.module_config ?? {},
       // pass config sources from options; if loadConfigs is not set, all sources default to false
       configurationLoaders: bootOptions?.configSources,
-      libraries: [
-        // map any replaced libraries; use the replacement if it exists in replaceLibrary map
-        ...(is.empty(depends)
-          ? []
-          : depends.map(i => (replaceLibrary.has(i.name) ? replaceLibrary.get(i.name) : i))),
-        // include the target library to ensure its services and config are wired
-        ...(testLibrary ? [testLibrary] : []),
-      ],
+      libraries: [...dedupedLibraries.values()],
       // @ts-expect-error it's life
       name,
       // inject the test service so it receives TServiceParams at bootstrap time

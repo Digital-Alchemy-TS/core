@@ -10,7 +10,7 @@
  */
 
 import { is } from "../index.mts";
-import { ARRAY_OFFSET, SINGLE, START } from "./utilities.mts";
+import { ARRAY_OFFSET, START } from "./utilities.mts";
 
 /**
  * Execute an async callback in parallel on each item in a collection.
@@ -89,13 +89,13 @@ export async function eachLimit<T = unknown>(
   }
 
   // seed the concurrency pool with the first `limit` items
-  const initialTasks = items.slice(SINGLE, limit).map(item => addTask(item));
+  const initialTasks = items.slice(START, limit).map(item => addTask(item));
 
   // wait for all initial tasks to be queued (not necessarily complete)
   await Promise.all(initialTasks);
 
   // process remaining items while respecting the limit
-  for (let i = limit - ARRAY_OFFSET; i < items.length; i++) {
+  for (let i = limit; i < items.length; i++) {
     await addTask(items[i]);
   }
 

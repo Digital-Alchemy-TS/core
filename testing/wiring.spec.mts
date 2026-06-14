@@ -1102,6 +1102,69 @@ describe("Teardown", () => {
   });
 });
 
+// #MARK: Hot reload re-entry
+describe("Hot reload re-entry", () => {
+  // `bun --hot` re-evaluates the entry in the SAME process with no SIGINT/SIGTERM
+  // and no new process — it just re-runs CreateApplication + bootstrap for the
+  // same app name. The prior instance (server port, sockets, timers, signal
+  // listeners) must be torn down on the new boot or it leaks until a resource
+  // ceiling kills further boots. https://github.com/Digital-Alchemy-TS/core/issues/89
+  it("tears down a prior same-name application when re-bootstrapped", async () => {
+    expect.assertions(2);
+    const firstShutdown = vi.fn();
+
+    const first = CreateApplication({
+      configurationLoaders: [],
+      // @ts-expect-error testing
+      name: "hot_reload",
+      services: {
+        Test({ lifecycle }) {
+          lifecycle.onShutdownStart(firstShutdown);
+        },
+      },
+    });
+    await first.bootstrap(BASIC_BOOT);
+
+    // second generation of the same app, exactly as a hot reload would produce
+    application = CreateApplication({
+      configurationLoaders: [],
+      // @ts-expect-error testing
+      name: "hot_reload",
+      services: { Test() {} },
+    });
+    await application.bootstrap(BASIC_BOOT);
+
+    expect(firstShutdown).toHaveBeenCalledTimes(1);
+    expect(first.booted).toBe(false);
+  });
+
+  it("does not accumulate SIGINT/SIGTERM listeners across re-bootstraps", async () => {
+    expect.assertions(2);
+    const sigtermBefore = process.listenerCount("SIGTERM");
+    const sigintBefore = process.listenerCount("SIGINT");
+
+    const first = CreateApplication({
+      configurationLoaders: [],
+      // @ts-expect-error testing
+      name: "hot_reload_listeners",
+      services: { Test() {} },
+    });
+    await first.bootstrap(BASIC_BOOT);
+
+    application = CreateApplication({
+      configurationLoaders: [],
+      // @ts-expect-error testing
+      name: "hot_reload_listeners",
+      services: { Test() {} },
+    });
+    await application.bootstrap(BASIC_BOOT);
+
+    // a single set of handlers serves the whole process regardless of reloads
+    expect(process.listenerCount("SIGTERM")).toBeLessThanOrEqual(sigtermBefore + 1);
+    expect(process.listenerCount("SIGINT")).toBeLessThanOrEqual(sigintBefore + 1);
+  });
+});
+
 // #MARK: Internal
 describe("Internal", () => {
   it("populates maps during bootstrap", async () => {

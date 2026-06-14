@@ -197,7 +197,30 @@ function createBoilerplate() {
 // (re)defined at bootstrap; exported so downstream code can reference its type
 export let LIB_BOILERPLATE: ReturnType<typeof createBoilerplate>;
 type GenericApp = ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
-const RUNNING_APPLICATIONS = new Map<string, GenericApp>();
+
+// `bun --hot` re-evaluates the entire module graph in the SAME process on every
+// file change — no restart, no signal — so module-level state is recreated each
+// reload. Anchoring the running-app registry and the "handlers installed" flag on
+// globalThis (which Bun preserves across reloads) lets a freshly re-evaluated
+// generation find the prior instance to tear it down, and keeps SIGINT/SIGTERM
+// handlers from being re-registered on every boot.
+// https://github.com/Digital-Alchemy-TS/core/issues/89
+const WIRING_RUNTIME = Symbol.for("digital-alchemy:wiring-runtime");
+type WiringRuntime = {
+  applications: Map<string, GenericApp>;
+  signalHandlersInstalled: boolean;
+};
+function wiringRuntime(): WiringRuntime {
+  const store = globalThis as unknown as Partial<Record<symbol, WiringRuntime>>;
+  const existing = store[WIRING_RUNTIME];
+  if (existing) {
+    return existing;
+  }
+  const created: WiringRuntime = { applications: new Map(), signalHandlersInstalled: false };
+  store[WIRING_RUNTIME] = created;
+  return created;
+}
+const RUNNING_APPLICATIONS = wiringRuntime().applications;
 
 // #MARK: QuickShutdown
 /**
@@ -238,6 +261,32 @@ const processEvents = new Map([
   // ["uncaughtException", () => {}],
   // ["unhandledRejection", (reason, promise) => {}],
 ]);
+
+// #MARK: installSignalHandlers
+/**
+ * Register the SIGINT/SIGTERM handlers exactly once per process.
+ *
+ * @remarks
+ * Bootstrap calls this on every boot, but the handlers must attach only once.
+ * Under `bun --hot` each reload would otherwise stack another listener — they are
+ * never removed on reload, since no teardown runs — and even a normal re-bootstrap
+ * in a single process would double them. The one installed handler drains the
+ * shared {@link RUNNING_APPLICATIONS} registry, so it stays correct no matter how
+ * many times the module is re-evaluated.
+ *
+ * @internal
+ */
+function installSignalHandlers(logger: ILogger) {
+  const runtime = wiringRuntime();
+  if (runtime.signalHandlersInstalled) {
+    return;
+  }
+  runtime.signalHandlersInstalled = true;
+  processEvents.forEach((callback, event) => {
+    process.on(event, callback);
+    logger.trace({ event, name: bootstrap }, "register shutdown event");
+  });
+}
 
 const DECIMALS = 2;
 const BOILERPLATE = (internal: InternalDefinition) =>
@@ -400,6 +449,14 @@ export function CreateApplication<S extends ServiceMap, C extends OptionalModule
           "Application is already booted! Cannot bootstrap again",
         );
       }
+      // hot-reload re-entry: `bun --hot` re-runs CreateApplication + bootstrap for
+      // the same name in the same process with no teardown signal in between. Drain
+      // a prior, still-booted generation first so its server port / sockets / timers
+      // don't leak. https://github.com/Digital-Alchemy-TS/core/issues/89
+      const previous = RUNNING_APPLICATIONS.get(name);
+      if (previous && previous !== application && previous.booted) {
+        await previous.teardown();
+      }
       internal = new InternalDefinition();
       internal.utils.is = is;
       const out = await bootstrap(application, options, internal);
@@ -416,14 +473,14 @@ export function CreateApplication<S extends ServiceMap, C extends OptionalModule
     services,
     async teardown() {
       if (!application.booted) {
-        // remove signal handlers even for un-booted teardown so they don't
-        // accumulate across test re-runs
-        processEvents.forEach((callback, event) => process.removeListener(event, callback));
         return;
       }
       await teardown(internal, application.logger);
       internal?.utils?.event?.removeAllListeners?.();
       application.booted = false;
+      // drop from the shared registry so a later signal sweep or same-name
+      // re-bootstrap doesn't try to tear this instance down again
+      RUNNING_APPLICATIONS.delete(name);
       internal = undefined;
     },
     type: "application",
@@ -640,12 +697,9 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
     application.logger = logger;
     logger.debug({ name: bootstrap }, `[boilerplate] wiring complete`);
 
-    // register signal handlers now that the logger is available so teardown
-    // log lines are visible; handlers are removed on teardown/un-booted teardown
-    processEvents.forEach((callback, event) => {
-      process.on(event, callback);
-      logger.trace({ event, name: bootstrap }, "register shutdown event");
-    });
+    // register signal handlers now that the logger is available so teardown log
+    // lines are visible; install-once so reloads / re-boots don't stack listeners
+    installSignalHandlers(logger);
 
     // * Add in libraries
     application.libraries ??= [];
@@ -843,7 +897,7 @@ async function teardown(internal: InternalDefinition, logger: ILogger) {
     },
     `application terminated`,
   );
-  // deregister signal handlers so they don't fire again if the process receives
-  // another signal after teardown completes
-  processEvents.forEach((callback, event) => process.removeListener(event, callback));
+  // signal handlers are intentionally left installed: a single process-wide set
+  // (see installSignalHandlers) drains the shared RUNNING_APPLICATIONS registry,
+  // which this app has already been removed from, so a later signal is a safe no-op
 }

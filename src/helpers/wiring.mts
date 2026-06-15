@@ -48,7 +48,7 @@ import type { CronExpression, TOffset } from "./cron.mts";
 import { BootstrapException } from "./errors.mts";
 import type { TLifecycleBase } from "./lifecycle.mts";
 import type { GetLogger, TConfigLogLevel } from "./logger.mts";
-import type { TBlackHole } from "./utilities.mts";
+import { SINGLE, type TBlackHole } from "./utilities.mts";
 
 // --- Primitive service types --------------------------------------------------
 
@@ -95,7 +95,7 @@ export interface ApplicationConfigurationOptions<
 > {
   name: keyof LoadedModules;
   services: S;
-  libraries?: LibraryDefinition<ServiceMap, OptionalModuleConfiguration>[];
+  libraries?: (LibraryDefinition<ServiceMap, OptionalModuleConfiguration> | LibraryRollup)[];
   configuration?: C;
   /**
    * Define which services should be initialized first. Any remaining services are done at the end in no set order
@@ -256,6 +256,33 @@ export type TScheduler = {
 export interface LoadedModules {
   boilerplate: typeof LIB_BOILERPLATE;
 }
+
+/**
+ * Registry of library *rollups* — the second declaration-merge channel, parallel
+ * to {@link LoadedModules}.
+ *
+ * @remarks
+ * A {@link RollupLibraries} value contributes membership only; it is nameless and
+ * never gets its own `LoadedModules` key. To make a rollup's member APIs visible on
+ * {@link TServiceParams} for consumers that import *only the rollup* (e.g. across a
+ * published-`.d.ts` package boundary), the rollup-defining module augments this
+ * interface with an explicit `name → definition` record. The member shapes are
+ * inlined into that augmentation, so they travel with the rollup import — no reliance
+ * on each member's own `LoadedModules` merge reaching the consumer.
+ *
+ * @example Register a rollup in the module that defines it
+ * ```typescript
+ * export const analyticsRollup = RollupLibraries([LIB_INGEST, LIB_API], { label: "analytics" });
+ *
+ * declare module "@digital-alchemy/core" {
+ *   export interface LoadedRollups {
+ *     analytics: { ingest: typeof LIB_INGEST; api: typeof LIB_API };
+ *   }
+ * }
+ * ```
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- intentionally empty; populated only by downstream declaration merges
+export interface LoadedRollups {}
 
 /** @internal — maps a config definition type to its concrete injected value. */
 type CastConfigResult<T extends AnyConfig> =
@@ -435,13 +462,56 @@ export type TServiceParams = {
   params: TServiceParams;
 } & {
   [K in ExternalLoadedModules]: GetApis<LoadedModules[K]>;
-};
+} & RollupApis;
 
 /** Names of all modules registered in `LoadedModules`. */
 export type LoadedModuleNames = Extract<keyof LoadedModules, string>;
 
 /** `LoadedModuleNames` minus `"boilerplate"` — the user-land module names. */
 type ExternalLoadedModules = Exclude<LoadedModuleNames, "boilerplate">;
+
+/**
+ * Collapse a union of object types into a single intersected object.
+ *
+ * @internal
+ */
+type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) extends (
+  k: infer I,
+) => void
+  ? I
+  : never;
+
+/**
+ * Member APIs contributed by every registered rollup, merged into one object.
+ *
+ * @remarks
+ * Each {@link LoadedRollups} entry is a `name → definition` record; merging them
+ * (a single shared member reached through two rollups collapses here, since the
+ * definitions are identical) and resolving each through {@link GetApis} yields the
+ * extra properties folded into {@link TServiceParams}. The `[keyof LoadedRollups]
+ * extends [never]` guard keeps this `{}` — a true no-op — when no rollup is
+ * registered, which is the common case.
+ *
+ * @internal
+ */
+type RollupApis = [keyof LoadedRollups] extends [never]
+  ? // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- no rollups registered → contribute nothing to TServiceParams
+    {}
+  : {
+      [K in keyof UnionToIntersection<LoadedRollups[keyof LoadedRollups]>]: GetApis<
+        UnionToIntersection<LoadedRollups[keyof LoadedRollups]>[K]
+      >;
+    };
+
+/**
+ * Compile-time proof that an empty `LoadedRollups` leaves `TServiceParams`
+ * untouched. If the `[never]` guard above regresses, `ExpectTrue<false>` fails
+ * `tsc` (`yarn build`).
+ *
+ * @internal — assertion only; consumed via `export` so `noUnusedLocals` is satisfied.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- the asserted value IS the empty object
+export type _EmptyRollupsContributeNothing = ExpectTrue<TypeEqual<RollupApis, {}>>;
 
 /**
  * Maps each loaded module name to its declared configuration block.
@@ -823,8 +893,12 @@ export type LibraryDefinition<
 export type ApplicationDefinition<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
-> = ApplicationConfigurationOptions<S, C> &
+> = Omit<ApplicationConfigurationOptions<S, C>, "libraries"> &
   Wire & {
+    // `libraries` accepts rollups on *input* (ApplicationConfigurationOptions), but the
+    // bootstrap flatten pass replaces it with a plain library list before anything reads
+    // it for wiring — so the constructed definition exposes the flattened `TLibrary[]`.
+    libraries?: LibraryDefinition<ServiceMap, OptionalModuleConfiguration>[];
     logger: GetLogger;
     type: "application";
     booted: boolean;
@@ -834,6 +908,182 @@ export type ApplicationDefinition<
 
 /** Convenience alias for a library definition with unknown service/config types. */
 export type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration>;
+
+// #MARK: LibraryRollup
+/**
+ * Brand identifying a {@link LibraryRollup} carrier value.
+ *
+ * @remarks
+ * `Symbol.for` (the global registry) is used — like {@link WIRE_PROJECT} — so a
+ * rollup produced against one copy of `@digital-alchemy/core` is still recognized
+ * by another (duplicate-install / monorepo scenarios).
+ *
+ * @internal
+ */
+export const IS_ROLLUP = Symbol.for("digital-alchemy:library-rollup");
+
+/**
+ * Bare rollup carrier shape, without member-tuple precision.
+ *
+ * @remarks
+ * Used wherever the precise member tuple is irrelevant — guards and the
+ * `libraries` / `implies` element unions. Every {@link LibraryRollup} is assignable
+ * to this. Declared as an interface so the `members` self-reference recurses cleanly
+ * without the circular-default that a generic alias would hit.
+ */
+export interface AnyRollup {
+  readonly [IS_ROLLUP]: true;
+  label?: string;
+  members: readonly RollupMember[];
+}
+
+/** A library, or a rollup of libraries — the element type composition accepts. */
+export type RollupMember = TLibrary | AnyRollup;
+
+/**
+ * A nameless, declaration-merge-free composition of libraries.
+ *
+ * @remarks
+ * Produced by {@link RollupLibraries}. Accepted anywhere membership is composed
+ * (`CreateApplication`'s `libraries`, a library's `implies`). At bootstrap it is
+ * flattened into its members and deduped by object identity; it contributes
+ * **membership only** — never a `LoadedModules` key and never an ordering edge.
+ * Members may themselves be rollups (flattened recursively).
+ */
+export type LibraryRollup<M extends readonly RollupMember[] = readonly RollupMember[]> = {
+  readonly [IS_ROLLUP]: true;
+  label?: string;
+  members: M;
+};
+
+// #MARK: RollupLibraries
+/**
+ * Compose several libraries (and/or other rollups) into a single, nameless,
+ * dedupe-on-bootstrap membership unit.
+ *
+ * @remarks
+ * The returned value carries no DI identity: it has no `name`, contributes no
+ * `LoadedModules` key, and adds no ordering edge — ordering stays entirely on each
+ * member's own `depends`. List it directly in `CreateApplication({ libraries })` or
+ * a library's `implies`. To expose member APIs on {@link TServiceParams} for
+ * consumers that import only the rollup across a package boundary, also register the
+ * members on {@link LoadedRollups} (see that interface's example).
+ *
+ * @param members - libraries and/or nested rollups to compose
+ * @param options - optional diagnostic `label` for the boot manifest (not a DI identity)
+ */
+export function RollupLibraries<const M extends readonly RollupMember[]>(
+  members: M,
+  options: { label?: string } = {},
+): LibraryRollup<M> {
+  // copy so a caller mutating the passed array can't retroactively alter membership
+  return { [IS_ROLLUP]: true, label: options.label, members: [...members] } as LibraryRollup<M>;
+}
+
+/** Type guard: is this value a rollup carrier rather than a library? */
+export function isRollup(value: unknown): value is AnyRollup {
+  return is.object(value) && (value as Record<symbol, unknown>)[IS_ROLLUP] === true;
+}
+
+// #MARK: flattenLibraries
+/**
+ * Provenance of a flattened membership set — which path(s) brought each library in.
+ *
+ * @remarks
+ * Surfaced on the boot manifest (`showExtraBootStats`) and used to emit the
+ * multi-path hygiene warning.
+ */
+export type RollupProvenance = {
+  /** resolved library name → the distinct paths by which it entered membership */
+  paths: Map<string, string[]>;
+  /** names that entered via more than one distinct path (diamond / over-declaration) */
+  multiPath: string[];
+};
+
+/**
+ * Expand rollups and `implies` bundles in a declared library list into a flat,
+ * identity-deduped `TLibrary[]`.
+ *
+ * @remarks
+ * Membership only — ordering is untouched (it stays on each member's own `depends`
+ * and is decided later by {@link buildSortOrder}). Dedup is by **object identity**,
+ * so the same singleton library reached through several rollups / `implies` paths
+ * collapses to one entry. A same-name / different-object pair survives flattening and
+ * is rejected downstream by `assertLibraryNames` (`DUPLICATE_LIBRARY`). An already-flat
+ * list of plain libraries (no rollups, no `implies`) passes through unchanged, so the
+ * pass is a safe no-op for the common case.
+ *
+ * @throws {BootstrapException} `COMPOSITION_CYCLE` when a rollup transitively contains
+ * itself, or an `implies` chain forms a cycle.
+ */
+export function flattenLibraries(declared: readonly RollupMember[]): {
+  libraries: TLibrary[];
+  provenance: RollupProvenance;
+} {
+  const out: TLibrary[] = [];
+  const seen = new Set<TLibrary>(); // identity dedup
+  const paths = new Map<string, string[]>();
+  const visiting = new Set<unknown>(); // active rollup / implies expansion stack (cycle guard)
+
+  const note = (name: string, path: string) => {
+    const list = paths.get(name) ?? [];
+    list.push(path);
+    paths.set(name, list);
+  };
+
+  // function declarations (hoisted) so the mutual recursion needs no forward-declare
+  function addLibrary(lib: TLibrary, path: string) {
+    note(lib.name, path);
+    if (seen.has(lib)) {
+      return; // already in membership via another path — dedup, keep the first object
+    }
+    seen.add(lib);
+    out.push(lib);
+    // implies contributes membership AFTER the implier is placed; ordering is irrelevant
+    const implied = (lib as TLibrary & { implies?: readonly RollupMember[] }).implies ?? [];
+    if (!is.empty(implied)) {
+      if (visiting.has(lib)) {
+        throw new BootstrapException(
+          WIRING_CONTEXT,
+          "COMPOSITION_CYCLE",
+          `implies cycle detected at [${lib.name}]`,
+        );
+      }
+      visiting.add(lib);
+      implied.forEach(member => visit(member, `${path} -> implies(${lib.name})`));
+      visiting.delete(lib);
+    }
+  }
+
+  function visit(entry: RollupMember, path: string) {
+    if (isRollup(entry)) {
+      if (visiting.has(entry)) {
+        const where = entry.label ? ` at [${entry.label}]` : "";
+        throw new BootstrapException(
+          WIRING_CONTEXT,
+          "COMPOSITION_CYCLE",
+          `rollup cycle detected${where}`,
+        );
+      }
+      visiting.add(entry);
+      const label = entry.label ?? "rollup";
+      entry.members.forEach(member => visit(member, `${path} -> rollup(${label})`));
+      visiting.delete(entry);
+      return;
+    }
+    addLibrary(entry, path);
+  }
+
+  declared.forEach((entry, index) =>
+    visit(entry, isRollup(entry) ? `rollup#${index}` : `libraries[${entry.name}]`),
+  );
+
+  const multiPath = [...paths.entries()]
+    .filter(([, list]) => is.unique(list).length > SINGLE)
+    .map(([name]) => name);
+
+  return { libraries: out, provenance: { paths, multiPath } };
+}
 
 // #MARK: buildSortOrder
 /**

@@ -4,6 +4,7 @@ import type {
   InternalDefinition,
   LifecycleStages,
   OptionalModuleConfiguration,
+  RollupMember,
   ServiceMap,
 } from "../src/index.mts";
 import {
@@ -13,7 +14,10 @@ import {
   CreateLibrary,
   createMockLogger,
   createModule,
+  flattenLibraries,
   is,
+  isRollup,
+  RollupLibraries,
   ServiceRunner,
   sleep,
   TestRunner,
@@ -1545,6 +1549,199 @@ describe("Debug features", () => {
       lifecycle.onReady(() => {
         expect(hit).toBe(true);
       });
+    });
+  });
+});
+
+// #MARK: Library composition (rollups)
+describe("Library composition", () => {
+  let list: string[];
+
+  // named test libraries; ordering edges only via `depends`
+  const LIB_BASE = CreateLibrary({
+    // @ts-expect-error test library name not in LoadedModules
+    name: "rollup_base",
+    services: { Add: () => list.push("base") },
+  });
+  const LIB_ONE = CreateLibrary({
+    depends: [LIB_BASE],
+    // @ts-expect-error test library name not in LoadedModules
+    name: "rollup_one",
+    services: { Add: () => list.push("one") },
+  });
+  const LIB_TWO = CreateLibrary({
+    // @ts-expect-error test library name not in LoadedModules
+    name: "rollup_two",
+    services: { Add: () => list.push("two") },
+  });
+  const LIB_THREE = CreateLibrary({
+    // @ts-expect-error test library name not in LoadedModules
+    name: "rollup_three",
+    services: { Add: () => list.push("three") },
+  });
+
+  beforeEach(() => {
+    list = [];
+  });
+
+  describe("RollupLibraries + flattenLibraries", () => {
+    it("brands a rollup; isRollup distinguishes it from a library", () => {
+      const rollup = RollupLibraries([LIB_ONE, LIB_TWO], { label: "group" });
+      expect(isRollup(rollup)).toBe(true);
+      expect(isRollup(LIB_ONE)).toBe(false);
+      expect(rollup.label).toBe("group");
+      expect(rollup.members).toHaveLength(2);
+    });
+
+    it("flattens a rollup to its members", () => {
+      const { libraries } = flattenLibraries([RollupLibraries([LIB_ONE, LIB_TWO])]);
+      expect(libraries.map(index => index.name)).toEqual(["rollup_one", "rollup_two"]);
+    });
+
+    it("flattens nested rollups transitively", () => {
+      const inner = RollupLibraries([LIB_TWO, LIB_THREE]);
+      const outer = RollupLibraries([LIB_ONE, inner]);
+      const { libraries } = flattenLibraries([outer]);
+      expect(libraries.map(index => index.name)).toEqual([
+        "rollup_one",
+        "rollup_two",
+        "rollup_three",
+      ]);
+    });
+
+    it("dedupes a shared member reached through two rollups (diamond)", () => {
+      const a = RollupLibraries([LIB_BASE, LIB_ONE]);
+      const b = RollupLibraries([LIB_BASE, LIB_TWO]);
+      const { libraries, provenance } = flattenLibraries([a, b]);
+      expect(libraries.filter(index => index.name === "rollup_base")).toHaveLength(1);
+      expect(provenance.multiPath).toContain("rollup_base");
+    });
+
+    it("dedupes a member listed directly and via a rollup", () => {
+      const { libraries } = flattenLibraries([LIB_ONE, RollupLibraries([LIB_ONE, LIB_TWO])]);
+      expect(libraries.filter(index => index.name === "rollup_one")).toHaveLength(1);
+    });
+
+    it("passes a plain library list through unchanged (no-op)", () => {
+      const { libraries, provenance } = flattenLibraries([LIB_BASE, LIB_ONE]);
+      expect(libraries.map(index => index.name)).toEqual(["rollup_base", "rollup_one"]);
+      expect(provenance.multiPath).toEqual([]);
+    });
+
+    it("throws COMPOSITION_CYCLE on a nested-rollup cycle", () => {
+      const a = RollupLibraries([LIB_ONE], { label: "a" });
+      const b = RollupLibraries([a], { label: "b" });
+      // force a cycle (the public API alone can't build one): a -> b -> a
+      (a.members as RollupMember[]).push(b);
+      let caught: BootstrapException;
+      try {
+        flattenLibraries([a]);
+      } catch (error) {
+        caught = error as BootstrapException;
+      }
+      expect(caught?.cause).toBe("COMPOSITION_CYCLE");
+    });
+  });
+
+  describe("rollups at bootstrap", () => {
+    it("wires every member of a rollup listed in libraries", async () => {
+      application = CreateApplication({
+        libraries: [RollupLibraries([LIB_BASE, LIB_TWO])],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap(BASIC_BOOT);
+      expect(list).toEqual(expect.arrayContaining(["base", "two"]));
+    });
+
+    it("orders a member's depends correctly when membership came via a rollup", async () => {
+      // LIB_ONE depends on LIB_BASE; both arrive only through the rollup
+      application = CreateApplication({
+        libraries: [RollupLibraries([LIB_ONE, LIB_BASE])],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap(BASIC_BOOT);
+      expect(list.indexOf("base")).toBeLessThan(list.indexOf("one"));
+    });
+
+    it("does not throw at CreateApplication time when a rollup is present", () => {
+      expect(() =>
+        CreateApplication({
+          libraries: [RollupLibraries([LIB_ONE, LIB_TWO])],
+          // @ts-expect-error test app name not in LoadedModules
+          name: "testing",
+          services: {},
+        }),
+      ).not.toThrow();
+    });
+
+    it("rejects same-name/different-object delivered via a rollup (DUPLICATE_LIBRARY)", async () => {
+      const dupe = CreateLibrary({
+        // @ts-expect-error test library name not in LoadedModules
+        name: "rollup_one",
+        services: { Add: () => list.push("dupe") },
+      });
+      application = CreateApplication({
+        libraries: [LIB_ONE, RollupLibraries([dupe])],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      const failFast = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
+      await application.bootstrap(BASIC_BOOT);
+      expect(failFast).toHaveBeenCalled();
+    });
+
+    it("warns when a library enters membership via multiple paths", async () => {
+      const customLogger = createMockLogger();
+      const warn = vi.spyOn(customLogger, "warn");
+      application = CreateApplication({
+        libraries: [RollupLibraries([LIB_BASE, LIB_ONE]), RollupLibraries([LIB_BASE, LIB_TWO])],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap({ customLogger });
+      const warnCall = warn.mock.calls.find(
+        call => typeof call[2] === "string" && call[2].includes("multiple composition paths"),
+      );
+      expect(warnCall).toBeDefined();
+      expect(warnCall?.[1]).toMatchObject({ members: expect.arrayContaining(["rollup_base"]) });
+    });
+
+    it("includes rollup provenance in the boot manifest", async () => {
+      const customLogger = createMockLogger();
+      const info = vi.spyOn(customLogger, "info");
+      application = CreateApplication({
+        libraries: [RollupLibraries([LIB_TWO], { label: "grp" })],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap({ customLogger, showExtraBootStats: true });
+      const manifestCall = info.mock.calls.find(call => call[2] === "[%s] application bootstrapped");
+      expect(manifestCall).toBeDefined();
+      const stats = manifestCall?.[1] as { rollups?: Record<string, unknown> };
+      expect(stats.rollups).toHaveProperty("rollup_two");
+    });
+
+    it("does not warn for a plain library app (regression guard)", async () => {
+      const customLogger = createMockLogger();
+      const warn = vi.spyOn(customLogger, "warn");
+      application = CreateApplication({
+        libraries: [LIB_BASE, LIB_ONE],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap({ customLogger });
+      const warnCall = warn.mock.calls.find(
+        call => typeof call[2] === "string" && call[2].includes("multiple composition paths"),
+      );
+      expect(warnCall).toBeUndefined();
     });
   });
 });

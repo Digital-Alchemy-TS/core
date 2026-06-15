@@ -6,8 +6,10 @@ import type {
   BootstrapOptions,
   GetApis,
   GetApisResult,
+  GetLogger,
   ILogger,
   LibraryDefinition,
+  LibraryRollup,
   LoadedModules,
   OptionalModuleConfiguration,
   ServiceFunction,
@@ -27,6 +29,8 @@ import {
   each,
   eachSeries,
   fatalLog,
+  flattenLibraries,
+  isRollup,
   NONE,
   SINGLE,
   WIRE_PROJECT,
@@ -323,12 +327,18 @@ const RESERVED_LIBRARY_NAMES = new Set([
  * duplicate in the declared `libraries` array is always an error.
  */
 function assertLibraryNames(
-  libraries: LibraryDefinition<ServiceMap, OptionalModuleConfiguration>[],
+  libraries: (LibraryDefinition<ServiceMap, OptionalModuleConfiguration> | LibraryRollup)[],
 ): void | never {
+  // rollups are nameless membership carriers — exclude them here. The flatten pass
+  // expands them to their (named) members, which are validated on the post-flatten list.
+  const definitions = libraries.filter(entry => !isRollup(entry)) as LibraryDefinition<
+    ServiceMap,
+    OptionalModuleConfiguration
+  >[];
   // reserved-name collisions (String() guards exotic Symbol names from crashing
   // the message interpolation)
   const reserved = is.unique(
-    libraries.map(lib => lib.name).filter(name => RESERVED_LIBRARY_NAMES.has(name)),
+    definitions.map(lib => lib.name).filter(name => RESERVED_LIBRARY_NAMES.has(name)),
   );
   if (!is.empty(reserved)) {
     const detail = reserved.map(name => `"${String(name)}"`).join(", ");
@@ -340,9 +350,7 @@ function assertLibraryNames(
   }
   // duplicate names — report ALL offenders in one throw (no whack-a-mole)
   const counts = new Map<string, number>();
-  for (const { name } of libraries) {
-    counts.set(name, (counts.get(name) ?? NONE) + SINGLE);
-  }
+  definitions.forEach(({ name }) => counts.set(name, (counts.get(name) ?? NONE) + SINGLE));
   const dupes = [...counts.entries()].filter(([, count]) => count > SINGLE);
   if (!is.empty(dupes)) {
     const detail = dupes.map(([name, count]) => `"${String(name)}" (×${count})`).join(", ");
@@ -618,6 +626,48 @@ const runReady = async (internal: InternalDefinition) => {
   return duration;
 };
 
+/**
+ * Flatten rollups + `implies` into a deduped membership list, stash provenance for the
+ * boot manifest, and warn on multi-path membership.
+ *
+ * @remarks
+ * Extracted from `bootstrap` to keep its cognitive complexity in check. Replaces
+ * `application.libraries` in place with the flattened `TLibrary[]`; ordering is still
+ * decided later by `buildSortOrder`.
+ *
+ * @internal
+ */
+function resolveLibraryMembership(
+  application: ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>,
+  internal: InternalDefinition,
+  logger: GetLogger,
+): void {
+  const { libraries, provenance } = flattenLibraries(application.libraries ?? []);
+  application.libraries = libraries;
+  internal.boot.rollupProvenance = provenance;
+  if (is.empty(provenance.multiPath)) {
+    return;
+  }
+  // hygiene signal, not an error: a diamond is legal and deduped, but a member reachable
+  // two ways often means the app over-declares it
+  logger.warn(
+    { members: provenance.multiPath, name: resolveLibraryMembership },
+    `[%s] entered membership via multiple composition paths`,
+    provenance.multiPath.join(", "),
+  );
+}
+
+/**
+ * Rollup provenance as a plain record for the boot manifest (a `Map` does not serialize
+ * cleanly through the logger). Empty when no rollups were resolved.
+ *
+ * @internal
+ */
+function rollupManifest(internal: InternalDefinition) {
+  const provenance = internal.boot.rollupProvenance;
+  return provenance ? Object.fromEntries(provenance.paths) : {};
+}
+
 // #MARK: Bootstrap
 /**
  * Wire all services for an application, run the full lifecycle, and return
@@ -726,8 +776,13 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       });
     }
 
-    // re-check after appendLibrary resolution so boot-time injected libraries
-    // can't reintroduce a duplicate or reserved name before any wiring happens
+    // flatten rollups + implies into a single identity-deduped membership list.
+    // membership only — ordering is still decided by buildSortOrder below. runs after
+    // appendLibrary so an injected library's implies/rollups are expanded too.
+    resolveLibraryMembership(application, internal, logger);
+
+    // re-check after appendLibrary resolution + flatten so boot-time injected or
+    // rollup-delivered libraries can't reintroduce a duplicate or reserved name
     assertLibraryNames(application.libraries);
 
     // sort libraries so each one is wired after its declared dependencies
@@ -804,6 +859,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
               services: internal.boot.serviceConstructionTimes,
             },
             name: bootstrap,
+            rollups: rollupManifest(internal),
           }
         : { Total: STATS.Total, name: bootstrap },
       `[%s] application bootstrapped`,

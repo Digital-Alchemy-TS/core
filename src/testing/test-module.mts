@@ -289,6 +289,8 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
       ? CreateLibrary({
           configuration: target.configuration,
           depends,
+          // preserve the target's transitive bundle so its implied members still load
+          implies: "implies" in target ? target.implies : undefined,
           name: target.name,
           optionalDepends,
           priorityInit: target.priorityInit,

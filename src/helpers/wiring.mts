@@ -657,6 +657,16 @@ export interface LibraryConfigurationOptions<
    * **note**: related variables may come in as undefined, code needs to be built to allow for this
    */
   optionalDepends?: TLibrary[];
+  /**
+   * Libraries (and/or rollups) this library pulls into application membership when it is
+   * loaded — a transitive bundle. Contributes **membership only**, not ordering: the
+   * implied libraries are flattened into the resolved set and deduped, so a consumer can
+   * carry just this library and the bundle travels with it.
+   *
+   * Distinct from `depends`: `depends` is ordering + validation; `implies` is membership.
+   * Rollups are accepted here and flattened recursively.
+   */
+  implies?: RollupMember[];
   configuration?: C;
   /**
    * Define which services should be initialized first. Any remaining services are done at the end in no set order
@@ -1034,21 +1044,23 @@ export function flattenLibraries(declared: readonly RollupMember[]): {
   // function declarations (hoisted) so the mutual recursion needs no forward-declare
   function addLibrary(lib: TLibrary, path: string) {
     note(lib.name, path);
+    if (visiting.has(lib)) {
+      // lib is an ancestor on the active implies stack — a genuine cycle (distinct from a
+      // diamond, where lib is in `seen` but not currently being expanded)
+      throw new BootstrapException(
+        WIRING_CONTEXT,
+        "COMPOSITION_CYCLE",
+        `implies cycle detected at [${lib.name}]`,
+      );
+    }
     if (seen.has(lib)) {
       return; // already in membership via another path — dedup, keep the first object
     }
     seen.add(lib);
     out.push(lib);
     // implies contributes membership AFTER the implier is placed; ordering is irrelevant
-    const implied = (lib as TLibrary & { implies?: readonly RollupMember[] }).implies ?? [];
+    const implied = lib.implies ?? [];
     if (!is.empty(implied)) {
-      if (visiting.has(lib)) {
-        throw new BootstrapException(
-          WIRING_CONTEXT,
-          "COMPOSITION_CYCLE",
-          `implies cycle detected at [${lib.name}]`,
-        );
-      }
       visiting.add(lib);
       implied.forEach(member => visit(member, `${path} -> implies(${lib.name})`));
       visiting.delete(lib);
@@ -1298,6 +1310,7 @@ export function CreateLibrary<S extends ServiceMap, C extends OptionalModuleConf
   services,
   depends,
   optionalDepends,
+  implies,
   ...extra
 }: LibraryConfigurationOptions<S, C>): LibraryDefinition<S, C> {
   validateLibrary(libraryName, services);
@@ -1349,6 +1362,7 @@ export function CreateLibrary<S extends ServiceMap, C extends OptionalModuleConf
     },
     configuration,
     depends,
+    implies,
     name: libraryName,
     optionalDepends,
     priorityInit,

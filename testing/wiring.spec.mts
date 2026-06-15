@@ -1744,4 +1744,97 @@ describe("Library composition", () => {
       expect(warnCall).toBeUndefined();
     });
   });
+
+  describe("implies", () => {
+    it("contributes the implied bundle to membership", () => {
+      const implied = CreateLibrary({
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implied_member",
+        services: { Add: () => list.push("implied") },
+      });
+      const implier = CreateLibrary({
+        implies: [implied],
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implier",
+        services: { Add: () => list.push("implier") },
+      });
+      const { libraries } = flattenLibraries([implier]);
+      expect(libraries.map(index => index.name)).toEqual(["implier", "implied_member"]);
+    });
+
+    it("dedupes an implied member also listed directly", () => {
+      const implied = CreateLibrary({
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implied_member",
+        services: {},
+      });
+      const implier = CreateLibrary({
+        implies: [implied],
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implier",
+        services: {},
+      });
+      const { libraries } = flattenLibraries([implier, implied]);
+      expect(libraries.filter(index => index.name === "implied_member")).toHaveLength(1);
+    });
+
+    it("flattens a rollup used inside implies", () => {
+      const implier = CreateLibrary({
+        implies: [RollupLibraries([LIB_ONE, LIB_TWO])],
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implier",
+        services: {},
+      });
+      const { libraries } = flattenLibraries([implier]);
+      expect(libraries.map(index => index.name)).toEqual(
+        expect.arrayContaining(["implier", "rollup_one", "rollup_two"]),
+      );
+    });
+
+    it("throws COMPOSITION_CYCLE on an implies cycle", () => {
+      const aImplies: RollupMember[] = [];
+      const a = CreateLibrary({
+        implies: aImplies,
+        // @ts-expect-error test library name not in LoadedModules
+        name: "cycle_a",
+        services: {},
+      });
+      const b = CreateLibrary({
+        implies: [a],
+        // @ts-expect-error test library name not in LoadedModules
+        name: "cycle_b",
+        services: {},
+      });
+      aImplies.push(b); // a implies b, b implies a
+      let caught: BootstrapException;
+      try {
+        flattenLibraries([a]);
+      } catch (error) {
+        caught = error as BootstrapException;
+      }
+      expect(caught?.cause).toBe("COMPOSITION_CYCLE");
+    });
+
+    it("adds implied membership at bootstrap so the member wires", async () => {
+      const implied = CreateLibrary({
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implied_member",
+        services: { Add: () => list.push("implied") },
+      });
+      const implier = CreateLibrary({
+        implies: [implied],
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implier",
+        services: { Add: () => list.push("implier") },
+      });
+      application = CreateApplication({
+        libraries: [implier],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap(BASIC_BOOT);
+      expect(list).toEqual(expect.arrayContaining(["implier", "implied"]));
+    });
+  });
 });

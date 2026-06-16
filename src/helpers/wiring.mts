@@ -258,21 +258,21 @@ export interface LoadedModules {
 }
 
 /**
- * Registry of library *rollups* — the second declaration-merge channel, parallel
+ * Registry of library groups — the second declaration-merge channel, parallel
  * to {@link LoadedModules}.
  *
  * @remarks
- * A {@link RollupLibraries} value contributes membership only; it is nameless and
- * never gets its own `LoadedModules` key. To make a rollup's member APIs visible on
- * {@link TServiceParams} for consumers that import *only the rollup* (e.g. across a
- * published-`.d.ts` package boundary), the rollup-defining module augments this
+ * A {@link LibraryGroup} value contributes membership only; an unnamed group
+ * never gets its own `LoadedModules` key. To make a group's member APIs visible on
+ * {@link TServiceParams} for consumers that import *only the group* (e.g. across a
+ * published-`.d.ts` package boundary), the group-defining module augments this
  * interface with an explicit `name → definition` record. The member shapes are
- * inlined into that augmentation, so they travel with the rollup import — no reliance
+ * inlined into that augmentation, so they travel with the group import — no reliance
  * on each member's own `LoadedModules` merge reaching the consumer.
  *
- * @example Register a rollup in the module that defines it
+ * @example Register a named group in the module that defines it
  * ```typescript
- * export const analyticsRollup = RollupLibraries([LIB_INGEST, LIB_API], { label: "analytics" });
+ * export const analyticsGroup = LibraryGroup({ members: [LIB_INGEST, LIB_API], name: "analytics" });
  *
  * declare module "@digital-alchemy/core" {
  *   export interface LoadedRollups {
@@ -462,7 +462,7 @@ export type TServiceParams = {
   params: TServiceParams;
 } & {
   [K in ExternalLoadedModules]: GetApis<LoadedModules[K]>;
-} & RollupApis;
+} & Omit<RollupApis, keyof LoadedModules>;
 
 /** Names of all modules registered in `LoadedModules`. */
 export type LoadedModuleNames = Extract<keyof LoadedModules, string>;
@@ -650,7 +650,7 @@ export interface LibraryConfigurationOptions<
    * - warnings will be emitted if this library utilizes a different version of a dependency than what the app uses
    * - version provided by app will be substituted
    */
-  depends?: TLibrary[];
+  depends?: readonly TLibrary[];
   /**
    * Same as depends, but will not error if library is not provided at app level
    *
@@ -887,15 +887,30 @@ export type LibraryDefinition<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
   Implied extends readonly unknown[] = readonly RollupMember[],
-> = Omit<LibraryConfigurationOptions<S, C>, "implies"> & {
+  Depends extends readonly TLibrary[] = readonly TLibrary[],
+> = Omit<LibraryConfigurationOptions<S, C>, "implies" | "depends"> & {
   /**
    * Captured `implies` tuple. `CreateLibrary` preserves the literal element
    * types here (via a `const` type parameter) so a downstream consumer that
    * imports only this library still has its emitted `.d.ts` reference each
    * implied member by name — carrying the members' own `LoadedModules`
    * augmentations along the import edge.
+   *
+   * @remarks
+   * This is the niche "membership, no ordering edge" escape hatch. Prefer
+   * `depends` for ordering + membership. Use `implies` only when you want to
+   * bundle a member without creating an ordering constraint.
    */
   implies?: Implied;
+  /**
+   * Captured `depends` tuple. `CreateLibrary` preserves the literal element
+   * types here (via a `const` type parameter) so a downstream consumer that
+   * imports only this library still has its emitted `.d.ts` reference each
+   * dependency by name — carrying the dependencies' own `LoadedModules`
+   * augmentations along the import edge. Also contributes membership: each
+   * depended-on library is pulled into the wired set transitively.
+   */
+  depends?: Depends;
 } & Wire & {
     type: "library";
   };
@@ -929,7 +944,8 @@ export type ApplicationDefinition<
 export type TLibrary = LibraryDefinition<
   ServiceMap,
   OptionalModuleConfiguration,
-  readonly RollupMember[]
+  readonly RollupMember[],
+  readonly TLibrary[]
 >;
 
 // #MARK: LibraryRollup
@@ -956,7 +972,12 @@ export const IS_ROLLUP = Symbol.for("digital-alchemy:library-rollup");
  */
 export interface AnyRollup {
   readonly [IS_ROLLUP]: true;
+  /** Optional human-readable name for boot diagnostics. A named group earns a `LoadedModules` key. */
+  name?: string;
+  /** @deprecated use `name` */
   label?: string;
+  /** registry-service name for plugin-registry wiring pattern */
+  registry?: string;
   members: readonly RollupMember[];
 }
 
@@ -964,43 +985,156 @@ export interface AnyRollup {
 export type RollupMember = TLibrary | AnyRollup;
 
 /**
- * A nameless, declaration-merge-free composition of libraries.
+ * A composition of libraries, optionally named.
  *
  * @remarks
- * Produced by {@link RollupLibraries}. Accepted anywhere membership is composed
+ * Produced by {@link LibraryGroup}. Accepted anywhere membership is composed
  * (`CreateApplication`'s `libraries`, a library's `implies`). At bootstrap it is
  * flattened into its members and deduped by object identity; it contributes
- * **membership only** — never a `LoadedModules` key and never an ordering edge.
- * Members may themselves be rollups (flattened recursively).
+ * **membership only** — never an ordering edge.
+ * Members may themselves be groups (flattened recursively).
+ * When `name` is provided, the group earns a `LoadedModules` key and reserves
+ * a `config.<name>` namespace.
  */
 export type LibraryRollup<M extends readonly RollupMember[] = readonly RollupMember[]> = {
   readonly [IS_ROLLUP]: true;
+  name?: string;
+  /** @deprecated use `name` */
   label?: string;
+  /** registry-service name for plugin-registry wiring pattern */
+  registry?: string;
   members: M;
 };
 
-// #MARK: RollupLibraries
+// #MARK: LibraryGroup
 /**
- * Compose several libraries (and/or other rollups) into a single, nameless,
- * dedupe-on-bootstrap membership unit.
+ * Compose several libraries (and/or other groups) into a membership unit.
  *
  * @remarks
- * The returned value carries no DI identity: it has no `name`, contributes no
- * `LoadedModules` key, and adds no ordering edge — ordering stays entirely on each
- * member's own `depends`. List it directly in `CreateApplication({ libraries })` or
- * a library's `implies`. To expose member APIs on {@link TServiceParams} for
- * consumers that import only the rollup across a package boundary, also register the
+ * The returned value contributes membership only — it adds no ordering edge
+ * (ordering stays entirely on each member's own `depends`). List it directly in
+ * `CreateApplication({ libraries })` or a library's `implies`.
+ *
+ * When `name` is provided, the group earns a `LoadedModules` key and reserves
+ * a `config.<name>` namespace. To expose member APIs on {@link TServiceParams} for
+ * consumers that import only the group across a package boundary, also register the
  * members on {@link LoadedRollups} (see that interface's example).
  *
- * @param members - libraries and/or nested rollups to compose
- * @param options - optional diagnostic `label` for the boot manifest (not a DI identity)
+ * When `registry` is provided, a `priorityInit` registry-service is generated that
+ * wires the plugin-registry pattern: a registry service is initialized first, each
+ * plugin depends on it, and all plugins are collected into an array.
+ *
+ * @param options.members - libraries and/or nested groups to compose
+ * @param options.name - optional group name; earns a `LoadedModules` key when provided
+ * @param options.registry - optional registry-service name for plugin-registry wiring
  */
-export function RollupLibraries<const M extends readonly RollupMember[]>(
-  members: M,
-  options: { label?: string } = {},
-): LibraryRollup<M> {
+export function LibraryGroup<const M extends readonly RollupMember[]>({
+  members,
+  name,
+  registry,
+}: {
+  members: M;
+  name?: string;
+  registry?: string;
+}): LibraryRollup<M> {
   // copy so a caller mutating the passed array can't retroactively alter membership
-  return { [IS_ROLLUP]: true, label: options.label, members: [...members] } as LibraryRollup<M>;
+  const copied = [...members];
+
+  // Plain group (no registry) — membership-only carrier, nothing to synthesize.
+  if (is.empty(registry)) {
+    return { [IS_ROLLUP]: true, members: copied, name, registry } as unknown as LibraryRollup<M>;
+  }
+
+  // A registry-bearing group MUST be named: the synthesized carrier library needs a
+  // `LoadedModules` key so each member can read `parent.<carrier>.<registry>` and the
+  // app can introspect it. A nameless registry has nowhere to live.
+  if (is.empty(name)) {
+    throw new BootstrapException(
+      WIRING_CONTEXT,
+      "REGISTRY_REQUIRES_NAME",
+      "LibraryGroup({ registry }) requires a `name`; the registry service is exposed on the carrier library named after the group.",
+    );
+  }
+
+  // Synthesize the carrier library that hosts the registry service. The registry service
+  // is declared in `priorityInit` so it is constructed BEFORE any sibling that
+  // construction-reads it — priorityInit is the intra-module boot contract. Cross-module
+  // consumers (the members) order via their own `depends: [carrier]` edge, NOT priorityInit.
+  const carrier = makeRegistryCarrier(name, registry);
+
+  // Each member carries `depends: [carrier]` so DA constructs the carrier (incl. its
+  // priorityInit'd registry) before the member's factory runs. This is the cross-module
+  // ordering guarantee. Members are shallow-cloned so the shared source object is never
+  // mutated; the carrier is appended to (not replacing) any existing depends.
+  const wrapped = copied.map(member => addCarrierDepends(member, carrier));
+
+  // carrier first so it is obviously the construction root of the group
+  return {
+    [IS_ROLLUP]: true,
+    members: [carrier, ...wrapped],
+    name,
+    registry,
+  } as unknown as LibraryRollup<M>;
+}
+
+/**
+ * The public API of a generated registry service.
+ *
+ * @remarks
+ * `register(item)` collects an item into a factory-closure array; `list()` returns the
+ * accumulated items. Members register via `lifecycle.onPreInit(() => parent.<registry>.register(...))`
+ * (never at module scope, never in `onBootstrap`); a consumer reads via `list()`.
+ */
+export type RegistryService<ITEM = unknown> = {
+  register: (item: ITEM) => void;
+  list: () => ITEM[];
+};
+
+/**
+ * Build the synthesized carrier `LibraryDefinition` for a registry-bearing group.
+ *
+ * @remarks
+ * One service — the registry — declared in `priorityInit` so it constructs before any
+ * sibling that construction-reads it. The registry collects into an array held in factory
+ * closure and exposes `register` / `list`.
+ *
+ * @internal
+ */
+function makeRegistryCarrier(name: string, registry: string): TLibrary {
+  const registryService: ServiceFunction<RegistryService> = () => {
+    const items: unknown[] = [];
+    return {
+      list: () => [...items],
+      register: (item: unknown) => {
+        items.push(item);
+      },
+    };
+  };
+  return CreateLibrary({
+    name: name as keyof LoadedModules,
+    priorityInit: [registry],
+    services: { [registry]: registryService },
+  }) as unknown as TLibrary;
+}
+
+/**
+ * Return a shallow clone of `member` with `carrier` appended to its `depends`, leaving the
+ * source object untouched. Groups passed as members are recursed into so every leaf library
+ * gains the carrier dependency.
+ *
+ * @internal
+ */
+function addCarrierDepends(member: RollupMember, carrier: TLibrary): RollupMember {
+  if (isRollup(member)) {
+    return {
+      ...member,
+      members: member.members.map(inner => addCarrierDepends(inner, carrier)),
+    } as AnyRollup;
+  }
+  const existing = member.depends ?? [];
+  // identity dedup: don't double-add the carrier if already depended upon
+  const depends = existing.includes(carrier) ? existing : [...existing, carrier];
+  return { ...member, depends } as TLibrary;
 }
 
 /** Type guard: is this value a rollup carrier rather than a library? */
@@ -1021,23 +1155,32 @@ export type RollupProvenance = {
   paths: Map<string, string[]>;
   /** names that entered via more than one distinct path (diamond / over-declaration) */
   multiPath: string[];
+  /**
+   * Libraries pulled into membership *only* by closure (a `depends` edge of another
+   * library) and never listed at the top level. Maps the auto-pulled library's name →
+   * the name of the library whose `depends` first pulled it in (its puller).
+   *
+   * Load-bearing for the boot log: the app's listed `libraries` array no longer equals
+   * the wired set, so every closure-pulled library must be narrated with its puller.
+   */
+  autoPulled: Map<string, string>;
 };
 
 /**
- * Expand rollups and `implies` bundles in a declared library list into a flat,
+ * Expand groups, `implies` bundles, and transitive `depends` into a flat,
  * identity-deduped `TLibrary[]`.
  *
  * @remarks
  * Membership only — ordering is untouched (it stays on each member's own `depends`
- * and is decided later by {@link buildSortOrder}). Dedup is by **object identity**,
- * so the same singleton library reached through several rollups / `implies` paths
- * collapses to one entry. A same-name / different-object pair survives flattening and
- * is rejected downstream by `assertLibraryNames` (`DUPLICATE_LIBRARY`). An already-flat
- * list of plain libraries (no rollups, no `implies`) passes through unchanged, so the
- * pass is a safe no-op for the common case.
+ * and is decided later by {@link buildSortOrder}). Dedup is by **object identity**
+ * for explicitly listed members; closure-pulled deps (via `depends`) also skip if a
+ * library with the same name is already in the output — this lets an explicitly-listed
+ * library (or an appendLibrary replacement) take precedence over an auto-pulled dep.
+ * A same-name / different-object pair that was NOT resolved by closure is still
+ * rejected downstream by `assertLibraryNames` (`DUPLICATE_LIBRARY`).
  *
- * @throws {BootstrapException} `COMPOSITION_CYCLE` when a rollup transitively contains
- * itself, or an `implies` chain forms a cycle.
+ * @throws {BootstrapException} `COMPOSITION_CYCLE` when a group transitively contains
+ * itself, or a `depends`/`implies` chain forms a cycle.
  */
 export function flattenLibraries(declared: readonly RollupMember[]): {
   libraries: TLibrary[];
@@ -1046,7 +1189,28 @@ export function flattenLibraries(declared: readonly RollupMember[]): {
   const out: TLibrary[] = [];
   const seen = new Set<TLibrary>(); // identity dedup
   const paths = new Map<string, string[]>();
-  const visiting = new Set<unknown>(); // active rollup / implies expansion stack (cycle guard)
+  const autoPulled = new Map<string, string>(); // closure-pulled lib name → puller name
+  const visiting = new Set<unknown>(); // active expansion stack (cycle guard)
+
+  // Pre-collect all names of libraries that appear directly in `declared` (top-level,
+  // not via closure). These names take priority — a closure-pulled dep with the same
+  // name is silently skipped so that an explicit listing or appendLibrary substitution wins.
+  const explicitNames = new Set<string>();
+  const visitedInPreScan = new Set<unknown>();
+  function collectExplicitNames(members: readonly RollupMember[]) {
+    for (const entry of members) {
+      if (isRollup(entry)) {
+        if (visitedInPreScan.has(entry)) {
+          continue; // cycle guard — the actual cycle error fires during the main traversal
+        }
+        visitedInPreScan.add(entry);
+        collectExplicitNames(entry.members);
+      } else {
+        explicitNames.add(String(entry.name));
+      }
+    }
+  }
+  collectExplicitNames(declared);
 
   const note = (name: string, path: string) => {
     const list = paths.get(name) ?? [];
@@ -1055,59 +1219,85 @@ export function flattenLibraries(declared: readonly RollupMember[]): {
   };
 
   // function declarations (hoisted) so the mutual recursion needs no forward-declare
-  function addLibrary(lib: TLibrary, path: string) {
+  function addLibrary(lib: TLibrary, path: string, fromClosure = false, puller?: string) {
     note(lib.name, path);
     if (visiting.has(lib)) {
-      // lib is an ancestor on the active implies stack — a genuine cycle (distinct from a
-      // diamond, where lib is in `seen` but not currently being expanded)
+      // lib is an ancestor on the active stack — a genuine cycle
       throw new BootstrapException(
         WIRING_CONTEXT,
         "COMPOSITION_CYCLE",
-        `implies cycle detected at [${lib.name}]`,
+        `dependency cycle detected at [${lib.name}]`,
       );
     }
     if (seen.has(lib)) {
       return; // already in membership via another path — dedup, keep the first object
     }
+    // Closure-pulled deps defer to any explicitly listed library with the same name.
+    // This allows appendLibrary / replaceLibrary substitutions to win over auto-pulled originals.
+    if (fromClosure && explicitNames.has(String(lib.name))) {
+      return;
+    }
+    // narration provenance: a library reached only by closure (not listed top-level) is
+    // auto-pulled — record its puller so the boot log can name who brought it in. First
+    // closure puller wins; a later top-level/explicit appearance is not auto-pulled.
+    if (fromClosure && !explicitNames.has(String(lib.name)) && !autoPulled.has(lib.name)) {
+      autoPulled.set(lib.name, puller ?? "(unknown)");
+    }
+    visiting.add(lib);
+    // depends contributes membership (closure-as-membership): walk deps before placing
+    // this library so dependencies always appear earlier in out[] than their dependents
+    const deps = lib.depends ?? [];
+    if (!is.empty(deps)) {
+      deps.forEach(dep =>
+        addLibrary(dep as TLibrary, `${path} -> depends(${lib.name})`, true, lib.name),
+      );
+    }
+    // Now place lib itself (after its deps are already in out[])
     seen.add(lib);
     out.push(lib);
     // implies contributes membership AFTER the implier is placed; ordering is irrelevant
     const implied = lib.implies ?? [];
     if (!is.empty(implied)) {
-      visiting.add(lib);
       implied.forEach(member => visit(member, `${path} -> implies(${lib.name})`));
-      visiting.delete(lib);
     }
+    visiting.delete(lib);
   }
 
   function visit(entry: RollupMember, path: string) {
     if (isRollup(entry)) {
       if (visiting.has(entry)) {
-        const where = entry.label ? ` at [${entry.label}]` : "";
+        // eslint-disable-next-line sonarjs/deprecation -- reading deprecated `label` for backward compat with old rollup objects
+        const id = entry.name ?? entry.label;
+        const where = id ? ` at [${id}]` : "";
         throw new BootstrapException(
           WIRING_CONTEXT,
           "COMPOSITION_CYCLE",
-          `rollup cycle detected${where}`,
+          `group cycle detected${where}`,
         );
       }
       visiting.add(entry);
-      const label = entry.label ?? "rollup";
-      entry.members.forEach(member => visit(member, `${path} -> rollup(${label})`));
+      // eslint-disable-next-line sonarjs/deprecation -- reading deprecated `label` for backward compat with old rollup objects
+      const label = entry.name ?? entry.label ?? "group";
+      entry.members.forEach(member => visit(member, `${path} -> group(${label})`));
       visiting.delete(entry);
       return;
     }
     addLibrary(entry, path);
   }
 
-  declared.forEach((entry, index) =>
-    visit(entry, isRollup(entry) ? `rollup#${index}` : `libraries[${entry.name}]`),
-  );
+  declared.forEach((entry, index) => {
+    if (isRollup(entry)) {
+      visit(entry, entry.name ? `group(${entry.name})` : `group#${index}`);
+    } else {
+      visit(entry, `libraries[${entry.name}]`);
+    }
+  });
 
   const multiPath = [...paths.entries()]
     .filter(([, list]) => is.unique(list).length > SINGLE)
     .map(([name]) => name);
 
-  return { libraries: out, provenance: { paths, multiPath } };
+  return { libraries: out, provenance: { autoPulled, multiPath, paths } };
 }
 
 // #MARK: buildSortOrder
@@ -1320,6 +1510,7 @@ export function CreateLibrary<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
   const Implied extends readonly RollupMember[] = readonly [],
+  const Depends extends readonly TLibrary[] = readonly [],
 >({
   name: libraryName,
   configuration = {} as C,
@@ -1329,7 +1520,10 @@ export function CreateLibrary<
   optionalDepends,
   implies,
   ...extra
-}: LibraryConfigurationOptions<S, C> & { implies?: Implied }): LibraryDefinition<S, C, Implied> {
+}: LibraryConfigurationOptions<S, C> & {
+  implies?: Implied;
+  depends?: Depends;
+}): LibraryDefinition<S, C, Implied, Depends> {
   validateLibrary(libraryName, services);
 
   const serviceApis = {} as GetApisResult<ServiceMap>;
@@ -1386,6 +1580,6 @@ export function CreateLibrary<
     serviceApis,
     services,
     type: "library",
-  } as unknown as LibraryDefinition<S, C, Implied>;
+  } as unknown as LibraryDefinition<S, C, Implied, Depends>;
   return library;
 }

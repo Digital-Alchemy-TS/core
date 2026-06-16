@@ -353,11 +353,22 @@ function assertLibraryNames(
   definitions.forEach(({ name }) => counts.set(name, (counts.get(name) ?? NONE) + SINGLE));
   const dupes = [...counts.entries()].filter(([, count]) => count > SINGLE);
   if (!is.empty(dupes)) {
-    const detail = dupes.map(([name, count]) => `"${String(name)}" (×${count})`).join(", ");
+    const detail = dupes
+      .map(([name, count]) => {
+        // surface each distinct object's toString() to help identify which copy came from where
+        const copies = definitions
+          .filter(lib => lib.name === name)
+          .map((_lib, i) => `copy#${i + SINGLE}`)
+          .join(" vs ");
+        return `"${String(name)}" (×${count}: ${copies})`;
+      })
+      .join(", ");
     throw new BootstrapException(
       WIRING_CONTEXT,
       "DUPLICATE_LIBRARY",
-      `Duplicate library names: ${detail}; library names must be unique.`,
+      `Duplicate library names detected: ${detail}. ` +
+        `Two physical copies of the same library are in the dependency graph — ` +
+        `run \`yarn dedupe\` or align package versions so only one copy is installed.`,
     );
   }
 }
@@ -645,6 +656,17 @@ function resolveLibraryMembership(
   const { libraries, provenance } = flattenLibraries(application.libraries ?? []);
   application.libraries = libraries;
   internal.boot.rollupProvenance = provenance;
+  // Narrate every auto-pulled (closure-as-membership) library: the app's listed
+  // `libraries` array no longer equals the wired set, so each library brought in
+  // purely by another's `depends` edge is announced with the name of its puller.
+  provenance.autoPulled.forEach((puller, name) => {
+    logger.info(
+      { name: resolveLibraryMembership, puller },
+      `[%s] auto-pulled into membership by [%s]`,
+      name,
+      puller,
+    );
+  });
   if (is.empty(provenance.multiPath)) {
     return;
   }
@@ -665,7 +687,15 @@ function resolveLibraryMembership(
  */
 function rollupManifest(internal: InternalDefinition) {
   const provenance = internal.boot.rollupProvenance;
-  return provenance ? Object.fromEntries(provenance.paths) : {};
+  if (!provenance) {
+    return {};
+  }
+  return {
+    // each library name → its composition paths (kept at top level for back-compat)
+    ...Object.fromEntries(provenance.paths),
+    // closure-pulled library name → puller, for introspection alongside the boot-log narration
+    autoPulled: Object.fromEntries(provenance.autoPulled),
+  };
 }
 
 // #MARK: Bootstrap

@@ -46,3 +46,6 @@ jobs:
 
   test-pipelines-bun:
     uses: ./.github/workflows/test-pipelines-bun.yml
+
+  test-implies-propagation:
+    uses: ./.github/workflows/test-implies-propagation.yml

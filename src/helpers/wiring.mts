@@ -666,7 +666,7 @@ export interface LibraryConfigurationOptions<
    * Distinct from `depends`: `depends` is ordering + validation; `implies` is membership.
    * Rollups are accepted here and flattened recursively.
    */
-  implies?: RollupMember[];
+  implies?: readonly RollupMember[];
   configuration?: C;
   /**
    * Define which services should be initialized first. Any remaining services are done at the end in no set order
@@ -886,8 +886,17 @@ type Wire = {
 export type LibraryDefinition<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
-> = LibraryConfigurationOptions<S, C> &
-  Wire & {
+  Implied extends readonly unknown[] = readonly RollupMember[],
+> = Omit<LibraryConfigurationOptions<S, C>, "implies"> & {
+  /**
+   * Captured `implies` tuple. `CreateLibrary` preserves the literal element
+   * types here (via a `const` type parameter) so a downstream consumer that
+   * imports only this library still has its emitted `.d.ts` reference each
+   * implied member by name — carrying the members' own `LoadedModules`
+   * augmentations along the import edge.
+   */
+  implies?: Implied;
+} & Wire & {
     type: "library";
   };
 
@@ -917,7 +926,11 @@ export type ApplicationDefinition<
   };
 
 /** Convenience alias for a library definition with unknown service/config types. */
-export type TLibrary = LibraryDefinition<ServiceMap, OptionalModuleConfiguration>;
+export type TLibrary = LibraryDefinition<
+  ServiceMap,
+  OptionalModuleConfiguration,
+  readonly RollupMember[]
+>;
 
 // #MARK: LibraryRollup
 /**
@@ -1303,7 +1316,11 @@ export function wireOrder<T extends string>(priority: T[], list: T[]): T[] {
  * @throws {BootstrapException} `MISSING_PRIORITY_SERVICE` when a name listed in
  * `priorityInit` does not correspond to a service in the `services` map.
  */
-export function CreateLibrary<S extends ServiceMap, C extends OptionalModuleConfiguration>({
+export function CreateLibrary<
+  S extends ServiceMap,
+  C extends OptionalModuleConfiguration,
+  const Implied extends readonly RollupMember[] = readonly [],
+>({
   name: libraryName,
   configuration = {} as C,
   priorityInit,
@@ -1312,7 +1329,7 @@ export function CreateLibrary<S extends ServiceMap, C extends OptionalModuleConf
   optionalDepends,
   implies,
   ...extra
-}: LibraryConfigurationOptions<S, C>): LibraryDefinition<S, C> {
+}: LibraryConfigurationOptions<S, C> & { implies?: Implied }): LibraryDefinition<S, C, Implied> {
   validateLibrary(libraryName, services);
 
   const serviceApis = {} as GetApisResult<ServiceMap>;
@@ -1369,6 +1386,6 @@ export function CreateLibrary<S extends ServiceMap, C extends OptionalModuleConf
     serviceApis,
     services,
     type: "library",
-  } as unknown as LibraryDefinition<S, C>;
+  } as unknown as LibraryDefinition<S, C, Implied>;
   return library;
 }

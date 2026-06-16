@@ -125,3 +125,4 @@ dynamic.d.mts
 /obsidian/.obsidian
 .yarn/install-state.gz
 .env
+examples/**/dist

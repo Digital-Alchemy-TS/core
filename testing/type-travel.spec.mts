@@ -26,14 +26,11 @@
  * `TServiceParams` merges contributions with priority:
  *   direct `LoadedModules` wins over `Omit<RollupApis, keyof LoadedModules>`.
  *
- * ─── declaration-emit discipline ─────────────────────────────────────────────
- * The shipped `.d.ts` is emitted by `yarn build` (`tsc -p tsconfig.lib.json`),
- * which sets `declaration: true` and `isolatedModules: true` — it does NOT set
- * `isolatedDeclarations`.  All service factories in this file are nonetheless
- * written as named `function` declarations with explicit return type annotations
- * — the form that emits a `typeof` import reference in `.d.ts` (and would also be
- * valid if `isolatedDeclarations` were ever enabled).  The `const`-arrow in
- * Case 3 is the intentional negative example.
+ * ─── isolatedDeclarations discipline ────────────────────────────────────────
+ * All service factories in this file are named `function` declarations with
+ * explicit return type annotations — the form that emits a `typeof` import
+ * reference in `.d.ts` (and is valid under `isolatedDeclarations`).  The
+ * `const`-arrow in Case 3 is the intentional negative example.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -301,10 +298,9 @@ export type _Assert_Case3_KeyAbsentFromTServiceParams = TServiceParams["const_ar
 // ═══════════════════════════════════════════════════════════════════════════════
 // CASE 4 FIXTURES
 //
-// FAN-OUT SANITY under the shipped declaration-emit config (tsconfig.lib.json:
-// declaration: true, isolatedModules: true — not isolatedDeclarations): one base
-// library depended-on by many others.  Proves no TS2456 (circular reference),
-// no emit explosion, and all types resolve correctly at real `depends` density.
+// FAN-OUT SANITY under isolatedDeclarations: one base library depended-on by
+// many others.  Proves no TS2456 (circular reference), no emit explosion, and
+// all types resolve correctly at real `depends` density.
 //
 // The gating risk from commit 2a3006c: with `const Depends` capture, each
 // library's `.d.ts` emits typed references to its deps.  At high fan-in density
@@ -328,8 +324,8 @@ export const LIB_FANOUT_BASE = CreateLibrary({
   services: { FanOutBaseService },
 });
 
-export function FanOutConsumerAService(_params: TServiceParams): { a: string } {
-  return { a: "true" };
+export function FanOutConsumerAService(_params: TServiceParams): { a: boolean } {
+  return { a: true };
 }
 export const LIB_FANOUT_A = CreateLibrary({
   depends: [LIB_FANOUT_BASE],
@@ -385,12 +381,23 @@ export type _Assert_Case4_FanOutBasePing = ExpectTrue<
   TypeEqual<GetApisResult<(typeof LIB_FANOUT_BASE)["services"]>["FanOutBaseService"]["ping"], () => string>
 >;
 
-/** All four sibling consumer services resolve correctly — no type collapse from fan-out. */
-export type _Assert_Case4_AllSiblingsPresent = ExpectTrue<
-  TypeEqual<GetApisResult<(typeof LIB_FANOUT_A)["services"]>["FanOutConsumerAService"]["a"], boolean> &
-    TypeEqual<GetApisResult<(typeof LIB_FANOUT_B)["services"]>["FanOutConsumerBService"]["b"], boolean> &
-    TypeEqual<GetApisResult<(typeof LIB_FANOUT_C)["services"]>["FanOutConsumerCService"]["c"], boolean> &
-    TypeEqual<GetApisResult<(typeof LIB_FANOUT_D)["services"]>["FanOutConsumerDService"]["d"], boolean>
+/**
+ * Each sibling consumer service resolves correctly — no type collapse from fan-out.
+ * NOTE: We use separate type aliases rather than intersecting boolean literals,
+ * because `false & true` evaluates to `never` in TypeScript, and `never extends true`
+ * is vacuously true — which would mask a failing assertion.
+ */
+export type _Assert_Case4_SiblingA = ExpectTrue<
+  TypeEqual<GetApisResult<(typeof LIB_FANOUT_A)["services"]>["FanOutConsumerAService"]["a"], boolean>
+>;
+export type _Assert_Case4_SiblingB = ExpectTrue<
+  TypeEqual<GetApisResult<(typeof LIB_FANOUT_B)["services"]>["FanOutConsumerBService"]["b"], boolean>
+>;
+export type _Assert_Case4_SiblingC = ExpectTrue<
+  TypeEqual<GetApisResult<(typeof LIB_FANOUT_C)["services"]>["FanOutConsumerCService"]["c"], boolean>
+>;
+export type _Assert_Case4_SiblingD = ExpectTrue<
+  TypeEqual<GetApisResult<(typeof LIB_FANOUT_D)["services"]>["FanOutConsumerDService"]["d"], boolean>
 >;
 
 /** LIB_FANOUT_E (5-entry Depends tuple) compiles without circular reference or type collapse. */
@@ -402,14 +409,13 @@ export type _Assert_Case4_FanOutEPresent = ExpectTrue<
  * LIB_FANOUT_E's `Depends` tuple retains all 5 literal element types.
  * If the tuple collapsed to `readonly TLibrary[]`, these would be `TLibrary` (wider),
  * and `Extends<typeof LIB_FANOUT_A, ...>` would fail.
+ * Each position is checked separately to avoid the `false & true = never` masking problem.
  */
-export type _Assert_Case4_FanOutEDependsRetainsLiterals = ExpectTrue<
-  Extends<typeof LIB_FANOUT_BASE, (typeof LIB_FANOUT_E)["depends"][0]> &
-    Extends<typeof LIB_FANOUT_A, (typeof LIB_FANOUT_E)["depends"][1]> &
-    Extends<typeof LIB_FANOUT_B, (typeof LIB_FANOUT_E)["depends"][2]> &
-    Extends<typeof LIB_FANOUT_C, (typeof LIB_FANOUT_E)["depends"][3]> &
-    Extends<typeof LIB_FANOUT_D, (typeof LIB_FANOUT_E)["depends"][4]>
->;
+export type _Assert_Case4_Dep0 = ExpectTrue<Extends<typeof LIB_FANOUT_BASE, (typeof LIB_FANOUT_E)["depends"][0]>>;
+export type _Assert_Case4_Dep1 = ExpectTrue<Extends<typeof LIB_FANOUT_A, (typeof LIB_FANOUT_E)["depends"][1]>>;
+export type _Assert_Case4_Dep2 = ExpectTrue<Extends<typeof LIB_FANOUT_B, (typeof LIB_FANOUT_E)["depends"][2]>>;
+export type _Assert_Case4_Dep3 = ExpectTrue<Extends<typeof LIB_FANOUT_C, (typeof LIB_FANOUT_E)["depends"][3]>>;
+export type _Assert_Case4_Dep4 = ExpectTrue<Extends<typeof LIB_FANOUT_D, (typeof LIB_FANOUT_E)["depends"][4]>>;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // RUNTIME SUITE
@@ -473,7 +479,7 @@ describe("cross-package type-travel via depends/implies (compile-time proof)", (
   });
 
   // ── Case 4 ────────────────────────────────────────────────────────────────
-  describe("Case 4 — fan-out: base depended-on by many libs; declaration emit stays sane", () => {
+  describe("Case 4 — fan-out: base depended-on by many libs; isolatedDeclarations stays sane", () => {
     it("all six fanout libraries have unique names", () => {
       const names = [
         LIB_FANOUT_BASE.name,
@@ -495,9 +501,8 @@ describe("cross-package type-travel via depends/implies (compile-time proof)", (
     });
 
     it("compile-time: 5-dep fan-out compiles without TS2456 or type collapse", () => {
-      // _Assert_Case4_FanOutBasePing, _Assert_Case4_AllSiblingsPresent,
-      // _Assert_Case4_FanOutEPresent, _Assert_Case4_FanOutEDependsRetainsLiterals
-      // all hold under `yarn type-check`.
+      // _Assert_Case4_FanOutBasePing, _Assert_Case4_Sibling*, _Assert_Case4_FanOutEPresent,
+      // _Assert_Case4_Dep* all hold under `yarn type-check`.
       expect(LIB_FANOUT_BASE.services.FanOutBaseService).toBeDefined();
       expect(LIB_FANOUT_E.services.FanOutConsumerEService).toBeDefined();
     });

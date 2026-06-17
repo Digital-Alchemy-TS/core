@@ -271,7 +271,7 @@ describe("Testing", () => {
       const id = v4();
       const test = createModule.fromApplication(topApplication).extend().appendService(id, spy);
       const runner = test.toLibrary();
-      expect(runner.services[id]).toBe(spy);
+      expect((runner.services as Record<string, unknown>)[id]).toBe(spy);
     });
   });
 
@@ -294,7 +294,7 @@ describe("Testing", () => {
         .fromApplication(topApplication)
         .extend()
         .appendService(id, vi.fn())
-        .pickService(id)
+        .pickService(id as "test")
         .toLibrary();
       expect(Object.keys(out.services)).toEqual([id]);
     });
@@ -375,7 +375,7 @@ describe("Testing", () => {
       const spy = vi.fn();
       const test = createModule.fromApplication(topApplication).extend();
       expect(() => {
-        test.replaceService(v4(), spy);
+        test.replaceService(v4() as "test", spy);
       }).toThrow();
     });
 

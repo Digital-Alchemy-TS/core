@@ -567,7 +567,7 @@ async function wireService(
       // scheduler is a builder; call it with context so the returned API
       // tags every scheduled callback with this service's context string
       scheduler: boilerplate?.scheduler?.(context),
-    } as TServiceParams;
+    } as unknown as TServiceParams;
     // params.params is a self-reference so callers can spread the whole bundle
     serviceParams.params = serviceParams;
 

@@ -6,6 +6,7 @@ import type {
   OptionalModuleConfiguration,
   RollupMember,
   ServiceMap,
+  TServiceParams,
 } from "../src/index.mts";
 import {
   BootstrapException,
@@ -129,7 +130,7 @@ describe("CreateLibrary", () => {
         services: { InvalidService: undefined },
       });
     } catch (error) {
-      expect(error.cause).toBe("INVALID_SERVICE_DEFINITION");
+      expect((error as BootstrapException).cause).toBe("INVALID_SERVICE_DEFINITION");
     }
   });
 
@@ -206,7 +207,7 @@ describe("CreateApplication", () => {
     try {
       await application.bootstrap(BASIC_BOOT);
     } catch (error) {
-      expect(error.cause).toBe("DOUBLE_BOOT");
+      expect((error as BootstrapException).cause).toBe("DOUBLE_BOOT");
     }
   });
 
@@ -812,7 +813,7 @@ describe("Bootstrap", () => {
         services: {},
       });
     } catch (error) {
-      expect(error.cause).toBe("MISSING_PRIORITY_SERVICE");
+      expect((error as BootstrapException).cause).toBe("MISSING_PRIORITY_SERVICE");
     }
   });
 
@@ -827,7 +828,7 @@ describe("Bootstrap", () => {
         services: {},
       });
     } catch (error) {
-      expect(error.cause).toBe("MISSING_PRIORITY_SERVICE");
+      expect((error as BootstrapException).cause).toBe("MISSING_PRIORITY_SERVICE");
     }
   });
 
@@ -1359,7 +1360,7 @@ describe("Application + Library interactions", () => {
       AddToList: () => list.push("C"),
     },
   });
-  LIBRARY_E.depends = [LIBRARY_F];
+  (LIBRARY_E as { depends: unknown }).depends = [LIBRARY_F];
 
   beforeEach(() => {
     list = [];
@@ -1381,7 +1382,9 @@ describe("Application + Library interactions", () => {
   });
 
   it("crashes when two libraries share a name", () => {
+    // @ts-expect-error -- test library name not in LoadedModules
     const dupeA = CreateLibrary({ name: "dupe", services: { One() {} } });
+    // @ts-expect-error -- test library name not in LoadedModules
     const dupeB = CreateLibrary({ name: "dupe", services: { Two() {} } });
     expect(() =>
       CreateApplication({
@@ -1394,6 +1397,7 @@ describe("Application + Library interactions", () => {
   });
 
   it("crashes when the same library object is listed twice", () => {
+    // @ts-expect-error -- test library name not in LoadedModules
     const dupe = CreateLibrary({ name: "dupe", services: { One() {} } });
     expect(() =>
       CreateApplication({
@@ -1406,7 +1410,9 @@ describe("Application + Library interactions", () => {
   });
 
   it("reports every duplicated name in one error", () => {
-    const mk = (name: string) => CreateLibrary({ name, services: {} });
+    const mk = (name: string) =>
+      // @ts-expect-error -- test library name not in LoadedModules
+      CreateLibrary({ name, services: {} });
     let caught: BootstrapException;
     try {
       CreateApplication({
@@ -1431,6 +1437,7 @@ describe("Application + Library interactions", () => {
         CreateApplication({
           // @ts-expect-error testing
           libraries: [CreateLibrary({ name: reserved, services: {} })],
+          // @ts-expect-error -- test app name not in LoadedModules
           name: "testing",
           services: {},
         });
@@ -1620,13 +1627,13 @@ describe("Library composition", () => {
       const a = LibraryGroup({ members: [LIB_BASE, LIB_ONE] });
       const b = LibraryGroup({ members: [LIB_BASE, LIB_TWO] });
       const { libraries, provenance } = flattenLibraries([a, b]);
-      expect(libraries.filter(index => index.name === "rollup_base")).toHaveLength(1);
+      expect(libraries.filter(index => (index.name as string) === "rollup_base")).toHaveLength(1);
       expect(provenance.multiPath).toContain("rollup_base");
     });
 
     it("dedupes a member listed directly and via a group", () => {
       const { libraries } = flattenLibraries([LIB_ONE, LibraryGroup({ members: [LIB_ONE, LIB_TWO] })]);
-      expect(libraries.filter(index => index.name === "rollup_one")).toHaveLength(1);
+      expect(libraries.filter(index => (index.name as string) === "rollup_one")).toHaveLength(1);
     });
 
     it("closure-as-membership: listing a lib and its dep both works; dep appears first", () => {
@@ -1639,7 +1646,7 @@ describe("Library composition", () => {
       const a = LibraryGroup({ members: [LIB_ONE], name: "a" });
       const b = LibraryGroup({ members: [a], name: "b" });
       // force a cycle (the public API alone can't build one): a -> b -> a
-      (a.members as RollupMember[]).push(b);
+      (a.members as unknown as RollupMember[]).push(b);
       let caught: BootstrapException;
       try {
         flattenLibraries([a]);
@@ -1839,7 +1846,7 @@ describe("Library composition", () => {
         services: {},
       });
       const { libraries } = flattenLibraries([implier, implied]);
-      expect(libraries.filter(index => index.name === "implied_member")).toHaveLength(1);
+      expect(libraries.filter(index => (index.name as string) === "implied_member")).toHaveLength(1);
     });
 
     it("flattens a group used inside implies (includes transitive depends)", () => {
@@ -1916,8 +1923,8 @@ describe("Library composition", () => {
         // @ts-expect-error test library name not in LoadedModules
         name: "plugin_a",
         services: {
+          // @ts-expect-error carrier `host` not in LoadedModules
           Register({ lifecycle, host }: TServiceParams) {
-            // @ts-expect-error carrier `host` not in LoadedModules
             lifecycle.onPreInit(() => host.registry.register("a"));
           },
         },
@@ -1926,8 +1933,8 @@ describe("Library composition", () => {
         // @ts-expect-error test library name not in LoadedModules
         name: "plugin_b",
         services: {
+          // @ts-expect-error carrier `host` not in LoadedModules
           Register({ lifecycle, host }: TServiceParams) {
-            // @ts-expect-error carrier `host` not in LoadedModules
             lifecycle.onPreInit(() => host.registry.register("b"));
           },
         },
@@ -1940,8 +1947,8 @@ describe("Library composition", () => {
         name: "testing",
         services: {
           // consumer reads the assembled list after registration (onBootstrap)
+          // @ts-expect-error carrier `host` not in LoadedModules
           Consumer({ lifecycle, host }: TServiceParams) {
-            // @ts-expect-error carrier `host` not in LoadedModules
             lifecycle.onBootstrap(() => collected.push(...host.registry.list()));
           },
         },

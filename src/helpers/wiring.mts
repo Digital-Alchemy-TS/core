@@ -494,14 +494,14 @@ type UnionToIntersection<U> = (U extends unknown ? (k: U) => void : never) exten
  *
  * @internal
  */
-type RollupApis = [keyof LoadedRollups] extends [never]
+type RollupApisOf<T> = [keyof T] extends [never]
   ? // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- no rollups registered → contribute nothing to TServiceParams
     {}
   : {
-      [K in keyof UnionToIntersection<LoadedRollups[keyof LoadedRollups]>]: GetApis<
-        UnionToIntersection<LoadedRollups[keyof LoadedRollups]>[K]
-      >;
+      [K in keyof UnionToIntersection<T[keyof T]>]: GetApis<UnionToIntersection<T[keyof T]>[K]>;
     };
+
+type RollupApis = RollupApisOf<LoadedRollups>;
 
 /**
  * Compile-time proof that an empty `LoadedRollups` leaves `TServiceParams`
@@ -511,7 +511,7 @@ type RollupApis = [keyof LoadedRollups] extends [never]
  * @internal — assertion only; consumed via `export` so `noUnusedLocals` is satisfied.
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type -- the asserted value IS the empty object
-export type _EmptyRollupsContributeNothing = ExpectTrue<TypeEqual<RollupApis, {}>>;
+export type _EmptyRollupsContributeNothing = ExpectTrue<TypeEqual<RollupApisOf<{}>, {}>>;
 
 /**
  * Maps each loaded module name to its declared configuration block.

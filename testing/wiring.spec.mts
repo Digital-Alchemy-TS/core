@@ -1381,6 +1381,30 @@ describe("Application + Library interactions", () => {
     }).toThrow(BootstrapException);
   });
 
+  it("throws MISSING_DEPENDENCY when a required dependency is absent from the app", () => {
+    const logger = createMockLogger();
+    // @ts-expect-error test library name not in LoadedModules
+    const missing = CreateLibrary({ name: "missing_dep", services: {} });
+    // @ts-expect-error test library name not in LoadedModules
+    const needsIt = CreateLibrary({ depends: [missing], name: "needs_missing", services: {} });
+    let caught: BootstrapException;
+    try {
+      buildSortOrder(
+        CreateApplication({
+          libraries: [needsIt],
+          // @ts-expect-error testing
+          name: "test",
+          services: {},
+        }),
+        logger,
+      );
+    } catch (error) {
+      caught = error as BootstrapException;
+    }
+    expect(caught.cause).toBe("MISSING_DEPENDENCY");
+    expect(caught.message).toContain("missing_dep");
+  });
+
   it("crashes when two libraries share a name", () => {
     // @ts-expect-error -- test library name not in LoadedModules
     const dupeA = CreateLibrary({ name: "dupe", services: { One() {} } });
@@ -1979,6 +2003,36 @@ describe("Library composition", () => {
       });
       await application.bootstrap(BASIC_BOOT);
       expect(registryVisibleAtMemberConstruction).toBe(true);
+    });
+
+    it("recurses addCarrierDepends into a nested group member so leaf library gains the carrier depends", async () => {
+      // A registry group whose member list contains a nested LibraryGroup (itself a rollup).
+      // addCarrierDepends must recurse into the nested group so the leaf library inside it
+      // depends on the carrier and therefore constructs after it.
+      const wiredOrder: string[] = [];
+      const LEAF = CreateLibrary({
+        // @ts-expect-error test library name not in LoadedModules
+        name: "nested_leaf",
+        services: {
+          // @ts-expect-error carrier `nested_host` not in LoadedModules
+          Init({ nested_host }: TServiceParams) {
+            wiredOrder.push("leaf");
+            // reading the registry proves the carrier was constructed first
+            wiredOrder.push(typeof nested_host?.reg?.register === "function" ? "carrier-ok" : "carrier-missing");
+          },
+        },
+      });
+      // Nest LEAF inside a plain LibraryGroup, then use that as a member of the registry group.
+      const innerGroup = LibraryGroup({ members: [LEAF] });
+      application = CreateApplication({
+        libraries: [LibraryGroup({ members: [innerGroup], name: "nested_host", registry: "reg" })],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap(BASIC_BOOT);
+      expect(wiredOrder).toContain("leaf");
+      expect(wiredOrder).toContain("carrier-ok");
     });
   });
 });

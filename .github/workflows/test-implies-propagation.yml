@@ -1,0 +1,27 @@
+name: Test Implies Propagation
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  test-implies-propagation:
+    runs-on: ubuntu-latest
+    # cold-cache guard: run.sh builds core + two demo packages from scratch
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: corepack enable
+      - run: yarn config set enableImmutableInstalls false
+      - run: yarn
+      # Builds local core, type-checks the consumer (the proof that an implied
+      # library's types travel across the package boundary), then runs the demo.
+      # If a future TS/core change breaks the function-declaration import edge,
+      # params.lighting stops resolving and this step goes red.
+      - name: Demo + regression guard (implies cross-package type propagation)
+        run: bash examples/implies-propagation/run.sh

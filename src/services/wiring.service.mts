@@ -6,8 +6,10 @@ import type {
   BootstrapOptions,
   GetApis,
   GetApisResult,
+  GetLogger,
   ILogger,
   LibraryDefinition,
+  LibraryRollup,
   LoadedModules,
   OptionalModuleConfiguration,
   ServiceFunction,
@@ -27,6 +29,8 @@ import {
   each,
   eachSeries,
   fatalLog,
+  flattenLibraries,
+  isRollup,
   NONE,
   SINGLE,
   WIRE_PROJECT,
@@ -321,14 +325,24 @@ const RESERVED_LIBRARY_NAMES = new Set([
  * Note the asymmetry with `appendLibrary`: that mechanism *intentionally*
  * replaces a same-named library (with a warning) at bootstrap time, whereas a
  * duplicate in the declared `libraries` array is always an error.
+ *
+ * Rollup/group carriers in the declared list are excluded from both checks here;
+ * their members are validated on the post-flatten list at bootstrap, not at
+ * definition time.
  */
 function assertLibraryNames(
-  libraries: LibraryDefinition<ServiceMap, OptionalModuleConfiguration>[],
+  libraries: (LibraryDefinition<ServiceMap, OptionalModuleConfiguration> | LibraryRollup)[],
 ): void | never {
+  // rollups are nameless membership carriers — exclude them here. The flatten pass
+  // expands them to their (named) members, which are validated on the post-flatten list.
+  const definitions = libraries.filter(entry => !isRollup(entry)) as LibraryDefinition<
+    ServiceMap,
+    OptionalModuleConfiguration
+  >[];
   // reserved-name collisions (String() guards exotic Symbol names from crashing
   // the message interpolation)
   const reserved = is.unique(
-    libraries.map(lib => lib.name).filter(name => RESERVED_LIBRARY_NAMES.has(name)),
+    definitions.map(lib => lib.name).filter(name => RESERVED_LIBRARY_NAMES.has(name)),
   );
   if (!is.empty(reserved)) {
     const detail = reserved.map(name => `"${String(name)}"`).join(", ");
@@ -340,16 +354,23 @@ function assertLibraryNames(
   }
   // duplicate names — report ALL offenders in one throw (no whack-a-mole)
   const counts = new Map<string, number>();
-  for (const { name } of libraries) {
-    counts.set(name, (counts.get(name) ?? NONE) + SINGLE);
-  }
+  definitions.forEach(({ name }) => counts.set(name, (counts.get(name) ?? NONE) + SINGLE));
   const dupes = [...counts.entries()].filter(([, count]) => count > SINGLE);
   if (!is.empty(dupes)) {
-    const detail = dupes.map(([name, count]) => `"${String(name)}" (×${count})`).join(", ");
+    const detail = dupes
+      .map(([name, count]) => {
+        // surface each distinct object's toString() to help identify which copy came from where
+        const copies = definitions
+          .filter(lib => lib.name === name)
+          .map((_lib, i) => `copy#${i + SINGLE}`)
+          .join(" vs ");
+        return `"${String(name)}" (×${count}: ${copies})`;
+      })
+      .join(", ");
     throw new BootstrapException(
       WIRING_CONTEXT,
       "DUPLICATE_LIBRARY",
-      `Duplicate library names: ${detail}; library names must be unique.`,
+      `Duplicate library names detected: ${detail}.`,
     );
   }
 }
@@ -374,7 +395,9 @@ function assertLibraryNames(
  * @throws {BootstrapException} `RESERVED_LIBRARY_NAME` if a library is named
  *   after a reserved framework key (e.g. `logger`, `config`, `boilerplate`).
  * @throws {BootstrapException} `DUPLICATE_LIBRARY` if two libraries in
- *   `libraries` share the same name.
+ *   `libraries` share the same name; a same-name collision delivered via a
+ *   group/rollup is detected at bootstrap (after the group is flattened), not
+ *   by this definition-time check.
  */
 export function CreateApplication<S extends ServiceMap, C extends OptionalModuleConfiguration>({
   name,
@@ -548,7 +571,7 @@ async function wireService(
       // scheduler is a builder; call it with context so the returned API
       // tags every scheduled callback with this service's context string
       scheduler: boilerplate?.scheduler?.(context),
-    } as TServiceParams;
+    } as unknown as TServiceParams;
     // params.params is a self-reference so callers can spread the whole bundle
     serviceParams.params = serviceParams;
 
@@ -617,6 +640,68 @@ const runReady = async (internal: InternalDefinition) => {
   internal.boot.completedLifecycleEvents.add("Ready");
   return duration;
 };
+
+/**
+ * Flatten rollups + `implies` into a deduped membership list, stash provenance for the
+ * boot manifest, and warn on multi-path membership.
+ *
+ * @remarks
+ * Extracted from `bootstrap` to keep its cognitive complexity in check. Replaces
+ * `application.libraries` in place with the flattened `TLibrary[]`; ordering is still
+ * decided later by `buildSortOrder`.
+ *
+ * @internal
+ */
+function resolveLibraryMembership(
+  application: ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>,
+  internal: InternalDefinition,
+  logger: GetLogger,
+): void {
+  const { libraries, provenance } = flattenLibraries(application.libraries ?? []);
+  application.libraries = libraries;
+  internal.boot.rollupProvenance = provenance;
+  // Narrate every auto-pulled (closure-as-membership) library: the app's listed
+  // `libraries` array no longer equals the wired set, so each library brought in
+  // purely by another's `depends` edge is announced with the name of its puller.
+  provenance.autoPulled.forEach((puller, name) => {
+    logger.info(
+      { name: resolveLibraryMembership, puller },
+      `[%s] auto-pulled into membership by [%s]`,
+      name,
+      puller,
+    );
+  });
+  if (is.empty(provenance.multiPath)) {
+    return;
+  }
+  // hygiene signal, not an error: a diamond is legal and deduped, but a member reachable
+  // two ways often means the app over-declares it
+  logger.warn(
+    { members: provenance.multiPath, name: resolveLibraryMembership },
+    `[%s] entered membership via multiple composition paths`,
+    provenance.multiPath.join(", "),
+  );
+}
+
+/**
+ * Rollup provenance as a plain record for the boot manifest (a `Map` does not serialize
+ * cleanly through the logger). Empty when no rollups were resolved.
+ *
+ * @remarks
+ * Only called after `resolveLibraryMembership` has unconditionally populated
+ * `internal.boot.rollupProvenance`, so the field is always defined here.
+ *
+ * @internal
+ */
+function rollupManifest(internal: InternalDefinition) {
+  const provenance = internal.boot.rollupProvenance;
+  return {
+    // each library name → its composition paths
+    paths: Object.fromEntries(provenance.paths),
+    // closure-pulled library name → puller, for introspection alongside the boot-log narration
+    autoPulled: Object.fromEntries(provenance.autoPulled),
+  };
+}
 
 // #MARK: Bootstrap
 /**
@@ -726,8 +811,13 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       });
     }
 
-    // re-check after appendLibrary resolution so boot-time injected libraries
-    // can't reintroduce a duplicate or reserved name before any wiring happens
+    // flatten rollups + implies into a single identity-deduped membership list.
+    // membership only — ordering is still decided by buildSortOrder below. runs after
+    // appendLibrary so an injected library's implies/rollups are expanded too.
+    resolveLibraryMembership(application, internal, logger);
+
+    // re-check after appendLibrary resolution + flatten so boot-time injected or
+    // rollup-delivered libraries can't reintroduce a duplicate or reserved name
     assertLibraryNames(application.libraries);
 
     // sort libraries so each one is wired after its declared dependencies
@@ -804,6 +894,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
               services: internal.boot.serviceConstructionTimes,
             },
             name: bootstrap,
+            rollups: rollupManifest(internal),
           }
         : { Total: STATS.Total, name: bootstrap },
       `[%s] application bootstrapped`,

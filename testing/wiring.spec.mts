@@ -4,7 +4,9 @@ import type {
   InternalDefinition,
   LifecycleStages,
   OptionalModuleConfiguration,
+  RollupMember,
   ServiceMap,
+  TServiceParams,
 } from "../src/index.mts";
 import {
   BootstrapException,
@@ -13,7 +15,10 @@ import {
   CreateLibrary,
   createMockLogger,
   createModule,
+  flattenLibraries,
   is,
+  isRollup,
+  LibraryGroup,
   ServiceRunner,
   sleep,
   TestRunner,
@@ -125,7 +130,7 @@ describe("CreateLibrary", () => {
         services: { InvalidService: undefined },
       });
     } catch (error) {
-      expect(error.cause).toBe("INVALID_SERVICE_DEFINITION");
+      expect((error as BootstrapException).cause).toBe("INVALID_SERVICE_DEFINITION");
     }
   });
 
@@ -202,7 +207,7 @@ describe("CreateApplication", () => {
     try {
       await application.bootstrap(BASIC_BOOT);
     } catch (error) {
-      expect(error.cause).toBe("DOUBLE_BOOT");
+      expect((error as BootstrapException).cause).toBe("DOUBLE_BOOT");
     }
   });
 
@@ -808,7 +813,7 @@ describe("Bootstrap", () => {
         services: {},
       });
     } catch (error) {
-      expect(error.cause).toBe("MISSING_PRIORITY_SERVICE");
+      expect((error as BootstrapException).cause).toBe("MISSING_PRIORITY_SERVICE");
     }
   });
 
@@ -823,7 +828,7 @@ describe("Bootstrap", () => {
         services: {},
       });
     } catch (error) {
-      expect(error.cause).toBe("MISSING_PRIORITY_SERVICE");
+      expect((error as BootstrapException).cause).toBe("MISSING_PRIORITY_SERVICE");
     }
   });
 
@@ -1355,7 +1360,7 @@ describe("Application + Library interactions", () => {
       AddToList: () => list.push("C"),
     },
   });
-  LIBRARY_E.depends = [LIBRARY_F];
+  (LIBRARY_E as { depends: unknown }).depends = [LIBRARY_F];
 
   beforeEach(() => {
     list = [];
@@ -1376,8 +1381,34 @@ describe("Application + Library interactions", () => {
     }).toThrow(BootstrapException);
   });
 
+  it("throws MISSING_DEPENDENCY when a required dependency is absent from the app", () => {
+    const logger = createMockLogger();
+    // @ts-expect-error test library name not in LoadedModules
+    const missing = CreateLibrary({ name: "missing_dep", services: {} });
+    // @ts-expect-error test library name not in LoadedModules
+    const needsIt = CreateLibrary({ depends: [missing], name: "needs_missing", services: {} });
+    let caught: BootstrapException;
+    try {
+      buildSortOrder(
+        CreateApplication({
+          libraries: [needsIt],
+          // @ts-expect-error testing
+          name: "test",
+          services: {},
+        }),
+        logger,
+      );
+    } catch (error) {
+      caught = error as BootstrapException;
+    }
+    expect(caught.cause).toBe("MISSING_DEPENDENCY");
+    expect(caught.message).toContain("missing_dep");
+  });
+
   it("crashes when two libraries share a name", () => {
+    // @ts-expect-error -- test library name not in LoadedModules
     const dupeA = CreateLibrary({ name: "dupe", services: { One() {} } });
+    // @ts-expect-error -- test library name not in LoadedModules
     const dupeB = CreateLibrary({ name: "dupe", services: { Two() {} } });
     expect(() =>
       CreateApplication({
@@ -1390,6 +1421,7 @@ describe("Application + Library interactions", () => {
   });
 
   it("crashes when the same library object is listed twice", () => {
+    // @ts-expect-error -- test library name not in LoadedModules
     const dupe = CreateLibrary({ name: "dupe", services: { One() {} } });
     expect(() =>
       CreateApplication({
@@ -1402,7 +1434,9 @@ describe("Application + Library interactions", () => {
   });
 
   it("reports every duplicated name in one error", () => {
-    const mk = (name: string) => CreateLibrary({ name, services: {} });
+    const mk = (name: string) =>
+      // @ts-expect-error -- test library name not in LoadedModules
+      CreateLibrary({ name, services: {} });
     let caught: BootstrapException;
     try {
       CreateApplication({
@@ -1427,6 +1461,7 @@ describe("Application + Library interactions", () => {
         CreateApplication({
           // @ts-expect-error testing
           libraries: [CreateLibrary({ name: reserved, services: {} })],
+          // @ts-expect-error -- test app name not in LoadedModules
           name: "testing",
           services: {},
         });
@@ -1456,10 +1491,12 @@ describe("Application + Library interactions", () => {
     expect(list).toEqual(["A", "B", "C"]);
   });
 
-  it("should throw errors if a dependency is missing from the app", async () => {
+  it("auto-pulls transitive deps via closure-as-membership (no missing-dep error)", async () => {
+    // LIBRARY_C depends on [A, B]; LIBRARY_B depends on [A].
+    // Listing only LIBRARY_C pulls A and B in automatically — no error.
     application = CreateApplication({
       configurationLoaders: [],
-      libraries: [LIBRARY_C, LIBRARY_B],
+      libraries: [LIBRARY_C],
       // @ts-expect-error testing
       name: "testing",
       services: {},
@@ -1467,7 +1504,7 @@ describe("Application + Library interactions", () => {
     const failFastSpy = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
     expect.assertions(1);
     await application.bootstrap(BASIC_BOOT);
-    expect(failFastSpy).toHaveBeenCalled();
+    expect(failFastSpy).not.toHaveBeenCalled();
   });
 
   it("should not throw errors if a optional dependency is missing from the app", async () => {
@@ -1484,26 +1521,28 @@ describe("Application + Library interactions", () => {
     expect(failFastSpy).not.toHaveBeenCalled();
   });
 
-  it("should allow name compatible library substitutions", async () => {
+  it("library substitution via appendLibrary replaces the auto-pulled original", async () => {
+    // With closure-as-membership, listing LIBRARY_C auto-pulls the original LIBRARY_A.
+    // To substitute, use appendLibrary — it replaces the same-named entry.
+    const customA = CreateLibrary({
+      // @ts-expect-error testing
+      name: "A",
+      services: {
+        AddToList: () => list.push("A"),
+      },
+    });
     application = CreateApplication({
       configurationLoaders: [],
-      libraries: [
-        LIBRARY_C,
-        LIBRARY_B,
-        CreateLibrary({
-          // @ts-expect-error testing
-          name: "A",
-          services: {
-            AddToList: () => list.push("A"),
-          },
-        }),
-      ],
+      libraries: [LIBRARY_C],
       // @ts-expect-error testing
       name: "testing",
       services: {},
     });
     const failFastSpy = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
-    await application.bootstrap(BASIC_BOOT);
+    await application.bootstrap({
+      ...BASIC_BOOT,
+      appendLibrary: customA,
+    });
     expect(list).toEqual(["A", "B", "C"]);
     expect(failFastSpy).not.toHaveBeenCalled();
   });
@@ -1545,6 +1584,455 @@ describe("Debug features", () => {
       lifecycle.onReady(() => {
         expect(hit).toBe(true);
       });
+    });
+  });
+});
+
+// #MARK: Library composition (rollups)
+describe("Library composition", () => {
+  let list: string[];
+
+  // named test libraries; ordering edges only via `depends`
+  const LIB_BASE = CreateLibrary({
+    // @ts-expect-error test library name not in LoadedModules
+    name: "rollup_base",
+    services: { Add: () => list.push("base") },
+  });
+  const LIB_ONE = CreateLibrary({
+    depends: [LIB_BASE],
+    // @ts-expect-error test library name not in LoadedModules
+    name: "rollup_one",
+    services: { Add: () => list.push("one") },
+  });
+  const LIB_TWO = CreateLibrary({
+    // @ts-expect-error test library name not in LoadedModules
+    name: "rollup_two",
+    services: { Add: () => list.push("two") },
+  });
+  const LIB_THREE = CreateLibrary({
+    // @ts-expect-error test library name not in LoadedModules
+    name: "rollup_three",
+    services: { Add: () => list.push("three") },
+  });
+
+  beforeEach(() => {
+    list = [];
+  });
+
+  describe("LibraryGroup + flattenLibraries", () => {
+    it("brands a group; isRollup distinguishes it from a library", () => {
+      const group = LibraryGroup({ members: [LIB_ONE, LIB_TWO], name: "group" });
+      expect(isRollup(group)).toBe(true);
+      expect(isRollup(LIB_ONE)).toBe(false);
+      expect(group.name).toBe("group");
+      expect(group.members).toHaveLength(2);
+    });
+
+    it("flattens a group to its members plus transitive depends (closure-as-membership)", () => {
+      // LIB_ONE depends on LIB_BASE — closure-as-membership pulls LIB_BASE in automatically
+      const { libraries } = flattenLibraries([LibraryGroup({ members: [LIB_ONE, LIB_TWO] })]);
+      expect(libraries.map(index => index.name)).toEqual(["rollup_base", "rollup_one", "rollup_two"]);
+    });
+
+    it("flattens nested groups transitively, including transitive depends", () => {
+      const inner = LibraryGroup({ members: [LIB_TWO, LIB_THREE] });
+      const outer = LibraryGroup({ members: [LIB_ONE, inner] });
+      const { libraries } = flattenLibraries([outer]);
+      // LIB_ONE depends on LIB_BASE → closure pulls LIB_BASE in first
+      expect(libraries.map(index => index.name)).toEqual([
+        "rollup_base",
+        "rollup_one",
+        "rollup_two",
+        "rollup_three",
+      ]);
+    });
+
+    it("dedupes a shared member reached through two groups (diamond)", () => {
+      const a = LibraryGroup({ members: [LIB_BASE, LIB_ONE] });
+      const b = LibraryGroup({ members: [LIB_BASE, LIB_TWO] });
+      const { libraries, provenance } = flattenLibraries([a, b]);
+      expect(libraries.filter(index => (index.name as string) === "rollup_base")).toHaveLength(1);
+      expect(provenance.multiPath).toContain("rollup_base");
+    });
+
+    it("dedupes a member listed directly and via a group", () => {
+      const { libraries } = flattenLibraries([LIB_ONE, LibraryGroup({ members: [LIB_ONE, LIB_TWO] })]);
+      expect(libraries.filter(index => (index.name as string) === "rollup_one")).toHaveLength(1);
+    });
+
+    it("closure-as-membership: listing a lib and its dep both works; dep appears first", () => {
+      // LIB_BASE + LIB_ONE (depends on LIB_BASE) — LIB_BASE enters via two paths but deduped
+      const { libraries } = flattenLibraries([LIB_BASE, LIB_ONE]);
+      expect(libraries.map(index => index.name)).toEqual(["rollup_base", "rollup_one"]);
+    });
+
+    it("throws COMPOSITION_CYCLE on a nested-group cycle", () => {
+      const a = LibraryGroup({ members: [LIB_ONE], name: "a" });
+      const b = LibraryGroup({ members: [a], name: "b" });
+      // force a cycle (the public API alone can't build one): a -> b -> a
+      (a.members as unknown as RollupMember[]).push(b);
+      let caught: BootstrapException;
+      try {
+        flattenLibraries([a]);
+      } catch (error) {
+        caught = error as BootstrapException;
+      }
+      expect(caught?.cause).toBe("COMPOSITION_CYCLE");
+    });
+  });
+
+  describe("groups at bootstrap", () => {
+    it("wires every member of a group listed in libraries", async () => {
+      application = CreateApplication({
+        libraries: [LibraryGroup({ members: [LIB_BASE, LIB_TWO] })],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap(BASIC_BOOT);
+      expect(list).toEqual(expect.arrayContaining(["base", "two"]));
+    });
+
+    it("orders a member's depends correctly when membership came via a group", async () => {
+      // LIB_ONE depends on LIB_BASE; both arrive only through the group
+      application = CreateApplication({
+        libraries: [LibraryGroup({ members: [LIB_ONE, LIB_BASE] })],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap(BASIC_BOOT);
+      expect(list.indexOf("base")).toBeLessThan(list.indexOf("one"));
+    });
+
+    it("does not throw at CreateApplication time when a group is present", () => {
+      expect(() =>
+        CreateApplication({
+          libraries: [LibraryGroup({ members: [LIB_ONE, LIB_TWO] })],
+          // @ts-expect-error test app name not in LoadedModules
+          name: "testing",
+          services: {},
+        }),
+      ).not.toThrow();
+    });
+
+    it("rejects same-name/different-object delivered via a group (DUPLICATE_LIBRARY)", async () => {
+      const dupe = CreateLibrary({
+        // @ts-expect-error test library name not in LoadedModules
+        name: "rollup_one",
+        services: { Add: () => list.push("dupe") },
+      });
+      application = CreateApplication({
+        libraries: [LIB_ONE, LibraryGroup({ members: [dupe] })],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      const failFast = vi.spyOn(process, "exit").mockImplementation(FAKE_EXIT);
+      await application.bootstrap(BASIC_BOOT);
+      expect(failFast).toHaveBeenCalled();
+    });
+
+    it("warns when a library enters membership via multiple paths", async () => {
+      const customLogger = createMockLogger();
+      const warn = vi.spyOn(customLogger, "warn");
+      application = CreateApplication({
+        libraries: [LibraryGroup({ members: [LIB_BASE, LIB_ONE] }), LibraryGroup({ members: [LIB_BASE, LIB_TWO] })],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap({ customLogger });
+      const warnCall = warn.mock.calls.find(
+        call => typeof call[2] === "string" && call[2].includes("multiple composition paths"),
+      );
+      expect(warnCall).toBeDefined();
+      expect(warnCall?.[1]).toMatchObject({ members: expect.arrayContaining(["rollup_base"]) });
+    });
+
+    it("includes group provenance in the boot manifest", async () => {
+      const customLogger = createMockLogger();
+      const info = vi.spyOn(customLogger, "info");
+      application = CreateApplication({
+        libraries: [LibraryGroup({ members: [LIB_TWO], name: "grp" })],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap({ customLogger, showExtraBootStats: true });
+      const manifestCall = info.mock.calls.find(call => call[2] === "[%s] application bootstrapped");
+      expect(manifestCall).toBeDefined();
+      const stats = manifestCall?.[1] as { rollups?: { paths?: Record<string, unknown> } };
+      expect(stats.rollups?.paths).toHaveProperty("rollup_two");
+    });
+
+    it("warns when listing a dep and its dependent (closure creates multi-path for the dep)", async () => {
+      // LIB_ONE.depends = [LIB_BASE]; listing both means LIB_BASE reaches membership via two paths.
+      // The warning is the honest signal that the direct LIB_BASE listing is redundant.
+      const customLogger = createMockLogger();
+      const warn = vi.spyOn(customLogger, "warn");
+      application = CreateApplication({
+        libraries: [LIB_BASE, LIB_ONE],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap({ customLogger });
+      const warnCall = warn.mock.calls.find(
+        call => typeof call[2] === "string" && call[2].includes("multiple composition paths"),
+      );
+      expect(warnCall).toBeDefined();
+      expect(warnCall?.[1]).toMatchObject({ members: expect.arrayContaining(["rollup_base"]) });
+    });
+
+    it("narrates an auto-pulled dependency in the boot log naming its puller", async () => {
+      // Listing only LIB_ONE auto-pulls LIB_BASE via closure (LIB_ONE depends on LIB_BASE).
+      // The boot log must announce LIB_BASE as auto-pulled, named by its puller LIB_ONE.
+      const customLogger = createMockLogger();
+      const info = vi.spyOn(customLogger, "info");
+      application = CreateApplication({
+        libraries: [LIB_ONE],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap({ customLogger });
+      const narration = info.mock.calls.find(
+        call => typeof call[2] === "string" && call[2].includes("auto-pulled into membership"),
+      );
+      expect(narration).toBeDefined();
+      // message args: (name, puller) → LIB_BASE pulled by LIB_ONE
+      expect(narration?.[3]).toBe("rollup_base");
+      expect(narration?.[4]).toBe("rollup_one");
+      expect(narration?.[1]).toMatchObject({ puller: "rollup_one" });
+    });
+
+    it("surfaces auto-pulled provenance in the boot manifest for introspection", async () => {
+      const customLogger = createMockLogger();
+      const info = vi.spyOn(customLogger, "info");
+      application = CreateApplication({
+        libraries: [LIB_ONE],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap({ customLogger, showExtraBootStats: true });
+      const manifestCall = info.mock.calls.find(call => call[2] === "[%s] application bootstrapped");
+      const stats = manifestCall?.[1] as { rollups?: { autoPulled?: Record<string, string> } };
+      expect(stats.rollups?.autoPulled).toMatchObject({ rollup_base: "rollup_one" });
+    });
+
+    it("does not warn when listing only the top-level lib (dep auto-pulled)", async () => {
+      // Only LIB_ONE listed; LIB_BASE auto-pulled via closure — single path, no warning
+      const customLogger = createMockLogger();
+      const warn = vi.spyOn(customLogger, "warn");
+      application = CreateApplication({
+        libraries: [LIB_ONE],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap({ customLogger });
+      const warnCall = warn.mock.calls.find(
+        call => typeof call[2] === "string" && call[2].includes("multiple composition paths"),
+      );
+      expect(warnCall).toBeUndefined();
+    });
+  });
+
+  describe("implies", () => {
+    it("contributes the implied bundle to membership", () => {
+      const implied = CreateLibrary({
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implied_member",
+        services: { Add: () => list.push("implied") },
+      });
+      const implier = CreateLibrary({
+        implies: [implied],
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implier",
+        services: { Add: () => list.push("implier") },
+      });
+      const { libraries } = flattenLibraries([implier]);
+      expect(libraries.map(index => index.name)).toEqual(["implier", "implied_member"]);
+    });
+
+    it("dedupes an implied member also listed directly", () => {
+      const implied = CreateLibrary({
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implied_member",
+        services: {},
+      });
+      const implier = CreateLibrary({
+        implies: [implied],
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implier",
+        services: {},
+      });
+      const { libraries } = flattenLibraries([implier, implied]);
+      expect(libraries.filter(index => (index.name as string) === "implied_member")).toHaveLength(1);
+    });
+
+    it("flattens a group used inside implies (includes transitive depends)", () => {
+      // LIB_ONE depends on LIB_BASE, so closure pulls LIB_BASE in too
+      const implier = CreateLibrary({
+        implies: [LibraryGroup({ members: [LIB_ONE, LIB_TWO] })],
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implier",
+        services: {},
+      });
+      const { libraries } = flattenLibraries([implier]);
+      expect(libraries.map(index => index.name)).toEqual(
+        expect.arrayContaining(["implier", "rollup_base", "rollup_one", "rollup_two"]),
+      );
+    });
+
+    it("throws COMPOSITION_CYCLE on an implies cycle", () => {
+      const aImplies: RollupMember[] = [];
+      const a = CreateLibrary({
+        implies: aImplies,
+        // @ts-expect-error test library name not in LoadedModules
+        name: "cycle_a",
+        services: {},
+      });
+      const b = CreateLibrary({
+        implies: [a],
+        // @ts-expect-error test library name not in LoadedModules
+        name: "cycle_b",
+        services: {},
+      });
+      aImplies.push(b); // a implies b, b implies a
+      let caught: BootstrapException;
+      try {
+        flattenLibraries([a]);
+      } catch (error) {
+        caught = error as BootstrapException;
+      }
+      expect(caught?.cause).toBe("COMPOSITION_CYCLE");
+    });
+
+    it("adds implied membership at bootstrap so the member wires", async () => {
+      const implied = CreateLibrary({
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implied_member",
+        services: { Add: () => list.push("implied") },
+      });
+      const implier = CreateLibrary({
+        implies: [implied],
+        // @ts-expect-error test library name not in LoadedModules
+        name: "implier",
+        services: { Add: () => list.push("implier") },
+      });
+      application = CreateApplication({
+        libraries: [implier],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap(BASIC_BOOT);
+      expect(list).toEqual(expect.arrayContaining(["implier", "implied"]));
+    });
+  });
+
+  describe("LibraryGroup registry", () => {
+    it("requires a name when registry is set", () => {
+      expect(() => LibraryGroup({ members: [], registry: "plugins" })).toThrow(BootstrapException);
+    });
+
+    it("generates a working registry members register into and a consumer reads via list()", async () => {
+      const collected: string[] = [];
+
+      // two plugin members register themselves into the carrier registry at onPreInit
+      const PLUGIN_A = CreateLibrary({
+        // @ts-expect-error test library name not in LoadedModules
+        name: "plugin_a",
+        services: {
+          // @ts-expect-error carrier `host` not in LoadedModules
+          Register({ lifecycle, host }: TServiceParams) {
+            lifecycle.onPreInit(() => host.registry.register("a"));
+          },
+        },
+      });
+      const PLUGIN_B = CreateLibrary({
+        // @ts-expect-error test library name not in LoadedModules
+        name: "plugin_b",
+        services: {
+          // @ts-expect-error carrier `host` not in LoadedModules
+          Register({ lifecycle, host }: TServiceParams) {
+            lifecycle.onPreInit(() => host.registry.register("b"));
+          },
+        },
+      });
+
+      application = CreateApplication({
+        // carrier library is named "host", exposing service "registry"
+        libraries: [LibraryGroup({ members: [PLUGIN_A, PLUGIN_B], name: "host", registry: "registry" })],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {
+          // consumer reads the assembled list after registration (onBootstrap)
+          // @ts-expect-error carrier `host` not in LoadedModules
+          Consumer({ lifecycle, host }: TServiceParams) {
+            lifecycle.onBootstrap(() => collected.push(...host.registry.list()));
+          },
+        },
+      });
+      await application.bootstrap(BASIC_BOOT);
+      expect(collected).toEqual(expect.arrayContaining(["a", "b"]));
+      expect(collected).toHaveLength(2);
+    });
+
+    it("constructs the carrier (priorityInit registry) before any member factory runs", async () => {
+      // a member that reads the registry during construction proves the carrier wired first
+      let registryVisibleAtMemberConstruction = false;
+      const PLUGIN = CreateLibrary({
+        // @ts-expect-error test library name not in LoadedModules
+        name: "plugin_solo",
+        services: {
+          // @ts-expect-error carrier `host` not in LoadedModules
+          Probe({ host }: TServiceParams) {
+            registryVisibleAtMemberConstruction = typeof host?.registry?.register === "function";
+          },
+        },
+      });
+      application = CreateApplication({
+        libraries: [LibraryGroup({ members: [PLUGIN], name: "host", registry: "registry" })],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap(BASIC_BOOT);
+      expect(registryVisibleAtMemberConstruction).toBe(true);
+    });
+
+    it("recurses addCarrierDepends into a nested group member so leaf library gains the carrier depends", async () => {
+      // A registry group whose member list contains a nested LibraryGroup (itself a rollup).
+      // addCarrierDepends must recurse into the nested group so the leaf library inside it
+      // depends on the carrier and therefore constructs after it.
+      const wiredOrder: string[] = [];
+      const LEAF = CreateLibrary({
+        // @ts-expect-error test library name not in LoadedModules
+        name: "nested_leaf",
+        services: {
+          // @ts-expect-error carrier `nested_host` not in LoadedModules
+          Init({ nested_host }: TServiceParams) {
+            wiredOrder.push("leaf");
+            // reading the registry proves the carrier was constructed first
+            wiredOrder.push(typeof nested_host?.reg?.register === "function" ? "carrier-ok" : "carrier-missing");
+          },
+        },
+      });
+      // Nest LEAF inside a plain LibraryGroup, then use that as a member of the registry group.
+      const innerGroup = LibraryGroup({ members: [LEAF] });
+      application = CreateApplication({
+        libraries: [LibraryGroup({ members: [innerGroup], name: "nested_host", registry: "reg" })],
+        // @ts-expect-error test app name not in LoadedModules
+        name: "testing",
+        services: {},
+      });
+      await application.bootstrap(BASIC_BOOT);
+      expect(wiredOrder).toContain("leaf");
+      expect(wiredOrder).toContain("carrier-ok");
     });
   });
 });

@@ -53,7 +53,7 @@ export type DigitalAlchemyModule<S extends ServiceMap, C extends OptionalModuleC
   services: S;
   configuration: C;
   name: string;
-  depends: TLibrary[];
+  depends: readonly TLibrary[];
   optionalDepends?: TLibrary[];
   priorityInit: string[];
   extend: (options?: ExtendOptions) => ModuleExtension<S, C>;
@@ -71,7 +71,7 @@ export type CreateModuleOptions<S extends ServiceMap, C extends OptionalModuleCo
   services: S;
   configuration: C;
   name: string;
-  depends: TLibrary[];
+  depends: readonly TLibrary[];
   optionalDepends?: TLibrary[];
   priorityInit: string[];
 };

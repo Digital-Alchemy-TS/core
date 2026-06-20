@@ -18,7 +18,7 @@ jobs:
       - name: Test config-error with deno
         run: |
           set +e
-          output=$(deno run --allow-read --allow-env testing/pipelines/config-error.mts 2>&1)
+          output=$(deno run --allow-read --allow-env --allow-sys testing/pipelines/config-error.mts 2>&1)
           exit_code=$?
           echo "Exit code: $exit_code"
           echo "Output: $output"
@@ -34,7 +34,7 @@ jobs:
       - name: Test thrown-bootstrap-error with deno
         run: |
           set +e
-          output=$(deno run --allow-read --allow-env testing/pipelines/thrown-bootstrap-error.mts 2>&1)
+          output=$(deno run --allow-read --allow-env --allow-sys testing/pipelines/thrown-bootstrap-error.mts 2>&1)
           exit_code=$?
           echo "Exit code: $exit_code"
           echo "Output: $output"
@@ -50,7 +50,7 @@ jobs:
       - name: Test simple-success with deno
         run: |
           set +e
-          output=$(deno run --allow-read --allow-env testing/pipelines/simple-success.mts 2>&1)
+          output=$(deno run --allow-read --allow-env --allow-sys testing/pipelines/simple-success.mts 2>&1)
           exit_code=$?
           echo "Exit code: $exit_code"
           echo "Output: $output"

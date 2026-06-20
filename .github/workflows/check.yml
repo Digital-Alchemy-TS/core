@@ -32,6 +32,7 @@ jobs:
       - run: yarn
       - run: yarn build
       - run: yarn lint
+      - run: yarn type-check
       - run: yarn test --coverage
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v7.0.0
@@ -46,3 +47,6 @@ jobs:
 
   test-pipelines-bun:
     uses: ./.github/workflows/test-pipelines-bun.yml
+
+  test-implies-propagation:
+    uses: ./.github/workflows/test-implies-propagation.yml

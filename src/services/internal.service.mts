@@ -10,6 +10,7 @@ import type {
   GetApis,
   LifecycleStages,
   OptionalModuleConfiguration,
+  RollupProvenance,
   ServiceMap,
   TBlackHole,
   TContext,
@@ -341,6 +342,11 @@ export class InternalDefinition {
      * Config loader execution times.
      */
     configTimings?: Record<string, string>;
+    /**
+     * Provenance of the flattened library membership — which rollup / implies path(s)
+     * brought each library in. Populated by the bootstrap flatten pass.
+     */
+    rollupProvenance?: RollupProvenance;
   };
   public utils = new InternalUtils();
 

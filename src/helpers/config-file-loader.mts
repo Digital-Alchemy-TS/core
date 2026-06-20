@@ -16,7 +16,7 @@ import { join } from "node:path";
 import { cwd, platform } from "node:process";
 
 import ini from "ini";
-import yaml from "js-yaml";
+import * as yaml from "js-yaml";
 import minimist from "minimist";
 
 import { is } from "../index.mts";

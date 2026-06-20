@@ -446,7 +446,9 @@ describe("Scheduler", () => {
   describe("sleep", () => {
     it("exists on scheduler interface", async () => {
       await TestRunner().run(({ scheduler }) => {
+        // @ts-expect-error -- sleep removed from TScheduler
         expect(scheduler.sleep).toBeDefined();
+        // @ts-expect-error -- sleep removed from TScheduler
         expect(typeof scheduler.sleep).toBe("function");
       });
     });

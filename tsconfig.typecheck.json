@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "rootDir": ".",
+    "noEmit": true,
+    "declaration": false,
+    "paths": {
+      "@digital-alchemy/core": ["./src/index.mts"]
+    }
+  }
+}

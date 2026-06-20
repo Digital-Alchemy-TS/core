@@ -1,0 +1,11 @@
+{
+  "name": "@demo/home-libraries",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "exports": {
+    ".":             { "types": "./dist/index.d.mts",        "import": "./dist/index.mjs" },
+    "./lighting":    { "types": "./dist/lighting.d.mts",     "import": "./dist/lighting.mjs" },
+    "./living-room": { "types": "./dist/living-room.d.mts",  "import": "./dist/living-room.mjs" }
+  }
+}

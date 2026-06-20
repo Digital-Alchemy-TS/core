@@ -687,13 +687,14 @@ function resolveLibraryMembership(
  * Rollup provenance as a plain record for the boot manifest (a `Map` does not serialize
  * cleanly through the logger). Empty when no rollups were resolved.
  *
+ * @remarks
+ * Only called after `resolveLibraryMembership` has unconditionally populated
+ * `internal.boot.rollupProvenance`, so the field is always defined here.
+ *
  * @internal
  */
 function rollupManifest(internal: InternalDefinition) {
   const provenance = internal.boot.rollupProvenance;
-  if (!provenance) {
-    return {};
-  }
   return {
     // each library name → its composition paths
     paths: Object.fromEntries(provenance.paths),

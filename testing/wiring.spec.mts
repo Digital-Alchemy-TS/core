@@ -1738,8 +1738,8 @@ describe("Library composition", () => {
       await application.bootstrap({ customLogger, showExtraBootStats: true });
       const manifestCall = info.mock.calls.find(call => call[2] === "[%s] application bootstrapped");
       expect(manifestCall).toBeDefined();
-      const stats = manifestCall?.[1] as { rollups?: Record<string, unknown> };
-      expect(stats.rollups).toHaveProperty("rollup_two");
+      const stats = manifestCall?.[1] as { rollups?: { paths?: Record<string, unknown> } };
+      expect(stats.rollups?.paths).toHaveProperty("rollup_two");
     });
 
     it("warns when listing a dep and its dependent (closure creates multi-path for the dep)", async () => {

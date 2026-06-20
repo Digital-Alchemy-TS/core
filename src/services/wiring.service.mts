@@ -691,8 +691,8 @@ function rollupManifest(internal: InternalDefinition) {
     return {};
   }
   return {
-    // each library name → its composition paths (kept at top level for back-compat)
-    ...Object.fromEntries(provenance.paths),
+    // each library name → its composition paths
+    paths: Object.fromEntries(provenance.paths),
     // closure-pulled library name → puller, for introspection alongside the boot-log narration
     autoPulled: Object.fromEntries(provenance.autoPulled),
   };

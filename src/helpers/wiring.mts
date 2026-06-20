@@ -972,10 +972,8 @@ export const IS_ROLLUP = Symbol.for("digital-alchemy:library-rollup");
  */
 export interface AnyRollup {
   readonly [IS_ROLLUP]: true;
-  /** Optional human-readable name for boot diagnostics. A named group earns a `LoadedModules` key. */
+  /** Optional human-readable name for boot diagnostics. Only a `registry`-bearing group synthesizes a carrier library, which is what earns a `LoadedModules` key. */
   name?: string;
-  /** @deprecated use `name` */
-  label?: string;
   /** registry-service name for plugin-registry wiring pattern */
   registry?: string;
   members: readonly RollupMember[];
@@ -993,14 +991,13 @@ export type RollupMember = TLibrary | AnyRollup;
  * flattened into its members and deduped by object identity; it contributes
  * **membership only** — never an ordering edge.
  * Members may themselves be groups (flattened recursively).
- * When `name` is provided, the group earns a `LoadedModules` key and reserves
- * a `config.<name>` namespace.
+ * `name` is an optional identifier for boot diagnostics; when `registry` is set it also
+ * names the synthesized carrier library (which is what earns the `LoadedModules` key).
+ * A plain named group does NOT by itself create a `LoadedModules` key or a `config.<name>` namespace.
  */
 export type LibraryRollup<M extends readonly RollupMember[] = readonly RollupMember[]> = {
   readonly [IS_ROLLUP]: true;
   name?: string;
-  /** @deprecated use `name` */
-  label?: string;
   /** registry-service name for plugin-registry wiring pattern */
   registry?: string;
   members: M;
@@ -1015,17 +1012,19 @@ export type LibraryRollup<M extends readonly RollupMember[] = readonly RollupMem
  * (ordering stays entirely on each member's own `depends`). List it directly in
  * `CreateApplication({ libraries })` or a library's `implies`.
  *
- * When `name` is provided, the group earns a `LoadedModules` key and reserves
- * a `config.<name>` namespace. To expose member APIs on {@link TServiceParams} for
- * consumers that import only the group across a package boundary, also register the
- * members on {@link LoadedRollups} (see that interface's example).
+ * `name` is an optional identifier for boot diagnostics; when `registry` is set it also
+ * names the synthesized carrier library (which is what earns the `LoadedModules` key).
+ * A plain named group does NOT by itself create a `LoadedModules` key or a `config.<name>`
+ * namespace. To expose member APIs on {@link TServiceParams} for consumers that import only
+ * the group across a package boundary, also register the members on {@link LoadedRollups}
+ * (see that interface's example).
  *
  * When `registry` is provided, a `priorityInit` registry-service is generated that
  * wires the plugin-registry pattern: a registry service is initialized first, each
  * plugin depends on it, and all plugins are collected into an array.
  *
  * @param options.members - libraries and/or nested groups to compose
- * @param options.name - optional group name; earns a `LoadedModules` key when provided
+ * @param options.name - optional group name; when `registry` is also set, names the synthesized carrier library that earns a `LoadedModules` key
  * @param options.registry - optional registry-service name for plugin-registry wiring
  */
 export function LibraryGroup<const M extends readonly RollupMember[]>({
@@ -1266,8 +1265,7 @@ export function flattenLibraries(declared: readonly RollupMember[]): {
   function visit(entry: RollupMember, path: string) {
     if (isRollup(entry)) {
       if (visiting.has(entry)) {
-        // eslint-disable-next-line sonarjs/deprecation -- reading deprecated `label` for backward compat with old rollup objects
-        const id = entry.name ?? entry.label;
+        const id = entry.name;
         const where = id ? ` at [${id}]` : "";
         throw new BootstrapException(
           WIRING_CONTEXT,
@@ -1276,8 +1274,7 @@ export function flattenLibraries(declared: readonly RollupMember[]): {
         );
       }
       visiting.add(entry);
-      // eslint-disable-next-line sonarjs/deprecation -- reading deprecated `label` for backward compat with old rollup objects
-      const label = entry.name ?? entry.label ?? "group";
+      const label = entry.name ?? "group";
       entry.members.forEach(member => visit(member, `${path} -> group(${label})`));
       visiting.delete(entry);
       return;

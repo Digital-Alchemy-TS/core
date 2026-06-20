@@ -366,9 +366,7 @@ function assertLibraryNames(
     throw new BootstrapException(
       WIRING_CONTEXT,
       "DUPLICATE_LIBRARY",
-      `Duplicate library names detected: ${detail}. ` +
-        `Two physical copies of the same library are in the dependency graph — ` +
-        `run \`yarn dedupe\` or align package versions so only one copy is installed.`,
+      `Duplicate library names detected: ${detail}.`,
     );
   }
 }

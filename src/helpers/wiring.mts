@@ -665,6 +665,13 @@ export interface LibraryConfigurationOptions<
    *
    * Distinct from `depends`: `depends` is ordering + validation; `implies` is membership.
    * Rollups are accepted here and flattened recursively.
+   *
+   * @remarks
+   * Because `implies` contributes membership with **no ordering edge**, a service that
+   * reads `params.<member>` at wire time (in the factory body, rather than inside a
+   * lifecycle hook) can see it `undefined` if the implied member wires after the implier.
+   * Pair `implies` with `depends` (or read the member inside a lifecycle callback) when
+   * you need to touch an implied member at wire time.
    */
   implies?: readonly RollupMember[];
   configuration?: C;

@@ -325,6 +325,10 @@ const RESERVED_LIBRARY_NAMES = new Set([
  * Note the asymmetry with `appendLibrary`: that mechanism *intentionally*
  * replaces a same-named library (with a warning) at bootstrap time, whereas a
  * duplicate in the declared `libraries` array is always an error.
+ *
+ * Rollup/group carriers in the declared list are excluded from both checks here;
+ * their members are validated on the post-flatten list at bootstrap, not at
+ * definition time.
  */
 function assertLibraryNames(
   libraries: (LibraryDefinition<ServiceMap, OptionalModuleConfiguration> | LibraryRollup)[],
@@ -391,7 +395,9 @@ function assertLibraryNames(
  * @throws {BootstrapException} `RESERVED_LIBRARY_NAME` if a library is named
  *   after a reserved framework key (e.g. `logger`, `config`, `boilerplate`).
  * @throws {BootstrapException} `DUPLICATE_LIBRARY` if two libraries in
- *   `libraries` share the same name.
+ *   `libraries` share the same name; a same-name collision delivered via a
+ *   group/rollup is detected at bootstrap (after the group is flattened), not
+ *   by this definition-time check.
  */
 export function CreateApplication<S extends ServiceMap, C extends OptionalModuleConfiguration>({
   name,

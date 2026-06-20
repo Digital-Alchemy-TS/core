@@ -1,37 +1,24 @@
 /**
- * In-suite compile-time proof: cross-package type-travel via `implies` / `depends`
+ * LOCAL ANALOGUE — in-suite compile-time proof of the `implies`/`depends` type-travel mechanism.
  *
- * This file tests four invariants of the named-function-declaration edge mechanism
- * that was extended to `depends` in commit 2a3006c.  Every type-level assertion is
- * evaluated at compile time by `yarn type-check` (`tsc -p tsconfig.typecheck.json
- * --noEmit`); the runtime `it()` blocks give vitest something to count and serve
- * as documentation anchors.
+ * This suite imports core by relative path (`../src/index.mts`) and exercises type algebra
+ * entirely in-process via `GetApisResult<typeof LIB>`.  It does NOT cross a real package
+ * boundary: no built `.d.ts` is involved, so this file would still pass if the
+ * cross-package channel regressed (e.g. if `CreateLibrary` stopped emitting typed `.d.ts`
+ * import edges for `implies`/`depends` entries).
  *
- * ─── Why no global `declare module` augmentation ────────────────────────────
- * Augmenting `LoadedModules` in a test file pollutes the global type namespace
- * and breaks the real `wiring.service.mts` type cast (which builds params with
- * only the libraries actually registered at bootstrap).  All four proofs below
- * work entirely with local type algebra: `GetApisResult<S>`, `LibraryDefinition`
- * generic parameters, and `Omit<>` — no global augmentation needed.
+ * The REAL cross-package boundary proof is `examples/implies-propagation/run.sh`
+ * (runnable via `yarn test:cross-package`).  That script builds core to `dist/`, wires
+ * symlinks to simulate a published install, builds a downstream library that emits `.d.mts`
+ * files, and then typechecks a consumer app that imports only via `implies` — proving the
+ * augmentation travels across the built package boundary.  It is wired as a blocking CI job
+ * in `.github/workflows/check.yml` (the `test-implies-propagation` job).
  *
- * ─── Mechanism under proof ───────────────────────────────────────────────────
- * A service written as a named `function` declaration emits a
- * `typeof import("./x").Svc` edge in the `.d.ts`, which activates the source
- * file's `declare module "@digital-alchemy/core" { interface LoadedModules }`
- * augmentation in every downstream consumer.  `CreateLibrary` captures its
- * `implies` and `depends` arrays as literal `const` tuple type parameters, so
- * the emitted `.d.ts` for the wrapping library references each element by name —
- * preserving the import-edge chain across package boundaries.
- *
- * `TServiceParams` merges contributions with priority:
- *   direct `LoadedModules` wins over `Omit<RollupApis, keyof LoadedModules>`.
- *
- * ─── isolatedDeclarations discipline ────────────────────────────────────────
- * All service factories in this file are named `function` declarations with
- * explicit return type annotations — the form that emits a `typeof` import
- * reference in `.d.ts` (and is valid under `isolatedDeclarations`).  The
- * `const`-arrow in Case 3 is the intentional negative example.
- * ─────────────────────────────────────────────────────────────────────────────
+ * What this suite does prove locally (all evaluated at compile time by `yarn type-check`):
+ *   Case 1 — `const Depends` tuple captures literal element types; `GetApisResult` resolves correctly.
+ *   Case 2 — direct `LoadedModules` key beats a divergent hoisted rollup shape via `Omit<>`.
+ *   Case 3 — negative control: `const`-arrow service has no named import edge; key absent from `TServiceParams`.
+ *   Case 4 — fan-out sanity: high-density `Depends` tuple compiles without TS2456 or type collapse.
  */
 
 import type { GetApis, GetApisResult, TServiceParams } from "../src/index.mts";

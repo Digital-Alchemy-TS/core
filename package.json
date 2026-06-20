@@ -16,6 +16,7 @@
     "build": "rm -rf dist/; tsc -p tsconfig.lib.json",
     "lint": "eslint src && echo \"✓ lint passed\"",
     "test": "vitest",
+    "test:cross-package": "bash examples/implies-propagation/run.sh && echo \"✓ test:cross-package passed\"",
     "type-check": "tsc -p tsconfig.typecheck.json && echo \"✓ type-check passed\"",
     "upgrade": "ncu --upgrade --cooldown 48h && truncate -s 0 yarn.lock && yarn install"
   },

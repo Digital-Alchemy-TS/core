@@ -313,7 +313,7 @@ export type TInjectedConfig = {
 };
 
 // #region Special
-// SEE DOCS http://docs.digital-alchemy.app/docs/core/declaration-merging
+// SEE DOCS https://docs.digital-alchemy.app/docs/core/guides/dependency-injection
 
 /**
  * Per-request log data, intersected with `core`'s coupled `logger` member.
@@ -325,7 +325,7 @@ export type TInjectedConfig = {
  * `logger` member into that frozen interface, so this internal alias carries it.
  * The ALS service types its log payload as `AsyncLogDataInternal`.
  *
- * SEE DOCS http://docs.digital-alchemy.app/docs/core/declaration-merging
+ * SEE DOCS https://docs.digital-alchemy.app/docs/core/guides/dependency-injection
  */
 export type AsyncLogDataInternal = AsyncLogData & {
   /**

@@ -56,7 +56,7 @@ This repo is the foundation every other `@digital-alchemy` library depends on. C
 | `module.mts` | `createModule`, `DigitalAlchemyModule`, `ModuleExtension` — chainable module builder that can export to application, library, or test runner |
 | `service-runner.mts` | `ServiceRunner` — minimal one-service bootstrap helper for scripts |
 | `utilities.mts` | Numeric constants (`START`, `NONE`, `EMPTY`, `FIRST`, `ARRAY_OFFSET`, `SINGLE`, `UP`, `DOWN`, `MINUTE`, `HOUR`, `DAY`, `SECOND`, `YEAR`, etc.); `sleep`, `debounce`, `toOffsetMs`, `toOffsetDuration`, `SleepReturn`, `TBlackHole` |
-| `wiring.mts` | `TServiceParams`, `ServiceFunction`, `ServiceMap`, `ApplicationDefinition`, `LibraryDefinition`, `BootstrapOptions`, `TInjectedConfig`, `LoadedModules`, `buildSortOrder`, `CreateLibrary`, `wireOrder`, `COERCE_CONTEXT`, `WIRE_PROJECT` |
+| `wiring.mts` | `TServiceParams`, `ServiceFunction`, `ServiceMap`, `ApplicationDefinition`, `LibraryDefinition`, `BootstrapOptions`, `TInjectedConfig`, `LoadedModulesInternal` (+ re-exports the `@digital-alchemy/symbols` interfaces), `buildSortOrder`, `CreateLibrary`, `wireOrder`, `COERCE_CONTEXT`, `WIRE_PROJECT` |
 
 ### `src/testing/*.mts` — test infrastructure (not test cases)
 
@@ -255,6 +255,12 @@ yarn build
 `helpers/wiring.mts` contains all the types and pure functions (`CreateLibrary`, `buildSortOrder`, `TServiceParams`, etc.). `services/wiring.service.mts` contains the runtime bootstrap logic (`CreateApplication`, `bootstrap`, `wireService`, `teardown`).
 
 This split exists to break a circular reference that would form if types and the bootstrap runtime lived in the same file. **Do not merge them.** Read both before touching either. Changes to `TServiceParams` shape in `helpers/wiring.mts` affect every downstream library.
+
+### Declaration-merge interfaces are owned by `@digital-alchemy/symbols`
+
+The open interfaces downstream augments — `LoadedModules`, `LoadedRollups`, `AsyncLogData`, `AsyncLocalData`, `IsIt`, `DeclaredEnvironments`, `ConfigLoaderSource`, `ReplacementLogger`, `AbstractConfig`, `BaseConfig` — live in the frozen, zero-dependency `@digital-alchemy/symbols` package and are re-exported via `export * from "@digital-alchemy/symbols"` in `helpers/wiring.mts`. Downstream still augments `@digital-alchemy/core` unchanged; the split is invisible to consumers.
+
+**Never register a coupled core member onto a frozen symbols interface.** Core's own members stay on core-internal types — `LoadedModulesInternal` (`boilerplate`), `AsyncLogDataInternal` (`logger`), `AsyncLocalDataInternal` (`logs`), `BaseConfigInternal` (config fields), `class IsImpl` / `interface IsService` (the `is` methods). Two core versions declaring the same member on the shared frozen interface with different types collide (TS2717); keeping them on the aliases is what makes version skew safe. `@digital-alchemy/symbols` is pinned exact, and that pin must not move across core releases — a second resolved version reintroduces the drift this split prevents.
 
 ### `index.mts` is the re-export hub
 

@@ -630,6 +630,7 @@ __metadata:
   resolution: "@digital-alchemy/core@workspace:."
   dependencies:
     "@cspell/eslint-plugin": "npm:^10.0.1"
+    "@digital-alchemy/symbols": "npm:26.6.20"
     "@dotenvx/dotenvx": "npm:^1.71.3"
     "@eslint/compat": "npm:^2.1.0"
     "@eslint/eslintrc": "npm:^3.3.5"
@@ -672,6 +673,13 @@ __metadata:
     vitest: "npm:^4.1.8"
   languageName: unknown
   linkType: soft
+
+"@digital-alchemy/symbols@npm:26.6.20":
+  version: 26.6.20
+  resolution: "@digital-alchemy/symbols@npm:26.6.20"
+  checksum: 10/9bea8a7c47921a47ccae35fe9469947c8f9995d0dcbd25d56f9278c8437a4ccefa8d4d8f4227a48da2781b2c01d00a5681ede17c3bc2d8652fde4bad3a6b326c
+  languageName: node
+  linkType: hard
 
 "@dotenvx/dotenvx@npm:^1.71.3":
   version: 1.71.3

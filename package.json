@@ -50,6 +50,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@digital-alchemy/symbols": "26.6.20",
     "@dotenvx/dotenvx": "^1.71.3",
     "chalk": "^5.6.2",
     "cron": "^4.4.0",

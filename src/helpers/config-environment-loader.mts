@@ -12,11 +12,11 @@
 
 import { env } from "node:process";
 
+import type { AbstractConfig } from "@digital-alchemy/symbols";
 import minimist from "minimist";
 
 import { is, NONE } from "../index.mts";
 import type {
-  AbstractConfig,
   ConfigLoaderParams,
   ConfigLoaderReturn,
   DataTypes,

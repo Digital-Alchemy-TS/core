@@ -12,26 +12,12 @@
 
 import fs from "node:fs";
 
+import type { ReplacementLogger } from "@digital-alchemy/symbols";
 import type { Get } from "type-fest";
 
 import { is, SINGLE } from "../index.mts";
 import type { TContext } from "./context.mts";
 import type { TBlackHole } from "./utilities.mts";
-
-/**
- * Extension hook for logger replacement via declaration merging.
- *
- * @remarks
- * Downstream libraries can extend this interface to substitute their own logger
- * type into `GetLogger`, allowing alternative logging implementations.
- *
- * @internal
- */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface ReplacementLogger {
-  // intentionally left empty
-  // for use with declaration merging
-}
 
 /**
  * Resolved logger type — either a merged replacement logger or the default `ILogger`.

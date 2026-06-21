@@ -32,7 +32,7 @@ import {
   toOffsetMs,
   YEAR,
 } from "../index.mts";
-import type { IsIt } from "./is.service.mts";
+import type { IsService } from "./is.service.mts";
 import { is } from "./is.service.mts";
 import type { CreateLifecycle } from "./lifecycle.service.mts";
 import type { LIB_BOILERPLATE } from "./wiring.service.mts";
@@ -82,7 +82,7 @@ export class InternalUtils {
   /**
    * Reference to the `is` type-guard singleton importable from `core`.
    */
-  public is: IsIt;
+  public is: IsService;
 
   constructor() {
     // unlimited listeners because every service may register lifecycle callbacks,

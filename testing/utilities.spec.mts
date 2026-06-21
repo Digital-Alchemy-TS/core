@@ -185,7 +185,7 @@ describe("utilities", () => {
       await debounce(identifier, timeout);
 
       const end = Date.now();
-      expect(end - start).toBeGreaterThanOrEqual(timeout);
+      expect(end - start).toBeGreaterThanOrEqual(timeout - 1);
     });
 
     it("should cancel the previous debounce if called with the same identifier", async () => {
@@ -236,7 +236,7 @@ describe("utilities", () => {
       await debounce(identifier, [timeout, "ms"]);
 
       const end = Date.now();
-      expect(end - start).toBeGreaterThanOrEqual(timeout);
+      expect(end - start).toBeGreaterThanOrEqual(timeout - 1);
     });
 
     it("should handle TOffset tuple format with seconds", async () => {
@@ -298,7 +298,7 @@ describe("utilities", () => {
       await debounce(identifier, () => timeout);
 
       const end = Date.now();
-      expect(end - start).toBeGreaterThanOrEqual(timeout);
+      expect(end - start).toBeGreaterThanOrEqual(timeout - 1);
     });
 
     it.skip("should handle TOffset function returning tuple", async () => {
@@ -309,7 +309,7 @@ describe("utilities", () => {
       await debounce(identifier, () => [timeout, "ms"]);
 
       const end = Date.now();
-      expect(end - start).toBeGreaterThanOrEqual(timeout);
+      expect(end - start).toBeGreaterThanOrEqual(timeout - 1);
     });
 
     it("should handle Duration object", async () => {

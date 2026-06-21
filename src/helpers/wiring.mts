@@ -22,6 +22,13 @@
 import type { AsyncLocalStorage } from "node:async_hooks";
 import type { EventEmitter } from "node:events";
 
+import type {
+  AsyncLocalData,
+  AsyncLogData,
+  IsIt,
+  LoadedModules,
+  LoadedRollups,
+} from "@digital-alchemy/symbols";
 import type { Dayjs } from "dayjs";
 
 import type {
@@ -93,7 +100,7 @@ export interface ApplicationConfigurationOptions<
   S extends ServiceMap,
   C extends OptionalModuleConfiguration,
 > {
-  name: keyof LoadedModules;
+  name: keyof LoadedModulesInternal;
   services: S;
   libraries?: (LibraryDefinition<ServiceMap, OptionalModuleConfiguration> | LibraryRollup)[];
   configuration?: C;
@@ -236,13 +243,17 @@ export type TScheduler = {
 // --- Module registry ----------------------------------------------------------
 
 /**
- * Registry of all loaded module definitions.
+ * Registry of all loaded module definitions, intersected with `core`'s own
+ * always-present `boilerplate` entry.
  *
  * @remarks
- * Downstream libraries extend this interface via declaration merging so that
- * `TServiceParams` can expose their APIs under the correct key. The
- * `boilerplate` entry is always present; every other entry is added by a
- * library's declaration merge.
+ * `LoadedModules` is the frozen declaration-merge channel owned by
+ * `@digital-alchemy/symbols`; downstream libraries register their modules into
+ * it via `declare module "@digital-alchemy/core"`. `core` cannot register its
+ * own coupled `boilerplate` member into that frozen interface, so this
+ * internal alias carries it. Every `core` type that needs the full module
+ * registry (including `boilerplate`) reads `LoadedModulesInternal`, never the
+ * bare frozen `LoadedModules`.
  *
  * @example Declaration merge in a library
  * ```typescript
@@ -252,37 +263,12 @@ export type TScheduler = {
  *   }
  * }
  * ```
+ *
+ * @internal
  */
-export interface LoadedModules {
+interface LoadedModulesInternal extends LoadedModules {
   boilerplate: typeof LIB_BOILERPLATE;
 }
-
-/**
- * Registry of library groups — the second declaration-merge channel, parallel
- * to {@link LoadedModules}.
- *
- * @remarks
- * A {@link LibraryGroup} value contributes membership only; an unnamed group
- * never gets its own `LoadedModules` key. To make a group's member APIs visible on
- * {@link TServiceParams} for consumers that import *only the group* (e.g. across a
- * published-`.d.ts` package boundary), the group-defining module augments this
- * interface with an explicit `name → definition` record. The member shapes are
- * inlined into that augmentation, so they travel with the group import — no reliance
- * on each member's own `LoadedModules` merge reaching the consumer.
- *
- * @example Register a named group in the module that defines it
- * ```typescript
- * export const analyticsGroup = LibraryGroup({ members: [LIB_INGEST, LIB_API], name: "analytics" });
- *
- * declare module "@digital-alchemy/core" {
- *   export interface LoadedRollups {
- *     analytics: { ingest: typeof LIB_INGEST; api: typeof LIB_API };
- *   }
- * }
- * ```
- */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type -- intentionally empty; populated only by downstream declaration merges
-export interface LoadedRollups {}
 
 /** @internal — maps a config definition type to its concrete injected value. */
 type CastConfigResult<T extends AnyConfig> =
@@ -330,35 +316,36 @@ export type TInjectedConfig = {
 // SEE DOCS http://docs.digital-alchemy.app/docs/core/declaration-merging
 
 /**
- * Per-request data that can be attached to a log entry via ALS.
+ * Per-request log data, intersected with `core`'s coupled `logger` member.
  *
  * @remarks
- * Extend this interface via declaration merging to attach application-specific
- * fields to every log line emitted within an ALS context.
+ * `AsyncLogData` is the frozen declaration-merge channel owned by
+ * `@digital-alchemy/symbols` (it seeds `duration?`); downstream code augments it
+ * via `declare module "@digital-alchemy/core"`. `core` cannot register its own
+ * `logger` member into that frozen interface, so this internal alias carries it.
+ * The ALS service types its log payload as `AsyncLogDataInternal`.
  *
  * SEE DOCS http://docs.digital-alchemy.app/docs/core/declaration-merging
  */
-export interface AsyncLogData {
-  /**
-   * return ms since entry, precision is on you
-   */
-  duration?: () => number;
+export type AsyncLogDataInternal = AsyncLogData & {
   /**
    * thread local child logger
    */
   logger?: GetLogger;
-}
+};
 
 /**
- * Shape of the data stored inside the `AsyncLocalStorage` instance managed by
- * the ALS service.
+ * ALS storage payload, extending `core`'s coupled `logs` member.
  *
  * @remarks
- * Extend via declaration merging to carry additional request-scoped fields
- * alongside `logs`.
+ * `AsyncLocalData` is the frozen declaration-merge channel owned by
+ * `@digital-alchemy/symbols`; downstream code augments it via
+ * `declare module "@digital-alchemy/core"` to carry additional request-scoped
+ * fields. `core` cannot register its own `logs` member into that frozen
+ * interface, so this internal alias carries it.
  */
-export interface AsyncLocalData {
-  logs: AsyncLogData;
+export interface AsyncLocalDataInternal extends AsyncLocalData {
+  logs: AsyncLogDataInternal;
 }
 // #endregion
 
@@ -366,15 +353,15 @@ export interface AsyncLocalData {
  * Public API of the ALS service as injected into `TServiceParams`.
  *
  * @remarks
- * Wraps `AsyncLocalStorage<AsyncLocalData>` with helpers for entering a
+ * Wraps `AsyncLocalStorage<AsyncLocalDataInternal>` with helpers for entering a
  * context, reading the store, and merging per-request log data.
  */
 export type AlsExtension = {
-  asyncStorage: () => AsyncLocalStorage<AsyncLocalData>;
-  getStore: () => AsyncLocalData;
-  run(data: AsyncLocalData, callback: () => TBlackHole): void;
-  enterWith(data: AsyncLocalData): void;
-  getLogData: () => AsyncLogData;
+  asyncStorage: () => AsyncLocalStorage<AsyncLocalDataInternal>;
+  getStore: () => AsyncLocalDataInternal;
+  run(data: AsyncLocalDataInternal, callback: () => TBlackHole): void;
+  enterWith(data: AsyncLocalDataInternal): void;
+  getLogData: () => AsyncLogDataInternal;
 };
 
 /** A function that returns additional data to merge into ALS log context. */
@@ -461,14 +448,14 @@ export type TServiceParams = {
    */
   params: TServiceParams;
 } & {
-  [K in ExternalLoadedModules]: GetApis<LoadedModules[K]>;
-} & Omit<RollupApis, keyof LoadedModules>;
+  [K in ExternalLoadedModules]: GetApis<LoadedModulesInternal[K]>;
+} & Omit<RollupApis, keyof LoadedModulesInternal>;
 
-/** Names of all modules registered in `LoadedModules`. */
-export type LoadedModuleNames = Extract<keyof LoadedModules, string>;
+/** Names of all modules registered in `LoadedModules`, including `core`'s `boilerplate`. */
+export type LoadedModuleNames = Extract<keyof LoadedModulesInternal, string>;
 
 /** `LoadedModuleNames` minus `"boilerplate"` — the user-land module names. */
-type ExternalLoadedModules = Exclude<LoadedModuleNames, "boilerplate">;
+type ExternalLoadedModules = Exclude<keyof LoadedModulesInternal & string, "boilerplate">;
 
 /**
  * Collapse a union of object types into a single intersected object.
@@ -514,14 +501,71 @@ type RollupApis = RollupApisOf<LoadedRollups>;
 export type _EmptyRollupsContributeNothing = ExpectTrue<TypeEqual<RollupApisOf<{}>, {}>>;
 
 /**
+ * Compile-time proof that `core`'s own `boilerplate` config survives the move of
+ * `LoadedModules` to the frozen `@digital-alchemy/symbols` shell. The boilerplate
+ * config lives on `LoadedModulesInternal`, not the frozen `LoadedModules`; if its
+ * config stopped flowing into `TInjectedConfig`, `TInjectedConfig["boilerplate"]`
+ * would be `never` and `"LOG_LEVEL"` would not be one of its keys.
+ *
+ * @internal — assertion only; consumed via `export` so `noUnusedLocals` is satisfied.
+ */
+export type _BoilerplateConfigSurvives = ExpectTrue<
+  TypeEqual<"LOG_LEVEL" extends keyof TInjectedConfig["boilerplate"] ? true : false, true>
+>;
+
+/**
+ * Compile-time proof that the `is` singleton is assignable to the frozen `IsIt`
+ * shell from `@digital-alchemy/symbols` (so downstream `IsIt` augments land on a
+ * value that satisfies them) AND still exposes `core`'s own guard methods — the
+ * methods live on `IsImpl`, never registered into the frozen `IsIt`.
+ *
+ * @internal — assertion only; consumed via `export` so `noUnusedLocals` is satisfied.
+ */
+export type _IsItIsFrozenAndKeepsCoreMethods = ExpectTrue<
+  TypeEqual<
+    typeof is extends IsIt
+      ? typeof is extends { array: (t: unknown) => boolean }
+        ? true
+        : false
+      : false,
+    true
+  >
+>;
+
+/**
+ * Compile-time proof that `TServiceParams` keeps its well-known injections even
+ * though the frozen `LoadedModules` is now empty (`core`'s `boilerplate` member
+ * lives only on `LoadedModulesInternal`). If the module-map intersection started
+ * reading the frozen `LoadedModules`, these keys would survive but the module
+ * APIs would drop; this guards the well-known keys directly.
+ *
+ * @internal — assertion only; consumed via `export` so `noUnusedLocals` is satisfied.
+ */
+export type _ServiceParamsRetainsWellKnownKeys = ExpectTrue<
+  TypeEqual<
+    "logger" extends keyof TServiceParams
+      ? "als" extends keyof TServiceParams
+        ? "config" extends keyof TServiceParams
+          ? true
+          : false
+        : false
+      : false,
+    true
+  >
+>;
+
+/**
  * Maps each loaded module name to its declared configuration block.
  *
  * @internal
  */
 type ModuleConfigs = {
-  [K in LoadedModuleNames]: LoadedModules[K] extends LibraryDefinition<ServiceMap, infer Config>
+  [K in keyof LoadedModulesInternal]: LoadedModulesInternal[K] extends LibraryDefinition<
+    ServiceMap,
+    infer Config
+  >
     ? Config
-    : LoadedModules[K] extends ApplicationDefinition<ServiceMap, infer Config>
+    : LoadedModulesInternal[K] extends ApplicationDefinition<ServiceMap, infer Config>
       ? Config
       : never;
 };
@@ -545,9 +589,12 @@ export type ConfigTypes<Config> = {
 export type ServiceNames<
   T extends Extract<LoadedModuleNames, string> = Extract<LoadedModuleNames, string>,
 > = {
-  [key in T]: LoadedModules[key] extends LibraryDefinition<infer S, OptionalModuleConfiguration>
+  [key in T]: LoadedModulesInternal[key] extends LibraryDefinition<
+    infer S,
+    OptionalModuleConfiguration
+  >
     ? `${key}.${Extract<keyof S, string>}`
-    : LoadedModules[key] extends ApplicationDefinition<infer S, OptionalModuleConfiguration>
+    : LoadedModulesInternal[key] extends ApplicationDefinition<infer S, OptionalModuleConfiguration>
       ? `${key}.${Extract<keyof S, string>}`
       : never;
 };
@@ -562,9 +609,12 @@ export type ServiceNames<
 export type FlatServiceNames<
   T extends Extract<LoadedModuleNames, string> = Extract<LoadedModuleNames, string>,
 > = {
-  [key in T]: LoadedModules[key] extends LibraryDefinition<infer S, OptionalModuleConfiguration>
+  [key in T]: LoadedModulesInternal[key] extends LibraryDefinition<
+    infer S,
+    OptionalModuleConfiguration
+  >
     ? `${key}.${Extract<keyof S, string>}`
-    : LoadedModules[key] extends ApplicationDefinition<infer S, OptionalModuleConfiguration>
+    : LoadedModulesInternal[key] extends ApplicationDefinition<infer S, OptionalModuleConfiguration>
       ? `${key}.${Extract<keyof S, string>}`
       : never;
 }[T];
@@ -640,7 +690,7 @@ export interface LibraryConfigurationOptions<
   C extends OptionalModuleConfiguration,
 > {
   // neat trick, enforcing that they are named the same as they are loaded
-  name: keyof LoadedModules;
+  name: keyof LoadedModulesInternal;
   services: S;
   /**
    * ensure other libraries get loaded first.
@@ -1117,7 +1167,7 @@ function makeRegistryCarrier(name: string, registry: string): TLibrary {
     };
   };
   return CreateLibrary({
-    name: name as keyof LoadedModules,
+    name: name as keyof LoadedModulesInternal,
     priorityInit: [registry],
     services: { [registry]: registryService },
   }) as unknown as TLibrary;
@@ -1561,7 +1611,7 @@ export function CreateLibrary<
       // not defined for boilerplate (chicken & egg)
       // manually added inside the bootstrap process
       const config = internal?.boilerplate.configuration as ConfigManager;
-      config?.[LOAD_PROJECT](libraryName as keyof LoadedModules, configuration);
+      config?.[LOAD_PROJECT](libraryName as keyof LoadedModulesInternal, configuration);
       await eachSeries(wireOrder(priorityInit, Object.keys(services)), async service => {
         serviceApis[service] = await WireService(
           libraryName,

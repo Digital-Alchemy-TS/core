@@ -1,5 +1,7 @@
 import { EventEmitter } from "node:events";
 
+import type { DeclaredEnvironments } from "@digital-alchemy/symbols";
+
 import type {
   ApplicationConfigurationOptions,
   ApplicationDefinition,
@@ -51,12 +53,6 @@ import { is } from "./is.service.mts";
 import { CreateLifecycle } from "./lifecycle.service.mts";
 import { Logger } from "./logger.service.mts";
 import { Scheduler } from "./scheduler.service.mts";
-
-export interface DeclaredEnvironments {
-  prod: true;
-  test: true;
-  local: true;
-}
 
 const EXIT_ERROR = 1;
 const SIGINT = 130;

@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { isDeepStrictEqual, types } from "node:util";
 
+import type { IsIt } from "@digital-alchemy/symbols";
 import type { Dayjs } from "dayjs";
 import dayjs from "dayjs";
 
@@ -29,7 +30,7 @@ type MaybeFunction = (...parameters: unknown[]) => TBlackHole;
  * imported directly in lifecycle and wiring services to avoid circular
  * dependencies; everywhere else it is accessed via `internal.utils.is`.
  */
-export class IsIt {
+export class IsImpl implements IsIt {
   /**
    * Test whether a value is an array.
    */
@@ -181,4 +182,16 @@ export class IsIt {
   }
 }
 
-export const is = new IsIt();
+/**
+ * Public type of the `is` singleton: `core`'s own guard methods (`IsImpl`) plus
+ * the frozen `IsIt` declaration-merge channel from `@digital-alchemy/symbols`.
+ *
+ * @remarks
+ * Expressed as an interface extending a class + an interface (rather than the
+ * `IsImpl & IsIt` intersection) so it inherits downstream `IsIt` augments while
+ * keeping `core`'s coupled methods on `IsImpl`, never registered into the frozen
+ * `IsIt`.
+ */
+export interface IsService extends IsImpl, IsIt {}
+
+export const is: IsService = new IsImpl();

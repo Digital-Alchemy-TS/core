@@ -630,6 +630,7 @@ __metadata:
   resolution: "@digital-alchemy/core@workspace:."
   dependencies:
     "@cspell/eslint-plugin": "npm:^10.0.1"
+    "@digital-alchemy/symbols": "portal:../symbols"
     "@dotenvx/dotenvx": "npm:^1.71.3"
     "@eslint/compat": "npm:^2.1.0"
     "@eslint/eslintrc": "npm:^3.3.5"
@@ -671,6 +672,12 @@ __metadata:
     uuid: "npm:^14.0.0"
     vitest: "npm:^4.1.8"
   languageName: unknown
+  linkType: soft
+
+"@digital-alchemy/symbols@portal:../symbols::locator=%40digital-alchemy%2Fcore%40workspace%3A.":
+  version: 0.0.0-use.local
+  resolution: "@digital-alchemy/symbols@portal:../symbols::locator=%40digital-alchemy%2Fcore%40workspace%3A."
+  languageName: node
   linkType: soft
 
 "@dotenvx/dotenvx@npm:^1.71.3":

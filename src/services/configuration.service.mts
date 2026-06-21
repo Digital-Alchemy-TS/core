@@ -1,5 +1,6 @@
+import type { AbstractConfig } from "@digital-alchemy/symbols";
+
 import type {
-  AbstractConfig,
   ApplicationDefinition,
   CodeConfigDefinition,
   ConfigLoader,

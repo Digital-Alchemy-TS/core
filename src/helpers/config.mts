@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { cwd } from "node:process";
 
+import type { AbstractConfig, BaseConfig, ConfigLoaderSource } from "@digital-alchemy/symbols";
 import dotenv from "@dotenvx/dotenvx";
 import type { ParsedArgs } from "minimist";
 
@@ -20,31 +21,6 @@ import type {
   ServiceMap,
   TInjectedConfig,
 } from "./wiring.mts";
-
-// --- Loader source types ------------------------------------------------------
-
-/**
- * Describes the three built-in configuration source channels.
- *
- * @remarks
- * Used as the key set for {@link DataTypes} and for the `source` field on
- * individual config definitions. Each channel can be opted in/out independently
- * via `BootstrapOptions.configSources`.
- */
-export interface ConfigLoaderSource {
-  /**
-   * will be checked for values unless `sources` is defined without argv
-   */
-  argv: true;
-  /**
-   * will be checked for values unless `env` is defined without argv
-   */
-  env: true;
-  /**
-   * will be checked for values unless `file` is defined without argv
-   */
-  file: true;
-}
 
 // --- Config shape types -------------------------------------------------------
 
@@ -83,14 +59,22 @@ export type AnyConfig =
   | StringArrayConfig;
 
 /**
- * Fields shared by every config definition.
+ * Fields shared by every config definition, extending `core`'s coupled
+ * base members.
  *
  * @remarks
+ * `BaseConfig` is the frozen declaration-merge channel owned by
+ * `@digital-alchemy/symbols`; downstream code augments it via
+ * `declare module "@digital-alchemy/core"`. `core` cannot register its own
+ * coupled members (`type`, `default`, `source`, …) into that frozen interface,
+ * so this internal alias carries them. Every concrete config shape
+ * (`StringConfig`, `BooleanConfig`, …) extends `BaseConfigInternal`.
+ *
  * The `type` discriminant drives coercion in {@link parseConfig}.
  * `source` narrows which loaders are allowed to supply this key — omit it to
  * allow all loaders.
  */
-export interface BaseConfig {
+interface BaseConfigInternal extends BaseConfig {
   /**
    * If no other values are provided, what value should be injected?
    * This ensures a value is always provided, and checks for undefined don't need to happen
@@ -140,7 +124,7 @@ export type KnownConfigs = Map<string, CodeConfigDefinition>;
  * };
  * ```
  */
-export interface StringConfig<STRING extends string> extends BaseConfig {
+export interface StringConfig<STRING extends string> extends BaseConfigInternal {
   default?: STRING;
   /**
    * If provided, the value **MUST** appear in this list or the application will refuse to boot.
@@ -150,7 +134,7 @@ export interface StringConfig<STRING extends string> extends BaseConfig {
 }
 
 /** Config definition for a boolean value. */
-export interface BooleanConfig extends BaseConfig {
+export interface BooleanConfig extends BaseConfigInternal {
   default?: boolean;
   type: "boolean";
 }
@@ -172,13 +156,13 @@ export interface BooleanConfig extends BaseConfig {
  * Make sure to add a helpful description on how to format the value,
  * because `config-builder` won't be able to help.
  */
-export type InternalConfig<VALUE extends object> = BaseConfig & {
+export type InternalConfig<VALUE extends object> = BaseConfigInternal & {
   default: VALUE;
   type: "internal";
 };
 
 /** Config definition for a numeric value. */
-export interface NumberConfig extends BaseConfig {
+export interface NumberConfig extends BaseConfigInternal {
   default?: number;
   type: "number";
 }
@@ -192,13 +176,13 @@ export interface NumberConfig extends BaseConfig {
  *
  * key/value pairs
  */
-export interface RecordConfig<VALUE = string> extends BaseConfig {
+export interface RecordConfig<VALUE = string> extends BaseConfigInternal {
   default?: Record<string, VALUE>;
   type: "record";
 }
 
 /** Config definition for a string-array value. */
-export interface StringArrayConfig extends BaseConfig {
+export interface StringArrayConfig extends BaseConfigInternal {
   default?: string[];
   type: "string[]";
 }
@@ -232,19 +216,6 @@ export interface ConfigTypeDTO<METADATA extends AnyConfig = AnyConfig> {
    */
   property: string;
 }
-
-/**
- * Top level configuration object.
- *
- * @remarks
- * Downstream libraries extend this interface via declaration merging to add
- * their own config sections. See the architecture docs for the merging pattern.
- *
- * Extends the global common config, adding a section for the top level application to chuck in data without affecting things
- * Also provides dedicated sections for libraries to store their own configuration options
- */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface AbstractConfig {}
 
 /**
  * Return type of a config loader — a partial snapshot of the global config

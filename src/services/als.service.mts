@@ -1,6 +1,11 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-import type { AlsExtension, AsyncLocalData, AsyncLogData, TBlackHole } from "../index.mts";
+import type {
+  AlsExtension,
+  AsyncLocalDataInternal,
+  AsyncLogDataInternal,
+  TBlackHole,
+} from "../index.mts";
 
 /**
  * AsyncLocalStorage wrapper for request-scoped context propagation.
@@ -13,7 +18,7 @@ import type { AlsExtension, AsyncLocalData, AsyncLogData, TBlackHole } from "../
  * without explicit parameter passing through the call chain.
  */
 export function ALS(): AlsExtension {
-  const storage = new AsyncLocalStorage<AsyncLocalData>();
+  const storage = new AsyncLocalStorage<AsyncLocalDataInternal>();
   return {
     /**
      * Retrieve the internal AsyncLocalStorage instance.
@@ -40,7 +45,7 @@ export function ALS(): AlsExtension {
      * an empty object if no context is set. Used by logger to inject context
      * fields into every log entry automatically without requiring per-call passing.
      */
-    getLogData: () => storage.getStore()?.logs ?? ({} as AsyncLogData),
+    getLogData: () => storage.getStore()?.logs ?? ({} as AsyncLogDataInternal),
     /**
      * Retrieve the full async local store.
      *
@@ -59,7 +64,7 @@ export function ALS(): AlsExtension {
      * is automatically cleared when the callback completes (or earlier if an
      * async boundary is crossed outside the callback).
      */
-    run(data: AsyncLocalData, callback: () => TBlackHole) {
+    run(data: AsyncLocalDataInternal, callback: () => TBlackHole) {
       // wrap the callback to establish and maintain context for its duration
       storage.run(data, () => {
         callback();

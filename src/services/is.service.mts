@@ -30,7 +30,7 @@ type MaybeFunction = (...parameters: unknown[]) => TBlackHole;
  * imported directly in lifecycle and wiring services to avoid circular
  * dependencies; everywhere else it is accessed via `internal.utils.is`.
  */
-export class IsImpl implements IsIt {
+export class IsImpl {
   /**
    * Test whether a value is an array.
    */

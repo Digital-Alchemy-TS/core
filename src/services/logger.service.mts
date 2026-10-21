@@ -15,7 +15,17 @@ import type {
   TLoggerFunction,
   TServiceParams,
 } from "../index.mts";
-import { EVENT_UPDATE_LOG_LEVELS, fatalLog, FIRST, METHOD_COLORS, START } from "../index.mts";
+import {
+  ARRAY_OFFSET,
+  EVENT_UPDATE_LOG_LEVELS,
+  fatalLog,
+  FIRST,
+  INCREMENT,
+  METHOD_COLORS,
+  NOT_FOUND,
+  SINGLE,
+  START,
+} from "../index.mts";
 
 const LOG_LEVEL_PRIORITY = {
   debug: 20,
@@ -36,9 +46,6 @@ let logger = {} as Record<
 
 const MAX_CUTOFF = 2000;
 const frontDash = " - ";
-const SYMBOL_START = 1;
-const SYMBOL_END = -1;
-const NOT_FOUND = -1;
 const LEVEL_MAX = 7;
 
 /**
@@ -130,8 +137,8 @@ export async function Logger({
     return message
       .split(" ")
       .map(token => {
-        const hashIndex = token.indexOf("#", SYMBOL_START);
-        return hashIndex >= SYMBOL_START && hashIndex < token.length - SYMBOL_START
+        const hashIndex = token.indexOf("#", SINGLE);
+        return hashIndex >= SINGLE && hashIndex < token.length - ARRAY_OFFSET
           ? chalk.yellow(token)
           : token;
       })
@@ -141,8 +148,8 @@ export async function Logger({
   function highlightBraces(message: string): string {
     let braceStart = NOT_FOUND;
     let formatted = "";
-    let copyFrom = 0;
-    for (let index = 0; index < message.length; index += SYMBOL_START) {
+    let copyFrom = START;
+    for (let index = START; index < message.length; index += INCREMENT) {
       const character = message[index];
       if (character === "{") {
         if (braceStart === NOT_FOUND) {
@@ -155,10 +162,10 @@ export async function Logger({
         continue;
       }
       if (character === "}" && braceStart !== NOT_FOUND) {
-        if (index > braceStart + SYMBOL_START) {
+        if (index > braceStart + SINGLE) {
           formatted += message.slice(copyFrom, braceStart);
-          formatted += chalk.bold.gray(message.slice(braceStart + SYMBOL_START, index));
-          copyFrom = index + SYMBOL_START;
+          formatted += chalk.bold.gray(message.slice(braceStart + SINGLE, index));
+          copyFrom = index + INCREMENT;
         }
         braceStart = NOT_FOUND;
       }
@@ -195,7 +202,7 @@ export async function Logger({
     message = message.replaceAll("] > [", `] ${BLUE_TICK} [`);
     // ? [Text] - strip brackets, highlight magenta
     message = message.replaceAll(new RegExp(String.raw`(\[[^\]\[]+\])`, "g"), i =>
-      chalk.bold.magenta(i.slice(SYMBOL_START, SYMBOL_END)),
+      chalk.bold.magenta(i.slice(SINGLE, -SINGLE)),
     );
     // ? {Text} - strip braces, highlight gray. A pending opening brace is
     // invalidated by ] and the first valid opening owns the next }.
@@ -311,7 +318,7 @@ export async function Logger({
                 sorted: true,
               })
                 .split("\n")
-                .slice(SYMBOL_START, SYMBOL_END)
+                .slice(SINGLE, -SINGLE)
                 .join("\n");
           }
         }

@@ -1,7 +1,7 @@
 // cspell:words typebox
 import { createRequire } from "node:module";
 
-import { is } from "../index.mts";
+import { is, NONE } from "../index.mts";
 import {
   providerCall,
   schemaException,
@@ -11,7 +11,6 @@ import {
 import type { ConfigSchema, SupportedTypeBoxSchema } from "./config-types.mts";
 import { BootstrapException } from "./errors.mts";
 
-const NO_VALIDATION_ERRORS = 0;
 const TYPEBOX_KIND_TYPES = new Map<string, string>([
   ["Array", "array"],
   ["BigInt", "bigint"],
@@ -92,11 +91,11 @@ function isTypeBoxKindShape(kind: string, value: Record<PropertyKey, unknown>): 
     case "Cyclic":
       return is.string(value.$ref) && is.object(value.$defs);
     case "Enum":
-      return is.array(value.enum) && value.enum.length > NO_VALIDATION_ERRORS;
+      return is.array(value.enum) && value.enum.length > NONE;
     case "Function":
       return is.array(value.parameters) && is.object(value.returnType);
     case "Intersect":
-      return is.array(value.allOf) && value.allOf.length > NO_VALIDATION_ERRORS;
+      return is.array(value.allOf) && value.allOf.length > NONE;
     case "Literal":
       return (
         Object.hasOwn(value, "const") &&
@@ -122,7 +121,7 @@ function isTypeBoxKindShape(kind: string, value: Record<PropertyKey, unknown>): 
     case "Tuple":
       return is.array(value.items);
     case "Union":
-      return is.array(value.anyOf) && value.anyOf.length > NO_VALIDATION_ERRORS;
+      return is.array(value.anyOf) && value.anyOf.length > NONE;
     default:
       return !is.undefined(type);
   }
@@ -362,7 +361,7 @@ export async function processTypeBoxValue(
     return undefined;
   }
   const errors = providerCall(location, "typebox", () => typeBox.Errors(schema, converted));
-  if (errors.length > NO_VALIDATION_ERRORS) {
+  if (errors.length > NONE) {
     validationFailure(location, "typebox", errors.length);
   }
   const output = providerCall(location, "typebox", () =>

@@ -8,8 +8,6 @@ import {
 } from "./config-errors.mts";
 import type { ConfigSchema, StandardSchemaV1 } from "./config-types.mts";
 
-const SINGLE_VALIDATION_ISSUE = SINGLE;
-
 /** Return true when a value has the supported Standard Schema v1 surface. */
 export function isStandardSchema(value: unknown): value is StandardSchemaV1 {
   if (!is.object(value) || !("~standard" in value)) {
@@ -65,7 +63,7 @@ export async function processZodValue(
     processingFailure(location, "zod");
   }
   if (resultRecord.success !== true) {
-    validationFailure(location, "zod", SINGLE_VALIDATION_ISSUE);
+    validationFailure(location, "zod", SINGLE);
   }
   if (!Object.hasOwn(resultRecord, "data")) {
     processingFailure(location, "zod");
@@ -96,11 +94,7 @@ export async function processStandardValue(
   const resultRecord = result as Record<PropertyKey, unknown>;
   if (hasValidationIssues(resultRecord)) {
     const issues = resultRecord.issues;
-    validationFailure(
-      location,
-      "standard",
-      is.array(issues) ? issues.length : SINGLE_VALIDATION_ISSUE,
-    );
+    validationFailure(location, "standard", is.array(issues) ? issues.length : SINGLE);
   }
   if (!Object.hasOwn(resultRecord, "value")) {
     processingFailure(location, "standard");

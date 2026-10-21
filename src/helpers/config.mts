@@ -11,6 +11,7 @@ import type {
   INJECTED_DEFINITIONS,
   InternalDefinition,
   LOAD_PROJECT,
+  MERGE_RAW,
 } from "../index.mts";
 import { is } from "../index.mts";
 import type {
@@ -542,6 +543,8 @@ export type DigitalAlchemyConfiguration = {
   ) => Promise<string>;
   [INJECTED_DEFINITIONS]: TInjectedConfig;
   [LOAD_PROJECT]: (library: string, definitions: CodeConfigDefinition) => void;
+  /** @internal */
+  [MERGE_RAW]: (incoming: unknown) => void;
   getDefinitions: () => KnownConfigs;
   /** Return safe, read-only metadata without replacing raw definitions. */
   getMetadata: () => readonly ConfigMetadataDescriptor[];

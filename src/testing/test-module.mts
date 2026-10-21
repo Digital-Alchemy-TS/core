@@ -36,6 +36,7 @@ import {
   CreateApplication,
   CreateLibrary,
   deepExtend,
+  flattenLibraries,
   is,
   isSchemaConfig,
   NONE,
@@ -289,8 +290,17 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
       }
     };
     addDefinitions(String(app.name), app.configuration);
-    app.libraries?.forEach(library => addDefinitions(String(library.name), library.configuration));
-    appendLibraries.forEach(library => addDefinitions(String(library.name), library.configuration));
+    const effectiveLibraries = (app.libraries ?? []).map(
+      library => appendLibraries.get(library.name) ?? library,
+    );
+    const effectiveNames = new Set<string>(effectiveLibraries.map(library => String(library.name)));
+    appendLibraries.forEach((library, name) => {
+      if (!effectiveNames.has(name)) {
+        effectiveLibraries.push(library);
+      }
+    });
+    const { libraries } = flattenLibraries(effectiveLibraries);
+    libraries.forEach(library => addDefinitions(String(library.name), library.configuration));
 
     const output = {} as ConfigurationStore;
     inputs.forEach(input => {

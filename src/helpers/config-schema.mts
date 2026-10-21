@@ -1,4 +1,6 @@
 // cspell:disable
+import { createRequire } from "node:module";
+
 import type { StaticDecode, StaticEncode } from "typebox";
 
 import type { TContext } from "./context.mts";
@@ -107,69 +109,56 @@ type StandardSchemaSurface = {
   readonly validate?: unknown;
 };
 
-const TYPEBOX_KINDS = new Set([
-  "Any",
-  "Array",
-  "AsyncIterator",
-  "BigInt",
-  "Boolean",
-  "Composite",
-  "Constructor",
-  "Date",
-  "Enum",
-  "Exclude",
-  "Extract",
-  "Function",
-  "Index",
-  "Integer",
-  "Intersect",
-  "KeyOf",
-  "Literal",
-  "Mapped",
-  "Module",
-  "Never",
-  "Not",
-  "Null",
-  "Number",
-  "Object",
-  "Omit",
-  "Partial",
-  "Pick",
-  "Promise",
-  "Readonly",
-  "Record",
-  "Ref",
-  "Recursive",
-  "Required",
-  "Rest",
-  "String",
-  "Symbol",
-  "TemplateLiteral",
-  "This",
-  "Transform",
-  "Tuple",
-  "Union",
-  "Unknown",
-  "Undefined",
-  "Unsafe",
-  "Void",
+const TYPEBOX_KIND_TYPES = new Map<string, string>([
+  ["Array", "array"],
+  ["BigInt", "bigint"],
+  ["Boolean", "boolean"],
+  ["Constructor", "constructor"],
+  ["Function", "function"],
+  ["Integer", "integer"],
+  ["Null", "null"],
+  ["Number", "number"],
+  ["Object", "object"],
+  ["Record", "object"],
+  ["Rest", "rest"],
+  ["String", "string"],
+  ["Symbol", "symbol"],
+  ["TemplateLiteral", "string"],
+  ["Tuple", "array"],
+  ["Undefined", "undefined"],
+  ["Void", "void"],
+]);
+const TYPEBOX_SCHEMA_TYPES = new Set(TYPEBOX_KIND_TYPES.values());
+const TYPEBOX_KINDLESS_KEYS = new Set([
+  "allOf",
+  "anyOf",
+  "const",
+  "enum",
+  "items",
+  "not",
+  "properties",
+  "type",
+  "$ref",
 ]);
 
+const REQUIRE = createRequire(import.meta.url);
 let typeBoxValueModule: Promise<TypeBoxValueModule> | undefined;
 
 /** Infer a Standard Schema input while tolerating providers without type metadata. */
-type StandardSchemaInput<SCHEMA extends StandardSchemaV1> = SCHEMA["~standard"]["types"] extends {
-  readonly input: infer INPUT;
-}
-  ? INPUT
-  : unknown;
+type StandardSchemaInput<SCHEMA extends StandardSchemaV1> =
+  NonNullable<SCHEMA["~standard"]["types"]> extends {
+    readonly input: infer INPUT;
+  }
+    ? INPUT
+    : unknown;
 
 /** Infer a Standard Schema output while tolerating providers without type metadata. */
-type StandardSchemaOutput<SCHEMA extends StandardSchemaV1> = SCHEMA["~standard"]["types"] extends {
-  readonly output: infer OUTPUT;
-}
-  ? OUTPUT
-  : unknown;
+type StandardSchemaOutput<SCHEMA extends StandardSchemaV1> =
+  NonNullable<SCHEMA["~standard"]["types"]> extends {
+    readonly output: infer OUTPUT;
+  }
+    ? OUTPUT
+    : unknown;
 
 function hasOwn(value: object, key: PropertyKey): boolean {
   return Object.prototype.hasOwnProperty.call(value, key);
@@ -206,25 +195,80 @@ function isStandardSurface(value: Record<PropertyKey, unknown>): boolean {
   return "~standard" in value;
 }
 
-function isTypeBoxMarker(value: Record<PropertyKey, unknown>): boolean {
-  const kind = value["~kind"];
-  if (typeof kind === "string" && TYPEBOX_KINDS.has(kind)) {
+function isTypeBoxJsonSchemaShape(value: Record<PropertyKey, unknown>): boolean {
+  if (typeof value.type === "string" && TYPEBOX_SCHEMA_TYPES.has(value.type)) {
     return true;
   }
-  if (!hasOwn(value, "~unsafe")) {
+  return (
+    typeof value.$ref === "string" ||
+    Array.isArray(value.anyOf) ||
+    Array.isArray(value.allOf) ||
+    isRecord(value.not) ||
+    hasOwn(value, "const") ||
+    Array.isArray(value.enum) ||
+    isRecord(value.properties) ||
+    hasOwn(value, "items")
+  );
+}
+
+function isTypeBoxKindShape(kind: string, value: Record<PropertyKey, unknown>): boolean {
+  const type = TYPEBOX_KIND_TYPES.get(kind);
+  if (type !== undefined && value.type !== type) {
     return false;
   }
-  return (
-    typeof value.type === "string" ||
-    typeof value.$ref === "string" ||
-    hasOwn(value, "anyOf") ||
-    hasOwn(value, "allOf") ||
-    hasOwn(value, "oneOf") ||
-    hasOwn(value, "properties") ||
-    hasOwn(value, "items") ||
-    hasOwn(value, "const") ||
-    hasOwn(value, "enum")
-  );
+  switch (kind) {
+    case "Any":
+    case "Unknown":
+      return [...TYPEBOX_KINDLESS_KEYS].every(key => !hasOwn(value, key));
+    case "Array":
+      return isRecord(value.items);
+    case "Constructor":
+      return Array.isArray(value.parameters) && isRecord(value.instanceType);
+    case "Cyclic":
+      return typeof value.$ref === "string" && isRecord(value.$defs);
+    case "Enum":
+      return Array.isArray(value.enum) && value.enum.length > NO_VALIDATION_ERRORS;
+    case "Function":
+      return Array.isArray(value.parameters) && isRecord(value.returnType);
+    case "Intersect":
+      return Array.isArray(value.allOf) && value.allOf.length > NO_VALIDATION_ERRORS;
+    case "Literal":
+      return (
+        hasOwn(value, "const") &&
+        ((value.type === "boolean" && typeof value.const === "boolean") ||
+          (value.type === "number" && typeof value.const === "number") ||
+          (value.type === "string" && typeof value.const === "string"))
+      );
+    case "Never":
+    case "Not":
+      return isRecord(value.not);
+    case "Object":
+      return isRecord(value.properties);
+    case "Record":
+      return isRecord(value.patternProperties);
+    case "Ref":
+      return typeof value.$ref === "string";
+    case "Rest":
+      return Array.isArray(value.items);
+    case "TemplateLiteral":
+      return typeof value.pattern === "string";
+    case "This":
+      return typeof value.$ref === "string";
+    case "Tuple":
+      return Array.isArray(value.items);
+    case "Union":
+      return Array.isArray(value.anyOf) && value.anyOf.length > NO_VALIDATION_ERRORS;
+    default:
+      return type !== undefined;
+  }
+}
+
+function isTypeBoxMarker(value: Record<PropertyKey, unknown>): boolean {
+  if (hasOwn(value, "~kind")) {
+    const kind = value["~kind"];
+    return typeof kind === "string" && !hasOwn(value, "~unsafe") && isTypeBoxKindShape(kind, value);
+  }
+  return hasOwn(value, "~unsafe") && value["~unsafe"] === null && isTypeBoxJsonSchemaShape(value);
 }
 
 /** Return true when a value has the supported Standard Schema v1 surface. */
@@ -273,13 +317,7 @@ export function getSchemaProvider(schema: unknown, location: SchemaLocation): Sc
   }
 
   if (hasTypeBox) {
-    const kind = schema["~kind"];
-    if (typeof kind === "string" && TYPEBOX_KINDS.has(kind)) {
-      return "typebox";
-    }
-    if (hasOwn(schema, "~unsafe")) {
-      return "typebox";
-    }
+    return "typebox";
   }
 
   throw schemaException(location, "CONFIG_SCHEMA_UNSUPPORTED", "value is unsupported");
@@ -368,7 +406,46 @@ export function getSchemaMetadata(schema: unknown, location: SchemaLocation): Sc
   return metadata;
 }
 
+/** @internal — classify resolver failures without exposing provider error text. */
+export function classifyTypeBoxPeerFailure(error: unknown): "broken" | "missing" {
+  if (!isRecord(error)) {
+    return "broken";
+  }
+  if (error.code !== "ERR_MODULE_NOT_FOUND" && error.code !== "MODULE_NOT_FOUND") {
+    return "broken";
+  }
+  return typeof error.message === "string" &&
+    /Cannot find (?:module|package) ['"]typebox['"]/.test(error.message)
+    ? "missing"
+    : "broken";
+}
+
+function resolveTypeBoxPeer(): "available" | "broken" | "missing" {
+  try {
+    REQUIRE.resolve("typebox");
+    return "available";
+  } catch (error) {
+    return classifyTypeBoxPeerFailure(error);
+  }
+}
+
 async function loadTypeBoxValue(location: SchemaLocation): Promise<TypeBoxValueModule> {
+  const resolution = resolveTypeBoxPeer();
+  if (resolution === "missing") {
+    throw schemaException(
+      location,
+      "CONFIG_SCHEMA_PEER_MISSING",
+      "requires the resolvable 'typebox' peer",
+    );
+  }
+  if (resolution === "broken") {
+    throw schemaException(
+      location,
+      "CONFIG_SCHEMA_PEER_BROKEN",
+      "requires a compatible 'typebox/value' peer",
+    );
+  }
+
   let loaded: TypeBoxValueModule;
   try {
     typeBoxValueModule ??= import("typebox/value").then(module => module as TypeBoxValueModule);
@@ -377,8 +454,8 @@ async function loadTypeBoxValue(location: SchemaLocation): Promise<TypeBoxValueM
     typeBoxValueModule = undefined;
     throw schemaException(
       location,
-      "CONFIG_SCHEMA_PEER_MISSING",
-      "requires the resolvable 'typebox' peer",
+      "CONFIG_SCHEMA_PEER_BROKEN",
+      "requires a compatible 'typebox/value' peer",
     );
   }
   if (
@@ -417,6 +494,30 @@ function processingFailure(location: SchemaLocation, provider: SchemaProvider): 
   );
 }
 
+function providerCall<OUTPUT>(
+  location: SchemaLocation,
+  provider: SchemaProvider,
+  callback: () => OUTPUT,
+): OUTPUT {
+  try {
+    return callback();
+  } catch {
+    processingFailure(location, provider);
+  }
+}
+
+async function providerCallAsync<OUTPUT>(
+  location: SchemaLocation,
+  provider: SchemaProvider,
+  callback: () => OUTPUT | Promise<OUTPUT>,
+): Promise<OUTPUT> {
+  try {
+    return await callback();
+  } catch {
+    processingFailure(location, provider);
+  }
+}
+
 function isZodSchema(schema: Record<PropertyKey, unknown>): boolean {
   return (
     isRecord(schema._zod) && isRecord(schema.def) && typeof schema.safeParseAsync === "function"
@@ -435,19 +536,23 @@ async function processTypeBoxValue(
 ): Promise<unknown> {
   const typeBox = await loadTypeBoxValue(location);
   const wasMissing = value === undefined;
-  const candidate = typeBox.Clone(value);
-  const defaulted = typeBox.Default(schema, candidate);
+  const candidate = providerCall(location, "typebox", () => typeBox.Clone(value));
+  const defaulted = providerCall(location, "typebox", () => typeBox.Default(schema, candidate));
   // TypeBox clones static defaults but intentionally returns factory results as-is;
   // clone the completed candidate once more so provider-owned mutable defaults
   // cannot become the live configuration object.
-  const isolated = typeBox.Clone(defaulted);
+  const isolated = providerCall(location, "typebox", () => typeBox.Clone(defaulted));
   const converted =
-    wasMissing && isolated === undefined ? isolated : typeBox.Convert(schema, isolated);
-  const errors = typeBox.Errors(schema, converted);
+    wasMissing && isolated === undefined
+      ? isolated
+      : providerCall(location, "typebox", () => typeBox.Convert(schema, isolated));
+  const errors = providerCall(location, "typebox", () => typeBox.Errors(schema, converted));
   if (errors.length > NO_VALIDATION_ERRORS) {
     validationFailure(location, "typebox", errors.length);
   }
-  const output = typeBox.DecodeUnsafe({}, schema, converted);
+  const output = providerCall(location, "typebox", () =>
+    typeBox.DecodeUnsafe({}, schema, converted),
+  );
   if (required && output === undefined) {
     throw schemaException(location, "CONFIG_SCHEMA_REQUIRED", "output is missing");
   }
@@ -469,9 +574,9 @@ async function processZodValue(
     );
   }
   const parseAsync = zodSchema.safeParseAsync as (input: unknown) => Promise<unknown>;
-  const result = (await parseAsync.call(zodSchema, value)) as
-    | Record<PropertyKey, unknown>
-    | undefined;
+  const result = (await providerCallAsync(location, "zod", () =>
+    parseAsync.call(zodSchema, value),
+  )) as Record<PropertyKey, unknown> | undefined;
   if (!isRecord(result) || typeof result.success !== "boolean") {
     processingFailure(location, "zod");
   }
@@ -494,7 +599,9 @@ async function processStandardValue(
   location: SchemaLocation,
 ): Promise<unknown> {
   const standard = (schema as StandardSchemaV1)["~standard"];
-  const result = (await standard.validate(value)) as unknown;
+  const result = (await providerCallAsync(location, "standard", () =>
+    standard.validate(value),
+  )) as unknown;
   if (!isRecord(result)) {
     processingFailure(location, "standard");
   }
@@ -530,24 +637,13 @@ export async function processSchemaValue(
   location: SchemaLocation,
 ): Promise<unknown> {
   const provider = getSchemaProvider(schema, location);
-  try {
-    switch (provider) {
-      case "typebox":
-        return await processTypeBoxValue(schema, value, required, location);
-      case "zod":
-        return await processZodValue(schema, value, required, location);
-      default:
-        return await processStandardValue(schema, value, required, location);
-    }
-  } catch (error) {
-    if (error instanceof BootstrapException) {
-      throw error;
-    }
-    throw schemaException(
-      location,
-      "CONFIG_SCHEMA_PROCESSING_FAILED",
-      `${provider} processing failed`,
-    );
+  switch (provider) {
+    case "typebox":
+      return processTypeBoxValue(schema, value, required, location);
+    case "zod":
+      return processZodValue(schema, value, required, location);
+    default:
+      return processStandardValue(schema, value, required, location);
   }
 }
 

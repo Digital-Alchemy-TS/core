@@ -268,10 +268,10 @@ interface LoadedModulesInternal extends LoadedModules {
 }
 
 /** @internal — maps a config definition type to its concrete injected value. */
-type CastConfigResult<T extends AnyConfig> = ConfigOutputResult<T>;
+type CastConfigResult<T> = T extends AnyConfig ? ConfigOutputResult<T> : never;
 
 /** @internal — maps a config definition type to its accepted bootstrap input. */
-type CastConfigInput<T extends AnyConfig> = ConfigInputResult<T>;
+type CastConfigInput<T> = T extends AnyConfig ? ConfigInputResult<T> : never;
 
 /**
  * Compile-time proof that a `record` config injects as `Record<string, V>` and not `never`.

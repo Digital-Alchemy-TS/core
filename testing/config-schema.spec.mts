@@ -1,6 +1,7 @@
 import { Type } from "typebox";
 import { z } from "zod";
 
+import { classifyTypeBoxPeerFailure } from "../src/helpers/config-schema.mts";
 import type {
   ApplicationDefinition,
   ConfigInputTypes,
@@ -10,7 +11,13 @@ import type {
   ServiceMap,
   TServiceParams,
 } from "../src/index.mts";
-import { BootstrapException, CreateLibrary, createModule, TestRunner } from "../src/index.mts";
+import {
+  BootstrapException,
+  CreateLibrary,
+  createModule,
+  INJECTED_DEFINITIONS,
+  TestRunner,
+} from "../src/index.mts";
 
 // ─── Local compile-time assertions ────────────────────────────────────────────
 
@@ -69,8 +76,10 @@ async function runAndTeardown(
 
 describe("schema-backed configuration", () => {
   afterEach(() => {
+    delete process.env.SCHEMA_LEGACY_VALUE;
     delete process.env.SCHEMA_LOSING_VALUE;
     delete process.env.SCHEMA_SOURCE_VALUE;
+    delete process.env.SCHEMA_SOURCE_VETO_VALUE;
     delete process.env.SCHEMA_WINNING_VALUE;
     vi.restoreAllMocks();
   });
@@ -104,6 +113,32 @@ describe("schema-backed configuration", () => {
           expect(config.schema_native.DEFAULTED).toBe(3);
           // @ts-expect-error local fixture name is not declaration-merged
           expect(config.schema_native.NESTED).toEqual({ count: 7, enabled: true });
+        });
+      });
+    await app.teardown();
+  });
+
+  it("accepts native cyclic schemas and coerces nested values", async () => {
+    expect.assertions(1);
+    const schema = Type.Cyclic(
+      {
+        Node: Type.Object({ value: Type.Number() }),
+      },
+      "Node",
+    );
+    const library = CreateLibrary({
+      configuration: { VALUE: { schema } },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_cyclic",
+      services: {},
+    });
+
+    const app = await TestRunner({ target: library })
+      .configure({ schema_cyclic: { VALUE: { value: "7" } } as never })
+      .run(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          // @ts-expect-error local fixture name is not declaration-merged
+          expect(config.schema_cyclic.VALUE).toEqual({ value: 7 });
         });
       });
     await app.teardown();
@@ -256,15 +291,22 @@ describe("schema-backed configuration", () => {
   });
 
   it("preserves source precedence for losing invalid values and rejects winning invalid values", async () => {
-    expect.assertions(2);
+    expect.assertions(3);
     process.env.SCHEMA_LOSING_VALUE = "not-a-number";
     const losing = CreateLibrary({
       configuration: {
-        VALUE: { schema: Type.Number(), source: ["argv"] },
+        VALUE: { schema: Type.Number() },
       },
       // @ts-expect-error local fixture name is not declaration-merged
       name: "schema_losing",
-      services: {},
+      services: {
+        registerLoader({ internal }) {
+          internal.config.registerLoader(
+            async () => ({ schema_losing: { VALUE: 12 } }) as never,
+            "custom_losing" as never,
+          );
+        },
+      },
     });
     const losingApp = await TestRunner({ target: losing })
       .setOptions({
@@ -279,6 +321,28 @@ describe("schema-backed configuration", () => {
       });
     await losingApp.teardown();
 
+    process.env.SCHEMA_SOURCE_VETO_VALUE = "not-a-number";
+    const veto = CreateLibrary({
+      configuration: {
+        VALUE: { schema: Type.Number(), source: ["argv"] },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_source_veto",
+      services: {},
+    });
+    const vetoApp = await TestRunner({ target: veto })
+      .setOptions({
+        loadConfigs: true,
+        configuration: { schema_source_veto: { VALUE: 12 } },
+      })
+      .run(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          // @ts-expect-error local fixture name is not declaration-merged
+          expect(config.schema_source_veto.VALUE).toBe(12);
+        });
+      });
+    await vetoApp.teardown();
+
     process.env.SCHEMA_WINNING_VALUE = "not-a-number";
     const winning = CreateLibrary({
       configuration: {
@@ -288,9 +352,66 @@ describe("schema-backed configuration", () => {
       name: "schema_winning",
       services: {},
     });
-    await expect(TestRunner({ target: winning }).setOptions({ loadConfigs: true }).run(() => {})).rejects.toMatchObject({
+    await expect(
+      TestRunner({ target: winning })
+        .setOptions({ loadConfigs: true })
+        .run(() => {}),
+    ).rejects.toMatchObject({
       cause: "CONFIG_SCHEMA_INVALID",
     });
+  });
+
+  it("publishes legacy loader values to later custom loaders", async () => {
+    expect.assertions(4);
+    process.env.SCHEMA_LEGACY_VALUE = "from-env";
+    const seen: string[] = [];
+    const preInit: string[] = [];
+    const library = CreateLibrary({
+      configuration: {
+        VALUE: { default: "default", type: "string" },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_legacy",
+      services: {
+        registerLoaders({ internal, lifecycle }) {
+          internal.config.merge({ schema_legacy: { VALUE: "from-merge" } } as never);
+          lifecycle.onPreInit(() => {
+            const current = internal.boilerplate.configuration[INJECTED_DEFINITIONS] as unknown as {
+              schema_legacy: { VALUE: string };
+            };
+            preInit.push(current.schema_legacy.VALUE);
+          });
+          internal.config.registerLoader(async ({ internal: loaderInternal }) => {
+            const current = loaderInternal.boilerplate.configuration[
+              INJECTED_DEFINITIONS
+            ] as unknown as { schema_legacy: { VALUE: string } };
+            const value = current.schema_legacy.VALUE;
+            seen.push(value);
+            return { schema_legacy: { VALUE: `${value}-A` } } as never;
+          }, "custom_a" as never);
+          internal.config.registerLoader(async ({ internal: loaderInternal }) => {
+            const current = loaderInternal.boilerplate.configuration[
+              INJECTED_DEFINITIONS
+            ] as unknown as { schema_legacy: { VALUE: string } };
+            const value = current.schema_legacy.VALUE;
+            seen.push(value);
+            return { schema_legacy: { VALUE: `${value}-B` } } as never;
+          }, "custom_b" as never);
+        },
+      },
+    });
+    const app = await TestRunner({ target: library })
+      .setOptions({ loadConfigs: true })
+      .run(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          // @ts-expect-error local fixture name is not declaration-merged
+          expect(config.schema_legacy.VALUE).toBe("from-env-A-B");
+        });
+      });
+    expect(seen).toEqual(["from-env", "from-env-A"]);
+    expect(preInit).toEqual(["from-merge"]);
+    expect(app.booted).toBe(true);
+    await app.teardown();
   });
 
   it("keeps source values raw until the winning source is finalized", async () => {
@@ -312,6 +433,90 @@ describe("schema-backed configuration", () => {
         expect(config.schema_source.VALUE).toBe(12);
       });
     });
+    await app.teardown();
+  });
+
+  it("overlays output-shaped pre-final mutations after schema processing", async () => {
+    expect.assertions(4);
+    const constructorUrl = new URL("https://constructor.example");
+    const preInitUrl = new URL("https://pre-init.example");
+    const seen: unknown[] = [];
+    const library = CreateLibrary({
+      configuration: {
+        NUMBER: { schema: z.string().transform(value => Number(value)) },
+        URL: { schema: z.string().transform(value => new URL(value)) },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_pre_final",
+      services: {
+        seed({ internal, lifecycle }) {
+          internal.config.set("schema_pre_final" as never, "NUMBER" as never, 7 as never);
+          internal.config.set("schema_pre_final" as never, "URL" as never, constructorUrl as never);
+          lifecycle.onPreInit(() => {
+            internal.config.merge({
+              schema_pre_final: { NUMBER: 8, URL: preInitUrl },
+            } as never);
+          });
+          internal.config.registerLoader(async ({ internal: loaderInternal }) => {
+            const current = loaderInternal.boilerplate.configuration[
+              INJECTED_DEFINITIONS
+            ] as unknown as { schema_pre_final: { NUMBER: number; URL: URL } };
+            seen.push(current.schema_pre_final.NUMBER);
+            seen.push(current.schema_pre_final.URL === preInitUrl);
+            return { schema_pre_final: { NUMBER: "9" } } as never;
+          }, "custom_pre_final" as never);
+        },
+      },
+    });
+    const app = await TestRunner({ target: library }).run(({ config, lifecycle }) => {
+      lifecycle.onPostConfig(() => {
+        const current = config as unknown as { schema_pre_final: { NUMBER: number; URL: URL } };
+        expect(current.schema_pre_final.NUMBER).toBe(9);
+        expect(current.schema_pre_final.URL).toBe(preInitUrl);
+      });
+    });
+    expect(seen).toEqual([8, true]);
+    expect(app.booted).toBe(true);
+    await app.teardown();
+  });
+
+  it("routes encoded bootstrap configuration through the raw input path", async () => {
+    expect.assertions(3);
+    const constructorUrl = new URL("https://constructor.example");
+    const library = CreateLibrary({
+      configuration: {
+        NUMBER: { schema: z.string().transform(value => Number(value)) },
+        URL: { schema: z.string().transform(value => new URL(value)) },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_bootstrap_raw",
+      services: {
+        seed({ internal }) {
+          internal.config.set("schema_bootstrap_raw" as never, "NUMBER" as never, 99 as never);
+          internal.config.set(
+            "schema_bootstrap_raw" as never,
+            "URL" as never,
+            constructorUrl as never,
+          );
+        },
+      },
+    });
+    const app = await TestRunner({ target: library })
+      .setOptions({
+        configuration: {
+          schema_bootstrap_raw: { NUMBER: "42", URL: "https://bootstrap.example" },
+        } as never,
+      })
+      .run(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          const current = config as unknown as {
+            schema_bootstrap_raw: { NUMBER: number; URL: URL };
+          };
+          expect(current.schema_bootstrap_raw.NUMBER).toBe(42);
+          expect(current.schema_bootstrap_raw.URL).toBeInstanceOf(URL);
+          expect(current.schema_bootstrap_raw.URL).not.toBe(constructorUrl);
+        });
+      });
     await app.teardown();
   });
 
@@ -345,7 +550,7 @@ describe("schema-backed configuration", () => {
   });
 
   it("rejects both, neither, and malformed schema declarations at runtime", async () => {
-    expect.assertions(3);
+    expect.assertions(4);
     const invalidTargets = [
       {
         configuration: {
@@ -364,6 +569,10 @@ describe("schema-backed configuration", () => {
         configuration: { VALUE: { schema: { type: "string" } } },
         name: "schema_malformed",
       },
+      {
+        configuration: { VALUE: { schema: { "~kind": "Number" } } },
+        name: "schema_forged_marker",
+      },
     ].map(entry =>
       CreateLibrary({
         configuration: entry.configuration as never,
@@ -380,6 +589,9 @@ describe("schema-backed configuration", () => {
       cause: "CONFIGURATION_DEFINITION_INVALID",
     });
     await expect(TestRunner({ target: invalidTargets[2] }).run(() => {})).rejects.toMatchObject({
+      cause: "CONFIG_SCHEMA_UNSUPPORTED",
+    });
+    await expect(TestRunner({ target: invalidTargets[3] }).run(() => {})).rejects.toMatchObject({
       cause: "CONFIG_SCHEMA_UNSUPPORTED",
     });
   });
@@ -424,6 +636,67 @@ describe("schema-backed configuration", () => {
     expect((error as BootstrapException).message).not.toContain("secret-provider-message");
   });
 
+  it("classifies missing TypeBox roots separately from broken installations", () => {
+    expect(
+      classifyTypeBoxPeerFailure({
+        code: "MODULE_NOT_FOUND",
+        message: "Cannot find module 'typebox'",
+      }),
+    ).toBe("missing");
+    expect(
+      classifyTypeBoxPeerFailure({
+        code: "ERR_MODULE_NOT_FOUND",
+        message: "Cannot find module '/peer/typebox/build/value/index.mjs'",
+      }),
+    ).toBe("broken");
+    expect(classifyTypeBoxPeerFailure({ code: "ERR_PACKAGE_PATH_NOT_EXPORTED" })).toBe("broken");
+  });
+
+  it("sanitizes provider-thrown BootstrapException values", async () => {
+    const secret = "provider-secret-cause-and-message";
+    const standard = {
+      "~standard": {
+        vendor: "throwing-bootstrap",
+        version: 1 as const,
+        validate() {
+          throw new BootstrapException("provider:standard" as never, secret, secret);
+        },
+      },
+    };
+    const zod = z.string().transform(() => {
+      throw new BootstrapException("provider:zod" as never, secret, secret);
+    });
+    const typebox = Type.Codec(Type.String())
+      .Decode(() => {
+        throw new BootstrapException("provider:typebox" as never, secret, secret);
+      })
+      .Encode(value => String(value));
+    const cases = [
+      ["schema_safe_bootstrap_standard", standard],
+      ["schema_safe_bootstrap_zod", zod],
+      ["schema_safe_bootstrap_typebox", typebox],
+    ] as const;
+    expect.assertions(cases.length * 3);
+
+    for (const [name, schema] of cases) {
+      const library = CreateLibrary({
+        configuration: { VALUE: { schema: schema as never } } as never,
+        // @ts-expect-error local fixture name is not declaration-merged
+        name,
+        services: {},
+      });
+      const error = await TestRunner({ target: library })
+        .configure({ [name]: { VALUE: "value" } } as never)
+        .run(() => {})
+        .catch(value => value);
+      expect(error).toBeInstanceOf(BootstrapException);
+      expect((error as BootstrapException).cause).toBe("CONFIG_SCHEMA_PROCESSING_FAILED");
+      expect(
+        `${(error as BootstrapException).message}:${(error as BootstrapException).cause}`,
+      ).not.toContain(secret);
+    }
+  });
+
   it("exposes safe metadata without executing default factories", async () => {
     expect.assertions(5);
     let factoryCalls = 0;
@@ -459,6 +732,102 @@ describe("schema-backed configuration", () => {
       });
     });
     expect(factoryCalls).toBe(1);
+  });
+
+  it("preserves schema input identity through transitive depends and nested implies", async () => {
+    expect.assertions(2);
+    const dependsLeaf = CreateLibrary({
+      configuration: { VALUE: { schema: Type.Unsafe<URL>({ type: "object" }) } },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_depends_leaf",
+      services: {},
+    });
+    const dependsMiddle = CreateLibrary({
+      depends: [dependsLeaf],
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_depends_middle",
+      services: {},
+    });
+    const impliesLeaf = CreateLibrary({
+      configuration: { VALUE: { schema: Type.Unsafe<URL>({ type: "object" }) } },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_implies_leaf",
+      services: {},
+    });
+    const impliesMiddle = CreateLibrary({
+      implies: [impliesLeaf],
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_implies_middle",
+      services: {},
+    });
+    const root = CreateLibrary({
+      depends: [dependsMiddle],
+      implies: [impliesMiddle],
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_transitive_root",
+      services: {},
+    });
+    const dependsUrl = new URL("https://depends.example");
+    const impliesUrl = new URL("https://implies.example");
+    const app = await TestRunner({ target: root })
+      .configure({
+        schema_depends_leaf: { VALUE: dependsUrl },
+        schema_implies_leaf: { VALUE: impliesUrl },
+      } as never)
+      .run(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          // @ts-expect-error local fixture names are not declaration-merged
+          expect(config.schema_depends_leaf.VALUE).toBe(dependsUrl);
+          // @ts-expect-error local fixture names are not declaration-merged
+          expect(config.schema_implies_leaf.VALUE).toBe(impliesUrl);
+        });
+      });
+    await app.teardown();
+  });
+
+  it("discovers schema definitions from a replaced library closure", async () => {
+    expect.assertions(1);
+    const originalLeaf = CreateLibrary({
+      configuration: { VALUE: { schema: Type.Unsafe<URL>({ type: "object" }) } },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_replaced_leaf",
+      services: {},
+    });
+    const originalMiddle = CreateLibrary({
+      depends: [originalLeaf],
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_replaced_middle",
+      services: {},
+    });
+    const replacementLeaf = CreateLibrary({
+      configuration: { VALUE: { schema: Type.Unsafe<URL>({ type: "object" }) } },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_replaced_leaf",
+      services: {},
+    });
+    const replacementMiddle = CreateLibrary({
+      depends: [replacementLeaf],
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_replaced_middle",
+      services: {},
+    });
+    const root = CreateLibrary({
+      depends: [originalMiddle],
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_replacement_root",
+      services: {},
+    });
+    const url = new URL("https://replacement.example");
+    const app = await TestRunner({ target: root })
+      .replaceLibrary("schema_replaced_middle", replacementMiddle)
+      .configure({ schema_replaced_leaf: { VALUE: url } } as never)
+      .run(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          // @ts-expect-error local fixture name is not declaration-merged
+          expect(config.schema_replaced_leaf.VALUE).toBe(url);
+        });
+      });
+    await app.teardown();
   });
 
   it("preserves schema identity through module cloning and atomic config merges", async () => {

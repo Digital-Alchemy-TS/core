@@ -14,7 +14,6 @@ import type {
   LibraryRollup,
   LoadedModules,
   OptionalModuleConfiguration,
-  PartialConfiguration,
   ServiceFunction,
   ServiceMap,
   StringConfig,
@@ -46,6 +45,7 @@ import {
   INITIALIZE,
   INJECTED_DEFINITIONS,
   LOAD_PROJECT,
+  MERGE_RAW,
 } from "./configuration.service.mts";
 import { InternalDefinition } from "./internal.service.mts";
 // direct import of `is` from its source file to avoid a circular dependency:
@@ -846,7 +846,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
 
     // ? Configuration values provided at bootstrap take priority over module-level defaults
     if (!is.empty(options?.configuration)) {
-      api.configuration.merge(options?.configuration as PartialConfiguration);
+      api.configuration[MERGE_RAW](options.configuration);
     }
 
     // - Kick off lifecycle

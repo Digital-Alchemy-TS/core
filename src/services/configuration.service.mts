@@ -32,6 +32,7 @@ import {
 
 export const INITIALIZE = Symbol.for("initialize");
 export const LOAD_PROJECT = Symbol.for("load-project");
+export const MERGE_RAW = Symbol.for("merge-raw-configuration");
 export const EVENT_CONFIGURATION_UPDATED = "event_configuration_updated";
 export const INJECTED_DEFINITIONS = Symbol.for("injected-config");
 export type ConfigManager = ReturnType<typeof Configuration>;
@@ -76,6 +77,7 @@ export function Configuration({
   const configDefinitions: KnownConfigs = new Map();
   const configuration = {} as PartialConfiguration;
   const rawConfiguration: ConfigStore = {};
+  const stagedConfiguration: ConfigStore = {};
   const metadata: ConfigMetadataDescriptor[] = [];
   const loaded = new Set<string>();
   const loaders = new Map<DataTypes, ConfigLoader>([]);
@@ -109,6 +111,35 @@ export function Configuration({
       });
     });
     return target;
+  }
+
+  function clearStagedValue(project: string, property: string): void {
+    const stagedProject = stagedConfiguration[project];
+    if (stagedProject) {
+      delete stagedProject[property];
+    }
+  }
+
+  /** Merge bootstrap input without routing encoded values through the public output API. */
+  function mergeRawConfiguration(incoming: unknown): void {
+    mergeStore(rawConfiguration, incoming);
+    if (!isConfigRecord(incoming)) {
+      return;
+    }
+    Object.keys(incoming).forEach(project => {
+      const incomingProject = incoming[project];
+      if (!isConfigRecord(incomingProject)) {
+        return;
+      }
+      Object.keys(incomingProject).forEach(property => {
+        clearStagedValue(project, property);
+        const definition = configDefinitions.get(project)?.[property];
+        if (definition && !isSchemaConfig(definition)) {
+          const liveProject = ((configuration as unknown as ConfigStore)[project] ??= {});
+          deepExtend(liveProject, { [property]: incomingProject[property] });
+        }
+      });
+    });
   }
 
   // #MARK: configValueProxy
@@ -152,7 +183,7 @@ export function Configuration({
     logger?.trace({ name: setConfig, property: String(property), project }, "setting config");
     internal.utils.object.set(configuration, [project, property].join("."), value);
     if (!finalized) {
-      internal.utils.object.set(rawConfiguration, [project, property].join("."), value);
+      internal.utils.object.set(stagedConfiguration, [project, property].join("."), value);
     }
     // notify any onUpdate listeners so they can react to the changed value
     event.emit(EVENT_CONFIGURATION_UPDATED, project, property);
@@ -176,23 +207,34 @@ export function Configuration({
       await eachSeries(Object.keys(definitions), async property => {
         const definition = definitions[property];
         const raw = rawConfiguration[project]?.[property];
-        if (isSchemaConfig(definition)) {
-          output[property] = await processSchemaValue(
-            definition.schema,
-            raw,
-            Boolean(definition.required),
-            { context, project, property },
-          );
-          return;
+        const stagedProject = stagedConfiguration[project];
+        const hasStaged =
+          isConfigRecord(stagedProject) &&
+          Object.prototype.hasOwnProperty.call(stagedProject, property);
+        let value: unknown;
+        if (hasStaged) {
+          value = (stagedProject as Record<string, unknown>)[property];
+        } else if (isSchemaConfig(definition)) {
+          value = await processSchemaValue(definition.schema, raw, false, {
+            context,
+            project,
+            property,
+          });
+        } else {
+          value = raw;
         }
-        if (definition.required && raw === undefined) {
+        if (definition.required && value === undefined) {
           throw new BootstrapException(
             context,
-            "REQUIRED_CONFIGURATION_MISSING",
-            `Configuration property ${project}.${property} is not defined`,
+            isSchemaConfig(definition)
+              ? "CONFIG_SCHEMA_REQUIRED"
+              : "REQUIRED_CONFIGURATION_MISSING",
+            isSchemaConfig(definition)
+              ? `Configuration schema output is missing for ${project}.${property}`
+              : `Configuration property ${project}.${property} is not defined`,
           );
         }
-        output[property] = raw;
+        output[property] = value;
       });
     });
 
@@ -200,10 +242,28 @@ export function Configuration({
     // unknown key through JavaScript, without letting it affect schema entries.
     Object.keys(rawConfiguration).forEach(project => {
       const rawProject = rawConfiguration[project];
+      if (!isConfigRecord(rawProject)) {
+        return;
+      }
       const output = (next[project] ??= {});
       Object.keys(rawProject).forEach(property => {
         if (!(property in output)) {
           output[property] = rawProject[property];
+        }
+      });
+    });
+
+    // Public pre-finalization mutations are already output-shaped. Overlay them
+    // after provider processing so transformed values are never decoded twice.
+    Object.keys(stagedConfiguration).forEach(project => {
+      const stagedProject = stagedConfiguration[project];
+      if (!isConfigRecord(stagedProject)) {
+        return;
+      }
+      const output = (next[project] ??= {});
+      Object.keys(stagedProject).forEach(property => {
+        if (!configDefinitions.get(project)?.[property]) {
+          output[property] = stagedProject[property];
         }
       });
     });
@@ -249,10 +309,18 @@ export function Configuration({
         }
         const moduleConfig = (data as Record<string, unknown>)[name];
         if (isConfigRecord(moduleConfig) && key in moduleConfig) {
+          const value = moduleConfig[key];
           const target = (rawConfiguration[name] ??= {});
           // Loader output remains raw, including schema values that may be
           // invalid until source precedence has completely settled.
-          target[key] = moduleConfig[key];
+          target[key] = value;
+          clearStagedValue(name, key);
+          if (!isSchemaConfig(project[key])) {
+            // Legacy loaders historically publish each accepted key immediately;
+            // later custom loaders can therefore derive values from earlier ones.
+            const liveProject = ((configuration as unknown as ConfigStore)[name] ??= {});
+            liveProject[key] = value;
+          }
         }
       });
     });
@@ -340,8 +408,14 @@ export function Configuration({
    * Use `setConfig` for individual runtime updates that need listeners notified.
    */
   function merge(merge: Partial<PartialConfiguration>) {
-    const target = finalized ? (configuration as unknown as ConfigStore) : rawConfiguration;
-    mergeStore(target, merge);
+    if (finalized) {
+      mergeStore(configuration as unknown as ConfigStore, merge);
+      return configuration;
+    }
+    // Public callers provide output-shaped values. Keep them separate from raw
+    // bootstrap/loader inputs and publish them again after schema processing.
+    mergeStore(stagedConfiguration, merge);
+    mergeStore(configuration as unknown as ConfigStore, merge);
     return configuration;
   }
 
@@ -412,6 +486,7 @@ export function Configuration({
     if (isConfigRecord(bootConfig)) {
       Object.keys(bootConfig).forEach(property => {
         rawProject[property] = bootConfig[property];
+        clearStagedValue(library, property);
         const definition = definitions[property];
         if (definition && !isSchemaConfig(definition)) {
           liveProject[property] = bootConfig[property];
@@ -460,6 +535,10 @@ export function Configuration({
      * @internal
      */
     [LOAD_PROJECT]: loadProject,
+    /**
+     * @internal
+     */
+    [MERGE_RAW]: mergeRawConfiguration,
 
     /**
      * Retrieve the metadata that was originally used to define the configs.

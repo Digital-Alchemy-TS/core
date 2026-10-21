@@ -12,14 +12,18 @@ import type {
   OnConfigUpdateCallback,
   OptionalModuleConfiguration,
   PartialConfiguration,
+  SchemaConfig,
+  SchemaLocation,
   ServiceMap,
   TInjectedConfig,
   TServiceParams,
   TSetConfig,
+  TypeBoxDefaultPreparation,
 } from "../index.mts";
 import {
   assertConfigEntry,
   BootstrapException,
+  clonePreparedTypeBoxValue,
   ConfigLoaderEnvironment,
   configLoaderFile,
   deepExtend,
@@ -27,6 +31,7 @@ import {
   getDefaultMetadata,
   getSchemaMetadata,
   isSchemaConfig,
+  prepareSchemaRootDefault,
   processSchemaValue,
 } from "../index.mts";
 
@@ -80,6 +85,7 @@ export function Configuration({
   const stagedConfiguration: ConfigStore = {};
   const metadata: ConfigMetadataDescriptor[] = [];
   const loaded = new Set<string>();
+  const preparedDefaults = new Map<string, Map<string, TypeBoxDefaultPreparation>>();
   const loaders = new Map<DataTypes, ConfigLoader>([]);
   let finalized = false;
 
@@ -130,11 +136,15 @@ export function Configuration({
       Object.keys(incomingProject).forEach(property => {
         clearStagedValue(project, property);
         const definition = configDefinitions.get(project)?.[property];
-        if (definition && !isSchemaConfig(definition)) {
+        if (definition) {
+          const value = (incomingProject as Record<string, unknown>)[property];
           const liveProject = ((configuration as unknown as ConfigStore)[project] ??= {});
-          deepExtend(liveProject, {
-            [property]: (incomingProject as Record<string, unknown>)[property],
-          });
+          if (isSchemaConfig(definition)) {
+            // Bootstrap schema values are raw previews and replace one key atomically.
+            liveProject[property] = value;
+          } else {
+            deepExtend(liveProject, { [property]: value });
+          }
         }
       });
     });
@@ -226,11 +236,16 @@ export function Configuration({
             ? (stagedProject as Record<string, unknown>)[property]
             : (configuration as unknown as ConfigStore)[project]?.[property];
         } else if (isSchemaConfig(definition)) {
-          value = await processSchemaValue(definition.schema, raw, {
-            context,
-            project,
-            property,
-          });
+          value = await processSchemaValue(
+            definition.schema,
+            raw,
+            {
+              context,
+              project,
+              property,
+            },
+            preparedDefaults.get(project)?.get(property),
+          );
         } else {
           value = raw;
         }
@@ -322,12 +337,10 @@ export function Configuration({
           // invalid until source precedence has completely settled.
           target[key] = value;
           clearStagedValue(name, key);
-          if (!isSchemaConfig(project[key])) {
-            // Legacy loaders historically publish each accepted key immediately;
-            // later custom loaders can therefore derive values from earlier ones.
-            const liveProject = ((configuration as unknown as ConfigStore)[name] ??= {});
-            liveProject[key] = value;
-          }
+          // Accepted loader values remain raw in the live preview so later
+          // custom loaders can derive from the same source representation.
+          const liveProject = ((configuration as unknown as ConfigStore)[name] ??= {});
+          liveProject[key] = value;
         }
       });
     });
@@ -426,6 +439,78 @@ export function Configuration({
     return configuration;
   }
 
+  function safeTypeBoxPreparationFailure(error: unknown): BootstrapException {
+    return error instanceof BootstrapException
+      ? error
+      : new BootstrapException(
+          context,
+          "CONFIG_SCHEMA_PROCESSING_FAILED",
+          "Configuration schema TypeBox processing failed",
+        );
+  }
+
+  async function prepareSchemaPreview(
+    definition: SchemaConfig,
+    location: SchemaLocation,
+    property: string,
+    bootConfig: unknown,
+    rawProject: Record<string, unknown>,
+    liveProject: Record<string, unknown>,
+    preparedProject: Map<string, TypeBoxDefaultPreparation>,
+  ): Promise<void> {
+    const bootValue = is.object(bootConfig)
+      ? (bootConfig as Record<string, unknown>)[property]
+      : undefined;
+    const hasDefinedBootstrapValue =
+      is.object(bootConfig) && Object.hasOwn(bootConfig, property) && !is.undefined(bootValue);
+    let prepared: TypeBoxDefaultPreparation = hasDefinedBootstrapValue
+      ? { kind: "unprepared" }
+      : await prepareSchemaRootDefault(definition.schema, location);
+
+    if (prepared.kind === "value") {
+      try {
+        const rawValue = await clonePreparedTypeBoxValue(prepared, location);
+        const liveValue = await clonePreparedTypeBoxValue(prepared, location);
+        rawProject[property] = rawValue;
+        liveProject[property] = liveValue;
+      } catch (error) {
+        prepared = { error: safeTypeBoxPreparationFailure(error), kind: "failure" };
+      }
+    } else if (prepared.kind === "undefined") {
+      rawProject[property] = undefined;
+      liveProject[property] = undefined;
+    }
+    preparedProject.set(property, prepared);
+  }
+
+  function applyBootstrapConfiguration(
+    library: string,
+    definitions: CodeConfigDefinition,
+    bootConfig: unknown,
+    preparedProject: Map<string, TypeBoxDefaultPreparation>,
+    rawProject: Record<string, unknown>,
+    liveProject: Record<string, unknown>,
+  ): void {
+    if (!is.object(bootConfig)) {
+      return;
+    }
+    Object.keys(bootConfig).forEach(property => {
+      const value = (bootConfig as Record<string, unknown>)[property];
+      const definition = definitions[property];
+      const prepared = preparedProject.get(property);
+      clearStagedValue(library, property);
+      // An undefined bootstrap entry does not supersede a prepared root
+      // default; retain the isolated raw/live seed for the eventual winner.
+      if (isSchemaConfig(definition) && is.undefined(value) && prepared?.kind === "value") {
+        return;
+      }
+      rawProject[property] = value;
+      if (definition) {
+        liveProject[property] = value;
+      }
+    });
+  }
+
   // #MARK: loadProject
   /**
    * Register a module's config schema and populate default values.
@@ -443,7 +528,7 @@ export function Configuration({
    *   exposes multiple providers.
    * @internal
    */
-  function loadProject(library: string, definitions: CodeConfigDefinition) {
+  async function loadProject(library: string, definitions: CodeConfigDefinition): Promise<void> {
     // guard against double-registration (e.g. test re-runs, appendLibrary replacing)
     if (loaded.has(library)) {
       return;
@@ -451,7 +536,14 @@ export function Configuration({
     loaded.add(library);
     const rawProject = (rawConfiguration[library] ??= {});
     const liveProject = ((configuration as unknown as ConfigStore)[library] ??= {});
-    Object.keys(definitions).forEach(property => {
+    let preparedProject = preparedDefaults.get(library);
+    if (!preparedProject) {
+      preparedProject = new Map();
+      preparedDefaults.set(library, preparedProject);
+    }
+    const bootConfig = (internal.boot.options?.configuration as Record<string, unknown>)?.[library];
+
+    await eachSeries(Object.keys(definitions), async property => {
       const definition = definitions[property];
       const location = { context, project: library, property };
       assertConfigEntry(definition, location);
@@ -463,6 +555,16 @@ export function Configuration({
           property,
           source: definition.source ? [...definition.source] : undefined,
         });
+
+        await prepareSchemaPreview(
+          definition,
+          location,
+          property,
+          bootConfig,
+          rawProject,
+          liveProject,
+          preparedProject,
+        );
       } else {
         if (Object.hasOwn(definition, "default")) {
           rawProject[property] = definition.default;
@@ -490,18 +592,14 @@ export function Configuration({
     // Apply only this project's bootstrap values directly. The definitions for
     // later projects are not known yet, so no deep merge may clone their schema
     // inputs before the key-aware merge phase.
-    const bootConfig = (internal.boot.options?.configuration as Record<string, unknown>)?.[library];
-    if (is.object(bootConfig)) {
-      Object.keys(bootConfig).forEach(property => {
-        const value = (bootConfig as Record<string, unknown>)[property];
-        rawProject[property] = value;
-        clearStagedValue(library, property);
-        const definition = definitions[property];
-        if (definition && !isSchemaConfig(definition)) {
-          liveProject[property] = value;
-        }
-      });
-    }
+    applyBootstrapConfiguration(
+      library,
+      definitions,
+      bootConfig,
+      preparedProject,
+      rawProject,
+      liveProject,
+    );
   }
 
   // #MARK: onUpdate

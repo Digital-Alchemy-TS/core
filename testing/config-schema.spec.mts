@@ -1,4 +1,5 @@
 import { Type } from "typebox";
+import { Format } from "typebox/format";
 import { z } from "zod";
 
 import type {
@@ -208,6 +209,53 @@ describe("schema-backed configuration", () => {
     await app.teardown();
   });
 
+  it("prepares TypeBox root defaults before service construction", async () => {
+    expect.assertions(6);
+    let schemaDefaultCalls = 0;
+    let observedSchemaValue: unknown;
+    let observedLegacyValue: unknown;
+    let timeoutSignal: AbortSignal | undefined;
+    const library = CreateLibrary({
+      configuration: {
+        SCHEMA: {
+          schema: Type.Integer({
+            default: () => {
+              schemaDefaultCalls += 1;
+              return 5000;
+            },
+          }),
+        },
+        LEGACY: { default: 5000, type: "number" },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_construction_defaults",
+      services: {
+        inspect({ config }) {
+          const current = config as unknown as {
+            schema_construction_defaults: { SCHEMA: number; LEGACY: number };
+          };
+          observedSchemaValue = current.schema_construction_defaults.SCHEMA;
+          observedLegacyValue = current.schema_construction_defaults.LEGACY;
+          timeoutSignal = AbortSignal.timeout(current.schema_construction_defaults.SCHEMA);
+        },
+      },
+    });
+    const app = await TestRunner({ target: library }).run(({ config, lifecycle }) => {
+      lifecycle.onPostConfig(() => {
+        const current = config as unknown as {
+          schema_construction_defaults: { SCHEMA: number; LEGACY: number };
+        };
+        expect(current.schema_construction_defaults.SCHEMA).toBe(5000);
+        expect(current.schema_construction_defaults.LEGACY).toBe(5000);
+      });
+    });
+    expect(observedSchemaValue).toBe(5000);
+    expect(observedLegacyValue).toBe(5000);
+    expect(timeoutSignal).toBeInstanceOf(AbortSignal);
+    expect(schemaDefaultCalls).toBe(1);
+    await app.teardown();
+  });
+
   it("accepts native cyclic schemas and coerces nested values", async () => {
     expect.assertions(1);
     const schema = Type.Cyclic(
@@ -246,6 +294,215 @@ describe("schema-backed configuration", () => {
     await expect(TestRunner({ target: library }).run(() => {})).rejects.toMatchObject({
       cause: "CONFIG_SCHEMA_INVALID",
     });
+  });
+
+  it("caches root default values and deferred preparation failures", async () => {
+    expect.assertions(7);
+    let valueCalls = 0;
+    let receiverIsSchema = false;
+    let valueSchema: unknown;
+    valueSchema = Type.Number({
+      default: function (this: unknown) {
+        valueCalls += 1;
+        receiverIsSchema = this === valueSchema;
+        return 7;
+      },
+    });
+    const valueLibrary = CreateLibrary({
+      configuration: { VALUE: { schema: valueSchema as never } },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_default_value",
+      services: {},
+    });
+    const valueApp = await TestRunner({ target: valueLibrary }).run(({ config, lifecycle }) => {
+      lifecycle.onPostConfig(() => {
+        const current = config as unknown as { schema_default_value: { VALUE: number } };
+        expect(current.schema_default_value.VALUE).toBe(7);
+      });
+    });
+    expect(valueCalls).toBe(1);
+    expect(receiverIsSchema).toBe(true);
+    await valueApp.teardown();
+
+    let undefinedCalls = 0;
+    const undefinedLibrary = CreateLibrary({
+      configuration: {
+        VALUE: {
+          schema: Type.Optional(
+            Type.String({
+              default: (() => {
+                undefinedCalls += 1;
+                return undefined as unknown;
+              }) as never,
+            }),
+          ),
+        },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_default_undefined",
+      services: {},
+    });
+    const undefinedApp = await TestRunner({ target: undefinedLibrary }).run(({ config, lifecycle }) => {
+      lifecycle.onPostConfig(() => {
+        const current = config as unknown as { schema_default_undefined: { VALUE: undefined } };
+        expect(current.schema_default_undefined.VALUE).toBeUndefined();
+      });
+    });
+    expect(undefinedCalls).toBe(1);
+    await undefinedApp.teardown();
+
+    let failureCalls = 0;
+    const failureLibrary = CreateLibrary({
+      configuration: {
+        VALUE: {
+          schema: Type.Number({
+            default: () => {
+              failureCalls += 1;
+              throw new Error("secret default failure");
+            },
+          }),
+        },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_default_failure",
+      services: {
+        register({ internal }) {
+          internal.config.registerLoader(
+            async () => ({ schema_default_failure: { VALUE: 9 } }) as never,
+            "custom_default_failure" as never,
+          );
+        },
+      },
+    });
+    const failureApp = await TestRunner({ target: failureLibrary }).run(({ config, lifecycle }) => {
+      lifecycle.onPostConfig(() => {
+        const current = config as unknown as { schema_default_failure: { VALUE: number } };
+        expect(current.schema_default_failure.VALUE).toBe(9);
+      });
+    });
+    expect(failureCalls).toBe(1);
+    await failureApp.teardown();
+  });
+
+  it("keeps a defined bootstrap value from evaluating a TypeBox root factory", async () => {
+    expect.assertions(2);
+    let calls = 0;
+    const library = CreateLibrary({
+      configuration: {
+        VALUE: {
+          schema: Type.Number({
+            default: () => {
+              calls += 1;
+              return 5;
+            },
+          }),
+        },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_default_bootstrap",
+      services: {},
+    });
+    const app = await TestRunner({ target: library })
+      .setOptions({
+        configuration: { schema_default_bootstrap: { VALUE: 9 } } as never,
+      })
+      .run(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          const current = config as unknown as { schema_default_bootstrap: { VALUE: number } };
+          expect(current.schema_default_bootstrap.VALUE).toBe(9);
+        });
+      });
+    expect(calls).toBe(0);
+    await app.teardown();
+  });
+
+  it("defers nested default factories until finalization after replacement", async () => {
+    expect.assertions(3);
+    let rootCalls = 0;
+    let nestedCalls = 0;
+    const library = CreateLibrary({
+      configuration: {
+        VALUE: {
+          schema: Type.Object(
+            {
+              nested: Type.Number({
+                default: () => {
+                  nestedCalls += 1;
+                  return 7;
+                },
+              }),
+            },
+            {
+              default: () => {
+                rootCalls += 1;
+                return { nested: 1 };
+              },
+            },
+          ),
+        },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_nested_replacement",
+      services: {
+        replace({ internal }) {
+          internal.config.registerLoader(
+            async () => ({ schema_nested_replacement: { VALUE: {} } }) as never,
+            "custom_nested_replacement" as never,
+          );
+        },
+      },
+    });
+    const app = await TestRunner({ target: library }).run(({ config, lifecycle }) => {
+      lifecycle.onPostConfig(() => {
+        const current = config as unknown as {
+          schema_nested_replacement: { VALUE: { nested: number } };
+        };
+        expect(current.schema_nested_replacement.VALUE).toEqual({ nested: 7 });
+      });
+    });
+    expect(rootCalls).toBe(1);
+    expect(nestedCalls).toBe(1);
+    await app.teardown();
+  });
+
+  it("isolates mutable TypeBox root defaults from live previews", async () => {
+    expect.assertions(2);
+    let calls = 0;
+    const library = CreateLibrary({
+      configuration: {
+        VALUE: {
+          schema: Type.Object(
+            { items: Type.Array(Type.Number()) },
+            {
+              default: () => {
+                calls += 1;
+                return { items: [1] };
+              },
+            },
+          ),
+        },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_mutable_default",
+      services: {
+        mutate({ internal }) {
+          const preview = internal.boilerplate.configuration[
+            INJECTED_DEFINITIONS
+          ] as unknown as { schema_mutable_default: { VALUE: { items: number[] } } };
+          preview.schema_mutable_default.VALUE.items.push(2);
+        },
+      },
+    });
+    const app = await TestRunner({ target: library }).run(({ config, lifecycle }) => {
+      lifecycle.onPostConfig(() => {
+        const current = config as unknown as {
+          schema_mutable_default: { VALUE: { items: number[] } };
+        };
+        expect(current.schema_mutable_default.VALUE).toEqual({ items: [1] });
+      });
+    });
+    expect(calls).toBe(1);
+    await app.teardown();
   });
 
   it("runs TypeBox codec callbacks once and injects decoded output", async () => {
@@ -558,6 +815,72 @@ describe("schema-backed configuration", () => {
     await app.teardown();
   });
 
+  it("publishes raw schema previews to later custom loaders", async () => {
+    expect.assertions(4);
+    const seen: unknown[][] = [];
+    let zodTransforms = 0;
+    const library = CreateLibrary({
+      configuration: {
+        TYPEBOX: { schema: Type.Number({ default: 3 }) },
+        ZOD: {
+          schema: z.string().transform(value => {
+            zodTransforms += 1;
+            return value.toUpperCase();
+          }),
+        },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_raw_visibility",
+      services: {
+        register({ internal }) {
+          internal.config.registerLoader(async ({ internal: loaderInternal }) => {
+            const current = loaderInternal.boilerplate.configuration[
+              INJECTED_DEFINITIONS
+            ] as unknown as { schema_raw_visibility: { TYPEBOX: unknown; ZOD: unknown } };
+            seen.push([
+              current.schema_raw_visibility.TYPEBOX,
+              current.schema_raw_visibility.ZOD,
+            ]);
+            return {
+              schema_raw_visibility: { TYPEBOX: "4", ZOD: "loader" },
+            } as never;
+          }, "custom_raw_visibility_a" as never);
+          internal.config.registerLoader(async ({ internal: loaderInternal }) => {
+            const current = loaderInternal.boilerplate.configuration[
+              INJECTED_DEFINITIONS
+            ] as unknown as { schema_raw_visibility: { TYPEBOX: unknown; ZOD: unknown } };
+            seen.push([
+              current.schema_raw_visibility.TYPEBOX,
+              current.schema_raw_visibility.ZOD,
+            ]);
+            return {
+              schema_raw_visibility: { TYPEBOX: "5", ZOD: "final" },
+            } as never;
+          }, "custom_raw_visibility_b" as never);
+        },
+      },
+    });
+    const app = await TestRunner({ target: library })
+      .setOptions({
+        configuration: { schema_raw_visibility: { ZOD: "bootstrap" } } as never,
+      })
+      .run(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          const current = config as unknown as {
+            schema_raw_visibility: { TYPEBOX: number; ZOD: string };
+          };
+          expect(current.schema_raw_visibility.TYPEBOX).toBe(5);
+          expect(current.schema_raw_visibility.ZOD).toBe("FINAL");
+        });
+      });
+    expect(seen).toEqual([
+      [3, "bootstrap"],
+      ["4", "loader"],
+    ]);
+    expect(zodTransforms).toBe(1);
+    await app.teardown();
+  });
+
   it("retains legacy default fields across partial pre-final merges", async () => {
     expect.assertions(1);
     const library = CreateLibrary({
@@ -854,6 +1177,32 @@ describe("schema-backed configuration", () => {
     await app.teardown();
   });
 
+  it("accepts absent root Optional values before TypeBox validation callbacks", async () => {
+    expect.assertions(2);
+    let callbackCalls = 0;
+    const format = "schema-optional-callback";
+    Format.Set(format, () => {
+      callbackCalls += 1;
+      return false;
+    });
+    const library = CreateLibrary({
+      configuration: {
+        VALUE: { schema: Type.Optional(Type.String({ format })) },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_optional_callback",
+      services: {},
+    });
+    const app = await TestRunner({ target: library }).run(({ config, lifecycle }) => {
+      lifecycle.onPostConfig(() => {
+        const current = config as unknown as { schema_optional_callback: { VALUE: undefined } };
+        expect(current.schema_optional_callback.VALUE).toBeUndefined();
+      });
+    });
+    expect(callbackCalls).toBe(0);
+    await app.teardown();
+  });
+
   it("rejects supplied invalid values for root TypeBox optional schemas", async () => {
     expect.assertions(1);
     const library = CreateLibrary({
@@ -1044,7 +1393,7 @@ describe("schema-backed configuration", () => {
     }
   });
 
-  it("exposes safe metadata without executing default factories", async () => {
+  it("exposes safe metadata without re-executing prepared default factories", async () => {
     expect.assertions(8);
     let factoryCalls = 0;
     const library = CreateLibrary({
@@ -1067,6 +1416,7 @@ describe("schema-backed configuration", () => {
 
     await runAndTeardown(library, ({ internal, lifecycle }) => {
       lifecycle.onPreInit(() => {
+        const callsBeforeMetadata = factoryCalls;
         const metadata = internal.config.getMetadata();
         const entry = metadata.find(
           item => item.library === "schema_metadata" && item.property === "VALUE",
@@ -1077,7 +1427,7 @@ describe("schema-backed configuration", () => {
         expect(entry?.description).toBe("safe description");
         expect(Object.hasOwn(entry ?? {}, "required")).toBe(false);
         expect(entry?.default).toEqual({ kind: "dynamic" });
-        expect(factoryCalls).toBe(0);
+        expect(factoryCalls).toBe(callsBeforeMetadata);
       });
     });
     expect(factoryCalls).toBe(1);

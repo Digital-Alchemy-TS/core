@@ -516,6 +516,8 @@ export function parseConfig(config: AnyConfig, value: unknown) {
  * `[LOAD_PROJECT]`) are bootstrap-internal surface and should not be called by
  * application code. Use the named methods (`getDefinitions`, `registerLoader`,
  * `merge`, `onUpdate`, `set`) for runtime configuration interaction.
+ * Registration is awaitable because TypeBox root-default previews are prepared
+ * before the module's service factories are constructed.
  *
  * @internal
  */
@@ -524,7 +526,7 @@ export type DigitalAlchemyConfiguration = {
     application: ApplicationDefinition<S, C>,
   ) => Promise<string>;
   [INJECTED_DEFINITIONS]: TInjectedConfig;
-  [LOAD_PROJECT]: (library: string, definitions: CodeConfigDefinition) => void;
+  [LOAD_PROJECT]: (library: string, definitions: CodeConfigDefinition) => Promise<void>;
   /** @internal */
   [MERGE_RAW]: (incoming: unknown) => void;
   getDefinitions: () => KnownConfigs;

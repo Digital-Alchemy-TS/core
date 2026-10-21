@@ -6,7 +6,9 @@ import { isStandardSchema, processStandardValue, processZodValue } from "./confi
 import {
   hasTypeBoxSchemaMarker,
   isSupportedTypeBoxSchema,
+  prepareTypeBoxDefault,
   processTypeBoxValue,
+  type TypeBoxDefaultPreparation,
 } from "./config-typebox.mts";
 import type { ConfigSchema, SchemaProvider } from "./config-types.mts";
 
@@ -52,6 +54,24 @@ export function getSchemaProvider(schema: unknown, location: SchemaLocation): Sc
 }
 
 /**
+ * Prepare the construction-time state for a schema root.
+ *
+ * Only TypeBox can expose an explicit root default without invoking its full
+ * provider pipeline. Zod and opaque Standard Schema values stay unprepared and
+ * retain their single native finalization call.
+ *
+ * @internal
+ */
+export async function prepareSchemaRootDefault(
+  schema: ConfigSchema,
+  location: SchemaLocation,
+): Promise<TypeBoxDefaultPreparation> {
+  return getSchemaProvider(schema, location) === "typebox"
+    ? prepareTypeBoxDefault(schema, location)
+    : { kind: "unprepared" };
+}
+
+/**
  * Process one schema-backed configuration value through its native provider.
  *
  * @throws {BootstrapException} `CONFIG_SCHEMA_UNSUPPORTED` or
@@ -65,11 +85,12 @@ export async function processSchemaValue(
   schema: ConfigSchema,
   value: unknown,
   location: SchemaLocation,
+  prepared?: TypeBoxDefaultPreparation,
 ): Promise<unknown> {
   const provider = getSchemaProvider(schema, location);
   switch (provider) {
     case "typebox":
-      return processTypeBoxValue(schema, value, location);
+      return processTypeBoxValue(schema, value, location, prepared);
     case "zod":
       return processZodValue(schema, value, location);
     default:

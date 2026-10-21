@@ -1631,7 +1631,11 @@ describe("Library composition", () => {
     it("flattens a group to its members plus transitive depends (closure-as-membership)", () => {
       // LIB_ONE depends on LIB_BASE — closure-as-membership pulls LIB_BASE in automatically
       const { libraries } = flattenLibraries([LibraryGroup({ members: [LIB_ONE, LIB_TWO] })]);
-      expect(libraries.map(index => index.name)).toEqual(["rollup_base", "rollup_one", "rollup_two"]);
+      expect(libraries.map(index => index.name)).toEqual([
+        "rollup_base",
+        "rollup_one",
+        "rollup_two",
+      ]);
     });
 
     it("flattens nested groups transitively, including transitive depends", () => {
@@ -1656,7 +1660,10 @@ describe("Library composition", () => {
     });
 
     it("dedupes a member listed directly and via a group", () => {
-      const { libraries } = flattenLibraries([LIB_ONE, LibraryGroup({ members: [LIB_ONE, LIB_TWO] })]);
+      const { libraries } = flattenLibraries([
+        LIB_ONE,
+        LibraryGroup({ members: [LIB_ONE, LIB_TWO] }),
+      ]);
       expect(libraries.filter(index => (index.name as string) === "rollup_one")).toHaveLength(1);
     });
 
@@ -1737,7 +1744,10 @@ describe("Library composition", () => {
       const customLogger = createMockLogger();
       const warn = vi.spyOn(customLogger, "warn");
       application = CreateApplication({
-        libraries: [LibraryGroup({ members: [LIB_BASE, LIB_ONE] }), LibraryGroup({ members: [LIB_BASE, LIB_TWO] })],
+        libraries: [
+          LibraryGroup({ members: [LIB_BASE, LIB_ONE] }),
+          LibraryGroup({ members: [LIB_BASE, LIB_TWO] }),
+        ],
         // @ts-expect-error test app name not in LoadedModules
         name: "testing",
         services: {},
@@ -1760,7 +1770,9 @@ describe("Library composition", () => {
         services: {},
       });
       await application.bootstrap({ customLogger, showExtraBootStats: true });
-      const manifestCall = info.mock.calls.find(call => call[2] === "[%s] application bootstrapped");
+      const manifestCall = info.mock.calls.find(
+        call => call[2] === "[%s] application bootstrapped",
+      );
       expect(manifestCall).toBeDefined();
       const stats = manifestCall?.[1] as { rollups?: { paths?: Record<string, unknown> } };
       expect(stats.rollups?.paths).toHaveProperty("rollup_two");
@@ -1817,7 +1829,9 @@ describe("Library composition", () => {
         services: {},
       });
       await application.bootstrap({ customLogger, showExtraBootStats: true });
-      const manifestCall = info.mock.calls.find(call => call[2] === "[%s] application bootstrapped");
+      const manifestCall = info.mock.calls.find(
+        call => call[2] === "[%s] application bootstrapped",
+      );
       const stats = manifestCall?.[1] as { rollups?: { autoPulled?: Record<string, string> } };
       expect(stats.rollups?.autoPulled).toMatchObject({ rollup_base: "rollup_one" });
     });
@@ -1870,7 +1884,9 @@ describe("Library composition", () => {
         services: {},
       });
       const { libraries } = flattenLibraries([implier, implied]);
-      expect(libraries.filter(index => (index.name as string) === "implied_member")).toHaveLength(1);
+      expect(libraries.filter(index => (index.name as string) === "implied_member")).toHaveLength(
+        1,
+      );
     });
 
     it("flattens a group used inside implies (includes transitive depends)", () => {
@@ -1966,7 +1982,9 @@ describe("Library composition", () => {
 
       application = CreateApplication({
         // carrier library is named "host", exposing service "registry"
-        libraries: [LibraryGroup({ members: [PLUGIN_A, PLUGIN_B], name: "host", registry: "registry" })],
+        libraries: [
+          LibraryGroup({ members: [PLUGIN_A, PLUGIN_B], name: "host", registry: "registry" }),
+        ],
         // @ts-expect-error test app name not in LoadedModules
         name: "testing",
         services: {
@@ -2018,7 +2036,9 @@ describe("Library composition", () => {
           Init({ nested_host }: TServiceParams) {
             wiredOrder.push("leaf");
             // reading the registry proves the carrier was constructed first
-            wiredOrder.push(typeof nested_host?.reg?.register === "function" ? "carrier-ok" : "carrier-missing");
+            wiredOrder.push(
+              typeof nested_host?.reg?.register === "function" ? "carrier-ok" : "carrier-missing",
+            );
           },
         },
       });

@@ -26,10 +26,8 @@ import { CreateLibrary } from "../src/index.mts";
 
 // ─── Type-assertion helpers (local; the originals in wiring.mts are unexported) ─
 
-// eslint-disable-next-line @typescript-eslint/no-magic-numbers -- 1/2 are canonical sentinels for type-equality
-type TypeEqual<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2
-  ? true
-  : false;
+type TypeEqual<A, B> =
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 type ExpectTrue<T extends true> = T;
 /** Assert A extends B (assignability, not equality). */
 type Extends<A, B> = A extends B ? true : false;
@@ -85,7 +83,10 @@ export const LIB_TRAVEL_ROOT = CreateLibrary({
 
 /** `GetApisResult` resolves `count` as `number` — correctly typed, not degraded to `any`. */
 export type _Assert_Case1_CountIsNumber = ExpectTrue<
-  TypeEqual<GetApisResult<(typeof LIB_TRAVEL_BASE)["services"]>["TravelBaseService"]["count"], number>
+  TypeEqual<
+    GetApisResult<(typeof LIB_TRAVEL_BASE)["services"]>["TravelBaseService"]["count"],
+    number
+  >
 >;
 
 /** `greet()` return type is `string` — catches regression to `any` or `unknown`. */
@@ -178,10 +179,7 @@ export type _Assert_Case2_NonCollidingRollupSurvives = ExpectTrue<
 type MergedParams = DirectChannel & HoistedMinusDirect;
 
 export type _Assert_Case2_MergedHasDirect = ExpectTrue<
-  TypeEqual<
-    MergedParams["priority_direct"]["PriorityDirectService"]["value"],
-    string
-  >
+  TypeEqual<MergedParams["priority_direct"]["PriorityDirectService"]["value"], string>
 >;
 
 // ── Case 2 negative: HoistedService must not appear ──────────────────────────
@@ -260,10 +258,7 @@ export type _Assert_Case3_ArrowApiResolvesLocally = ExpectTrue<
  * distinguishes them by identity.
  */
 export type _Assert_Case3_NamedAndArrowAreDistinctFunctionTypes = ExpectTrue<
-  TypeEqual<
-    ReturnType<typeof NamedEquivalentService>,
-    ReturnType<typeof ConstArrowService>
-  >
+  TypeEqual<ReturnType<typeof NamedEquivalentService>, ReturnType<typeof ConstArrowService>>
   // Both return `{ hidden: boolean }` — same return shape.  This confirms the
   // RUNTIME behavior is identical (the service works either way).
 >;
@@ -365,7 +360,10 @@ export const LIB_FANOUT_E = CreateLibrary({
 
 /** FanOutBaseService.ping is typed as `() => string`. */
 export type _Assert_Case4_FanOutBasePing = ExpectTrue<
-  TypeEqual<GetApisResult<(typeof LIB_FANOUT_BASE)["services"]>["FanOutBaseService"]["ping"], () => string>
+  TypeEqual<
+    GetApisResult<(typeof LIB_FANOUT_BASE)["services"]>["FanOutBaseService"]["ping"],
+    () => string
+  >
 >;
 
 /**
@@ -375,21 +373,36 @@ export type _Assert_Case4_FanOutBasePing = ExpectTrue<
  * is vacuously true — which would mask a failing assertion.
  */
 export type _Assert_Case4_SiblingA = ExpectTrue<
-  TypeEqual<GetApisResult<(typeof LIB_FANOUT_A)["services"]>["FanOutConsumerAService"]["a"], boolean>
+  TypeEqual<
+    GetApisResult<(typeof LIB_FANOUT_A)["services"]>["FanOutConsumerAService"]["a"],
+    boolean
+  >
 >;
 export type _Assert_Case4_SiblingB = ExpectTrue<
-  TypeEqual<GetApisResult<(typeof LIB_FANOUT_B)["services"]>["FanOutConsumerBService"]["b"], boolean>
+  TypeEqual<
+    GetApisResult<(typeof LIB_FANOUT_B)["services"]>["FanOutConsumerBService"]["b"],
+    boolean
+  >
 >;
 export type _Assert_Case4_SiblingC = ExpectTrue<
-  TypeEqual<GetApisResult<(typeof LIB_FANOUT_C)["services"]>["FanOutConsumerCService"]["c"], boolean>
+  TypeEqual<
+    GetApisResult<(typeof LIB_FANOUT_C)["services"]>["FanOutConsumerCService"]["c"],
+    boolean
+  >
 >;
 export type _Assert_Case4_SiblingD = ExpectTrue<
-  TypeEqual<GetApisResult<(typeof LIB_FANOUT_D)["services"]>["FanOutConsumerDService"]["d"], boolean>
+  TypeEqual<
+    GetApisResult<(typeof LIB_FANOUT_D)["services"]>["FanOutConsumerDService"]["d"],
+    boolean
+  >
 >;
 
 /** LIB_FANOUT_E (5-entry Depends tuple) compiles without circular reference or type collapse. */
 export type _Assert_Case4_FanOutEPresent = ExpectTrue<
-  TypeEqual<GetApisResult<(typeof LIB_FANOUT_E)["services"]>["FanOutConsumerEService"]["e"], boolean>
+  TypeEqual<
+    GetApisResult<(typeof LIB_FANOUT_E)["services"]>["FanOutConsumerEService"]["e"],
+    boolean
+  >
 >;
 
 /**
@@ -398,11 +411,21 @@ export type _Assert_Case4_FanOutEPresent = ExpectTrue<
  * and `Extends<typeof LIB_FANOUT_A, ...>` would fail.
  * Each position is checked separately to avoid the `false & true = never` masking problem.
  */
-export type _Assert_Case4_Dep0 = ExpectTrue<Extends<typeof LIB_FANOUT_BASE, (typeof LIB_FANOUT_E)["depends"][0]>>;
-export type _Assert_Case4_Dep1 = ExpectTrue<Extends<typeof LIB_FANOUT_A, (typeof LIB_FANOUT_E)["depends"][1]>>;
-export type _Assert_Case4_Dep2 = ExpectTrue<Extends<typeof LIB_FANOUT_B, (typeof LIB_FANOUT_E)["depends"][2]>>;
-export type _Assert_Case4_Dep3 = ExpectTrue<Extends<typeof LIB_FANOUT_C, (typeof LIB_FANOUT_E)["depends"][3]>>;
-export type _Assert_Case4_Dep4 = ExpectTrue<Extends<typeof LIB_FANOUT_D, (typeof LIB_FANOUT_E)["depends"][4]>>;
+export type _Assert_Case4_Dep0 = ExpectTrue<
+  Extends<typeof LIB_FANOUT_BASE, (typeof LIB_FANOUT_E)["depends"][0]>
+>;
+export type _Assert_Case4_Dep1 = ExpectTrue<
+  Extends<typeof LIB_FANOUT_A, (typeof LIB_FANOUT_E)["depends"][1]>
+>;
+export type _Assert_Case4_Dep2 = ExpectTrue<
+  Extends<typeof LIB_FANOUT_B, (typeof LIB_FANOUT_E)["depends"][2]>
+>;
+export type _Assert_Case4_Dep3 = ExpectTrue<
+  Extends<typeof LIB_FANOUT_C, (typeof LIB_FANOUT_E)["depends"][3]>
+>;
+export type _Assert_Case4_Dep4 = ExpectTrue<
+  Extends<typeof LIB_FANOUT_D, (typeof LIB_FANOUT_E)["depends"][4]>
+>;
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // RUNTIME SUITE

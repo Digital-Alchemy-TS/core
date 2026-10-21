@@ -43,12 +43,7 @@ export type CodeConfigDefinition = Record<string, AnyConfig>;
  * is coerced before injection.
  */
 export type ProjectConfigTypes =
-  | "string"
-  | "boolean"
-  | "internal"
-  | "number"
-  | "record"
-  | "string[]";
+  "string" | "boolean" | "internal" | "number" | "record" | "string[]";
 
 /**
  * Fields shared by every legacy config definition, extending `core`'s coupled

@@ -351,12 +351,14 @@ describe("schema-backed configuration", () => {
       name: "schema_default_undefined",
       services: {},
     });
-    const undefinedApp = await TestRunner({ target: undefinedLibrary }).run(({ config, lifecycle }) => {
-      lifecycle.onPostConfig(() => {
-        const current = config as unknown as { schema_default_undefined: { VALUE: undefined } };
-        expect(current.schema_default_undefined.VALUE).toBeUndefined();
-      });
-    });
+    const undefinedApp = await TestRunner({ target: undefinedLibrary }).run(
+      ({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          const current = config as unknown as { schema_default_undefined: { VALUE: undefined } };
+          expect(current.schema_default_undefined.VALUE).toBeUndefined();
+        });
+      },
+    );
     expect(undefinedCalls).toBe(1);
     await undefinedApp.teardown();
 
@@ -719,9 +721,9 @@ describe("schema-backed configuration", () => {
       name: "schema_mutable_default",
       services: {
         mutate({ internal }) {
-          const preview = internal.boilerplate.configuration[
-            INJECTED_DEFINITIONS
-          ] as unknown as { schema_mutable_default: { VALUE: { items: number[] } } };
+          const preview = internal.boilerplate.configuration[INJECTED_DEFINITIONS] as unknown as {
+            schema_mutable_default: { VALUE: { items: number[] } };
+          };
           preview.schema_mutable_default.VALUE.items.push(2);
         },
       },
@@ -1070,10 +1072,7 @@ describe("schema-backed configuration", () => {
             const current = loaderInternal.boilerplate.configuration[
               INJECTED_DEFINITIONS
             ] as unknown as { schema_raw_visibility: { TYPEBOX: unknown; ZOD: unknown } };
-            seen.push([
-              current.schema_raw_visibility.TYPEBOX,
-              current.schema_raw_visibility.ZOD,
-            ]);
+            seen.push([current.schema_raw_visibility.TYPEBOX, current.schema_raw_visibility.ZOD]);
             return {
               schema_raw_visibility: { TYPEBOX: "4", ZOD: "loader" },
             } as never;
@@ -1082,10 +1081,7 @@ describe("schema-backed configuration", () => {
             const current = loaderInternal.boilerplate.configuration[
               INJECTED_DEFINITIONS
             ] as unknown as { schema_raw_visibility: { TYPEBOX: unknown; ZOD: unknown } };
-            seen.push([
-              current.schema_raw_visibility.TYPEBOX,
-              current.schema_raw_visibility.ZOD,
-            ]);
+            seen.push([current.schema_raw_visibility.TYPEBOX, current.schema_raw_visibility.ZOD]);
             return {
               schema_raw_visibility: { TYPEBOX: "5", ZOD: "final" },
             } as never;

@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/slow-regex */
 import { format, inspect } from "node:util";
 
 import chalk from "chalk";

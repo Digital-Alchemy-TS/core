@@ -14,8 +14,7 @@ export type SerializableMetadata =
 
 /** The Standard Schema v1 validation result shape used by schema providers. */
 export type StandardSchemaResult<OUTPUT> =
-  | { readonly value: OUTPUT }
-  | { readonly issues: readonly StandardSchemaIssue[] };
+  { readonly value: OUTPUT } | { readonly issues: readonly StandardSchemaIssue[] };
 
 /** The public issue shape accepted by Standard Schema v1 providers. */
 export interface StandardSchemaIssue {

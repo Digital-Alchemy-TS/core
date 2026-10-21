@@ -185,13 +185,26 @@ describe("Logger", () => {
       });
     });
 
-    it("highlights repeated hash delimiters within literal-space tokens", async () => {
+    it.each([
+      ["alpha#beta", true],
+      ["alpha#beta#gamma", true],
+      ["#value#tail", true],
+      ["##value", true],
+      ["#value", false],
+      ["value#", false],
+      ["##", false],
+    ] as const)("handles hash boundaries for %s", async (message, shouldHighlight) => {
       expect.assertions(1);
-      await TestRunner().run(({ internal: { boilerplate } }) => {
-        const message = "alpha#beta#gamma delta#epsilon";
-        const expected = `${chalk.yellow("alpha#beta#gamma")} ${chalk.yellow("delta#epsilon")}`;
-        expect(boilerplate.logger.prettyFormatMessage(message)).toBe(expected);
-      });
+      const previousLevel = chalk.level;
+      chalk.level = 1;
+      try {
+        await TestRunner().run(({ internal: { boilerplate } }) => {
+          const expected = shouldHighlight ? chalk.yellow(message) : message;
+          expect(boilerplate.logger.prettyFormatMessage(message)).toBe(expected);
+        });
+      } finally {
+        chalk.level = previousLevel;
+      }
     });
 
     it("keeps nested braces and closing-bracket barriers intact", async () => {

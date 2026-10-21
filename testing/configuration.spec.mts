@@ -949,7 +949,7 @@ describe("Configuration", () => {
         it("uses bootstrap-provided CONFIG when no CLI switch", async () => {
           vi.spyOn(fs, "existsSync").mockImplementation(() => true);
 
-          const readSpy = vi.spyOn(fs, "readFileSync").mockImplementation(() => ``);
+          const readSpy = vi.spyOn(fs, "readFileSync").mockImplementation(() => `{}`);
           const logger = createMockLogger();
           process.argv = [""];
           await configLoaderFile({
@@ -975,7 +975,7 @@ describe("Configuration", () => {
         it("CLI switch takes precedence over bootstrap-provided CONFIG", async () => {
           vi.spyOn(fs, "existsSync").mockImplementation(() => true);
 
-          const readSpy = vi.spyOn(fs, "readFileSync").mockImplementation(() => ``);
+          const readSpy = vi.spyOn(fs, "readFileSync").mockImplementation(() => `{}`);
           const logger = createMockLogger();
           process.argv = ["", "--config=./cli_config.yaml"];
           await configLoaderFile({
@@ -1003,7 +1003,7 @@ describe("Configuration", () => {
           // @ts-expect-error rest isn't needed
           vi.spyOn(fs, "statSync").mockImplementation(() => ({ isFile: () => true }));
 
-          const readSpy = vi.spyOn(fs, "readFileSync").mockImplementation(() => ``);
+          const readSpy = vi.spyOn(fs, "readFileSync").mockImplementation(() => `{}`);
           const logger = createMockLogger();
           process.argv = [""];
           await configLoaderFile({

@@ -58,16 +58,24 @@ describe("Scheduler", () => {
     it("stops", async () => {
       vi.useFakeTimers();
       const spy = vi.fn();
-      const app = await TestRunner().run(({ scheduler, lifecycle }) => {
-        const remove = scheduler.setInterval(spy, MINUTE);
-        lifecycle.onReady(() => {
-          setTimeout(() => remove(), 30 * MINUTE);
+      let remove: (() => void) | undefined;
+      let teardown: (() => Promise<void>) | undefined;
+      try {
+        const app = await TestRunner().run(({ scheduler }) => {
+          remove = scheduler.setInterval(spy, MINUTE);
         });
-      });
-      vi.advanceTimersByTime(60 * MINUTE);
-      expect(spy).toHaveBeenCalledTimes(30);
-      vi.useRealTimers();
-      await app.teardown();
+        teardown = () => app.teardown();
+
+        vi.advanceTimersByTime(30 * MINUTE);
+        expect(spy).toHaveBeenCalledTimes(30);
+        expect(remove).toBeDefined();
+        remove?.();
+        vi.advanceTimersByTime(30 * MINUTE);
+        expect(spy).toHaveBeenCalledTimes(30);
+      } finally {
+        vi.useRealTimers();
+        await teardown?.();
+      }
     });
 
     it("stops early", async () => {

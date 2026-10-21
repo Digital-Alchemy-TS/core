@@ -41,46 +41,6 @@ const SYMBOL_END = -1;
 const NOT_FOUND = -1;
 const LEVEL_MAX = 7;
 
-function highlightHashTokens(message: string): string {
-  return message
-    .split(" ")
-    .map(token => {
-      const hashIndex = token.indexOf("#");
-      return hashIndex >= SYMBOL_START && hashIndex < token.length - SYMBOL_START
-        ? chalk.yellow(token)
-        : token;
-    })
-    .join(" ");
-}
-
-function highlightBraces(message: string): string {
-  let braceStart = NOT_FOUND;
-  let formatted = "";
-  let copyFrom = 0;
-  for (let index = 0; index < message.length; index += SYMBOL_START) {
-    const character = message[index];
-    if (character === "{") {
-      if (braceStart === NOT_FOUND) {
-        braceStart = index;
-      }
-      continue;
-    }
-    if (character === "]") {
-      braceStart = NOT_FOUND;
-      continue;
-    }
-    if (character === "}" && braceStart !== NOT_FOUND) {
-      if (index > braceStart + SYMBOL_START) {
-        formatted += message.slice(copyFrom, braceStart);
-        formatted += chalk.bold.gray(message.slice(braceStart + SYMBOL_START, index));
-        copyFrom = index + SYMBOL_START;
-      }
-      braceStart = NOT_FOUND;
-    }
-  }
-  return formatted + message.slice(copyFrom);
-}
-
 /**
  * Logger factory — chalk/stdout formatter, ALS integration, level filtering,
  * multi-target fan-out, and the `context(ctx)` builder.
@@ -166,6 +126,46 @@ export async function Logger({
   }
 
   // #MARK: prettyFormatMessage
+  function highlightHashTokens(message: string): string {
+    return message
+      .split(" ")
+      .map(token => {
+        const hashIndex = token.indexOf("#", SYMBOL_START);
+        return hashIndex >= SYMBOL_START && hashIndex < token.length - SYMBOL_START
+          ? chalk.yellow(token)
+          : token;
+      })
+      .join(" ");
+  }
+
+  function highlightBraces(message: string): string {
+    let braceStart = NOT_FOUND;
+    let formatted = "";
+    let copyFrom = 0;
+    for (let index = 0; index < message.length; index += SYMBOL_START) {
+      const character = message[index];
+      if (character === "{") {
+        if (braceStart === NOT_FOUND) {
+          braceStart = index;
+        }
+        continue;
+      }
+      if (character === "]") {
+        braceStart = NOT_FOUND;
+        continue;
+      }
+      if (character === "}" && braceStart !== NOT_FOUND) {
+        if (index > braceStart + SYMBOL_START) {
+          formatted += message.slice(copyFrom, braceStart);
+          formatted += chalk.bold.gray(message.slice(braceStart + SYMBOL_START, index));
+          copyFrom = index + SYMBOL_START;
+        }
+        braceStart = NOT_FOUND;
+      }
+    }
+    return formatted + message.slice(copyFrom);
+  }
+
   /**
    * Apply chalk syntax highlighting to a log message string.
    *

@@ -269,7 +269,14 @@ export async function prepareTypeBoxDefault(
   }
 }
 
-/** @internal — clone a cached root result for one raw/live preview consumer. */
+/**
+ * Clone a cached root result for one raw/live preview consumer.
+ *
+ * @throws {BootstrapException} `CONFIG_SCHEMA_PEER_MISSING` when TypeBox is not
+ *   installed, `CONFIG_SCHEMA_PEER_BROKEN` when its value module is unusable,
+ *   or `CONFIG_SCHEMA_PROCESSING_FAILED` when native cloning throws.
+ * @internal
+ */
 export async function clonePreparedTypeBoxValue(
   prepared: TypeBoxDefaultPreparation,
   location: SchemaLocation,

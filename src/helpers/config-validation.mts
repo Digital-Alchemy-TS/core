@@ -60,6 +60,9 @@ export function getSchemaProvider(schema: unknown, location: SchemaLocation): Sc
  * provider pipeline. Zod and opaque Standard Schema values stay unprepared and
  * retain their single native finalization call.
  *
+ * @throws {BootstrapException} `CONFIG_SCHEMA_UNSUPPORTED` when the schema
+ *   provider surface is unsupported or malformed, or `CONFIG_SCHEMA_AMBIGUOUS`
+ *   when the schema exposes multiple providers.
  * @internal
  */
 export async function prepareSchemaRootDefault(

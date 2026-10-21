@@ -41,14 +41,11 @@ import { is, LOAD_PROJECT } from "../index.mts";
 import { eachSeries } from "./async.mts";
 import type {
   AnyConfig,
-  BooleanConfig,
+  ConfigInputResult,
+  ConfigOutputResult,
   DataTypes,
-  InternalConfig,
-  NumberConfig,
   OptionalModuleConfiguration,
   RecordConfig,
-  StringArrayConfig,
-  StringConfig,
 } from "./config.mts";
 import type { TContext } from "./context.mts";
 import type { CronExpression, TOffset } from "./cron.mts";
@@ -271,20 +268,10 @@ interface LoadedModulesInternal extends LoadedModules {
 }
 
 /** @internal — maps a config definition type to its concrete injected value. */
-type CastConfigResult<T extends AnyConfig> =
-  T extends StringConfig<infer STRING>
-    ? STRING
-    : T extends BooleanConfig
-      ? boolean
-      : T extends NumberConfig
-        ? number
-        : T extends StringArrayConfig
-          ? string[]
-          : T extends RecordConfig<infer VALUE>
-            ? Record<string, VALUE>
-            : T extends InternalConfig<infer VALUE>
-              ? VALUE
-              : never;
+type CastConfigResult<T extends AnyConfig> = ConfigOutputResult<T>;
+
+/** @internal — maps a config definition type to its accepted bootstrap input. */
+type CastConfigInput<T extends AnyConfig> = ConfigInputResult<T>;
 
 /**
  * Compile-time proof that a `record` config injects as `Record<string, V>` and not `never`.
@@ -579,6 +566,29 @@ export type ConfigTypes<Config> = {
   [Key in keyof Config]: Config[Key] extends AnyConfig ? CastConfigResult<Config[Key]> : never;
 };
 
+/** Resolves each key of a config block to its accepted raw/bootstrap input type. */
+export type ConfigInputTypes<Config> = {
+  [Key in keyof Config]: Config[Key] extends AnyConfig ? CastConfigInput<Config[Key]> : never;
+};
+
+/** Input-shaped configuration for modules registered through the declaration channel. */
+export type PartialConfigurationInput = Partial<{
+  [ModuleName in keyof ModuleConfigs]: Partial<ConfigInputTypes<ModuleConfigs[ModuleName]>>;
+}>;
+
+/**
+ * Input-shaped configuration accepted by bootstrap APIs.
+ *
+ * @remarks
+ * The optional `NAME`-keyed part carries an application's local `C` block
+ * when its name has not been declaration-merged into `LoadedModules` yet.
+ */
+export type BootstrapConfiguration<
+  C extends OptionalModuleConfiguration,
+  NAME extends string = never,
+> = PartialConfigurationInput &
+  Partial<Record<NAME, Partial<ConfigInputTypes<Exclude<C, undefined>>>>>;
+
 /**
  * Maps each loaded module name to its flattened `"module.service"` strings.
  *
@@ -757,7 +767,10 @@ export type PartialConfiguration = Partial<{
  * - `configSources` — opt individual loader channels in/out
  * - `loggerOptions` — tune the built-in logger's output format
  */
-export type BootstrapOptions = {
+export type BootstrapOptions<
+  C extends OptionalModuleConfiguration = OptionalModuleConfiguration,
+  NAME extends string = never,
+> = {
   /**
    * An extra library to load after the application is constructed.
    * Can be used to provide testing specific logic
@@ -792,7 +805,7 @@ export type BootstrapOptions = {
   /**
    * default values to use for configurations, before user values come in
    */
-  configuration?: PartialConfiguration;
+  configuration?: BootstrapConfiguration<C, NAME>;
 
   /**
    * use this logger, instead of the baked in one. Maybe you want some custom transports or something? Put your customized thing here
@@ -993,7 +1006,7 @@ export type ApplicationDefinition<
     logger: GetLogger;
     type: "application";
     booted: boolean;
-    bootstrap: (options?: BootstrapOptions) => Promise<TServiceParams>;
+    bootstrap: (options?: BootstrapOptions<C>) => Promise<TServiceParams>;
     teardown: () => Promise<void>;
   };
 

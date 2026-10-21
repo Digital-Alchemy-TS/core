@@ -56,7 +56,12 @@ export async function ServiceRunner<
   C extends OptionalModuleConfiguration,
   NAME extends string = "dynamic",
 >(
-  { bootstrap, ...config }: ServiceRunnerConfiguration<C, NAME> & { bootstrap?: BootstrapOptions },
+  {
+    bootstrap,
+    ...config
+  }: ServiceRunnerConfiguration<C, NAME> & {
+    bootstrap?: BootstrapOptions<C, NAME>;
+  },
   service: (params: LocalServiceParams<C, NAME>) => void | Promise<void>,
 ): Promise<void> {
   await CreateApplication({

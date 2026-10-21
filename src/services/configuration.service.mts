@@ -4,6 +4,7 @@ import type {
   ApplicationDefinition,
   CodeConfigDefinition,
   ConfigLoader,
+  ConfigMetadataDescriptor,
   DataTypes,
   DigitalAlchemyConfiguration,
   ILogger,
@@ -17,11 +18,16 @@ import type {
   TSetConfig,
 } from "../index.mts";
 import {
+  assertConfigEntry,
   BootstrapException,
   ConfigLoaderEnvironment,
   configLoaderFile,
   deepExtend,
   eachSeries,
+  getDefaultMetadata,
+  getSchemaMetadata,
+  isSchemaConfig,
+  processSchemaValue,
 } from "../index.mts";
 
 export const INITIALIZE = Symbol.for("initialize");
@@ -66,10 +72,44 @@ export function Configuration({
   // boilerplate wiring order), so we grab it on the first lifecycle hook
   let logger: ILogger;
   lifecycle.onPreInit(() => (logger = internal.boilerplate.logger.context(context)));
+  type ConfigStore = Record<string, Record<string, unknown>>;
   const configDefinitions: KnownConfigs = new Map();
-  const configuration: PartialConfiguration = {};
+  const configuration = {} as PartialConfiguration;
+  const rawConfiguration: ConfigStore = {};
+  const metadata: ConfigMetadataDescriptor[] = [];
   const loaded = new Set<string>();
   const loaders = new Map<DataTypes, ConfigLoader>([]);
+  let finalized = false;
+
+  function isConfigRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+  }
+
+  function mergeStore(target: ConfigStore, incoming: unknown): ConfigStore {
+    if (!isConfigRecord(incoming)) {
+      return target;
+    }
+    Object.keys(incoming).forEach(project => {
+      const incomingProject = incoming[project];
+      if (!isConfigRecord(incomingProject)) {
+        target[project] = incomingProject as Record<string, unknown>;
+        return;
+      }
+      const targetProject = (target[project] ??= {});
+      Object.keys(incomingProject).forEach(property => {
+        const value = incomingProject[property];
+        const definition = configDefinitions.get(project)?.[property];
+        if (definition && isSchemaConfig(definition)) {
+          // Schema values are atomic at their configuration-key boundary.
+          targetProject[property] = value;
+          return;
+        }
+        // Preserve the legacy deep-merge contract for non-schema definitions.
+        deepExtend(targetProject, { [property]: value });
+      });
+    });
+    return target;
+  }
 
   // #MARK: configValueProxy
   // proxyData exists only to satisfy Proxy's ownKeys/has contract which requires
@@ -111,36 +151,66 @@ export function Configuration({
     // logger may not be available if called during early wiring (before onPreInit)
     logger?.trace({ name: setConfig, property: String(property), project }, "setting config");
     internal.utils.object.set(configuration, [project, property].join("."), value);
+    if (!finalized) {
+      internal.utils.object.set(rawConfiguration, [project, property].join("."), value);
+    }
     // notify any onUpdate listeners so they can react to the changed value
     event.emit(EVENT_CONFIGURATION_UPDATED, project, property);
     logger?.debug({ name: setConfig, property: String(property), project }, "config set");
   }
 
-  // #MARK: validateConfig
+  // #MARK: finalizeConfig
   /**
-   * Assert that every `required: true` config property has been given a value.
+   * Process every schema after all raw loaders have settled, then publish one
+   * complete configuration snapshot to the injected proxy.
    *
-   * @throws {BootstrapException} `REQUIRED_CONFIGURATION_MISSING` if any
-   *   required property is still `undefined` after all loaders have run.
+   * @remarks
+   * The separate raw store lets an invalid value from a losing source be
+   * overwritten before schema processing. No partial processed snapshot is
+   * published when a schema fails.
    */
-  function validateConfig() {
-    configDefinitions.forEach((definitions, project) => {
-      Object.keys(definitions).forEach(key => {
-        const config = [project, key].join(".");
-        if (
-          definitions[key].required &&
-          is.undefined(internal.utils.object.get(configuration, config))
-        ) {
-          // required property was never populated by any loader or bootstrap config;
-          // treat as a fatal wiring error so the app does not silently start broken
+  async function finalizeConfig() {
+    const next = {} as ConfigStore;
+    await eachSeries([...configDefinitions.entries()], async ([project, definitions]) => {
+      const output = (next[project] ??= {});
+      await eachSeries(Object.keys(definitions), async property => {
+        const definition = definitions[property];
+        const raw = rawConfiguration[project]?.[property];
+        if (isSchemaConfig(definition)) {
+          output[property] = await processSchemaValue(
+            definition.schema,
+            raw,
+            Boolean(definition.required),
+            { context, project, property },
+          );
+          return;
+        }
+        if (definition.required && raw === undefined) {
           throw new BootstrapException(
             context,
             "REQUIRED_CONFIGURATION_MISSING",
-            `Configuration property ${config} is not defined`,
+            `Configuration property ${project}.${property} is not defined`,
           );
+        }
+        output[property] = raw;
+      });
+    });
+
+    // Preserve the historical behavior for runtime callers that supplied an
+    // unknown key through JavaScript, without letting it affect schema entries.
+    Object.keys(rawConfiguration).forEach(project => {
+      const rawProject = rawConfiguration[project];
+      const output = (next[project] ??= {});
+      Object.keys(rawProject).forEach(property => {
+        if (!(property in output)) {
+          output[property] = rawProject[property];
         }
       });
     });
+
+    Object.keys(configuration).forEach(project => delete (configuration as ConfigStore)[project]);
+    Object.assign(configuration, next);
+    finalized = true;
   }
 
   // #MARK: registerLoader
@@ -171,19 +241,18 @@ export function Configuration({
   function mergeConfig(data: Partial<AbstractConfig>, type: DataTypes[]) {
     // skip properties whose declared source list excludes every type in this batch
     configDefinitions.forEach((project, name) => {
-      const keys = Object.keys(project) as (keyof typeof project)[];
+      const keys = Object.keys(project);
       keys.forEach(key => {
         const { source } = project[key];
         if (is.array(source) && !type.some(i => source.includes(i))) {
           return;
         }
-        const moduleConfig = data[name as keyof AbstractConfig];
-        if (moduleConfig && key in moduleConfig) {
-          internal.utils.object.set(
-            configuration,
-            [name, key].join("."),
-            data[name as keyof AbstractConfig][key],
-          );
+        const moduleConfig = (data as Record<string, unknown>)[name];
+        if (isConfigRecord(moduleConfig) && key in moduleConfig) {
+          const target = (rawConfiguration[name] ??= {});
+          // Loader output remains raw, including schema values that may be
+          // invalid until source precedence has completely settled.
+          target[key] = moduleConfig[key];
         }
       });
     });
@@ -252,7 +321,7 @@ export function Configuration({
       configTimings[type] = `${(performance.now() - loaderStart).toFixed(DECIMALS)}ms`;
     });
 
-    validateConfig();
+    await finalizeConfig();
 
     internal.boot.configTimings = configTimings;
 
@@ -271,7 +340,9 @@ export function Configuration({
    * Use `setConfig` for individual runtime updates that need listeners notified.
    */
   function merge(merge: Partial<PartialConfiguration>) {
-    return deepExtend(configuration, merge);
+    const target = finalized ? (configuration as unknown as ConfigStore) : rawConfiguration;
+    mergeStore(target, merge);
+    return configuration;
   }
 
   // #MARK: loadProject
@@ -293,23 +364,58 @@ export function Configuration({
       return;
     }
     loaded.add(library);
-    internal.utils.object.set(configuration, library, {});
-    Object.keys(definitions).forEach(key => {
-      internal.utils.object.set(configuration, [library, key].join("."), definitions[key].default);
+    const rawProject = (rawConfiguration[library] ??= {});
+    const liveProject = ((configuration as unknown as ConfigStore)[library] ??= {});
+    Object.keys(definitions).forEach(property => {
+      const definition = definitions[property];
+      const location = { context, project: library, property };
+      assertConfigEntry(definition, location);
+      if (isSchemaConfig(definition)) {
+        const schemaMetadata = getSchemaMetadata(definition.schema, location);
+        metadata.push(
+          Object.freeze({
+            ...schemaMetadata,
+            library,
+            property,
+            required: definition.required,
+            source: definition.source ? Object.freeze([...definition.source]) : undefined,
+          }),
+        );
+      } else {
+        if (Object.prototype.hasOwnProperty.call(definition, "default")) {
+          rawProject[property] = definition.default;
+          // Legacy defaults historically remain visible during construction.
+          liveProject[property] = definition.default;
+        }
+        const legacyMetadata: ConfigMetadataDescriptor = {
+          description: Array.isArray(definition.description)
+            ? definition.description.join(". ")
+            : definition.description,
+          library,
+          property,
+          provider: "legacy",
+          required: definition.required,
+          source: definition.source ? Object.freeze([...definition.source]) : undefined,
+          type: definition.type,
+          default: Object.prototype.hasOwnProperty.call(definition, "default")
+            ? getDefaultMetadata(definition.default)
+            : undefined,
+        };
+        metadata.push(Object.freeze(legacyMetadata));
+      }
     });
     configDefinitions.set(library, definitions);
-    // apply any values that were baked into bootstrap options for this project;
-    // these take priority over schema defaults but lose to loader-sourced values
-    const bootConfig = internal.boot.options?.configuration ?? {};
-    if (library in bootConfig) {
-      const project = library as keyof typeof bootConfig;
-      const config = bootConfig[project];
-      Object.keys(config).forEach(key => {
-        internal.utils.object.set(
-          configuration,
-          [project, key].join("."),
-          config[key as keyof typeof config],
-        );
+    // Apply only this project's bootstrap values directly. The definitions for
+    // later projects are not known yet, so no deep merge may clone their schema
+    // inputs before the key-aware merge phase.
+    const bootConfig = (internal.boot.options?.configuration as Record<string, unknown>)?.[library];
+    if (isConfigRecord(bootConfig)) {
+      Object.keys(bootConfig).forEach(property => {
+        rawProject[property] = bootConfig[property];
+        const definition = definitions[property];
+        if (definition && !isSchemaConfig(definition)) {
+          liveProject[property] = bootConfig[property];
+        }
       });
     }
   }
@@ -359,6 +465,9 @@ export function Configuration({
      * Retrieve the metadata that was originally used to define the configs.
      */
     getDefinitions: () => configDefinitions,
+
+    /** Return a safe read-only metadata view for scanner/help consumers. */
+    getMetadata: () => Object.freeze([...metadata]),
 
     /**
      * Deep-merge a partial configuration object into the live store.

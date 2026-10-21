@@ -432,7 +432,7 @@ export function CreateApplication<S extends ServiceMap, C extends OptionalModule
     // * Merge in stuff which may only exist via declaration merging
     ...extra,
     [WIRE_PROJECT]: async (internal: InternalDefinition) => {
-      BOILERPLATE(internal)?.configuration?.[LOAD_PROJECT](
+      await BOILERPLATE(internal)?.configuration?.[LOAD_PROJECT](
         name as keyof LoadedModules,
         configuration,
       );
@@ -777,7 +777,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
     // sync convenience aliases so downstream code reaches config via either path
     internal.config = api.configuration;
     // ~ configuration
-    api.configuration?.[LOAD_PROJECT](LIB_BOILERPLATE.name, LIB_BOILERPLATE.configuration);
+    await api.configuration?.[LOAD_PROJECT](LIB_BOILERPLATE.name, LIB_BOILERPLATE.configuration);
     const logger = api.logger.context(WIRING_CONTEXT);
     application.logger = logger;
     logger.debug({ name: bootstrap }, `[boilerplate] wiring complete`);
@@ -836,7 +836,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
       logger.debug({ name: bootstrap }, `bootLibrariesFirst`);
       // bootLibrariesFirst: skip application wiring here and run it later,
       // between Bootstrap and Ready, so the app sees fully-initialized library services
-      api.configuration[LOAD_PROJECT](application.name, application.configuration);
+      await api.configuration[LOAD_PROJECT](application.name, application.configuration);
     } else {
       logger.debug({ name: bootstrap }, `init application`);
       start = performance.now();

@@ -1676,7 +1676,7 @@ export function CreateLibrary<
       // not defined for boilerplate (chicken & egg)
       // manually added inside the bootstrap process
       const config = internal?.boilerplate.configuration as ConfigManager;
-      config?.[LOAD_PROJECT](libraryName as keyof LoadedModulesInternal, configuration);
+      await config?.[LOAD_PROJECT](libraryName as keyof LoadedModulesInternal, configuration);
       await eachSeries(wireOrder(priorityInit, Object.keys(services)), async service => {
         serviceApis[service] = await WireService(
           libraryName,

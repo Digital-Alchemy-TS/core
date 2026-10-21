@@ -8,8 +8,6 @@ import {
 } from "./config-errors.mts";
 import type { ConfigSchema, StandardSchemaV1 } from "./config-types.mts";
 
-const SINGLE_VALIDATION_ISSUE = SINGLE;
-
 /** Return true when a value has the supported Standard Schema v1 surface. */
 export function isStandardSchema(value: unknown): value is StandardSchemaV1 {
   if (!is.object(value) || !("~standard" in value)) {
@@ -36,15 +34,13 @@ function hasValidationIssues(result: Record<PropertyKey, unknown>): boolean {
  * Process one Zod-backed configuration value through its native async parser.
  *
  * @throws {BootstrapException} `CONFIG_SCHEMA_PROVIDER_UNSUPPORTED` when the
- *   Zod surface is not compatible, `CONFIG_SCHEMA_REQUIRED` when a required
- *   output is missing, `CONFIG_SCHEMA_INVALID` when validation fails, and
- *   `CONFIG_SCHEMA_PROCESSING_FAILED` when the provider throws.
+ *   Zod surface is not compatible, `CONFIG_SCHEMA_INVALID` when validation
+ *   fails, and `CONFIG_SCHEMA_PROCESSING_FAILED` when the provider throws.
  * @internal
  */
 export async function processZodValue(
   schema: ConfigSchema,
   value: unknown,
-  required: boolean,
   location: SchemaLocation,
 ): Promise<unknown> {
   const zodSchema = schema as unknown as Record<PropertyKey, unknown>;
@@ -67,13 +63,10 @@ export async function processZodValue(
     processingFailure(location, "zod");
   }
   if (resultRecord.success !== true) {
-    validationFailure(location, "zod", SINGLE_VALIDATION_ISSUE);
+    validationFailure(location, "zod", SINGLE);
   }
   if (!Object.hasOwn(resultRecord, "data")) {
     processingFailure(location, "zod");
-  }
-  if (required && is.undefined(resultRecord.data)) {
-    throw schemaException(location, "CONFIG_SCHEMA_REQUIRED", "output is missing");
   }
   return resultRecord.data;
 }
@@ -82,15 +75,13 @@ export async function processZodValue(
  * Process one generic Standard Schema-backed configuration value.
  *
  * @throws {BootstrapException} `CONFIG_SCHEMA_INVALID` when validation returns
- *   issues, `CONFIG_SCHEMA_REQUIRED` when a required output is missing, and
- *   `CONFIG_SCHEMA_PROCESSING_FAILED` when the provider throws or returns an
- *   invalid result shape.
+ *   issues and `CONFIG_SCHEMA_PROCESSING_FAILED` when the provider throws or
+ *   returns an invalid result shape.
  * @internal
  */
 export async function processStandardValue(
   schema: ConfigSchema,
   value: unknown,
-  required: boolean,
   location: SchemaLocation,
 ): Promise<unknown> {
   const standard = (schema as StandardSchemaV1)["~standard"];
@@ -103,17 +94,10 @@ export async function processStandardValue(
   const resultRecord = result as Record<PropertyKey, unknown>;
   if (hasValidationIssues(resultRecord)) {
     const issues = resultRecord.issues;
-    validationFailure(
-      location,
-      "standard",
-      is.array(issues) ? issues.length : SINGLE_VALIDATION_ISSUE,
-    );
+    validationFailure(location, "standard", is.array(issues) ? issues.length : SINGLE);
   }
   if (!Object.hasOwn(resultRecord, "value")) {
     processingFailure(location, "standard");
-  }
-  if (required && is.undefined(resultRecord.value)) {
-    throw schemaException(location, "CONFIG_SCHEMA_REQUIRED", "output is missing");
   }
   return resultRecord.value;
 }

@@ -43,12 +43,7 @@ export type CodeConfigDefinition = Record<string, AnyConfig>;
  * is coerced before injection.
  */
 export type ProjectConfigTypes =
-  | "string"
-  | "boolean"
-  | "internal"
-  | "number"
-  | "record"
-  | "string[]";
+  "string" | "boolean" | "internal" | "number" | "record" | "string[]";
 
 /**
  * Fields shared by every legacy config definition, extending `core`'s coupled
@@ -89,8 +84,8 @@ interface BaseConfigInternal extends BaseConfig {
   source?: (keyof ConfigLoaderSource)[];
 }
 
-/** Schema metadata fields derived from the legacy definition contract. */
-type SchemaConfigBase = Omit<BaseConfigInternal, "type" | "default" | "description">;
+/** Schema controls its own metadata, defaults, and required/optional behavior. */
+type SchemaConfigBase = Omit<BaseConfigInternal, "type" | "default" | "description" | "required">;
 
 /** A schema-backed config definition with schema-owned metadata and defaults. */
 export type SchemaConfig<SCHEMA extends ConfigSchema = ConfigSchema> = SchemaConfigBase & {
@@ -98,6 +93,7 @@ export type SchemaConfig<SCHEMA extends ConfigSchema = ConfigSchema> = SchemaCon
   type?: never;
   default?: never;
   description?: never;
+  required?: never;
 };
 
 /**
@@ -515,6 +511,8 @@ export function parseConfig(config: AnyConfig, value: unknown) {
  * `[LOAD_PROJECT]`) are bootstrap-internal surface and should not be called by
  * application code. Use the named methods (`getDefinitions`, `registerLoader`,
  * `merge`, `onUpdate`, `set`) for runtime configuration interaction.
+ * Registration is awaitable because TypeBox root-default previews are prepared
+ * before the module's service factories are constructed.
  *
  * @internal
  */
@@ -523,7 +521,7 @@ export type DigitalAlchemyConfiguration = {
     application: ApplicationDefinition<S, C>,
   ) => Promise<string>;
   [INJECTED_DEFINITIONS]: TInjectedConfig;
-  [LOAD_PROJECT]: (library: string, definitions: CodeConfigDefinition) => void;
+  [LOAD_PROJECT]: (library: string, definitions: CodeConfigDefinition) => Promise<void>;
   /** @internal */
   [MERGE_RAW]: (incoming: unknown) => void;
   getDefinitions: () => KnownConfigs;

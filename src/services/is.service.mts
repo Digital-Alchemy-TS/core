@@ -9,13 +9,7 @@ import type { TBlackHole, TContext } from "../index.mts";
 import { EMPTY, EVEN } from "../index.mts";
 
 type MaybeEmptyTypes =
-  | string
-  | undefined
-  | Array<unknown>
-  | number
-  | Set<unknown>
-  | Map<unknown, unknown>
-  | object;
+  string | undefined | Array<unknown> | number | Set<unknown> | Map<unknown, unknown> | object;
 
 type MaybeFunction = (...parameters: unknown[]) => TBlackHole;
 

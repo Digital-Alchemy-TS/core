@@ -6,7 +6,9 @@ import { isStandardSchema, processStandardValue, processZodValue } from "./confi
 import {
   hasTypeBoxSchemaMarker,
   isSupportedTypeBoxSchema,
+  prepareTypeBoxDefault,
   processTypeBoxValue,
+  type TypeBoxDefaultPreparation,
 } from "./config-typebox.mts";
 import type { ConfigSchema, SchemaProvider } from "./config-types.mts";
 
@@ -52,30 +54,50 @@ export function getSchemaProvider(schema: unknown, location: SchemaLocation): Sc
 }
 
 /**
+ * Prepare the construction-time state for a schema root.
+ *
+ * Only TypeBox can expose an explicit root default without invoking its full
+ * provider pipeline. Zod and opaque Standard Schema values stay unprepared and
+ * retain their single native finalization call.
+ *
+ * @throws {BootstrapException} `CONFIG_SCHEMA_UNSUPPORTED` when the schema
+ *   provider surface is unsupported or malformed, or `CONFIG_SCHEMA_AMBIGUOUS`
+ *   when the schema exposes multiple providers.
+ * @internal
+ */
+export async function prepareSchemaRootDefault(
+  schema: ConfigSchema,
+  location: SchemaLocation,
+): Promise<TypeBoxDefaultPreparation> {
+  return getSchemaProvider(schema, location) === "typebox"
+    ? prepareTypeBoxDefault(schema, location)
+    : { kind: "unprepared" };
+}
+
+/**
  * Process one schema-backed configuration value through its native provider.
  *
  * @throws {BootstrapException} `CONFIG_SCHEMA_UNSUPPORTED` or
  *   `CONFIG_SCHEMA_AMBIGUOUS` when dispatch cannot identify one provider,
  *   `CONFIG_SCHEMA_PROVIDER_UNSUPPORTED` for an unsupported Zod surface,
  *   `CONFIG_SCHEMA_PEER_MISSING` or `CONFIG_SCHEMA_PEER_BROKEN` when TypeBox
- *   cannot be loaded, `CONFIG_SCHEMA_REQUIRED` when required output is missing,
- *   `CONFIG_SCHEMA_INVALID` when validation fails, and
+ *   cannot be loaded, `CONFIG_SCHEMA_INVALID` when validation fails, and
  *   `CONFIG_SCHEMA_PROCESSING_FAILED` when provider processing fails.
  */
 export async function processSchemaValue(
   schema: ConfigSchema,
   value: unknown,
-  required: boolean,
   location: SchemaLocation,
+  prepared?: TypeBoxDefaultPreparation,
 ): Promise<unknown> {
   const provider = getSchemaProvider(schema, location);
   switch (provider) {
     case "typebox":
-      return processTypeBoxValue(schema, value, required, location);
+      return processTypeBoxValue(schema, value, location, prepared);
     case "zod":
-      return processZodValue(schema, value, required, location);
+      return processZodValue(schema, value, location);
     default:
-      return processStandardValue(schema, value, required, location);
+      return processStandardValue(schema, value, location);
   }
 }
 
@@ -113,6 +135,13 @@ export function assertConfigEntry(value: unknown, location: SchemaLocation): voi
   }
   if (is.undefined(record.schema) || record.schema === null) {
     throw schemaException(location, "CONFIGURATION_DEFINITION_INVALID", "schema is missing");
+  }
+  if (Object.hasOwn(record, "required")) {
+    throw schemaException(
+      location,
+      "CONFIGURATION_DEFINITION_INVALID",
+      "schema entries cannot declare required",
+    );
   }
   if (Object.hasOwn(record, "default") || Object.hasOwn(record, "description")) {
     throw schemaException(

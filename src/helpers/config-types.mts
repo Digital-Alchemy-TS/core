@@ -14,8 +14,7 @@ export type SerializableMetadata =
 
 /** The Standard Schema v1 validation result shape used by schema providers. */
 export type StandardSchemaResult<OUTPUT> =
-  | { readonly value: OUTPUT }
-  | { readonly issues: readonly StandardSchemaIssue[] };
+  { readonly value: OUTPUT } | { readonly issues: readonly StandardSchemaIssue[] };
 
 /** The public issue shape accepted by Standard Schema v1 providers. */
 export interface StandardSchemaIssue {
@@ -45,18 +44,31 @@ export type SupportedTypeBoxSchema = { readonly "~kind": string } | { readonly "
 /** All schema values accepted by a schema-backed configuration entry. */
 export type ConfigSchema = StandardSchemaV1 | SupportedTypeBoxSchema;
 
+/** TypeBox's optional marker is normally property-scoped; honor it for root schemas. */
+type TypeBoxSchemaInput<SCHEMA extends SupportedTypeBoxSchema> = SCHEMA extends {
+  readonly "~optional": true;
+}
+  ? StaticEncode<SCHEMA> | undefined
+  : StaticEncode<SCHEMA>;
+
+type TypeBoxSchemaOutput<SCHEMA extends SupportedTypeBoxSchema> = SCHEMA extends {
+  readonly "~optional": true;
+}
+  ? StaticDecode<SCHEMA> | undefined
+  : StaticDecode<SCHEMA>;
+
 /** Input accepted by a supported schema provider. */
 export type SchemaInput<SCHEMA extends ConfigSchema> = SCHEMA extends StandardSchemaV1
   ? StandardSchemaInput<SCHEMA>
   : SCHEMA extends SupportedTypeBoxSchema
-    ? StaticEncode<SCHEMA>
+    ? TypeBoxSchemaInput<SCHEMA>
     : never;
 
 /** Output injected after a supported schema provider has processed a value. */
 export type SchemaOutput<SCHEMA extends ConfigSchema> = SCHEMA extends StandardSchemaV1
   ? StandardSchemaOutput<SCHEMA>
   : SCHEMA extends SupportedTypeBoxSchema
-    ? StaticDecode<SCHEMA>
+    ? TypeBoxSchemaOutput<SCHEMA>
     : never;
 
 /** Normalised provider identity used by metadata and diagnostics. */

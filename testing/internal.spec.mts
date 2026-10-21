@@ -117,24 +117,14 @@ describe("Fetch Extension", () => {
       });
     });
 
-    it("converts multiple words separated by spaces to title case", async () => {
+    it.each([
+      ["multiple words here", "Multiple Words Here"],
+      ["multiple_words_here", "Multiple Words Here"],
+      ["multiple-words-here", "Multiple Words Here"],
+    ] as const)("converts %s to title case", async (value, expected) => {
       expect.assertions(1);
       await TestRunner().run(({ internal }) => {
-        expect(internal.utils.titleCase("multiple words here")).toBe("Multiple Words Here");
-      });
-    });
-
-    it("converts multiple words separated by underscores to title case", async () => {
-      expect.assertions(1);
-      await TestRunner().run(({ internal }) => {
-        expect(internal.utils.titleCase("multiple_words_here")).toBe("Multiple Words Here");
-      });
-    });
-
-    it("converts multiple words separated by hyphens to title case", async () => {
-      expect.assertions(1);
-      await TestRunner().run(({ internal }) => {
-        expect(internal.utils.titleCase("multiple-words-here")).toBe("Multiple Words Here");
+        expect(internal.utils.titleCase(value)).toBe(expected);
       });
     });
 
@@ -235,7 +225,7 @@ describe("Fetch Extension", () => {
       });
     });
 
-    it("handles null or undefined values in the path", async () => {
+    it("handles null values in the path", async () => {
       expect.assertions(1);
       await TestRunner().run(({ internal }) => {
         const object = { a: { b: null } } as object;
@@ -244,7 +234,7 @@ describe("Fetch Extension", () => {
       });
     });
 
-    it("handles null or undefined values in the path", async () => {
+    it("handles a null root object in the path", async () => {
       expect.assertions(1);
       await TestRunner().run(({ internal }) => {
         expect(() => {
@@ -255,7 +245,7 @@ describe("Fetch Extension", () => {
   });
 
   describe("internal.safeExec", () => {
-    it("executes the provided function successfully", async () => {
+    it("executes the provided callback successfully", async () => {
       expect.assertions(1);
       await TestRunner().run(async ({ internal }) => {
         const mockFunction = vi.fn();
@@ -264,7 +254,7 @@ describe("Fetch Extension", () => {
       });
     });
 
-    it("executes the provided function successfully", async () => {
+    it("returns undefined when no callback is provided", async () => {
       expect.assertions(1);
       await TestRunner().run(async ({ internal }) => {
         expect(await internal.safeExec(undefined)).toBeUndefined();

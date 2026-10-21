@@ -31,6 +31,21 @@ type ExpectTrue<T extends true> = T;
 export type _StrictSchemaInputIsString = ExpectTrue<Equal<StrictInput["VALUE"], string>>;
 export type _StrictSchemaOutputIsNumber = ExpectTrue<Equal<StrictOutput["VALUE"], number>>;
 
+const ROOT_OPTIONAL_STRING_SCHEMA = {
+  "~kind": "String" as const,
+  type: "string" as const,
+  "~optional": true as const,
+};
+type RootOptionalConfiguration = { VALUE: { schema: typeof ROOT_OPTIONAL_STRING_SCHEMA } };
+type RootOptionalInput = ConfigInputTypes<RootOptionalConfiguration>;
+type RootOptionalOutput = ConfigTypes<RootOptionalConfiguration>;
+export type _RootOptionalInputAllowsUndefined = ExpectTrue<
+  Equal<RootOptionalInput["VALUE"], string | undefined>
+>;
+export type _RootOptionalOutputAllowsUndefined = ExpectTrue<
+  Equal<RootOptionalOutput["VALUE"], string | undefined>
+>;
+
 const UNKNOWN_OUTPUT_SCHEMA = {
   "~standard": {
     vendor: "unknown-output",

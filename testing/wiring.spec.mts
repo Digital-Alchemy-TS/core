@@ -444,7 +444,7 @@ describe("Lifecycle", () => {
       expect(list).toEqual(["PreInit", "PostConfig"]);
     });
 
-    it("tracks onPreInit", async () => {
+    it("tracks onBootstrap", async () => {
       expect.assertions(1);
       let list: LifecycleStages[];
 

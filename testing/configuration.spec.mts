@@ -1204,28 +1204,14 @@ describe("Configuration", () => {
         expect(output).toEqual({ internalKey: "internalValue" });
       });
 
-      it("boolean config (true case)", () => {
-        const value = "true";
+      it.each([
+        ["true", true],
+        ["false", false],
+        ["y", true],
+        ["n", false],
+      ] as const)("boolean config parses %s as %s", (value, expected) => {
         const output = parseConfig({ type: "boolean" }, value);
-        expect(output).toBe(true);
-      });
-
-      it("boolean config (false case)", () => {
-        const value = "false";
-        const output = parseConfig({ type: "boolean" }, value);
-        expect(output).toBe(false);
-      });
-
-      it("boolean config (yes case)", () => {
-        const value = "y";
-        const output = parseConfig({ type: "boolean" }, value);
-        expect(output).toBe(true);
-      });
-
-      it("boolean config (no case)", () => {
-        const value = "n";
-        const output = parseConfig({ type: "boolean" }, value);
-        expect(output).toBe(false);
+        expect(output).toBe(expected);
       });
 
       it("boolean config with non-boolean/non-string input", () => {

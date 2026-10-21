@@ -22,6 +22,9 @@ const compat = new FlatCompat({
 });
 
 export default [
+  {
+    ignores: ["dist/**", "build/**", "coverage/**", "examples/**/dist/**"],
+  },
   sonarjs.configs.recommended,
   {
     plugins: {

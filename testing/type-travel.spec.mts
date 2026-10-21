@@ -52,7 +52,7 @@ type Extends<A, B> = A extends B ? true : false;
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /** Named function declaration — emits a cross-file `typeof` reference in `.d.ts`. */
-export function TravelBaseService(_params: TServiceParams): { greet(): string; count: number } {
+export function TravelBaseService({}: TServiceParams): { greet(): string; count: number } {
   return {
     count: 42,
     greet(): string {
@@ -68,7 +68,7 @@ export const LIB_TRAVEL_BASE = CreateLibrary({
 });
 
 /** Named function declaration — the root library that depends on LIB_TRAVEL_BASE. */
-export function TravelRootService(_params: TServiceParams): { alive: boolean } {
+export function TravelRootService({}: TServiceParams): { alive: boolean } {
   return { alive: true };
 }
 
@@ -125,7 +125,7 @@ export type _Assert_Case1_DependsTupleRetainsLiteralType = ExpectTrue<
 // and assert that the shared key disappears from the hoisted side.
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function PriorityDirectService(_params: TServiceParams): { value: string } {
+export function PriorityDirectService({}: TServiceParams): { value: string } {
   return { value: "direct" };
 }
 
@@ -228,7 +228,7 @@ export const LIB_CONST_ARROW = CreateLibrary({
 });
 
 // Named function that returns the same shape — for comparison.
-export function NamedEquivalentService(_params: TServiceParams): { hidden: boolean } {
+export function NamedEquivalentService({}: TServiceParams): { hidden: boolean } {
   return { hidden: true };
 }
 
@@ -297,7 +297,7 @@ export type _Assert_Case3_KeyAbsentFromTServiceParams = TServiceParams["const_ar
 //   - No quadratic growth observed: compile time is in the normal range
 // ═══════════════════════════════════════════════════════════════════════════════
 
-export function FanOutBaseService(_params: TServiceParams): { ping(): string } {
+export function FanOutBaseService({}: TServiceParams): { ping(): string } {
   return { ping: (): string => "pong" };
 }
 export const LIB_FANOUT_BASE = CreateLibrary({
@@ -306,7 +306,7 @@ export const LIB_FANOUT_BASE = CreateLibrary({
   services: { FanOutBaseService },
 });
 
-export function FanOutConsumerAService(_params: TServiceParams): { a: boolean } {
+export function FanOutConsumerAService({}: TServiceParams): { a: boolean } {
   return { a: true };
 }
 export const LIB_FANOUT_A = CreateLibrary({
@@ -316,7 +316,7 @@ export const LIB_FANOUT_A = CreateLibrary({
   services: { FanOutConsumerAService },
 });
 
-export function FanOutConsumerBService(_params: TServiceParams): { b: boolean } {
+export function FanOutConsumerBService({}: TServiceParams): { b: boolean } {
   return { b: true };
 }
 export const LIB_FANOUT_B = CreateLibrary({
@@ -326,7 +326,7 @@ export const LIB_FANOUT_B = CreateLibrary({
   services: { FanOutConsumerBService },
 });
 
-export function FanOutConsumerCService(_params: TServiceParams): { c: boolean } {
+export function FanOutConsumerCService({}: TServiceParams): { c: boolean } {
   return { c: true };
 }
 export const LIB_FANOUT_C = CreateLibrary({
@@ -336,7 +336,7 @@ export const LIB_FANOUT_C = CreateLibrary({
   services: { FanOutConsumerCService },
 });
 
-export function FanOutConsumerDService(_params: TServiceParams): { d: boolean } {
+export function FanOutConsumerDService({}: TServiceParams): { d: boolean } {
   return { d: true };
 }
 export const LIB_FANOUT_D = CreateLibrary({
@@ -346,7 +346,7 @@ export const LIB_FANOUT_D = CreateLibrary({
   services: { FanOutConsumerDService },
 });
 
-export function FanOutConsumerEService(_params: TServiceParams): { e: boolean } {
+export function FanOutConsumerEService({}: TServiceParams): { e: boolean } {
   return { e: true };
 }
 export const LIB_FANOUT_E = CreateLibrary({

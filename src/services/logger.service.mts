@@ -38,7 +38,48 @@ const MAX_CUTOFF = 2000;
 const frontDash = " - ";
 const SYMBOL_START = 1;
 const SYMBOL_END = -1;
+const NOT_FOUND = -1;
 const LEVEL_MAX = 7;
+
+function highlightHashTokens(message: string): string {
+  return message
+    .split(" ")
+    .map(token => {
+      const hashIndex = token.indexOf("#");
+      return hashIndex >= SYMBOL_START && hashIndex < token.length - SYMBOL_START
+        ? chalk.yellow(token)
+        : token;
+    })
+    .join(" ");
+}
+
+function highlightBraces(message: string): string {
+  let braceStart = NOT_FOUND;
+  let formatted = "";
+  let copyFrom = 0;
+  for (let index = 0; index < message.length; index += SYMBOL_START) {
+    const character = message[index];
+    if (character === "{") {
+      if (braceStart === NOT_FOUND) {
+        braceStart = index;
+      }
+      continue;
+    }
+    if (character === "]") {
+      braceStart = NOT_FOUND;
+      continue;
+    }
+    if (character === "}" && braceStart !== NOT_FOUND) {
+      if (index > braceStart + SYMBOL_START) {
+        formatted += message.slice(copyFrom, braceStart);
+        formatted += chalk.bold.gray(message.slice(braceStart + SYMBOL_START, index));
+        copyFrom = index + SYMBOL_START;
+      }
+      braceStart = NOT_FOUND;
+    }
+  }
+  return formatted + message.slice(copyFrom);
+}
 
 /**
  * Logger factory — chalk/stdout formatter, ALS integration, level filtering,
@@ -148,18 +189,17 @@ export async function Logger({
     if (!prettyFormat || message.length > MAX_CUTOFF) {
       return message;
     }
-    // ? partA#partB - highlight it all in yellow
-    message = message.replaceAll(new RegExp("([^ ]+#[^ ]+)", "g"), i => chalk.yellow(i));
+    // ? partA#partB - highlight it all in yellow. Literal spaces delimit tokens.
+    message = highlightHashTokens(message);
     // ? [A] > [B] > [C] - highlight the >'s in blue
     message = message.replaceAll("] > [", `] ${BLUE_TICK} [`);
     // ? [Text] - strip brackets, highlight magenta
     message = message.replaceAll(new RegExp(String.raw`(\[[^\]\[]+\])`, "g"), i =>
       chalk.bold.magenta(i.slice(SYMBOL_START, SYMBOL_END)),
     );
-    // ? {Text} - strip braces, highlight gray
-    message = message.replaceAll(new RegExp(String.raw`(\{[^\]}]+\})`, "g"), i =>
-      chalk.bold.gray(i.slice(SYMBOL_START, SYMBOL_END)),
-    );
+    // ? {Text} - strip braces, highlight gray. A pending opening brace is
+    // invalidated by ] and the first valid opening owns the next }.
+    message = highlightBraces(message);
     // ? " - Text" (line prefix with dash) - highlight dash
     if (message.slice(START, frontDash.length) === frontDash) {
       message = `${YELLOW_DASH}${message.slice(frontDash.length)}`;

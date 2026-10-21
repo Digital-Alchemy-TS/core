@@ -25,7 +25,7 @@ describe("ALS", () => {
     });
   });
 
-  it("getLogData", async () => {
+  it("getLogData ignores an empty logs store", async () => {
     await TestRunner().run(({ als }) => {
       als.enterWith({
         logs: undefined,
@@ -35,7 +35,7 @@ describe("ALS", () => {
     });
   });
 
-  it("getLogData", async () => {
+  it("getLogData returns the stored log payload", async () => {
     await TestRunner().run(({ als }) => {
       // @ts-expect-error testing
       als.enterWith({ logs: { test: true } });

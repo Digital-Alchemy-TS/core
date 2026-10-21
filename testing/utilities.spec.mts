@@ -301,7 +301,7 @@ describe("utilities", () => {
       expect(end - start).toBeGreaterThanOrEqual(timeout - 1);
     });
 
-    it.skip("should handle TOffset function returning tuple", async () => {
+    it("should handle TOffset function returning tuple", async () => {
       const identifier = "test-id";
       const timeout = 10;
       const start = Date.now();
@@ -548,12 +548,12 @@ describe("utilities", () => {
 
   // #MARK: errors
   describe("errors", () => {
-    it("InternalError", () => {
+    it("constructs InternalError with its stable name", () => {
       const error = new InternalError("" as TContext, "asdf", "qwerty");
       expect(error.name).toBe("InternalError");
     });
 
-    it("InternalError", () => {
+    it("retains the stable name across InternalError instances", () => {
       const error = new InternalError("" as TContext, "asdf", "qwerty");
       expect(error.name).toBe("InternalError");
     });

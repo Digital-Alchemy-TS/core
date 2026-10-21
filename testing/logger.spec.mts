@@ -185,6 +185,24 @@ describe("Logger", () => {
       });
     });
 
+    it("highlights repeated hash delimiters within literal-space tokens", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal: { boilerplate } }) => {
+        const message = "alpha#beta#gamma delta#epsilon";
+        const expected = `${chalk.yellow("alpha#beta#gamma")} ${chalk.yellow("delta#epsilon")}`;
+        expect(boilerplate.logger.prettyFormatMessage(message)).toBe(expected);
+      });
+    });
+
+    it("keeps nested braces and closing-bracket barriers intact", async () => {
+      expect.assertions(1);
+      await TestRunner().run(({ internal: { boilerplate } }) => {
+        const message = "{{outer} {blocked{value]still} {safe}";
+        const expected = `${chalk.bold.gray("{outer")} {blocked{value]still} ${chalk.bold.gray("safe")}`;
+        expect(boilerplate.logger.prettyFormatMessage(message)).toBe(expected);
+      });
+    });
+
     it("should highlight dash at the start of the message in yellow", async () => {
       expect.assertions(1);
       await TestRunner().run(({ internal: { boilerplate } }) => {
@@ -201,7 +219,7 @@ describe("Logger", () => {
       });
     });
 
-    it("passes through boot configs", async () => {
+    it("enables pretty formatting from boot configs", async () => {
       expect.assertions(1);
       await TestRunner()
         .setOptions({
@@ -216,7 +234,7 @@ describe("Logger", () => {
         });
     });
 
-    it("passes through boot configs", async () => {
+    it("disables pretty formatting from boot configs", async () => {
       expect.assertions(1);
       await TestRunner()
         .setOptions({
@@ -412,7 +430,7 @@ describe("Logger", () => {
         await TestRunner()
           .setOptions({ loggerOptions: { counter: true } })
           .emitLogs("info")
-          .run(({ logger, internal: _internal }) => {
+          .run(({ logger }) => {
             // internal.boilerplate.logger.setHttpLogs("https://hello.world");
             vi.spyOn(globalThis, "fetch").mockImplementation((_, { body }) => {
               const data = JSON.parse(String(body));
@@ -437,7 +455,7 @@ describe("Logger", () => {
         const spy = vi.fn();
         await TestRunner()
           .emitLogs("info")
-          .run(({ logger, internal: _internal }) => {
+          .run(({ logger }) => {
             // internal.boilerplate.logger.setHttpLogs("https://hello.world");
             vi.spyOn(globalThis, "fetch").mockImplementation((_, { body }) => {
               const data = JSON.parse(String(body));
@@ -466,7 +484,7 @@ describe("Logger", () => {
         await TestRunner()
           .setOptions({ loggerOptions: { ms: true } })
           .emitLogs("info")
-          .run(({ logger, internal: _internal }) => {
+          .run(({ logger }) => {
             // internal.boilerplate.logger.setHttpLogs("https://hello.world");
             vi.spyOn(globalThis, "fetch").mockImplementation((_, { body }) => {
               const data = JSON.parse(String(body));
@@ -492,7 +510,7 @@ describe("Logger", () => {
         await TestRunner()
           .setOptions({ loggerOptions: { ms: true } })
           .emitLogs("info")
-          .run(({ logger, internal: _internal }) => {
+          .run(({ logger }) => {
             // internal.boilerplate.logger.setHttpLogs("https://hello.world");
             vi.spyOn(globalThis, "fetch").mockImplementation((_, { body }) => {
               const data = JSON.parse(String(body));
@@ -532,7 +550,7 @@ describe("Logger", () => {
         const spy = vi.fn();
         await TestRunner()
           .emitLogs("info")
-          .run(({ logger, internal: _internal }) => {
+          .run(({ logger }) => {
             // internal.boilerplate.logger.setHttpLogs("https://hello.world");
             vi.spyOn(globalThis, "fetch").mockImplementation((_, { body }) => {
               const data = JSON.parse(String(body));
@@ -561,7 +579,7 @@ describe("Logger", () => {
         await TestRunner()
           .setOptions({ loggerOptions: { als: true } })
           .emitLogs("info")
-          .run(({ logger, internal: _internal, als }) => {
+          .run(({ logger, als }) => {
             // @ts-expect-error idc
             als.getLogData = () => {
               return {
@@ -592,7 +610,7 @@ describe("Logger", () => {
         const spy = vi.fn();
         await TestRunner()
           .emitLogs("info")
-          .run(({ logger, internal: _internal, als }) => {
+          .run(({ logger, als }) => {
             // @ts-expect-error idc
             als.getLogData = () => {
               return {

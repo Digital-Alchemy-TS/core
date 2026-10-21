@@ -54,6 +54,7 @@ words:
   - esbenp
   - execa
   - exiasr
+  - fanout
   - falsey
   - fastify
   - floralwhite
@@ -70,6 +71,7 @@ words:
   - homeassistant
   - hotpink
   - idris
+  - implier
   - indianred
   - intellij
   - interwebs
@@ -135,6 +137,7 @@ words:
   - pino
   - pkief
   - postdata
+  - prefault
   - powderblue
   - prettyrc
   - proto
@@ -166,6 +169,7 @@ words:
   - timonwong
   - toolbelt
   - tsdoc
+  - typebox
   - typeof
   - undici
   - unitless

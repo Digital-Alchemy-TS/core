@@ -309,8 +309,7 @@ describe("schema-backed configuration", () => {
     expect.assertions(7);
     let valueCalls = 0;
     let receiverIsSchema = false;
-    let valueSchema: unknown;
-    valueSchema = Type.Number({
+    const valueSchema: unknown = Type.Number({
       default: function (this: unknown) {
         valueCalls += 1;
         receiverIsSchema = this === valueSchema;
@@ -418,7 +417,7 @@ describe("schema-backed configuration", () => {
     ).toBeUndefined();
   });
 
-  it("fails an unsuperseded root preparation failure with sanitized diagnostics", async () => {
+  it("fails a root preparation failure without a replacement value with sanitized diagnostics", async () => {
     expect.assertions(4);
     const secret = "secret-default-preparation";
     let factoryCalls = 0;
@@ -434,7 +433,7 @@ describe("schema-backed configuration", () => {
         },
       },
       // @ts-expect-error local fixture name is not declaration-merged
-      name: "schema_default_unrescued",
+      name: "schema_default_unhandled",
       services: {},
     });
 
@@ -607,7 +606,7 @@ describe("schema-backed configuration", () => {
         },
       },
       // @ts-expect-error local fixture name is not declaration-merged
-      name: "schema_preview_clone_unrescued",
+      name: "schema_preview_clone_unhandled",
       services: {},
     });
     const error = await TestRunner({ target: library })

@@ -1,5 +1,6 @@
 import { Type } from "typebox";
 import { Format } from "typebox/format";
+import type * as TypeBoxValue from "typebox/value";
 import { z } from "zod";
 
 import type {
@@ -14,9 +15,11 @@ import type {
   SchemaConfig,
   ServiceMap,
   StringConfig,
+  TContext,
   TGetConfig,
   TServiceParams,
 } from "../src/index.mts";
+import * as Core from "../src/index.mts";
 import {
   BootstrapException,
   classifyTypeBoxPeerFailure,
@@ -25,6 +28,12 @@ import {
   INJECTED_DEFINITIONS,
   TestRunner,
 } from "../src/index.mts";
+
+const PREPARATION_LOCATION = {
+  context: "test:preparation" as TContext,
+  project: "schema_preparation",
+  property: "VALUE",
+};
 
 // ─── Local compile-time assertions ────────────────────────────────────────────
 
@@ -382,6 +391,230 @@ describe("schema-backed configuration", () => {
     });
     expect(failureCalls).toBe(1);
     await failureApp.teardown();
+  });
+
+  it("returns undefined without provider work for non-value preparations", async () => {
+    expect.assertions(3);
+    expect(
+      await Core.clonePreparedTypeBoxValue({ kind: "unprepared" }, PREPARATION_LOCATION),
+    ).toBeUndefined();
+    expect(
+      await Core.clonePreparedTypeBoxValue({ kind: "undefined" }, PREPARATION_LOCATION),
+    ).toBeUndefined();
+    expect(
+      await Core.clonePreparedTypeBoxValue(
+        {
+          error: new BootstrapException(
+            PREPARATION_LOCATION.context,
+            "CONFIG_SCHEMA_PROCESSING_FAILED",
+            "cached failure",
+          ),
+          kind: "failure",
+        },
+        PREPARATION_LOCATION,
+      ),
+    ).toBeUndefined();
+  });
+
+  it("fails an unsuperseded root preparation failure with sanitized diagnostics", async () => {
+    expect.assertions(4);
+    const secret = "secret-default-preparation";
+    let factoryCalls = 0;
+    const library = CreateLibrary({
+      configuration: {
+        VALUE: {
+          schema: Type.Number({
+            default: () => {
+              factoryCalls += 1;
+              throw new Error(secret);
+            },
+          }),
+        },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_default_unrescued",
+      services: {},
+    });
+
+    const error = await TestRunner({ target: library })
+      .run(() => {})
+      .catch(value => value);
+    expect(error).toBeInstanceOf(BootstrapException);
+    expect((error as BootstrapException).cause).toBe("CONFIG_SCHEMA_PROCESSING_FAILED");
+    expect((error as BootstrapException).message).not.toContain(secret);
+    expect(factoryCalls).toBe(1);
+  });
+
+  it("reuses a prepared root default for an explicit undefined bootstrap value", async () => {
+    expect.assertions(4);
+    let factoryCalls = 0;
+    let constructionValue: unknown;
+    const library = CreateLibrary({
+      configuration: {
+        VALUE: {
+          schema: Type.Number({
+            default: () => {
+              factoryCalls += 1;
+              return 7;
+            },
+          }),
+        },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_default_undefined_bootstrap",
+      services: {
+        inspect({ config }) {
+          const current = config as unknown as {
+            schema_default_undefined_bootstrap: { VALUE: number };
+          };
+          constructionValue = current.schema_default_undefined_bootstrap.VALUE;
+        },
+      },
+    });
+    const app = await TestRunner({ target: library })
+      .setOptions({
+        configuration: {
+          schema_default_undefined_bootstrap: { VALUE: undefined },
+        } as never,
+      })
+      .run(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          const current = config as unknown as {
+            schema_default_undefined_bootstrap: { VALUE: number };
+          };
+          expect(current.schema_default_undefined_bootstrap.VALUE).toBe(7);
+        });
+      });
+    expect(constructionValue).toBe(7);
+    expect(factoryCalls).toBe(1);
+    expect(app.booted).toBe(true);
+    await app.teardown();
+  });
+
+  it("sanitizes an unusable TypeBox clone during undefined-root suppression", async () => {
+    expect.assertions(2);
+    vi.doMock("typebox/value", async () => ({
+      ...(await vi.importActual<typeof TypeBoxValue>("typebox/value")),
+      Clone: (): undefined => undefined,
+    }));
+
+    try {
+      const error = await Core.processTypeBoxValue(
+        Type.Optional(Type.String()),
+        undefined,
+        PREPARATION_LOCATION,
+        { kind: "undefined" },
+      ).catch(value => value);
+      expect(error).toBeInstanceOf(BootstrapException);
+      expect((error as BootstrapException).cause).toBe("CONFIG_SCHEMA_PROCESSING_FAILED");
+    } finally {
+      vi.doUnmock("typebox/value");
+    }
+  });
+
+  it("sanitizes a raw TypeBox module failure during default preparation", async () => {
+    expect.assertions(4);
+    const secret = "secret-typebox-module";
+    vi.doMock("typebox/value", async () => {
+      const actual = await vi.importActual<typeof TypeBoxValue>("typebox/value");
+      return new Proxy(actual, {
+        get(target, property, receiver) {
+          if (property === "Clone") {
+            throw new Error(secret);
+          }
+          return Reflect.get(target, property, receiver);
+        },
+      });
+    });
+
+    try {
+      const prepared = await Core.prepareTypeBoxDefault(
+        Type.Number({ default: 7 }),
+        PREPARATION_LOCATION,
+      );
+      expect(prepared.kind).toBe("failure");
+      if (prepared.kind !== "failure") {
+        return;
+      }
+      expect(prepared.error).toBeInstanceOf(BootstrapException);
+      expect(prepared.error.cause).toBe("CONFIG_SCHEMA_PROCESSING_FAILED");
+      expect(prepared.error.message).not.toContain(secret);
+    } finally {
+      vi.doUnmock("typebox/value");
+    }
+  });
+
+  it("defers a raw preview-clone failure until a later source rescues it", async () => {
+    expect.assertions(3);
+    const secret = "secret-preview-clone";
+    const cloneSpy = vi
+      .spyOn(Core, "clonePreparedTypeBoxValue")
+      .mockRejectedValue(new Error(secret));
+    let factoryCalls = 0;
+    const library = CreateLibrary({
+      configuration: {
+        VALUE: {
+          schema: Type.Number({
+            default: () => {
+              factoryCalls += 1;
+              return 7;
+            },
+          }),
+        },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_preview_clone_rescue",
+      services: {
+        register({ internal }) {
+          internal.config.registerLoader(
+            async () => ({ schema_preview_clone_rescue: { VALUE: 9 } }) as never,
+            "custom_preview_clone_rescue" as never,
+          );
+        },
+      },
+    });
+    const app = await TestRunner({ target: library }).run(({ config, lifecycle }) => {
+      lifecycle.onPostConfig(() => {
+        const current = config as unknown as { schema_preview_clone_rescue: { VALUE: number } };
+        expect(current.schema_preview_clone_rescue.VALUE).toBe(9);
+      });
+    });
+    expect(cloneSpy).toHaveBeenCalledTimes(1);
+    expect(factoryCalls).toBe(1);
+    await app.teardown();
+  });
+
+  it("preserves a safe preview-clone failure when no source rescues it", async () => {
+    expect.assertions(4);
+    const failure = new BootstrapException(
+      PREPARATION_LOCATION.context,
+      "CONFIG_SCHEMA_PROCESSING_FAILED",
+      "preview clone failed",
+    );
+    const cloneSpy = vi.spyOn(Core, "clonePreparedTypeBoxValue").mockRejectedValue(failure);
+    let factoryCalls = 0;
+    const library = CreateLibrary({
+      configuration: {
+        VALUE: {
+          schema: Type.Number({
+            default: () => {
+              factoryCalls += 1;
+              return 7;
+            },
+          }),
+        },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_preview_clone_unrescued",
+      services: {},
+    });
+    const error = await TestRunner({ target: library })
+      .run(() => {})
+      .catch(value => value);
+    expect(error).toBe(failure);
+    expect(cloneSpy).toHaveBeenCalledTimes(1);
+    expect(factoryCalls).toBe(1);
+    expect((error as BootstrapException).cause).toBe("CONFIG_SCHEMA_PROCESSING_FAILED");
   });
 
   it("keeps a defined bootstrap value from evaluating a TypeBox root factory", async () => {

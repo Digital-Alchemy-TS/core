@@ -10,6 +10,7 @@ import type {
   LibraryDefinition,
   OptionalModuleConfiguration,
   RecordConfig,
+  SchemaConfig,
   ServiceMap,
   StringConfig,
   TGetConfig,
@@ -33,6 +34,7 @@ type ExpectTrue<T extends true> = T;
 const CODEC_SCHEMA = Type.Codec(Type.String())
   .Decode(value => Number(value))
   .Encode(value => String(value));
+const TYPEBOX_OPTIONAL_SCHEMA = Type.Optional(Type.String());
 const ZOD_TRANSFORM_SCHEMA = z.string().transform(value => value.length);
 
 const UNKNOWN_OUTPUT_SCHEMA = {
@@ -102,6 +104,19 @@ export type _CodecInputIsEncodedString = ExpectTrue<TypeEqual<TypeBoxTypedInput[
 export type _CodecOutputIsDecodedNumber = ExpectTrue<
   TypeEqual<TypeBoxTypedOutput["CODEC"], number>
 >;
+type TypeBoxOptionalConfiguration = { VALUE: { schema: typeof TYPEBOX_OPTIONAL_SCHEMA } };
+type TypeBoxOptionalInput = ConfigInputTypes<TypeBoxOptionalConfiguration>;
+type TypeBoxOptionalOutput = ConfigTypes<TypeBoxOptionalConfiguration>;
+export type _TypeBoxOptionalInputAllowsUndefined = ExpectTrue<
+  TypeEqual<TypeBoxOptionalInput["VALUE"], string | undefined>
+>;
+export type _TypeBoxOptionalOutputAllowsUndefined = ExpectTrue<
+  TypeEqual<TypeBoxOptionalOutput["VALUE"], string | undefined>
+>;
+type SchemaEntryWithRequired = { schema: typeof TYPEBOX_OPTIONAL_SCHEMA; required: false };
+export type _SchemaRequiredIsRejected = ExpectTrue<
+  TypeEqual<SchemaEntryWithRequired extends SchemaConfig ? true : false, false>
+>;
 export type _ZodInputIsString = ExpectTrue<TypeEqual<ZodTypedInput["VALUE"], string>>;
 export type _ZodOutputIsNumber = ExpectTrue<TypeEqual<ZodTypedOutput["VALUE"], number>>;
 type LegacyTypedOutput = ConfigTypes<typeof LEGACY_TYPED_LIBRARY.configuration>;
@@ -150,6 +165,12 @@ describe("schema-backed configuration", () => {
     delete process.env.SCHEMA_SOURCE_VALUE;
     delete process.env.SCHEMA_SOURCE_VETO_VALUE;
     delete process.env.SCHEMA_WINNING_VALUE;
+    delete process.env.SCHEMA_CONTAINERS_RECORD;
+    delete process.env.SCHEMA_CONTAINERS_OBJECT;
+    delete process.env.SCHEMA_CONTAINERS_TEXT;
+    delete process.env.SCHEMA_CONTAINERS_CODEC_TEXT;
+    delete process.env.SCHEMA_CONTAINER_BAD_VALUE;
+    delete process.env.SCHEMA_CONTAINER_LOSING_VALUE;
     vi.restoreAllMocks();
   });
 
@@ -293,7 +314,7 @@ describe("schema-backed configuration", () => {
   });
 
   it("uses Zod native async parsing once for transforms and preserves defaults", async () => {
-    expect.assertions(4);
+    expect.assertions(5);
     let transformCount = 0;
     const asyncSchema = z.string().transform(async value => {
       transformCount += 1;
@@ -303,6 +324,7 @@ describe("schema-backed configuration", () => {
       configuration: {
         ASYNC: { schema: asyncSchema },
         DEFAULTED: { schema: z.string().default("native") },
+        OPTIONAL: { schema: z.string().optional() },
         PREFAULT: { schema: z.string().prefault("native") },
       },
       // @ts-expect-error local fixture name is not declaration-merged
@@ -319,6 +341,8 @@ describe("schema-backed configuration", () => {
           expect(transformCount).toBe(1);
           // @ts-expect-error local fixture name is not declaration-merged
           expect(config.schema_zod_native.DEFAULTED).toBe("native");
+          // @ts-expect-error local fixture name is not declaration-merged
+          expect(config.schema_zod_native.OPTIONAL).toBeUndefined();
           // @ts-expect-error local fixture name is not declaration-merged
           expect(config.schema_zod_native.PREFAULT).toBe("native");
         });
@@ -357,6 +381,57 @@ describe("schema-backed configuration", () => {
         });
       })
       .then(app => app.teardown());
+  });
+
+  it("preserves native Standard Schema undefined output and issue failures", async () => {
+    expect.assertions(3);
+    let undefinedCalls = 0;
+    const undefinedSchema = {
+      "~standard": {
+        vendor: "undefined-fixture",
+        version: 1 as const,
+        validate() {
+          undefinedCalls += 1;
+          return { value: undefined as undefined };
+        },
+      },
+    };
+    const optional = CreateLibrary({
+      configuration: { VALUE: { schema: undefinedSchema } },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_standard_undefined",
+      services: {},
+    });
+    const optionalApp = await TestRunner({ target: optional }).run(({ config, lifecycle }) => {
+      lifecycle.onPostConfig(() => {
+        // @ts-expect-error local fixture name is not declaration-merged
+        expect(config.schema_standard_undefined.VALUE).toBeUndefined();
+      });
+    });
+    expect(undefinedCalls).toBe(1);
+    await optionalApp.teardown();
+
+    const issues = CreateLibrary({
+      configuration: {
+        VALUE: {
+          schema: {
+            "~standard": {
+              vendor: "issues-fixture",
+              version: 1 as const,
+              validate() {
+                return { issues: [{ message: "invalid" }] };
+              },
+            },
+          },
+        },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_standard_issues",
+      services: {},
+    });
+    await expect(TestRunner({ target: issues }).run(() => {})).rejects.toMatchObject({
+      cause: "CONFIG_SCHEMA_INVALID",
+    });
   });
 
   it("preserves source precedence for losing invalid values and rejects winning invalid values", async () => {
@@ -530,6 +605,103 @@ describe("schema-backed configuration", () => {
     await app.teardown();
   });
 
+  it("parses final TypeBox container strings and preserves string content", async () => {
+    expect.assertions(5);
+    process.env.SCHEMA_CONTAINERS_RECORD = '{"retries":"3"}';
+    process.env.SCHEMA_CONTAINERS_OBJECT = '{"count":"7"}';
+    process.env.SCHEMA_CONTAINERS_TEXT = '{"keep":"text"}';
+    process.env.SCHEMA_CONTAINERS_CODEC_TEXT = '{"keep":"codec"}';
+    const originalArgv = process.argv;
+    process.argv = [...originalArgv, '--schema_containers_ARRAY=["1","2"]'];
+    try {
+      const library = CreateLibrary({
+        configuration: {
+          RECORD: { schema: Type.Record(Type.String(), Type.Number()) },
+          ARRAY: { schema: Type.Array(Type.Number()) },
+          OBJECT: {
+            schema: Type.Object({
+              count: Type.Number(),
+              enabled: Type.Boolean({ default: true }),
+            }),
+          },
+          TEXT: { schema: Type.String() },
+          CODEC_TEXT: {
+            schema: Type.Codec(Type.String())
+              .Decode(value => value)
+              .Encode(value => value),
+          },
+        },
+        // @ts-expect-error local fixture name is not declaration-merged
+        name: "schema_containers",
+        services: {},
+      });
+      const app = await TestRunner({ target: library })
+        .setOptions({ loadConfigs: true })
+        .run(({ config, lifecycle }) => {
+          lifecycle.onPostConfig(() => {
+            // @ts-expect-error local fixture name is not declaration-merged
+            expect(config.schema_containers.RECORD).toEqual({ retries: 3 });
+            // @ts-expect-error local fixture name is not declaration-merged
+            expect(config.schema_containers.ARRAY).toEqual([1, 2]);
+            // @ts-expect-error local fixture name is not declaration-merged
+            expect(config.schema_containers.OBJECT).toEqual({ count: 7, enabled: true });
+            // @ts-expect-error local fixture name is not declaration-merged
+            expect(config.schema_containers.TEXT).toBe('{"keep":"text"}');
+            // @ts-expect-error local fixture name is not declaration-merged
+            expect(config.schema_containers.CODEC_TEXT).toBe('{"keep":"codec"}');
+          });
+        });
+      await app.teardown();
+    } finally {
+      process.argv = originalArgv;
+    }
+  });
+
+  it("rejects malformed winning TypeBox JSON without exposing input", async () => {
+    expect.assertions(3);
+    const secret = '{"token":"container-secret"';
+    process.env.SCHEMA_CONTAINER_BAD_VALUE = secret;
+    const library = CreateLibrary({
+      configuration: { VALUE: { schema: Type.Object({ token: Type.String() }) } },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_container_bad",
+      services: {},
+    });
+    const error = await TestRunner({ target: library })
+      .setOptions({ loadConfigs: true })
+      .run(() => {})
+      .catch(value => value);
+    expect(error).toBeInstanceOf(BootstrapException);
+    expect((error as BootstrapException).cause).toBe("CONFIG_SCHEMA_PROCESSING_FAILED");
+    expect((error as BootstrapException).message).not.toContain(secret);
+  });
+
+  it("does not parse or reject a losing malformed TypeBox JSON source", async () => {
+    expect.assertions(1);
+    process.env.SCHEMA_CONTAINER_LOSING_VALUE = '{"count":';
+    const originalArgv = process.argv;
+    process.argv = [...originalArgv, '--schema_container_losing_VALUE={"count":"5"}'];
+    try {
+      const library = CreateLibrary({
+        configuration: { VALUE: { schema: Type.Object({ count: Type.Number() }) } },
+        // @ts-expect-error local fixture name is not declaration-merged
+        name: "schema_container_losing",
+        services: {},
+      });
+      const app = await TestRunner({ target: library })
+        .setOptions({ loadConfigs: true })
+        .run(({ config, lifecycle }) => {
+          lifecycle.onPostConfig(() => {
+            // @ts-expect-error local fixture name is not declaration-merged
+            expect(config.schema_container_losing.VALUE).toEqual({ count: 5 });
+          });
+        });
+      await app.teardown();
+    } finally {
+      process.argv = originalArgv;
+    }
+  });
+
   it("overlays output-shaped pre-final mutations after schema processing", async () => {
     expect.assertions(4);
     const constructorUrl = new URL("https://constructor.example");
@@ -614,24 +786,8 @@ describe("schema-backed configuration", () => {
     await app.teardown();
   });
 
-  it("preserves native missing and outer required semantics", async () => {
+  it("fails missing bare TypeBox values while preserving native undefined unions", async () => {
     expect.assertions(2);
-    const optional = CreateLibrary({
-      configuration: {
-        VALUE: {
-          required: true,
-          schema: Type.Union([Type.String(), Type.Undefined()]),
-        },
-      },
-      // @ts-expect-error local fixture name is not declaration-merged
-      name: "schema_required",
-      services: {},
-    });
-
-    await expect(TestRunner({ target: optional }).run(() => {})).rejects.toMatchObject({
-      cause: "CONFIG_SCHEMA_REQUIRED",
-    });
-
     const primitive = CreateLibrary({
       configuration: { VALUE: { schema: Type.Number() } },
       // @ts-expect-error local fixture name is not declaration-merged
@@ -641,10 +797,93 @@ describe("schema-backed configuration", () => {
     await expect(TestRunner({ target: primitive }).run(() => {})).rejects.toMatchObject({
       cause: "CONFIG_SCHEMA_INVALID",
     });
+
+    const union = CreateLibrary({
+      configuration: { VALUE: { schema: Type.Union([Type.String(), Type.Undefined()]) } },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_undefined_union",
+      services: {},
+    });
+    const app = await TestRunner({ target: union }).run(({ config, lifecycle }) => {
+      lifecycle.onPostConfig(() => {
+        // @ts-expect-error local fixture name is not declaration-merged
+        expect(config.schema_undefined_union.VALUE).toBeUndefined();
+      });
+    });
+    await app.teardown();
   });
 
-  it("rejects both, neither, and malformed schema declarations at runtime", async () => {
+  it("honors root TypeBox optional markers, defaults, and nested optional properties", async () => {
     expect.assertions(4);
+    const library = CreateLibrary({
+      configuration: {
+        OPTIONAL: { schema: Type.Optional(Type.String()) },
+        CODEC: {
+          schema: Type.Optional(
+            Type.Codec(Type.String())
+              .Decode(value => value.toUpperCase())
+              .Encode(value => value),
+          ),
+        },
+        DEFAULTED: { schema: Type.Optional(Type.String({ default: "native" })) },
+        NESTED: {
+          schema: Type.Object({
+            required: Type.String(),
+            optional: Type.Optional(Type.Number()),
+          }),
+        },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_optional",
+      services: {},
+    });
+    const app = await TestRunner({ target: library })
+      .configure({ schema_optional: { NESTED: { required: "present" } } })
+      .run(({ config, lifecycle }) => {
+        lifecycle.onPostConfig(() => {
+          // @ts-expect-error local fixture name is not declaration-merged
+          expect(config.schema_optional.OPTIONAL).toBeUndefined();
+          // @ts-expect-error local fixture name is not declaration-merged
+          expect(config.schema_optional.CODEC).toBeUndefined();
+          // @ts-expect-error local fixture name is not declaration-merged
+          expect(config.schema_optional.DEFAULTED).toBe("native");
+          // @ts-expect-error local fixture name is not declaration-merged
+          expect(config.schema_optional.NESTED).toEqual({ required: "present" });
+        });
+      });
+    await app.teardown();
+  });
+
+  it("rejects supplied invalid values for root TypeBox optional schemas", async () => {
+    expect.assertions(1);
+    const library = CreateLibrary({
+      configuration: { VALUE: { schema: Type.Optional(Type.String({ minLength: 2 })) } },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_optional_invalid",
+      services: {},
+    });
+    await expect(
+      TestRunner({ target: library })
+        .configure({ schema_optional_invalid: { VALUE: "x" } })
+        .run(() => {}),
+    ).rejects.toMatchObject({ cause: "CONFIG_SCHEMA_INVALID" });
+  });
+
+  it("retains legacy required validation", async () => {
+    expect.assertions(1);
+    const library = CreateLibrary({
+      configuration: { VALUE: { required: true, type: "string" } },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_legacy_required",
+      services: {},
+    });
+    await expect(TestRunner({ target: library }).run(() => {})).rejects.toMatchObject({
+      cause: "REQUIRED_CONFIGURATION_MISSING",
+    });
+  });
+
+  it("rejects both, neither, malformed, and required schema declarations at runtime", async () => {
+    expect.assertions(6);
     const invalidTargets = [
       {
         configuration: {
@@ -667,6 +906,14 @@ describe("schema-backed configuration", () => {
         configuration: { VALUE: { schema: { "~kind": "Number" } } },
         name: "schema_forged_marker",
       },
+      {
+        configuration: { VALUE: { schema: Type.String(), required: false } },
+        name: "schema_required_false",
+      },
+      {
+        configuration: { VALUE: { schema: Type.String(), required: undefined } },
+        name: "schema_required_undefined",
+      },
     ].map(entry =>
       CreateLibrary({
         configuration: entry.configuration as never,
@@ -687,6 +934,12 @@ describe("schema-backed configuration", () => {
     });
     await expect(TestRunner({ target: invalidTargets[3] }).run(() => {})).rejects.toMatchObject({
       cause: "CONFIG_SCHEMA_UNSUPPORTED",
+    });
+    await expect(TestRunner({ target: invalidTargets[4] }).run(() => {})).rejects.toMatchObject({
+      cause: "CONFIGURATION_DEFINITION_INVALID",
+    });
+    await expect(TestRunner({ target: invalidTargets[5] }).run(() => {})).rejects.toMatchObject({
+      cause: "CONFIGURATION_DEFINITION_INVALID",
     });
   });
 
@@ -792,7 +1045,7 @@ describe("schema-backed configuration", () => {
   });
 
   it("exposes safe metadata without executing default factories", async () => {
-    expect.assertions(7);
+    expect.assertions(8);
     let factoryCalls = 0;
     const library = CreateLibrary({
       configuration: {
@@ -822,6 +1075,7 @@ describe("schema-backed configuration", () => {
         expect(Object.isFrozen(entry)).toBe(false);
         expect(entry?.provider).toBe("typebox");
         expect(entry?.description).toBe("safe description");
+        expect(Object.hasOwn(entry ?? {}, "required")).toBe(false);
         expect(entry?.default).toEqual({ kind: "dynamic" });
         expect(factoryCalls).toBe(0);
       });

@@ -36,15 +36,13 @@ function hasValidationIssues(result: Record<PropertyKey, unknown>): boolean {
  * Process one Zod-backed configuration value through its native async parser.
  *
  * @throws {BootstrapException} `CONFIG_SCHEMA_PROVIDER_UNSUPPORTED` when the
- *   Zod surface is not compatible, `CONFIG_SCHEMA_REQUIRED` when a required
- *   output is missing, `CONFIG_SCHEMA_INVALID` when validation fails, and
- *   `CONFIG_SCHEMA_PROCESSING_FAILED` when the provider throws.
+ *   Zod surface is not compatible, `CONFIG_SCHEMA_INVALID` when validation
+ *   fails, and `CONFIG_SCHEMA_PROCESSING_FAILED` when the provider throws.
  * @internal
  */
 export async function processZodValue(
   schema: ConfigSchema,
   value: unknown,
-  required: boolean,
   location: SchemaLocation,
 ): Promise<unknown> {
   const zodSchema = schema as unknown as Record<PropertyKey, unknown>;
@@ -72,9 +70,6 @@ export async function processZodValue(
   if (!Object.hasOwn(resultRecord, "data")) {
     processingFailure(location, "zod");
   }
-  if (required && is.undefined(resultRecord.data)) {
-    throw schemaException(location, "CONFIG_SCHEMA_REQUIRED", "output is missing");
-  }
   return resultRecord.data;
 }
 
@@ -82,15 +77,13 @@ export async function processZodValue(
  * Process one generic Standard Schema-backed configuration value.
  *
  * @throws {BootstrapException} `CONFIG_SCHEMA_INVALID` when validation returns
- *   issues, `CONFIG_SCHEMA_REQUIRED` when a required output is missing, and
- *   `CONFIG_SCHEMA_PROCESSING_FAILED` when the provider throws or returns an
- *   invalid result shape.
+ *   issues and `CONFIG_SCHEMA_PROCESSING_FAILED` when the provider throws or
+ *   returns an invalid result shape.
  * @internal
  */
 export async function processStandardValue(
   schema: ConfigSchema,
   value: unknown,
-  required: boolean,
   location: SchemaLocation,
 ): Promise<unknown> {
   const standard = (schema as StandardSchemaV1)["~standard"];
@@ -111,9 +104,6 @@ export async function processStandardValue(
   }
   if (!Object.hasOwn(resultRecord, "value")) {
     processingFailure(location, "standard");
-  }
-  if (required && is.undefined(resultRecord.value)) {
-    throw schemaException(location, "CONFIG_SCHEMA_REQUIRED", "output is missing");
   }
   return resultRecord.value;
 }

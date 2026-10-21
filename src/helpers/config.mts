@@ -89,8 +89,8 @@ interface BaseConfigInternal extends BaseConfig {
   source?: (keyof ConfigLoaderSource)[];
 }
 
-/** Schema metadata fields derived from the legacy definition contract. */
-type SchemaConfigBase = Omit<BaseConfigInternal, "type" | "default" | "description">;
+/** Schema controls its own metadata, defaults, and required/optional behavior. */
+type SchemaConfigBase = Omit<BaseConfigInternal, "type" | "default" | "description" | "required">;
 
 /** A schema-backed config definition with schema-owned metadata and defaults. */
 export type SchemaConfig<SCHEMA extends ConfigSchema = ConfigSchema> = SchemaConfigBase & {
@@ -98,6 +98,7 @@ export type SchemaConfig<SCHEMA extends ConfigSchema = ConfigSchema> = SchemaCon
   type?: never;
   default?: never;
   description?: never;
+  required?: never;
 };
 
 /**

@@ -217,12 +217,30 @@ async function loadTypeBoxValue(location: SchemaLocation): Promise<TypeBoxValueM
   return module as unknown as TypeBoxValueModule;
 }
 
+function isRootOptionalTypeBoxSchema(schema: ConfigSchema): boolean {
+  return (schema as Record<PropertyKey, unknown>)["~optional"] === true;
+}
+
+function prepareTypeBoxInput(
+  schema: ConfigSchema,
+  value: unknown,
+  location: SchemaLocation,
+): unknown {
+  const type = (schema as Record<PropertyKey, unknown>).type;
+  if (!is.string(value) || (type !== "object" && type !== "array")) {
+    return value;
+  }
+  return providerCall(location, "typebox", () => JSON.parse(value) as unknown);
+}
+
 /**
  * Process one TypeBox-backed configuration value.
  *
+ * Root object and array schemas decode string inputs as JSON after source
+ * precedence settles; scalar strings remain untouched for native processing.
+ *
  * @throws {BootstrapException} `CONFIG_SCHEMA_PEER_MISSING` when TypeBox is not
  *   installed, `CONFIG_SCHEMA_PEER_BROKEN` when its value module is unusable,
- *   `CONFIG_SCHEMA_REQUIRED` when a required output is missing,
  *   `CONFIG_SCHEMA_INVALID` when native validation rejects the value, and
  *   `CONFIG_SCHEMA_PROCESSING_FAILED` when a native provider operation throws.
  * @internal
@@ -230,12 +248,12 @@ async function loadTypeBoxValue(location: SchemaLocation): Promise<TypeBoxValueM
 export async function processTypeBoxValue(
   schema: ConfigSchema,
   value: unknown,
-  required: boolean,
   location: SchemaLocation,
 ): Promise<unknown> {
   const typeBox = await loadTypeBoxValue(location);
-  const wasMissing = is.undefined(value);
-  const candidate = providerCall(location, "typebox", () => typeBox.Clone(value));
+  const input = prepareTypeBoxInput(schema, value, location);
+  const wasMissing = is.undefined(input);
+  const candidate = providerCall(location, "typebox", () => typeBox.Clone(input));
   const defaulted = providerCall(location, "typebox", () => typeBox.Default(schema, candidate));
   // TypeBox clones static defaults but intentionally returns factory results as-is;
   // clone the completed candidate once more so provider-owned mutable defaults
@@ -246,14 +264,17 @@ export async function processTypeBoxValue(
       ? isolated
       : providerCall(location, "typebox", () => typeBox.Convert(schema, isolated));
   const errors = providerCall(location, "typebox", () => typeBox.Errors(schema, converted));
-  if (errors.length > NO_VALIDATION_ERRORS) {
+  const missingOptionalRoot =
+    wasMissing && isRootOptionalTypeBoxSchema(schema) && is.undefined(converted);
+  if (errors.length > NO_VALIDATION_ERRORS && !missingOptionalRoot) {
     validationFailure(location, "typebox", errors.length);
+  }
+  // Root Optional accepts absence after defaults; do not send undefined through a codec callback.
+  if (missingOptionalRoot) {
+    return undefined;
   }
   const output = providerCall(location, "typebox", () =>
     typeBox.DecodeUnsafe({}, schema, converted),
   );
-  if (required && is.undefined(output)) {
-    throw schemaException(location, "CONFIG_SCHEMA_REQUIRED", "output is missing");
-  }
   return output;
 }

@@ -58,24 +58,22 @@ export function getSchemaProvider(schema: unknown, location: SchemaLocation): Sc
  *   `CONFIG_SCHEMA_AMBIGUOUS` when dispatch cannot identify one provider,
  *   `CONFIG_SCHEMA_PROVIDER_UNSUPPORTED` for an unsupported Zod surface,
  *   `CONFIG_SCHEMA_PEER_MISSING` or `CONFIG_SCHEMA_PEER_BROKEN` when TypeBox
- *   cannot be loaded, `CONFIG_SCHEMA_REQUIRED` when required output is missing,
- *   `CONFIG_SCHEMA_INVALID` when validation fails, and
+ *   cannot be loaded, `CONFIG_SCHEMA_INVALID` when validation fails, and
  *   `CONFIG_SCHEMA_PROCESSING_FAILED` when provider processing fails.
  */
 export async function processSchemaValue(
   schema: ConfigSchema,
   value: unknown,
-  required: boolean,
   location: SchemaLocation,
 ): Promise<unknown> {
   const provider = getSchemaProvider(schema, location);
   switch (provider) {
     case "typebox":
-      return processTypeBoxValue(schema, value, required, location);
+      return processTypeBoxValue(schema, value, location);
     case "zod":
-      return processZodValue(schema, value, required, location);
+      return processZodValue(schema, value, location);
     default:
-      return processStandardValue(schema, value, required, location);
+      return processStandardValue(schema, value, location);
   }
 }
 
@@ -113,6 +111,13 @@ export function assertConfigEntry(value: unknown, location: SchemaLocation): voi
   }
   if (is.undefined(record.schema) || record.schema === null) {
     throw schemaException(location, "CONFIGURATION_DEFINITION_INVALID", "schema is missing");
+  }
+  if (Object.hasOwn(record, "required")) {
+    throw schemaException(
+      location,
+      "CONFIGURATION_DEFINITION_INVALID",
+      "schema entries cannot declare required",
+    );
   }
   if (Object.hasOwn(record, "default") || Object.hasOwn(record, "description")) {
     throw schemaException(

@@ -200,8 +200,6 @@ export function Configuration({
    *
    * @throws {BootstrapException} `REQUIRED_CONFIGURATION_MISSING` when a
    *   required legacy property is undefined after loading.
-   * @throws {BootstrapException} `CONFIG_SCHEMA_REQUIRED` when a required
-   *   schema output is undefined.
    * @throws {BootstrapException} `CONFIG_SCHEMA_INVALID` when schema validation
    *   rejects the settled value.
    * @throws {BootstrapException} `CONFIG_SCHEMA_PROCESSING_FAILED` when a
@@ -228,7 +226,7 @@ export function Configuration({
             ? (stagedProject as Record<string, unknown>)[property]
             : (configuration as unknown as ConfigStore)[project]?.[property];
         } else if (isSchemaConfig(definition)) {
-          value = await processSchemaValue(definition.schema, raw, false, {
+          value = await processSchemaValue(definition.schema, raw, {
             context,
             project,
             property,
@@ -236,15 +234,11 @@ export function Configuration({
         } else {
           value = raw;
         }
-        if (definition.required && is.undefined(value)) {
+        if (!isSchemaConfig(definition) && definition.required && is.undefined(value)) {
           throw new BootstrapException(
             context,
-            isSchemaConfig(definition)
-              ? "CONFIG_SCHEMA_REQUIRED"
-              : "REQUIRED_CONFIGURATION_MISSING",
-            isSchemaConfig(definition)
-              ? `Configuration schema output is missing for ${project}.${property}`
-              : `Configuration property ${project}.${property} is not defined`,
+            "REQUIRED_CONFIGURATION_MISSING",
+            `Configuration property ${project}.${property} is not defined`,
           );
         }
         output[property] = value;
@@ -467,7 +461,6 @@ export function Configuration({
           ...schemaMetadata,
           library,
           property,
-          required: definition.required,
           source: definition.source ? [...definition.source] : undefined,
         });
       } else {

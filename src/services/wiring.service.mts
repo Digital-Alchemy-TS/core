@@ -45,6 +45,7 @@ import {
   INITIALIZE,
   INJECTED_DEFINITIONS,
   LOAD_PROJECT,
+  MERGE_RAW,
 } from "./configuration.service.mts";
 import { InternalDefinition } from "./internal.service.mts";
 // direct import of `is` from its source file to avoid a circular dependency:
@@ -196,7 +197,10 @@ function createBoilerplate() {
 
 // (re)defined at bootstrap; exported so downstream code can reference its type
 export let LIB_BOILERPLATE: ReturnType<typeof createBoilerplate>;
-type GenericApp = ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>;
+type GenericApp = Pick<
+  ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>,
+  "booted" | "logger" | "name" | "teardown"
+>;
 
 // `bun --hot` re-evaluates the entire module graph in the SAME process on every
 // file change — no restart, no signal — so module-level state is recreated each
@@ -458,7 +462,7 @@ export function CreateApplication<S extends ServiceMap, C extends OptionalModule
       internal.boot.constructComplete.add(name);
     },
     booted: false,
-    bootstrap: async (options: BootstrapOptions) => {
+    bootstrap: async (options: BootstrapOptions<C> = {}) => {
       // guard against accidentally bootstrapping the same application twice;
       // this is always a programming error — each app should have a single entry point
       if (application.booted) {
@@ -648,8 +652,8 @@ const runReady = async (internal: InternalDefinition) => {
  *
  * @internal
  */
-function resolveLibraryMembership(
-  application: ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>,
+function resolveLibraryMembership<S extends ServiceMap, C extends OptionalModuleConfiguration>(
+  application: ApplicationDefinition<S, C>,
   internal: InternalDefinition,
   logger: GetLogger,
 ): void {
@@ -726,7 +730,7 @@ function rollupManifest(internal: InternalDefinition) {
  */
 async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfiguration>(
   application: ApplicationDefinition<S, C>,
-  options: BootstrapOptions,
+  options: BootstrapOptions<C> = {},
   internal: InternalDefinition,
 ): Promise<TServiceParams> {
   const initTime = performance.now();
@@ -842,7 +846,7 @@ async function bootstrap<S extends ServiceMap, C extends OptionalModuleConfigura
 
     // ? Configuration values provided at bootstrap take priority over module-level defaults
     if (!is.empty(options?.configuration)) {
-      api.configuration.merge(options?.configuration);
+      api.configuration[MERGE_RAW](options.configuration);
     }
 
     // - Kick off lifecycle

@@ -17,20 +17,30 @@ import { v4 } from "uuid";
 
 import type {
   ApplicationDefinition,
+  BootstrapConfiguration,
+  ConfigInputTypes,
   DataTypes,
   ILogger,
   LibraryDefinition,
   LoggerOptions,
   ModuleConfiguration,
   OptionalModuleConfiguration,
-  PartialConfiguration,
+  PartialConfigurationInput,
   ServiceFunction,
   ServiceMap,
   TConfigLogLevel,
   TLibrary,
   TServiceParams,
 } from "../index.mts";
-import { CreateApplication, CreateLibrary, deepExtend, is, NONE } from "../index.mts";
+import {
+  CreateApplication,
+  CreateLibrary,
+  deepExtend,
+  flattenLibraries,
+  is,
+  isSchemaConfig,
+  NONE,
+} from "../index.mts";
 
 export type CreateTestingLibraryOptions<
   S extends ServiceMap,
@@ -43,7 +53,11 @@ export type CreateTestingLibraryOptions<
   target?: LibraryDefinition<S, C> | ApplicationDefinition<S, C>;
 };
 
-type TestingBootstrapOptions = {
+type TestConfigurationInput<C extends OptionalModuleConfiguration> =
+  | PartialConfigurationInput
+  | Partial<Record<string, Partial<ConfigInputTypes<Exclude<C, undefined>>>>>;
+
+type TestingBootstrapOptions<C extends OptionalModuleConfiguration> = {
   /**
    * default: false
    *
@@ -88,7 +102,7 @@ type TestingBootstrapOptions = {
    * Default values to use for configurations, applied before user values.
    * Deep-merged into the module configuration during bootstrap.
    */
-  configuration?: PartialConfiguration;
+  configuration?: TestConfigurationInput<C>;
 
   /**
    * @internal
@@ -122,7 +136,7 @@ export type iTestRunner<S extends ServiceMap, C extends OptionalModuleConfigurat
    * Chained calls deep-merge together; order is left-to-right.
    * Configuration is applied at bootstrap time via `onPostConfig`.
    */
-  configure: (configuration: PartialConfiguration) => iTestRunner<S, C>;
+  configure: (configuration: TestConfigurationInput<C>) => iTestRunner<S, C>;
 
   /**
    * Merge bootstrap options into the test runner.
@@ -131,7 +145,7 @@ export type iTestRunner<S extends ServiceMap, C extends OptionalModuleConfigurat
    * Chained calls deep-merge together. Use this to set logging behavior,
    * config sources, and other bootstrap-level parameters.
    */
-  setOptions: (options: TestingBootstrapOptions) => iTestRunner<S, C>;
+  setOptions: (options: TestingBootstrapOptions<C>) => iTestRunner<S, C>;
 
   /**
    * Enable library-first bootstrap order for this test.
@@ -250,7 +264,8 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
   // services register lifecycle callbacks and event handlers simultaneously
   process.setMaxListeners(NONE);
   let teardown: () => Promise<void>;
-  let bootOptions: TestingBootstrapOptions = {};
+  let bootOptions: TestingBootstrapOptions<C> = {};
+  const configurationInputs: TestConfigurationInput<C>[] = [];
   const appendLibraries = new Map<string, TLibrary>();
   const appendServices = new Map<string, ServiceFunction>();
   const replaceLibrary = new Map<string, TLibrary>();
@@ -261,6 +276,58 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
       return target.depends ?? [];
     }
     return target && "libraries" in target ? target.libraries : [];
+  }
+
+  function mergeConfigurationInputs(
+    app: ApplicationDefinition<ServiceMap, OptionalModuleConfiguration>,
+    inputs: readonly TestConfigurationInput<C>[],
+  ) {
+    type ConfigurationStore = Record<string, Record<string, unknown>>;
+    const definitions = new Map<string, ModuleConfiguration>();
+    const addDefinitions = (name: string, configuration: OptionalModuleConfiguration) => {
+      if (configuration) {
+        definitions.set(name, configuration);
+      }
+    };
+    addDefinitions(String(app.name), app.configuration);
+    const effectiveLibraries = (app.libraries ?? []).map(
+      library => appendLibraries.get(library.name) ?? library,
+    );
+    const effectiveNames = new Set<string>(effectiveLibraries.map(library => String(library.name)));
+    appendLibraries.forEach((library, name) => {
+      if (!effectiveNames.has(name)) {
+        effectiveLibraries.push(library);
+      }
+    });
+    const { libraries } = flattenLibraries(effectiveLibraries);
+    libraries.forEach(library => addDefinitions(String(library.name), library.configuration));
+
+    const output = {} as ConfigurationStore;
+    inputs.forEach(input => {
+      if (!is.object(input)) {
+        return;
+      }
+      const source = input as Record<string, unknown>;
+      Object.keys(source).forEach(project => {
+        const incomingProject = source[project];
+        if (!is.object(incomingProject)) {
+          return;
+        }
+        const incoming = incomingProject as Record<string, unknown>;
+        const targetProject = (output[project] ??= {});
+        Object.keys(incoming).forEach(property => {
+          const value = incoming[property];
+          const definition = definitions.get(project)?.[property];
+          if (definition && isSchemaConfig(definition)) {
+            // Defer key-aware schema merging until all target definitions are known.
+            targetProject[property] = value;
+            return;
+          }
+          deepExtend(targetProject, { [property]: value });
+        });
+      });
+    });
+    return output as BootstrapConfiguration<C>;
   }
 
   function buildApp(
@@ -339,8 +406,6 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
     // and the special test service that the caller provides to .run() or .serviceParams()
     const app = CreateApplication({
       configuration: bootOptions?.module_config ?? {},
-      // pass config sources from options; if loadConfigs is not set, all sources default to false
-      configurationLoaders: bootOptions?.configSources,
       libraries: [...dedupedLibraries.values()],
       // @ts-expect-error it's life
       name,
@@ -371,9 +436,9 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
       bootOptions.bootLibrariesFirst = true;
       return libraryTestRunner;
     },
-    configure(configuration: PartialConfiguration) {
-      // deep-merge the configuration into existing boot options
-      bootOptions = deepExtend(bootOptions, { configuration });
+    configure(configuration: TestConfigurationInput<C>) {
+      // Keep raw input values until buildApp exposes all target definitions.
+      configurationInputs.push(configuration);
       return libraryTestRunner;
     },
     emitLogs(LOG_LEVEL: TConfigLogLevel) {
@@ -395,9 +460,12 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
       const { app, LIB_RUN_FIRST } = buildApp(options?.name ?? "testing", options?.target, test);
       // when logs are suppressed, default LOG_LEVEL to "silent" so fatalLog (which writes
       // directly to stderr.fd) is also gated; user configuration wins via deepExtend order
-      const effectiveConfiguration = bootOptions?.emitLogs
-        ? bootOptions?.configuration
-        : deepExtend({ boilerplate: { LOG_LEVEL: "silent" } }, bootOptions?.configuration ?? {});
+      const effectiveConfiguration = mergeConfigurationInputs(app, [
+        ...(bootOptions?.emitLogs
+          ? []
+          : [{ boilerplate: { LOG_LEVEL: "silent" } } as BootstrapConfiguration<C>]),
+        ...configurationInputs,
+      ]);
       // bootstrap the full application; all lifecycle stages fire here
       await app.bootstrap({
         appendLibrary: [...appendLibraries.values(), ...(LIB_RUN_FIRST ? [LIB_RUN_FIRST] : [])],
@@ -427,9 +495,14 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
       // wrap a service that returns its TServiceParams immediately; run() will inject them
       return new Promise<TServiceParams>(done => libraryTestRunner.run(done));
     },
-    setOptions(options: TestingBootstrapOptions) {
-      // deep-merge bootstrap options; chained calls accumulate settings
-      bootOptions = deepExtend(bootOptions, options);
+    setOptions(options: TestingBootstrapOptions<C>) {
+      // Merge control options normally, but defer configuration values until
+      // buildApp exposes the complete definition set.
+      const { configuration, ...controlOptions } = options;
+      bootOptions = deepExtend(bootOptions, controlOptions);
+      if (configuration) {
+        configurationInputs.push(configuration);
+      }
       return libraryTestRunner;
     },
     setup(service: ServiceFunction) {

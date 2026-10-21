@@ -668,9 +668,19 @@ __metadata:
     tslib: "npm:^2.8.1"
     tsx: "npm:^4.22.4"
     type-fest: "npm:^5.7.0"
+    typebox: "npm:^1.3.12"
     typescript: "npm:^6.0.3"
     uuid: "npm:^14.0.0"
     vitest: "npm:^4.1.8"
+    zod: "npm:^4.6.5"
+  peerDependencies:
+    typebox: ">=1.3.0 <2.0.0"
+    zod: ">=4.0.0 <5.0.0"
+  peerDependenciesMeta:
+    typebox:
+      optional: true
+    zod:
+      optional: true
   languageName: unknown
   linkType: soft
 
@@ -5227,6 +5237,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"typebox@npm:^1.3.12":
+  version: 1.4.2
+  resolution: "typebox@npm:1.4.2"
+  checksum: 10/04ca27d25a5e82cf61046470206e45b868c3570ad562ae0f9157b0c0f0927d02c39b3936995280595efa659b6a82d6eaf7af0ceefb73ba4311e36024921476d4
+  languageName: node
+  linkType: hard
+
 "typed-array-buffer@npm:^1.0.3":
   version: 1.0.3
   resolution: "typed-array-buffer@npm:1.0.3"
@@ -5660,5 +5677,12 @@ __metadata:
   version: 2.1.2
   resolution: "yoctocolors@npm:2.1.2"
   checksum: 10/6ee42d665a4cc161c7de3f015b2a65d6c65d2808bfe3b99e228bd2b1b784ef1e54d1907415c025fc12b400f26f372bfc1b71966c6c738d998325ca422eb39363
+  languageName: node
+  linkType: hard
+
+"zod@npm:^4.6.5":
+  version: 4.6.7
+  resolution: "zod@npm:4.6.7"
+  checksum: 10/3ca8b8d6bb401538e59504c543db629ea7beaa775e504c3f22269b406fdffbf1431c856d59a597bf66d8487e4d2be12b03a55d76fc2c63d9f046eae1ca173bca
   languageName: node
   linkType: hard

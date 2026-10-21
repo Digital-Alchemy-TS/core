@@ -3,6 +3,7 @@ import type { Except, Merge } from "type-fest";
 import type { iTestRunner } from "../index.mts";
 import { CreateApplication, TestRunner } from "../index.mts";
 import type { OptionalModuleConfiguration } from "./config.mts";
+import { isSchemaConfig } from "./config.mts";
 import type { TContext } from "./context.mts";
 import { BootstrapException } from "./errors.mts";
 import { deepExtend } from "./extend.mts";
@@ -18,6 +19,21 @@ import { CreateLibrary } from "./wiring.mts";
 // pure-helper file has no TServiceParams; tag bootstrap errors with a stable
 // module-scoped context so consumers can identify the origin in stack traces
 const MODULE_CONTEXT = "digital-alchemy:module" as TContext;
+
+function cloneConfiguration<C extends OptionalModuleConfiguration>(configuration: C): C {
+  if (!configuration) {
+    return configuration;
+  }
+  const cloned = Object.fromEntries(
+    Object.entries(configuration).map(([property, definition]) => [
+      property,
+      isSchemaConfig(definition)
+        ? { ...definition, schema: definition.schema }
+        : deepExtend({}, definition),
+    ]),
+  );
+  return cloned as C;
+}
 
 // --- Option types -------------------------------------------------------------
 
@@ -319,7 +335,7 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
         appendLibrary.forEach((value, key) => (depends[key] = value));
 
         return CreateApplication({
-          configuration: deepExtend({}, workingModule.configuration),
+          configuration: cloneConfiguration(workingModule.configuration),
           libraries: Object.values(depends),
           // @ts-expect-error wrapper problems
           name: extendOptions?.name || options.name,
@@ -335,7 +351,7 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
         appendLibrary.forEach((value, key) => (depends[key] = value));
 
         return CreateLibrary({
-          configuration: deepExtend({}, workingModule.configuration),
+          configuration: cloneConfiguration(workingModule.configuration),
           depends: Object.values(depends),
           // @ts-expect-error wrapper problems
           name: extendOptions?.name || options.name,
@@ -358,7 +374,7 @@ export function createModule<S extends ServiceMap, C extends OptionalModuleConfi
     extend,
     name: options.name,
     optionalDepends: options.optionalDepends ?? [],
-    priorityInit: options.priorityInit,
+    priorityInit: options.priorityInit ?? [],
     services: options.services ?? ({} as S),
   };
   return workingModule;

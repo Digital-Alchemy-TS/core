@@ -47,9 +47,11 @@ import type {
   NumberConfig,
   OptionalModuleConfiguration,
   RecordConfig,
+  SchemaConfig,
   StringArrayConfig,
   StringConfig,
 } from "./config.mts";
+import type { SchemaInput, SchemaOutput } from "./config-types.mts";
 import type { TContext } from "./context.mts";
 import type { CronExpression, TOffset } from "./cron.mts";
 import { BootstrapException } from "./errors.mts";
@@ -133,7 +135,7 @@ export type TGetConfig<PARENT extends TConfigurable = TConfigurable> = <
   K extends keyof ExtractConfig<PARENT>,
 >(
   key: K,
-) => CastConfigResult<ExtractConfig<PARENT>[K]>;
+) => CastConfigResult<ConfigEntry<PARENT, K>>;
 
 /**
  * Maps a `ServiceMap` to the resolved return types of each factory.
@@ -150,11 +152,16 @@ export type GetApisResult<S extends ServiceMap> = {
 
 /** @internal — extracts the config block from a library or application definition. */
 type ExtractConfig<T> =
-  T extends LibraryDefinition<ServiceMap, infer C>
+  T extends LibraryDefinition<ServiceMap, infer C extends OptionalModuleConfiguration>
     ? C
-    : T extends ApplicationDefinition<ServiceMap, infer C>
+    : T extends ApplicationDefinition<ServiceMap, infer C extends OptionalModuleConfiguration>
       ? C
       : never;
+
+type ConfigEntry<
+  PARENT extends TConfigurable,
+  KEY extends keyof ExtractConfig<PARENT>,
+> = ExtractConfig<PARENT>[KEY] extends AnyConfig ? ExtractConfig<PARENT>[KEY] : never;
 
 // --- Scheduler types ----------------------------------------------------------
 
@@ -270,8 +277,27 @@ interface LoadedModulesInternal extends LoadedModules {
   boilerplate: typeof LIB_BOILERPLATE;
 }
 
-/** @internal — maps a config definition type to its concrete injected value. */
-type CastConfigResult<T extends AnyConfig> =
+/**
+ * @internal — the original legacy definition union, kept separate from the
+ * widened `AnyConfig` bound so a concrete schema's unknown output is not
+ * mistaken for a legacy result.
+ */
+type LegacyConfig =
+  | StringConfig<string>
+  | BooleanConfig
+  | InternalConfig<object>
+  | NumberConfig
+  | RecordConfig
+  | StringArrayConfig;
+
+/** @internal — equality utility used to recognize the exact widened sentinel. */
+type TypeEqual<A, B> =
+  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- `1`/`2` are the standard sentinel literals of the type-equality idiom
+  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
+type ExpectTrue<T extends true> = T;
+
+/** @internal — maps one original legacy definition to its injected value. */
+type LegacyConfigResult<T extends LegacyConfig> =
   T extends StringConfig<infer STRING>
     ? STRING
     : T extends BooleanConfig
@@ -286,14 +312,27 @@ type CastConfigResult<T extends AnyConfig> =
               ? VALUE
               : never;
 
-/**
- * Compile-time proof that a `record` config injects as `Record<string, V>` and not `never`.
- * If the `RecordConfig` branch above regresses, `ExpectTrue<false>` fails `tsc` (`yarn build`).
- */
-type TypeEqual<A, B> =
-  // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- `1`/`2` are the standard sentinel literals of the type-equality idiom
-  (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
-type ExpectTrue<T extends true> = T;
+/** @internal — maps a config definition type to its concrete injected value. */
+type CastConfigResult<T extends AnyConfig> =
+  TypeEqual<T, AnyConfig> extends true
+    ? LegacyConfigResult<LegacyConfig>
+    : T extends SchemaConfig<infer SCHEMA>
+      ? SchemaOutput<SCHEMA>
+      : T extends LegacyConfig
+        ? LegacyConfigResult<T>
+        : never;
+
+/** @internal — maps a config definition type to its accepted bootstrap input. */
+type CastConfigInput<T extends AnyConfig> =
+  TypeEqual<T, AnyConfig> extends true
+    ? LegacyConfigResult<LegacyConfig>
+    : T extends SchemaConfig<infer SCHEMA>
+      ? SchemaInput<SCHEMA>
+      : CastConfigResult<Extract<T, LegacyConfig>>;
+
+/** Public aliases for the input and resolved config mappings. */
+export type ConfigInputResult<T extends AnyConfig> = CastConfigInput<T>;
+export type ConfigOutputResult<T extends AnyConfig> = CastConfigResult<T>;
 
 /** @internal — assertion only; consumed via `export` so `noUnusedLocals` is satisfied. */
 export type _RecordConfigCastsToStringRecord = ExpectTrue<
@@ -579,6 +618,29 @@ export type ConfigTypes<Config> = {
   [Key in keyof Config]: Config[Key] extends AnyConfig ? CastConfigResult<Config[Key]> : never;
 };
 
+/** Resolves each key of a config block to its accepted raw/bootstrap input type. */
+export type ConfigInputTypes<Config> = {
+  [Key in keyof Config]: Config[Key] extends AnyConfig ? CastConfigInput<Config[Key]> : never;
+};
+
+/** Input-shaped configuration for modules registered through the declaration channel. */
+export type PartialConfigurationInput = Partial<{
+  [ModuleName in keyof ModuleConfigs]: Partial<ConfigInputTypes<ModuleConfigs[ModuleName]>>;
+}>;
+
+/**
+ * Input-shaped configuration accepted by bootstrap APIs.
+ *
+ * @remarks
+ * The optional `NAME`-keyed part carries an application's local `C` block
+ * when its name has not been declaration-merged into `LoadedModules` yet.
+ */
+export type BootstrapConfiguration<
+  C extends OptionalModuleConfiguration,
+  NAME extends string = never,
+> = PartialConfigurationInput &
+  Partial<Record<NAME, Partial<ConfigInputTypes<Exclude<C, undefined>>>>>;
+
 /**
  * Maps each loaded module name to its flattened `"module.service"` strings.
  *
@@ -757,7 +819,10 @@ export type PartialConfiguration = Partial<{
  * - `configSources` — opt individual loader channels in/out
  * - `loggerOptions` — tune the built-in logger's output format
  */
-export type BootstrapOptions = {
+export type BootstrapOptions<
+  C extends OptionalModuleConfiguration = OptionalModuleConfiguration,
+  NAME extends string = never,
+> = {
   /**
    * An extra library to load after the application is constructed.
    * Can be used to provide testing specific logic
@@ -792,7 +857,7 @@ export type BootstrapOptions = {
   /**
    * default values to use for configurations, before user values come in
    */
-  configuration?: PartialConfiguration;
+  configuration?: BootstrapConfiguration<C, NAME>;
 
   /**
    * use this logger, instead of the baked in one. Maybe you want some custom transports or something? Put your customized thing here
@@ -993,7 +1058,7 @@ export type ApplicationDefinition<
     logger: GetLogger;
     type: "application";
     booted: boolean;
-    bootstrap: (options?: BootstrapOptions) => Promise<TServiceParams>;
+    bootstrap: (options?: BootstrapOptions<C>) => Promise<TServiceParams>;
     teardown: () => Promise<void>;
   };
 

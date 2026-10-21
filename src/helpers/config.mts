@@ -11,8 +11,15 @@ import type {
   INJECTED_DEFINITIONS,
   InternalDefinition,
   LOAD_PROJECT,
+  MERGE_RAW,
 } from "../index.mts";
 import { is } from "../index.mts";
+import type {
+  ConfigSchema,
+  SchemaDefaultMetadata,
+  SchemaProvider,
+  SerializableMetadata,
+} from "./config-types.mts";
 import type { ILogger } from "./logger.mts";
 import type { TBlackHole } from "./utilities.mts";
 import type {
@@ -44,22 +51,7 @@ export type ProjectConfigTypes =
   | "string[]";
 
 /**
- * Union of all supported config definition shapes.
- *
- * @remarks
- * Narrowing on the `type` discriminant gives access to the specific fields
- * (e.g., `enum` for `StringConfig`, `default` for every typed config).
- */
-export type AnyConfig =
-  | StringConfig<string>
-  | BooleanConfig
-  | InternalConfig<object>
-  | NumberConfig
-  | RecordConfig
-  | StringArrayConfig;
-
-/**
- * Fields shared by every config definition, extending `core`'s coupled
+ * Fields shared by every legacy config definition, extending `core`'s coupled
  * base members.
  *
  * @remarks
@@ -67,7 +59,7 @@ export type AnyConfig =
  * `@digital-alchemy/symbols`; downstream code augments it via
  * `declare module "@digital-alchemy/core"`. `core` cannot register its own
  * coupled members (`type`, `default`, `source`, …) into that frozen interface,
- * so this internal alias carries them. Every concrete config shape
+ * so this internal alias carries them. Every concrete legacy config shape
  * (`StringConfig`, `BooleanConfig`, …) extends `BaseConfigInternal`.
  *
  * The `type` discriminant drives coercion in {@link parseConfig}.
@@ -95,6 +87,57 @@ interface BaseConfigInternal extends BaseConfig {
    * Where this can be loaded from
    */
   source?: (keyof ConfigLoaderSource)[];
+}
+
+/** Schema metadata fields derived from the legacy definition contract. */
+type SchemaConfigBase = Omit<BaseConfigInternal, "type" | "default" | "description">;
+
+/** A schema-backed config definition with schema-owned metadata and defaults. */
+export type SchemaConfig<SCHEMA extends ConfigSchema = ConfigSchema> = SchemaConfigBase & {
+  schema: SCHEMA;
+  type?: never;
+  default?: never;
+  description?: never;
+};
+
+/**
+ * Union of all supported config definition shapes.
+ *
+ * @remarks
+ * Exactly one discriminator is accepted: legacy definitions provide `type`,
+ * while schema definitions provide `schema`. Runtime callers receive the same
+ * exclusivity checks through `assertConfigEntry`.
+ */
+export type AnyConfig =
+  | StringConfig<string>
+  | BooleanConfig
+  | InternalConfig<object>
+  | NumberConfig
+  | RecordConfig
+  | StringArrayConfig
+  | SchemaConfig;
+
+/** A normalised, serialisable descriptor for one declared configuration key. */
+export type ConfigMetadataDescriptor = Readonly<{
+  default?: SchemaDefaultMetadata;
+  description?: string;
+  examples?: SerializableMetadata;
+  library: string;
+  property: string;
+  provider: SchemaProvider | "legacy";
+  required?: boolean;
+  source?: readonly (keyof ConfigLoaderSource)[];
+  title?: string;
+  type?: ProjectConfigTypes;
+}>;
+
+/** Return true when a runtime config definition is schema-backed. */
+export function isSchemaConfig(value: unknown): value is SchemaConfig {
+  if (!is.object(value)) {
+    return false;
+  }
+  const definition = value as Record<PropertyKey, unknown>;
+  return Object.hasOwn(definition, "schema") && !is.undefined(definition.schema);
 }
 
 /**
@@ -126,6 +169,7 @@ export type KnownConfigs = Map<string, CodeConfigDefinition>;
  */
 export interface StringConfig<STRING extends string> extends BaseConfigInternal {
   default?: STRING;
+  schema?: never;
   /**
    * If provided, the value **MUST** appear in this list or the application will refuse to boot.
    */
@@ -136,6 +180,7 @@ export interface StringConfig<STRING extends string> extends BaseConfigInternal 
 /** Config definition for a boolean value. */
 export interface BooleanConfig extends BaseConfigInternal {
   default?: boolean;
+  schema?: never;
   type: "boolean";
 }
 
@@ -158,12 +203,14 @@ export interface BooleanConfig extends BaseConfigInternal {
  */
 export type InternalConfig<VALUE extends object> = BaseConfigInternal & {
   default: VALUE;
+  schema?: never;
   type: "internal";
 };
 
 /** Config definition for a numeric value. */
 export interface NumberConfig extends BaseConfigInternal {
   default?: number;
+  schema?: never;
   type: "number";
 }
 
@@ -178,12 +225,14 @@ export interface NumberConfig extends BaseConfigInternal {
  */
 export interface RecordConfig<VALUE = string> extends BaseConfigInternal {
   default?: Record<string, VALUE>;
+  schema?: never;
   type: "record";
 }
 
 /** Config definition for a string-array value. */
 export interface StringArrayConfig extends BaseConfigInternal {
   default?: string[];
+  schema?: never;
   type: "string[]";
 }
 
@@ -203,17 +252,16 @@ export interface ConfigDefinitionDTO {
 
 /** Single config-item descriptor emitted by the scanner. */
 export interface ConfigTypeDTO<METADATA extends AnyConfig = AnyConfig> {
-  /**
-   * Name of project
-   */
+  /** Name of project. */
   library: string;
   /**
-   * Description of a single config item as passed into the module
+   * Raw definition retained for legacy consumers. Schema-valued definitions
+   * are identity-bearing runtime objects and are not scanner-serialisable.
    */
   metadata: METADATA;
-  /**
-   * Property name
-   */
+  /** Safe serialisable view for scanner/help consumers. */
+  normalized?: ConfigMetadataDescriptor;
+  /** Property name. */
   property: string;
 }
 
@@ -419,6 +467,10 @@ export function loadDotenv(
  * - `"boolean"` — accepts boolean literals and the strings `"y"` / `"true"`
  */
 export function parseConfig(config: AnyConfig, value: unknown) {
+  // Schema-backed values remain raw until all loaders and precedence rules settle.
+  if (isSchemaConfig(config)) {
+    return value;
+  }
   switch (config.type) {
     case "string": {
       return String(value);
@@ -472,7 +524,11 @@ export type DigitalAlchemyConfiguration = {
   ) => Promise<string>;
   [INJECTED_DEFINITIONS]: TInjectedConfig;
   [LOAD_PROJECT]: (library: string, definitions: CodeConfigDefinition) => void;
+  /** @internal */
+  [MERGE_RAW]: (incoming: unknown) => void;
   getDefinitions: () => KnownConfigs;
+  /** Return safe, read-only metadata without replacing raw definitions. */
+  getMetadata: () => readonly ConfigMetadataDescriptor[];
   registerLoader: (loader: ConfigLoader, type: DataTypes) => void;
   merge: (incoming: Partial<PartialConfiguration>) => PartialConfiguration;
   /**

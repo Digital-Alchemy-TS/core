@@ -277,40 +277,62 @@ interface LoadedModulesInternal extends LoadedModules {
   boilerplate: typeof LIB_BOILERPLATE;
 }
 
-/** @internal — maps a config definition type to its concrete injected value. */
-type CastConfigResult<T extends AnyConfig> =
-  T extends SchemaConfig<infer SCHEMA>
-    ? SchemaOutput<SCHEMA>
-    : T extends StringConfig<infer STRING>
-      ? STRING
-      : T extends BooleanConfig
-        ? boolean
-        : T extends NumberConfig
-          ? number
-          : T extends StringArrayConfig
-            ? string[]
-            : T extends RecordConfig<infer VALUE>
-              ? Record<string, VALUE>
-              : T extends InternalConfig<infer VALUE>
-                ? VALUE
-                : never;
-
-/** @internal — maps a config definition type to its accepted bootstrap input. */
-type CastConfigInput<T extends AnyConfig> =
-  T extends SchemaConfig<infer SCHEMA> ? SchemaInput<SCHEMA> : CastConfigResult<T>;
-
-/** Public aliases for the input and resolved config mappings. */
-export type ConfigInputResult<T extends AnyConfig> = CastConfigInput<T>;
-export type ConfigOutputResult<T extends AnyConfig> = CastConfigResult<T>;
-
 /**
- * Compile-time proof that a `record` config injects as `Record<string, V>` and not `never`.
- * If the `RecordConfig` branch above regresses, `ExpectTrue<false>` fails `tsc` (`yarn build`).
+ * @internal — the original legacy definition union, kept separate from the
+ * widened `AnyConfig` bound so a concrete schema's unknown output is not
+ * mistaken for a legacy result.
  */
+type LegacyConfig =
+  | StringConfig<string>
+  | BooleanConfig
+  | InternalConfig<object>
+  | NumberConfig
+  | RecordConfig
+  | StringArrayConfig;
+
+/** @internal — equality utility used to recognize the exact widened sentinel. */
 type TypeEqual<A, B> =
   // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- `1`/`2` are the standard sentinel literals of the type-equality idiom
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
 type ExpectTrue<T extends true> = T;
+
+/** @internal — maps one original legacy definition to its injected value. */
+type LegacyConfigResult<T extends LegacyConfig> =
+  T extends StringConfig<infer STRING>
+    ? STRING
+    : T extends BooleanConfig
+      ? boolean
+      : T extends NumberConfig
+        ? number
+        : T extends StringArrayConfig
+          ? string[]
+          : T extends RecordConfig<infer VALUE>
+            ? Record<string, VALUE>
+            : T extends InternalConfig<infer VALUE>
+              ? VALUE
+              : never;
+
+/** @internal — maps a config definition type to its concrete injected value. */
+type CastConfigResult<T extends AnyConfig> =
+  TypeEqual<T, AnyConfig> extends true
+    ? LegacyConfigResult<LegacyConfig>
+    : T extends SchemaConfig<infer SCHEMA>
+      ? SchemaOutput<SCHEMA>
+      : T extends LegacyConfig
+        ? LegacyConfigResult<T>
+        : never;
+
+/** @internal — maps a config definition type to its accepted bootstrap input. */
+type CastConfigInput<T extends AnyConfig> =
+  TypeEqual<T, AnyConfig> extends true
+    ? LegacyConfigResult<LegacyConfig>
+    : T extends SchemaConfig<infer SCHEMA>
+      ? SchemaInput<SCHEMA>
+      : CastConfigResult<Extract<T, LegacyConfig>>;
+
+/** Public aliases for the input and resolved config mappings. */
+export type ConfigInputResult<T extends AnyConfig> = CastConfigInput<T>;
+export type ConfigOutputResult<T extends AnyConfig> = CastConfigResult<T>;
 
 /** @internal — assertion only; consumed via `export` so `noUnusedLocals` is satisfied. */
 export type _RecordConfigCastsToStringRecord = ExpectTrue<

@@ -1,4 +1,4 @@
-// cspell:disable
+// cspell:words typebox
 /**
  * Public helpers — pure-function modules and type definitions.
  *

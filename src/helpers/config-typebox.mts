@@ -1,4 +1,4 @@
-// cspell:disable
+// cspell:words typebox
 import { createRequire } from "node:module";
 
 import { is } from "../index.mts";
@@ -51,10 +51,6 @@ type TypeBoxValueModule = {
   Errors: (type: unknown, value: unknown) => readonly unknown[];
 };
 
-function hasOwn(value: object, key: PropertyKey): boolean {
-  return Object.hasOwn(value, key);
-}
-
 function isTypeBoxJsonSchemaShape(value: Record<PropertyKey, unknown>): boolean {
   const type = value.type;
   if (is.string(type) && TYPEBOX_SCHEMA_TYPES.has(type)) {
@@ -65,10 +61,10 @@ function isTypeBoxJsonSchemaShape(value: Record<PropertyKey, unknown>): boolean 
     is.array(value.anyOf) ||
     is.array(value.allOf) ||
     is.object(value.not) ||
-    hasOwn(value, "const") ||
+    Object.hasOwn(value, "const") ||
     is.array(value.enum) ||
     is.object(value.properties) ||
-    hasOwn(value, "items")
+    Object.hasOwn(value, "items")
   );
 }
 
@@ -80,7 +76,7 @@ function isTypeBoxKindShape(kind: string, value: Record<PropertyKey, unknown>): 
   switch (kind) {
     case "Any":
     case "Unknown":
-      return [...TYPEBOX_KINDLESS_KEYS].every(key => !hasOwn(value, key));
+      return [...TYPEBOX_KINDLESS_KEYS].every(key => !Object.hasOwn(value, key));
     case "Array":
       return is.object(value.items);
     case "Constructor":
@@ -95,7 +91,7 @@ function isTypeBoxKindShape(kind: string, value: Record<PropertyKey, unknown>): 
       return is.array(value.allOf) && value.allOf.length > NO_VALIDATION_ERRORS;
     case "Literal":
       return (
-        hasOwn(value, "const") &&
+        Object.hasOwn(value, "const") &&
         ((value.type === "boolean" && is.boolean(value.const)) ||
           (value.type === "number" && is.number(value.const)) ||
           (value.type === "string" && is.string(value.const)))
@@ -120,7 +116,7 @@ function isTypeBoxKindShape(kind: string, value: Record<PropertyKey, unknown>): 
     case "Union":
       return is.array(value.anyOf) && value.anyOf.length > NO_VALIDATION_ERRORS;
     default:
-      return type !== undefined;
+      return !is.undefined(type);
   }
 }
 
@@ -130,12 +126,14 @@ export function hasTypeBoxSchemaMarker(value: unknown): value is SupportedTypeBo
     return false;
   }
   const record = value as Record<PropertyKey, unknown>;
-  if (hasOwn(record, "~kind")) {
+  if (Object.hasOwn(record, "~kind")) {
     const kind = record["~kind"];
-    return is.string(kind) && !hasOwn(record, "~unsafe") && isTypeBoxKindShape(kind, record);
+    return is.string(kind) && !Object.hasOwn(record, "~unsafe") && isTypeBoxKindShape(kind, record);
   }
   return (
-    hasOwn(record, "~unsafe") && record["~unsafe"] === null && isTypeBoxJsonSchemaShape(record)
+    Object.hasOwn(record, "~unsafe") &&
+    record["~unsafe"] === null &&
+    isTypeBoxJsonSchemaShape(record)
   );
 }
 
@@ -224,6 +222,7 @@ async function loadTypeBoxValue(location: SchemaLocation): Promise<TypeBoxValueM
  *
  * @throws {BootstrapException} `CONFIG_SCHEMA_PEER_MISSING` when TypeBox is not
  *   installed, `CONFIG_SCHEMA_PEER_BROKEN` when its value module is unusable,
+ *   `CONFIG_SCHEMA_REQUIRED` when a required output is missing,
  *   `CONFIG_SCHEMA_INVALID` when native validation rejects the value, and
  *   `CONFIG_SCHEMA_PROCESSING_FAILED` when a native provider operation throws.
  * @internal

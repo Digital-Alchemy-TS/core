@@ -1,5 +1,7 @@
-// cspell:disable
+// cspell:words typebox
 import type { StaticDecode, StaticEncode } from "typebox";
+
+import type { SINGLE } from "./utilities.mts";
 
 /** A JSON-serialisable value exposed by schema metadata. */
 export type SerializableMetadata =
@@ -11,11 +13,9 @@ export type SerializableMetadata =
   | { readonly [key: string]: SerializableMetadata };
 
 /** The Standard Schema v1 validation result shape used by schema providers. */
-/* eslint-disable sonarjs/no-redundant-optional -- Standard Schema success results may omit `issues`. */
 export type StandardSchemaResult<OUTPUT> =
-  | { readonly issues?: undefined; readonly value: OUTPUT }
+  | { readonly value: OUTPUT }
   | { readonly issues: readonly StandardSchemaIssue[] };
-/* eslint-enable sonarjs/no-redundant-optional */
 
 /** The public issue shape accepted by Standard Schema v1 providers. */
 export interface StandardSchemaIssue {
@@ -27,8 +27,7 @@ export interface StandardSchemaIssue {
 export interface StandardSchemaV1<INPUT = unknown, OUTPUT = INPUT> {
   readonly "~standard": {
     readonly vendor: string;
-    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Standard Schema protocol version.
-    readonly version: 1;
+    readonly version: typeof SINGLE;
     readonly types?: {
       readonly input: INPUT;
       readonly output: OUTPUT;

@@ -83,23 +83,19 @@ export function Configuration({
   const loaders = new Map<DataTypes, ConfigLoader>([]);
   let finalized = false;
 
-  function isConfigRecord(value: unknown): value is Record<string, unknown> {
-    return is.object(value);
-  }
-
   function mergeStore(target: ConfigStore, incoming: unknown): ConfigStore {
-    if (!isConfigRecord(incoming)) {
+    if (!is.object(incoming)) {
       return target;
     }
     Object.keys(incoming).forEach(project => {
-      const incomingProject = incoming[project];
-      if (!isConfigRecord(incomingProject)) {
+      const incomingProject = (incoming as Record<string, unknown>)[project];
+      if (!is.object(incomingProject)) {
         target[project] = incomingProject as Record<string, unknown>;
         return;
       }
       const targetProject = (target[project] ??= {});
       Object.keys(incomingProject).forEach(property => {
-        const value = incomingProject[property];
+        const value = (incomingProject as Record<string, unknown>)[property];
         const definition = configDefinitions.get(project)?.[property];
         if (definition && isSchemaConfig(definition)) {
           // Schema values are atomic at their configuration-key boundary.
@@ -123,12 +119,12 @@ export function Configuration({
   /** Merge bootstrap input without routing encoded values through the public output API. */
   function mergeRawConfiguration(incoming: unknown): void {
     mergeStore(rawConfiguration, incoming);
-    if (!isConfigRecord(incoming)) {
+    if (!is.object(incoming)) {
       return;
     }
     Object.keys(incoming).forEach(project => {
-      const incomingProject = incoming[project];
-      if (!isConfigRecord(incomingProject)) {
+      const incomingProject = (incoming as Record<string, unknown>)[project];
+      if (!is.object(incomingProject)) {
         return;
       }
       Object.keys(incomingProject).forEach(property => {
@@ -136,7 +132,9 @@ export function Configuration({
         const definition = configDefinitions.get(project)?.[property];
         if (definition && !isSchemaConfig(definition)) {
           const liveProject = ((configuration as unknown as ConfigStore)[project] ??= {});
-          deepExtend(liveProject, { [property]: incomingProject[property] });
+          deepExtend(liveProject, {
+            [property]: (incomingProject as Record<string, unknown>)[property],
+          });
         }
       });
     });
@@ -208,6 +206,11 @@ export function Configuration({
    *   rejects the settled value.
    * @throws {BootstrapException} `CONFIG_SCHEMA_PROCESSING_FAILED` when a
    *   provider throws or returns an unusable result.
+   * @throws {BootstrapException} `CONFIG_SCHEMA_PEER_MISSING` or
+   *   `CONFIG_SCHEMA_PEER_BROKEN` when TypeBox cannot be loaded.
+   * @throws {BootstrapException} `CONFIG_SCHEMA_PROVIDER_UNSUPPORTED` when a
+   *   Zod surface is unsupported, or `CONFIG_SCHEMA_AMBIGUOUS` when dispatch
+   *   finds multiple providers.
    */
   async function finalizeConfig() {
     const next = {} as ConfigStore;
@@ -217,7 +220,7 @@ export function Configuration({
         const definition = definitions[property];
         const raw = rawConfiguration[project]?.[property];
         const stagedProject = stagedConfiguration[project];
-        const hasStaged = isConfigRecord(stagedProject) && Object.hasOwn(stagedProject, property);
+        const hasStaged = is.object(stagedProject) && Object.hasOwn(stagedProject, property);
         let value: unknown;
         if (hasStaged) {
           value = isSchemaConfig(definition)
@@ -251,7 +254,7 @@ export function Configuration({
     // unknown key through JavaScript, without letting it affect schema entries.
     Object.keys(rawConfiguration).forEach(project => {
       const rawProject = rawConfiguration[project];
-      if (!isConfigRecord(rawProject)) {
+      if (!is.object(rawProject)) {
         return;
       }
       const output = (next[project] ??= {});
@@ -266,7 +269,7 @@ export function Configuration({
     // after provider processing so transformed values are never decoded twice.
     Object.keys(stagedConfiguration).forEach(project => {
       const stagedProject = stagedConfiguration[project];
-      if (!isConfigRecord(stagedProject)) {
+      if (!is.object(stagedProject)) {
         return;
       }
       const output = (next[project] ??= {});
@@ -317,8 +320,8 @@ export function Configuration({
           return;
         }
         const moduleConfig = (data as Record<string, unknown>)[name];
-        if (isConfigRecord(moduleConfig) && key in moduleConfig) {
-          const value = moduleConfig[key];
+        if (is.object(moduleConfig) && key in moduleConfig) {
+          const value = (moduleConfig as Record<string, unknown>)[key];
           const target = (rawConfiguration[name] ??= {});
           // Loader output remains raw, including schema values that may be
           // invalid until source precedence has completely settled.
@@ -439,6 +442,10 @@ export function Configuration({
    * in `options.configuration` for this project are applied immediately so they
    * take effect before any loader runs.
    *
+   * @throws {BootstrapException} `CONFIGURATION_DEFINITION_INVALID` when a
+   *   definition is malformed, `CONFIG_SCHEMA_UNSUPPORTED` when a schema
+   *   provider surface is unsupported, or `CONFIG_SCHEMA_AMBIGUOUS` when it
+   *   exposes multiple providers.
    * @internal
    */
   function loadProject(library: string, definitions: CodeConfigDefinition) {
@@ -490,13 +497,14 @@ export function Configuration({
     // later projects are not known yet, so no deep merge may clone their schema
     // inputs before the key-aware merge phase.
     const bootConfig = (internal.boot.options?.configuration as Record<string, unknown>)?.[library];
-    if (isConfigRecord(bootConfig)) {
+    if (is.object(bootConfig)) {
       Object.keys(bootConfig).forEach(property => {
-        rawProject[property] = bootConfig[property];
+        const value = (bootConfig as Record<string, unknown>)[property];
+        rawProject[property] = value;
         clearStagedValue(library, property);
         const definition = definitions[property];
         if (definition && !isSchemaConfig(definition)) {
-          liveProject[property] = bootConfig[property];
+          liveProject[property] = value;
         }
       });
     }

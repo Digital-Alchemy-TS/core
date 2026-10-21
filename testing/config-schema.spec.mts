@@ -35,6 +35,22 @@ const CODEC_SCHEMA = Type.Codec(Type.String())
   .Encode(value => String(value));
 const ZOD_TRANSFORM_SCHEMA = z.string().transform(value => value.length);
 
+const UNKNOWN_OUTPUT_SCHEMA = {
+  "~standard": {
+    vendor: "unknown-output",
+    version: 1 as const,
+    validate(value: unknown) {
+      return { value };
+    },
+  },
+};
+type ExplicitUnknownOutput = ConfigTypes<{
+  VALUE: { schema: typeof UNKNOWN_OUTPUT_SCHEMA };
+}>;
+export type _ExplicitUnknownOutputRemainsUnknown = ExpectTrue<
+  TypeEqual<ExplicitUnknownOutput["VALUE"], unknown>
+>;
+
 const TYPEBOX_TYPED_LIBRARY = CreateLibrary({
   configuration: {
     CODEC: { schema: CODEC_SCHEMA },

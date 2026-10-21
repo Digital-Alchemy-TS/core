@@ -1,4 +1,4 @@
-// cspell:disable
+// cspell:words typebox zod
 import { is } from "../index.mts";
 import type { ProjectConfigTypes } from "./config.mts";
 import { schemaException, type SchemaLocation } from "./config-errors.mts";
@@ -54,9 +54,13 @@ export function getSchemaProvider(schema: unknown, location: SchemaLocation): Sc
 /**
  * Process one schema-backed configuration value through its native provider.
  *
- * @throws {BootstrapException} Provider-specific schema errors, including
- *   validation, missing required output, peer availability, and processing
- *   failures, are surfaced with contextual causes.
+ * @throws {BootstrapException} `CONFIG_SCHEMA_UNSUPPORTED` or
+ *   `CONFIG_SCHEMA_AMBIGUOUS` when dispatch cannot identify one provider,
+ *   `CONFIG_SCHEMA_PROVIDER_UNSUPPORTED` for an unsupported Zod surface,
+ *   `CONFIG_SCHEMA_PEER_MISSING` or `CONFIG_SCHEMA_PEER_BROKEN` when TypeBox
+ *   cannot be loaded, `CONFIG_SCHEMA_REQUIRED` when required output is missing,
+ *   `CONFIG_SCHEMA_INVALID` when validation fails, and
+ *   `CONFIG_SCHEMA_PROCESSING_FAILED` when provider processing fails.
  */
 export async function processSchemaValue(
   schema: ConfigSchema,
@@ -79,8 +83,9 @@ export async function processSchemaValue(
  * Validate a configuration entry's runtime discriminator and schema shape.
  *
  * @throws {BootstrapException} `CONFIGURATION_DEFINITION_INVALID` for a
- *   malformed legacy/schema entry and provider-specific schema errors for an
- *   unsupported schema value.
+ *   malformed legacy/schema entry, `CONFIG_SCHEMA_UNSUPPORTED` for an
+ *   unsupported schema value, and `CONFIG_SCHEMA_AMBIGUOUS` when a schema
+ *   exposes multiple providers.
  */
 export function assertConfigEntry(value: unknown, location: SchemaLocation): void {
   if (!is.object(value)) {

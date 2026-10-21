@@ -11,49 +11,57 @@ import { getSchemaProvider } from "./config-validation.mts";
  * Project a metadata value into the supported JSON-like metadata subset.
  *
  * @remarks
- * Unsupported values, non-finite numbers, and cycles are omitted rather than
- * executing user code or inventing a representation for the value.
+ * Unsupported values, non-finite numbers, and cycles are marked unknown rather
+ * than executing user code or inventing a representation for the value. Own
+ * accessor properties are also omitted so metadata inspection never invokes a
+ * getter.
  * @internal
  */
-// eslint-disable-next-line sonarjs/function-return-type -- unsupported metadata intentionally returns `undefined`.
-function serializeMetadata(
-  value: unknown,
-  seen = new Set<object>(),
-): SerializableMetadata | undefined {
+function serializeMetadata(value: unknown, seen = new Set<object>()): SchemaDefaultMetadata {
   if (value === null) {
-    return null;
+    return { kind: "static", value: null };
   }
   if (is.boolean(value) || is.string(value)) {
-    return value;
+    return { kind: "static", value };
   }
   if (is.number(value)) {
-    return Number.isFinite(value) ? value : undefined;
+    return Number.isFinite(value) ? { kind: "static", value } : { kind: "unknown" };
   }
   if (is.array(value)) {
     if (seen.has(value)) {
-      return undefined;
+      return { kind: "unknown" };
     }
     seen.add(value);
-    const result = value.map(item => serializeMetadata(item, seen));
-    return result.every(item => !is.undefined(item))
-      ? (result as SerializableMetadata[])
-      : undefined;
+    const items = value.map(item => serializeMetadata(item, seen));
+    const serializable: SerializableMetadata[] = [];
+    const valid = items.every(item => {
+      if (item.kind !== "static") {
+        return false;
+      }
+      serializable.push(item.value);
+      return true;
+    });
+    return valid ? { kind: "static", value: serializable } : { kind: "unknown" };
   }
   if (!is.object(value) || seen.has(value)) {
-    return undefined;
+    return { kind: "unknown" };
   }
   seen.add(value);
   const result: Record<string, SerializableMetadata> = {};
   const record = value as Record<string, unknown>;
   const valid = Object.keys(record).every(key => {
-    const item = serializeMetadata(record[key], seen);
-    if (is.undefined(item)) {
+    const descriptor = Object.getOwnPropertyDescriptor(record, key);
+    if (!descriptor || !Object.hasOwn(descriptor, "value")) {
       return false;
     }
-    result[key] = item;
+    const item = serializeMetadata(descriptor.value, seen);
+    if (item.kind !== "static") {
+      return false;
+    }
+    result[key] = item.value;
     return true;
   });
-  return valid ? result : undefined;
+  return valid ? { kind: "static", value: result } : { kind: "unknown" };
 }
 
 /** Read a static default for metadata without invoking a factory. */
@@ -61,8 +69,7 @@ export function getDefaultMetadata(value: unknown): SchemaDefaultMetadata {
   if (is.function(value)) {
     return { kind: "dynamic" };
   }
-  const serialized = serializeMetadata(value);
-  return serialized === undefined ? { kind: "unknown" } : { kind: "static", value: serialized };
+  return serializeMetadata(value);
 }
 
 function defaultMetadata(schema: Record<PropertyKey, unknown>): SchemaDefaultMetadata | undefined {
@@ -93,8 +100,8 @@ export function getSchemaMetadata(schema: unknown, location: SchemaLocation): Sc
   }
   if (Object.hasOwn(record, "examples")) {
     const examples = serializeMetadata(record.examples);
-    if (!is.undefined(examples)) {
-      metadata.examples = examples;
+    if (examples.kind === "static") {
+      metadata.examples = examples.value;
     }
   }
   const defaultValue = defaultMetadata(record);

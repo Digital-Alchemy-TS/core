@@ -208,9 +208,10 @@ export function Configuration({
    *   provider throws or returns an unusable result.
    * @throws {BootstrapException} `CONFIG_SCHEMA_PEER_MISSING` or
    *   `CONFIG_SCHEMA_PEER_BROKEN` when TypeBox cannot be loaded.
-   * @throws {BootstrapException} `CONFIG_SCHEMA_PROVIDER_UNSUPPORTED` when a
-   *   Zod surface is unsupported, or `CONFIG_SCHEMA_AMBIGUOUS` when dispatch
-   *   finds multiple providers.
+   * @throws {BootstrapException} `CONFIG_SCHEMA_UNSUPPORTED` when a schema
+   *   surface is unsupported, `CONFIG_SCHEMA_PROVIDER_UNSUPPORTED` when a Zod
+   *   surface is unsupported, or `CONFIG_SCHEMA_AMBIGUOUS` when dispatch finds
+   *   multiple providers.
    */
   async function finalizeConfig() {
     const next = {} as ConfigStore;

@@ -304,13 +304,13 @@ export function TestRunner<S extends ServiceMap, C extends OptionalModuleConfigu
 
     const output = {} as ConfigurationStore;
     inputs.forEach(input => {
-      if (!input || typeof input !== "object") {
+      if (!is.object(input)) {
         return;
       }
       const source = input as Record<string, unknown>;
       Object.keys(source).forEach(project => {
         const incomingProject = source[project];
-        if (!incomingProject || typeof incomingProject !== "object") {
+        if (!is.object(incomingProject)) {
           return;
         }
         const incoming = incomingProject as Record<string, unknown>;

@@ -41,12 +41,17 @@ import { is, LOAD_PROJECT } from "../index.mts";
 import { eachSeries } from "./async.mts";
 import type {
   AnyConfig,
-  ConfigInputResult,
-  ConfigOutputResult,
+  BooleanConfig,
   DataTypes,
+  InternalConfig,
+  NumberConfig,
   OptionalModuleConfiguration,
   RecordConfig,
+  SchemaConfig,
+  StringArrayConfig,
+  StringConfig,
 } from "./config.mts";
+import type { SchemaInput, SchemaOutput } from "./config-types.mts";
 import type { TContext } from "./context.mts";
 import type { CronExpression, TOffset } from "./cron.mts";
 import { BootstrapException } from "./errors.mts";
@@ -130,7 +135,7 @@ export type TGetConfig<PARENT extends TConfigurable = TConfigurable> = <
   K extends keyof ExtractConfig<PARENT>,
 >(
   key: K,
-) => CastConfigResult<ExtractConfig<PARENT>[K]>;
+) => CastConfigResult<ConfigEntry<PARENT, K>>;
 
 /**
  * Maps a `ServiceMap` to the resolved return types of each factory.
@@ -147,11 +152,16 @@ export type GetApisResult<S extends ServiceMap> = {
 
 /** @internal — extracts the config block from a library or application definition. */
 type ExtractConfig<T> =
-  T extends LibraryDefinition<ServiceMap, infer C>
+  T extends LibraryDefinition<ServiceMap, infer C extends OptionalModuleConfiguration>
     ? C
-    : T extends ApplicationDefinition<ServiceMap, infer C>
+    : T extends ApplicationDefinition<ServiceMap, infer C extends OptionalModuleConfiguration>
       ? C
       : never;
+
+type ConfigEntry<
+  PARENT extends TConfigurable,
+  KEY extends keyof ExtractConfig<PARENT>,
+> = ExtractConfig<PARENT>[KEY] extends AnyConfig ? ExtractConfig<PARENT>[KEY] : never;
 
 // --- Scheduler types ----------------------------------------------------------
 
@@ -268,10 +278,30 @@ interface LoadedModulesInternal extends LoadedModules {
 }
 
 /** @internal — maps a config definition type to its concrete injected value. */
-type CastConfigResult<T> = T extends AnyConfig ? ConfigOutputResult<T> : never;
+type CastConfigResult<T extends AnyConfig> =
+  T extends SchemaConfig<infer SCHEMA>
+    ? SchemaOutput<SCHEMA>
+    : T extends StringConfig<infer STRING>
+      ? STRING
+      : T extends BooleanConfig
+        ? boolean
+        : T extends NumberConfig
+          ? number
+          : T extends StringArrayConfig
+            ? string[]
+            : T extends RecordConfig<infer VALUE>
+              ? Record<string, VALUE>
+              : T extends InternalConfig<infer VALUE>
+                ? VALUE
+                : never;
 
 /** @internal — maps a config definition type to its accepted bootstrap input. */
-type CastConfigInput<T> = T extends AnyConfig ? ConfigInputResult<T> : never;
+type CastConfigInput<T extends AnyConfig> =
+  T extends SchemaConfig<infer SCHEMA> ? SchemaInput<SCHEMA> : CastConfigResult<T>;
+
+/** Public aliases for the input and resolved config mappings. */
+export type ConfigInputResult<T extends AnyConfig> = CastConfigInput<T>;
+export type ConfigOutputResult<T extends AnyConfig> = CastConfigResult<T>;
 
 /**
  * Compile-time proof that a `record` config injects as `Record<string, V>` and not `never`.

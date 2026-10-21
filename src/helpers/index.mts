@@ -1,3 +1,4 @@
+// cspell:disable
 /**
  * Public helpers — pure-function modules and type definitions.
  *
@@ -11,7 +12,13 @@
 export * from "./async.mts";
 export * from "./config.mts";
 export * from "./config-environment-loader.mts";
+export * from "./config-errors.mts";
 export * from "./config-file-loader.mts";
+export * from "./config-metadata.mts";
+export * from "./config-standard.mts";
+export * from "./config-typebox.mts";
+export * from "./config-types.mts";
+export * from "./config-validation.mts";
 export * from "./context.mts";
 export * from "./cron.mts";
 export * from "./errors.mts";

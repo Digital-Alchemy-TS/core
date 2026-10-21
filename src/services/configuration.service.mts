@@ -84,7 +84,7 @@ export function Configuration({
   let finalized = false;
 
   function isConfigRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === "object" && value !== null && !Array.isArray(value);
+    return is.object(value);
   }
 
   function mergeStore(target: ConfigStore, incoming: unknown): ConfigStore {
@@ -199,6 +199,15 @@ export function Configuration({
    * The separate raw store lets an invalid value from a losing source be
    * overwritten before schema processing. No partial processed snapshot is
    * published when a schema fails.
+   *
+   * @throws {BootstrapException} `REQUIRED_CONFIGURATION_MISSING` when a
+   *   required legacy property is undefined after loading.
+   * @throws {BootstrapException} `CONFIG_SCHEMA_REQUIRED` when a required
+   *   schema output is undefined.
+   * @throws {BootstrapException} `CONFIG_SCHEMA_INVALID` when schema validation
+   *   rejects the settled value.
+   * @throws {BootstrapException} `CONFIG_SCHEMA_PROCESSING_FAILED` when a
+   *   provider throws or returns an unusable result.
    */
   async function finalizeConfig() {
     const next = {} as ConfigStore;
@@ -208,9 +217,7 @@ export function Configuration({
         const definition = definitions[property];
         const raw = rawConfiguration[project]?.[property];
         const stagedProject = stagedConfiguration[project];
-        const hasStaged =
-          isConfigRecord(stagedProject) &&
-          Object.prototype.hasOwnProperty.call(stagedProject, property);
+        const hasStaged = isConfigRecord(stagedProject) && Object.hasOwn(stagedProject, property);
         let value: unknown;
         if (hasStaged) {
           value = isSchemaConfig(definition)
@@ -225,7 +232,7 @@ export function Configuration({
         } else {
           value = raw;
         }
-        if (definition.required && value === undefined) {
+        if (definition.required && is.undefined(value)) {
           throw new BootstrapException(
             context,
             isSchemaConfig(definition)
@@ -448,36 +455,34 @@ export function Configuration({
       assertConfigEntry(definition, location);
       if (isSchemaConfig(definition)) {
         const schemaMetadata = getSchemaMetadata(definition.schema, location);
-        metadata.push(
-          Object.freeze({
-            ...schemaMetadata,
-            library,
-            property,
-            required: definition.required,
-            source: definition.source ? Object.freeze([...definition.source]) : undefined,
-          }),
-        );
+        metadata.push({
+          ...schemaMetadata,
+          library,
+          property,
+          required: definition.required,
+          source: definition.source ? [...definition.source] : undefined,
+        });
       } else {
-        if (Object.prototype.hasOwnProperty.call(definition, "default")) {
+        if (Object.hasOwn(definition, "default")) {
           rawProject[property] = definition.default;
           // Legacy defaults historically remain visible during construction.
           liveProject[property] = definition.default;
         }
         const legacyMetadata: ConfigMetadataDescriptor = {
-          description: Array.isArray(definition.description)
+          description: is.array(definition.description)
             ? definition.description.join(". ")
             : definition.description,
           library,
           property,
           provider: "legacy",
           required: definition.required,
-          source: definition.source ? Object.freeze([...definition.source]) : undefined,
+          source: definition.source ? [...definition.source] : undefined,
           type: definition.type,
-          default: Object.prototype.hasOwnProperty.call(definition, "default")
+          default: Object.hasOwn(definition, "default")
             ? getDefaultMetadata(definition.default)
             : undefined,
         };
-        metadata.push(Object.freeze(legacyMetadata));
+        metadata.push(legacyMetadata);
       }
     });
     configDefinitions.set(library, definitions);
@@ -547,8 +552,12 @@ export function Configuration({
      */
     getDefinitions: () => configDefinitions,
 
-    /** Return a safe read-only metadata view for scanner/help consumers. */
-    getMetadata: () => Object.freeze([...metadata]),
+    /** Return a safe metadata view for scanner/help consumers. */
+    getMetadata: () =>
+      metadata.map(entry => ({
+        ...entry,
+        source: entry.source ? [...entry.source] : undefined,
+      })),
 
     /**
      * Deep-merge a partial configuration object into the live store.

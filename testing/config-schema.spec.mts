@@ -1,18 +1,23 @@
 import { Type } from "typebox";
 import { z } from "zod";
 
-import { classifyTypeBoxPeerFailure } from "../src/helpers/config-schema.mts";
 import type {
   ApplicationDefinition,
+  BootstrapOptions,
   ConfigInputTypes,
   ConfigTypes,
+  InternalConfig,
   LibraryDefinition,
   OptionalModuleConfiguration,
+  RecordConfig,
   ServiceMap,
+  StringConfig,
+  TGetConfig,
   TServiceParams,
 } from "../src/index.mts";
 import {
   BootstrapException,
+  classifyTypeBoxPeerFailure,
   CreateLibrary,
   createModule,
   INJECTED_DEFINITIONS,
@@ -48,6 +53,30 @@ const ZOD_TYPED_LIBRARY = CreateLibrary({
   services: {},
 });
 
+const LEGACY_ENUM_CONFIG: StringConfig<"trace" | "debug"> = {
+  default: "trace",
+  enum: ["trace", "debug"],
+  type: "string",
+};
+const LEGACY_RECORD_CONFIG: RecordConfig = {
+  default: { retries: "1" },
+  type: "record",
+};
+const LEGACY_INTERNAL_CONFIG: InternalConfig<{ enabled: boolean }> = {
+  default: { enabled: true },
+  type: "internal",
+};
+const LEGACY_TYPED_LIBRARY = CreateLibrary({
+  configuration: {
+    ENUM: LEGACY_ENUM_CONFIG,
+    INTERNAL: LEGACY_INTERNAL_CONFIG,
+    RECORD: LEGACY_RECORD_CONFIG,
+  },
+  // @ts-expect-error local fixture name is not declaration-merged
+  name: "schema_legacy_types",
+  services: {},
+});
+
 type TypeBoxTypedInput = ConfigInputTypes<typeof TYPEBOX_TYPED_LIBRARY.configuration>;
 type TypeBoxTypedOutput = ConfigTypes<typeof TYPEBOX_TYPED_LIBRARY.configuration>;
 type ZodTypedInput = ConfigInputTypes<typeof ZOD_TYPED_LIBRARY.configuration>;
@@ -59,6 +88,30 @@ export type _CodecOutputIsDecodedNumber = ExpectTrue<
 >;
 export type _ZodInputIsString = ExpectTrue<TypeEqual<ZodTypedInput["VALUE"], string>>;
 export type _ZodOutputIsNumber = ExpectTrue<TypeEqual<ZodTypedOutput["VALUE"], number>>;
+type LegacyTypedOutput = ConfigTypes<typeof LEGACY_TYPED_LIBRARY.configuration>;
+type LegacyTypedInput = ConfigInputTypes<typeof LEGACY_TYPED_LIBRARY.configuration>;
+export type _LegacyEnumPreservesLiterals = ExpectTrue<
+  TypeEqual<LegacyTypedOutput["ENUM"], "trace" | "debug">
+>;
+export type _LegacyRecordPreservesValue = ExpectTrue<
+  TypeEqual<LegacyTypedOutput["RECORD"], Record<string, string>>
+>;
+export type _LegacyInternalPreservesShape = ExpectTrue<
+  TypeEqual<LegacyTypedOutput["INTERNAL"], { enabled: boolean }>
+>;
+export type _LegacyInputMatchesOutput = ExpectTrue<
+  TypeEqual<LegacyTypedInput["ENUM"], "trace" | "debug">
+>;
+const LEGACY_GET_CONFIG = (() => "trace" as "trace" | "debug") as TGetConfig<
+  typeof LEGACY_TYPED_LIBRARY
+>;
+const LEGACY_GETTER_VALUE = LEGACY_GET_CONFIG("ENUM");
+export type _TGetConfigPreservesEnum = ExpectTrue<
+  TypeEqual<typeof LEGACY_GETTER_VALUE, "trace" | "debug">
+>;
+export const LEGACY_BOOTSTRAP_OPTIONS: BootstrapOptions = {
+  configuration: { boilerplate: { LOG_LEVEL: "silent" } },
+};
 
 function asApplication(
   target: LibraryDefinition<ServiceMap, OptionalModuleConfiguration>,
@@ -723,7 +776,7 @@ describe("schema-backed configuration", () => {
   });
 
   it("exposes safe metadata without executing default factories", async () => {
-    expect.assertions(5);
+    expect.assertions(7);
     let factoryCalls = 0;
     const library = CreateLibrary({
       configuration: {
@@ -745,11 +798,12 @@ describe("schema-backed configuration", () => {
 
     await runAndTeardown(library, ({ internal, lifecycle }) => {
       lifecycle.onPreInit(() => {
-        const entry = internal.config
-          .getMetadata()
-          .find(
-            metadata => metadata.library === "schema_metadata" && metadata.property === "VALUE",
-          );
+        const metadata = internal.config.getMetadata();
+        const entry = metadata.find(
+          item => item.library === "schema_metadata" && item.property === "VALUE",
+        );
+        expect(Object.isFrozen(metadata)).toBe(false);
+        expect(Object.isFrozen(entry)).toBe(false);
         expect(entry?.provider).toBe("typebox");
         expect(entry?.description).toBe("safe description");
         expect(entry?.default).toEqual({ kind: "dynamic" });

@@ -17,11 +17,9 @@ import { is } from "../index.mts";
 import type {
   ConfigSchema,
   SchemaDefaultMetadata,
-  SchemaInput,
-  SchemaOutput,
   SchemaProvider,
   SerializableMetadata,
-} from "./config-schema.mts";
+} from "./config-types.mts";
 import type { ILogger } from "./logger.mts";
 import type { TBlackHole } from "./utilities.mts";
 import type {
@@ -52,27 +50,55 @@ export type ProjectConfigTypes =
   | "record"
   | "string[]";
 
-/** Fields shared by every config definition. */
+/**
+ * Fields shared by every legacy config definition, extending `core`'s coupled
+ * base members.
+ *
+ * @remarks
+ * `BaseConfig` is the frozen declaration-merge channel owned by
+ * `@digital-alchemy/symbols`; downstream code augments it via
+ * `declare module "@digital-alchemy/core"`. `core` cannot register its own
+ * coupled members (`type`, `default`, `source`, …) into that frozen interface,
+ * so this internal alias carries them. Every concrete legacy config shape
+ * (`StringConfig`, `BooleanConfig`, …) extends `BaseConfigInternal`.
+ *
+ * The `type` discriminant drives coercion in {@link parseConfig}.
+ * `source` narrows which loaders are allowed to supply this key — omit it to
+ * allow all loaders.
+ */
 interface BaseConfigInternal extends BaseConfig {
-  /** If no other values are provided, what value should be injected? */
+  /**
+   * If no other values are provided, what value should be injected?
+   * This ensures a value is always provided, and checks for undefined don't need to happen
+   */
   default?: unknown;
-  /** Short descriptive text so humans can understand why this exists. */
+  /**
+   * Short descriptive text so humans can understand why this exists.
+   */
   description?: string | string[];
-  /** Refuse to boot if the final value is undefined. */
+  /**
+   * Refuse to boot if user provided value is still undefined by `onPostConfig` lifecycle event
+   */
   required?: boolean;
-  /** Where this can be loaded from. */
+
+  type: ProjectConfigTypes;
+
+  /**
+   * Where this can be loaded from
+   */
   source?: (keyof ConfigLoaderSource)[];
 }
 
+/** Schema metadata fields derived from the legacy definition contract. */
+type SchemaConfigBase = Omit<BaseConfigInternal, "type" | "default" | "description">;
+
 /** A schema-backed config definition with schema-owned metadata and defaults. */
-export interface SchemaConfig<
-  SCHEMA extends ConfigSchema = ConfigSchema,
-> extends BaseConfigInternal {
+export type SchemaConfig<SCHEMA extends ConfigSchema = ConfigSchema> = SchemaConfigBase & {
   schema: SCHEMA;
   type?: never;
   default?: never;
   description?: never;
-}
+};
 
 /**
  * Union of all supported config definition shapes.
@@ -91,49 +117,6 @@ export type AnyConfig =
   | StringArrayConfig
   | SchemaConfig;
 
-/** Infer the input value accepted by one config definition. */
-export type ConfigInputResult<T extends AnyConfig> =
-  T extends SchemaConfig<infer SCHEMA>
-    ? SchemaInput<SCHEMA>
-    : T extends StringConfig<infer STRING>
-      ? STRING
-      : T extends BooleanConfig
-        ? boolean
-        : T extends NumberConfig
-          ? number
-          : T extends StringArrayConfig
-            ? string[]
-            : T extends RecordConfig<infer VALUE>
-              ? Record<string, VALUE>
-              : T extends InternalConfig<infer VALUE>
-                ? VALUE
-                : never;
-
-/** Infer the injected output value from one config definition. */
-export type ConfigOutputResult<T extends AnyConfig> =
-  T extends SchemaConfig<infer SCHEMA> ? SchemaOutput<SCHEMA> : ConfigInputResult<T>;
-
-/** Public schema contracts; runtime provider helpers remain internal to configuration bootstrap. */
-export type {
-  ConfigSchema,
-  SchemaDefaultMetadata,
-  SchemaInput,
-  SchemaMetadata,
-  SchemaOutput,
-  SchemaProvider,
-  SerializableMetadata,
-  StandardSchemaIssue,
-  StandardSchemaResult,
-  StandardSchemaV1,
-  SupportedTypeBoxSchema,
-} from "./config-schema.mts";
-export {
-  assertConfigEntry,
-  getDefaultMetadata,
-  getSchemaMetadata,
-  processSchemaValue,
-} from "./config-schema.mts";
-
 /** A normalised, serialisable descriptor for one declared configuration key. */
 export type ConfigMetadataDescriptor = Readonly<{
   default?: SchemaDefaultMetadata;
@@ -150,13 +133,11 @@ export type ConfigMetadataDescriptor = Readonly<{
 
 /** Return true when a runtime config definition is schema-backed. */
 export function isSchemaConfig(value: unknown): value is SchemaConfig {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    !Array.isArray(value) &&
-    Object.prototype.hasOwnProperty.call(value, "schema") &&
-    (value as { schema?: unknown }).schema !== undefined
-  );
+  if (!is.object(value)) {
+    return false;
+  }
+  const definition = value as Record<PropertyKey, unknown>;
+  return Object.hasOwn(definition, "schema") && !is.undefined(definition.schema);
 }
 
 /**

@@ -213,7 +213,9 @@ export function Configuration({
           Object.prototype.hasOwnProperty.call(stagedProject, property);
         let value: unknown;
         if (hasStaged) {
-          value = (stagedProject as Record<string, unknown>)[property];
+          value = isSchemaConfig(definition)
+            ? (stagedProject as Record<string, unknown>)[property]
+            : (configuration as unknown as ConfigStore)[project]?.[property];
         } else if (isSchemaConfig(definition)) {
           value = await processSchemaValue(definition.schema, raw, false, {
             context,

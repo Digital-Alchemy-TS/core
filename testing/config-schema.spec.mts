@@ -414,6 +414,31 @@ describe("schema-backed configuration", () => {
     await app.teardown();
   });
 
+  it("retains legacy default fields across partial pre-final merges", async () => {
+    expect.assertions(1);
+    const library = CreateLibrary({
+      configuration: {
+        VALUE: { default: { a: 1, b: 2 }, type: "internal" },
+      },
+      // @ts-expect-error local fixture name is not declaration-merged
+      name: "schema_legacy_partial",
+      services: {
+        registerLoaders({ internal }) {
+          internal.config.merge({
+            schema_legacy_partial: { VALUE: { a: 3 } },
+          } as never);
+        },
+      },
+    });
+    const app = await TestRunner({ target: library }).run(({ config, lifecycle }) => {
+      lifecycle.onPostConfig(() => {
+        // @ts-expect-error local fixture name is not declaration-merged
+        expect(config.schema_legacy_partial.VALUE).toEqual({ a: 3, b: 2 });
+      });
+    });
+    await app.teardown();
+  });
+
   it("keeps source values raw until the winning source is finalized", async () => {
     expect.assertions(1);
     process.env.SCHEMA_SOURCE_VALUE = "12";

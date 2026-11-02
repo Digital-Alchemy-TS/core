@@ -110,7 +110,7 @@
     "tsx": "^4.23.15",
     "type-fest": "^5.10.0",
     "typebox": "^1.4.2",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "uuid": "^14.0.3",
     "vite": "^8.3.4",
     "vitest": "^5.0.5",

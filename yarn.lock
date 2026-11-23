@@ -689,7 +689,7 @@ __metadata:
     prettier: "npm:^3.9.10"
     tslib: "npm:^2.8.1"
     tsx: "npm:^4.23.15"
-    type-fest: "npm:^5.10.0"
+    type-fest: "npm:^6.0.3"
     typebox: "npm:^1.4.2"
     typescript: "npm:^6.0.3"
     uuid: "npm:^14.0.3"
@@ -5460,12 +5460,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"type-fest@npm:^5.10.0":
-  version: 5.10.0
-  resolution: "type-fest@npm:5.10.0"
+"type-fest@npm:^6.0.3":
+  version: 6.0.3
+  resolution: "type-fest@npm:6.0.3"
   dependencies:
     tagged-tag: "npm:^1.0.0"
-  checksum: 10/299a575a3d2bbc74f70da508629c448806dd5c51cbd2c5adf05b1755636f9f3b12c803b2c52c0eac561d4472ddc5e8ab42b88954cb238b101c9d4595906aea7f
+  checksum: 10/bfbaad94baf766ff547fccb0658bd1cc199ab78eb66877772f6036c9dd7df9ca7f281fbd9a5a5d0402ec013ae5051c0d14aa59fba9abd87f175eb98eb0654bb7
   languageName: node
   linkType: hard
 
